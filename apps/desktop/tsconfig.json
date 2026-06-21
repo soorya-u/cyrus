@@ -1,0 +1,10 @@
+{
+  "extends": "@cyrus/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "skipLibCheck": true,
+    "types": ["bun"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

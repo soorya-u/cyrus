@@ -1,0 +1,3 @@
+[install]
+linker = "isolated"
+peer = false # Expo native projects declare SDK peers explicitly; this keeps Bun isolated installs deduped for native modules

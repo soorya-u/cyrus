@@ -1,0 +1,27 @@
+{
+  "name": "@cyrus/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cyrus/auth": "workspace:*",
+    "@cyrus/db": "workspace:*",
+    "@cyrus/env": "workspace:*",
+    "@elysiajs/cors": "^1.4.1",
+    "@elysia/server-timing": "^1.4.1",
+    "elysia": "catalog:",
+    "elysia-csrf": "^0.1.0",
+    "elysia-helmet": "^3.1.0",
+    "elysia-rate-limit": "^4.6.2",
+    "evlog": "catalog:"
+  },
+  "devDependencies": {
+    "@cyrus/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

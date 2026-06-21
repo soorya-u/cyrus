@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "scheme": "cyrus",
+    "userInterfaceStyle": "automatic",
+    "orientation": "default",
+    "web": { "bundler": "metro" },
+    "name": "cyrus",
+    "slug": "cyrus",
+    "plugins": ["expo-font"],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

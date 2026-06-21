@@ -1,0 +1,25 @@
+{
+  "name": "@cyrus/desktop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "turbo -F @cyrus/web build && electrobun dev",
+    "dev": "electrobun dev --watch",
+    "dev:hmr": "concurrently \"bun run hmr\" \"bun run start\"",
+    "hmr": "turbo -F @cyrus/web dev",
+    "build": "turbo -F @cyrus/web build && electrobun build",
+    "build:stable": "turbo -F @cyrus/web build && electrobun build --env=stable",
+    "build:canary": "turbo -F @cyrus/web build && electrobun build --env=canary",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "electrobun": "^1.15.1",
+    "evlog": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/three": "^0.184.1",
+    "concurrently": "^9.1.0",
+    "typescript": "catalog:"
+  }
+}

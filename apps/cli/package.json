@@ -1,0 +1,22 @@
+{
+  "name": "@cyrus/cli",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "cyrus": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cyrus/env": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cyrus/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
