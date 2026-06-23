@@ -1,9 +1,2 @@
-import { Text, View } from "react-native";
-
-export default function MobileHome() {
-	return (
-		<View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-			<Text>Cyrus Mobile</Text>
-		</View>
-	);
-}
+// biome-ignore lint/performance/noBarrelFile: Expo Router route entry point
+export { MobileChatApp as default } from "@/components/mobile-chat-app";

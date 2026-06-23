@@ -11,11 +11,11 @@ export default function SignInForm({
 	const [password, setPassword] = useState("");
 	const router = useRouter();
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.SubmitEvent) => {
 		e.preventDefault();
 		const res = await authClient.signIn.email({ email, password });
 		if (res.data) {
-			router.navigate({ to: "/_auth/dashboard" });
+			router.navigate({ to: "/dashboard" });
 		}
 	};
 
@@ -40,13 +40,18 @@ export default function SignInForm({
 					Sign in
 				</button>
 			</form>
-			<button className="mt-2 text-sm underline" onClick={onSwitchToSignUp}>
+			<button
+				className="mt-2 text-sm underline"
+				onClick={onSwitchToSignUp}
+				type="button"
+			>
 				Create account
 			</button>
 			<div className="my-2">or</div>
 			<button
 				className="w-full border p-2"
 				onClick={() => authClient.signIn.social({ provider: "github" })}
+				type="button"
 			>
 				Continue with GitHub
 			</button>

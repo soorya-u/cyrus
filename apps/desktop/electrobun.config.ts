@@ -1,8 +1,35 @@
-import { defineConfig } from "electrobun/config";
+import type { ElectrobunConfig } from "electrobun";
 
-export default defineConfig({
+const webBuildDir = "../web/dist";
+
+export default {
 	app: {
-		name: "Cyrus",
-		identifier: "ai.cyrus.app",
+		name: "cyrus",
+		identifier: "dev.soorya-u.cyrus",
+		version: "0.0.1",
 	},
-});
+	runtime: {
+		exitOnLastWindowClosed: true,
+	},
+	build: {
+		bun: {
+			entrypoint: "src/bun/index.ts",
+		},
+		copy: {
+			[webBuildDir]: "views/mainview",
+		},
+		watchIgnore: [`${webBuildDir}/**`],
+		mac: {
+			bundleCEF: false,
+			defaultRenderer: "native",
+		},
+		linux: {
+			bundleCEF: false,
+			defaultRenderer: "native",
+		},
+		win: {
+			bundleCEF: false,
+			defaultRenderer: "native",
+		},
+	},
+} satisfies ElectrobunConfig;

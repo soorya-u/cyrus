@@ -11,6 +11,9 @@
     "./client/mobile": {
       "default": "./src/client/mobile.ts"
     },
+    "./client/cli": {
+      "default": "./src/client/cli.ts"
+    },
     "./*": {
       "default": "./src/*.ts"
     }

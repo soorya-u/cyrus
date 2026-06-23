@@ -11,13 +11,19 @@
     "@cyrus/auth": "workspace:*",
     "@cyrus/db": "workspace:*",
     "@cyrus/env": "workspace:*",
-    "@elysiajs/cors": "^1.4.1",
+    "@elysia/openapi": "^1.4.15",
     "@elysia/server-timing": "^1.4.1",
+    "@elysiajs/cors": "^1.4.1",
+    "@sinclair/typebox": "catalog:",
+    "@socket.io/bun-engine": "^0.1.1",
+    "better-result": "catalog:",
     "elysia": "catalog:",
     "elysia-csrf": "^0.1.0",
+    "elysia-healthcheck": "^1.0.0",
     "elysia-helmet": "^3.1.0",
     "elysia-rate-limit": "^4.6.2",
-    "evlog": "catalog:"
+    "evlog": "catalog:",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@cyrus/config": "workspace:*",

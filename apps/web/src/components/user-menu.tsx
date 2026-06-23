@@ -6,7 +6,11 @@ export default function UserMenu() {
 		return null;
 	}
 	return (
-		<button className="text-sm" onClick={() => authClient.signOut()}>
+		<button
+			className="text-sm"
+			onClick={() => authClient.signOut()}
+			type="button"
+		>
 			Sign out
 		</button>
 	);

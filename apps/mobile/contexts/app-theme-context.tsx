@@ -1,6 +1,11 @@
 import { createContext, useContext, useState } from "react";
 
-const ThemeCtx = createContext({ theme: "dark", toggle: () => {} });
+const ThemeCtx = createContext({
+	theme: "dark",
+	toggle: () => {
+		// Default no-op until AppThemeProvider mounts.
+	},
+});
 
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 	const [theme, set] = useState("dark");

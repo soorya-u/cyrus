@@ -26,7 +26,8 @@
       "!**/wrangler.jsonc",
       "!**/.source",
       "!**/convex/_generated",
-      "!.dotagents"
+      "!.dotagents",
+      "!api/server.js"
     ]
   },
   "formatter": {
@@ -71,6 +72,7 @@
     }
   },
   "javascript": {
+    "globals": ["Bun"],
     "formatter": {
       "quoteStyle": "double"
     }
@@ -80,5 +82,30 @@
       "tailwindDirectives": true
     }
   },
+  "overrides": [
+    {
+      "includes": ["**/global.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnknownAtRules": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/mobile/app/**/_layout.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExportedImports": "off"
+          },
+          "performance": {
+            "noBarrelFile": "off"
+          }
+        }
+      }
+    }
+  ],
   "extends": ["ultracite/biome/core", "ultracite/biome/react"]
 }

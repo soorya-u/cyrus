@@ -8,8 +8,8 @@
     "./schema": {
       "default": "./src/schema/index.ts"
     },
-    "./repositories/entity": {
-      "default": "./src/repositories/entity.ts"
+    "./repositories/health": {
+      "default": "./src/repositories/health.ts"
     },
     "./*": {
       "default": "./src/*.ts"

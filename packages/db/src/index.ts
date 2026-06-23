@@ -4,31 +4,21 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import {
 	account,
 	accountRelations,
-	device,
 	session,
 	sessionRelations,
-	thread,
 	user,
 	userRelations,
 	verification,
-	worker,
 } from "./schema";
 
-export function createDb() {
-	return drizzle(env.DATABASE_URL, {
-		schema: {
-			account,
-			accountRelations,
-			device,
-			session,
-			sessionRelations,
-			thread,
-			user,
-			userRelations,
-			verification,
-			worker,
-		},
-	});
-}
-
-export const db = createDb();
+export const db = drizzle(env.DATABASE_URL, {
+	schema: {
+		account,
+		accountRelations,
+		session,
+		sessionRelations,
+		user,
+		userRelations,
+		verification,
+	},
+});
