@@ -18,6 +18,7 @@
     "@gorhom/bottom-sheet": "^5.2.14",
     "@cyrus/auth": "workspace:*",
     "@cyrus/env": "workspace:*",
+    "@cyrus/ui": "workspace:*",
     "@tanstack/react-form": "catalog:",
     "@tanstack/react-query": "catalog:",
     "better-auth": "catalog:",

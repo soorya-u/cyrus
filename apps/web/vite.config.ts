@@ -8,6 +8,9 @@ export default defineConfig({
 	resolve: {
 		tsconfigPaths: true,
 	},
+	optimizeDeps: {
+		include: ["evlog/client"],
+	},
 	plugins: [
 		tailwindcss(),
 		tanstackRouter({
@@ -17,9 +20,6 @@ export default defineConfig({
 		react(),
 		evlog({
 			service: "cyrus/web",
-			client: {
-				console: true,
-			},
 		}),
 	],
 });

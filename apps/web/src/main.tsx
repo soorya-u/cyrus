@@ -1,10 +1,19 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { initLog } from "evlog/client";
 import ReactDOM from "react-dom/client";
 
 import Loader from "./components/loader";
 import { routeTree } from "./routeTree.gen";
 import { queryClient } from "./utils/query-client";
+
+// Initialize evlog client logger properly via normal import
+// (avoids the bare "evlog/client" specifier injected by the vite plugin's transformIndexHtml)
+initLog({
+	service: "cyrus/web",
+	console: true,
+	pretty: true,
+});
 
 const router = createRouter({
 	routeTree,

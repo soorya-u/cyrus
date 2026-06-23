@@ -42,7 +42,11 @@ export default function SignUpForm({
 					Sign up
 				</button>
 			</form>
-			<button className="mt-2 text-sm underline" onClick={onSwitchToSignIn}>
+			<button
+				className="mt-2 text-sm underline"
+				onClick={onSwitchToSignIn}
+				type="button"
+			>
 				Already have an account
 			</button>
 		</div>

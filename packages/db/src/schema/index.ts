@@ -8,11 +8,3 @@ export {
 	userRelations,
 	verification,
 } from "./auth";
-export {
-	device,
-	deviceRelations,
-	thread,
-	threadRelations,
-	worker,
-	workerRelations,
-} from "./cyrus";

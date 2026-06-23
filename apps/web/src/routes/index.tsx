@@ -1,16 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { WebChatApp } from "@/components/web-chat-app";
 
 export const Route = createFileRoute("/")({
-	component: HomeComponent,
+	component: WebChatApp,
 });
-
-function HomeComponent() {
-	return (
-		<div className="p-6">
-			<h1 className="font-bold text-2xl">Cyrus</h1>
-			<p className="text-muted-foreground">
-				Distributed Personal Agent Controller
-			</p>
-		</div>
-	);
-}
