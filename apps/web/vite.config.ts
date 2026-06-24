@@ -8,7 +8,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
 	optimizeDeps: { include: ["evlog/client"] },
 	plugins: [
-		tsconfigPaths(),
+		tsconfigPaths({ ignoreConfigErrors: true }),
 		tailwindcss(),
 		tanstackRouter({
 			target: "react",
