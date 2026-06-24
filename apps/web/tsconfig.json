@@ -12,8 +12,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@cyrus/hooks": ["../../shared/hooks/src/index.ts"],
-      "@cyrus/hooks/*": ["../../shared/hooks/src/*"],
-      "@cyrus/lib/*": ["../../shared/lib/src/*"]
+      "@cyrus/hooks/*": ["../../shared/hooks/src/*"]
     }
   }
 }

@@ -38,7 +38,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
-import { cn } from "../lib/utils";
+import { cn } from "@/utils/cn";
 
 /* ─── Thread status pill ─────────────────────────────────────────────── */
 

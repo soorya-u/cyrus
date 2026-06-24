@@ -2,7 +2,7 @@ import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn";
 
 const badgeVariants = cva(
 	"inline-flex items-center justify-center gap-1 rounded-md border px-2 py-0.5 font-medium text-xs transition-colors",
