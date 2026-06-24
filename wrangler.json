@@ -4,14 +4,6 @@
   "main": "apps/server/src/index.ts",
   "compatibility_date": "2025-06-01",
   "compatibility_flags": ["nodejs_compat"],
-
-  "assets": {
-    "directory": "apps/web/dist",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/socket/*"]
-  },
-
   "durable_objects": {
     "bindings": [
       {
@@ -20,14 +12,12 @@
       }
     ]
   },
-
   "migrations": [
     {
       "tag": "v1",
       "new_sqlite_classes": ["Room"]
     }
   ],
-
   "vars": {
     "NODE_ENV": "production",
     "PORT": "8787"

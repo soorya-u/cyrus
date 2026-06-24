@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - "apps/server/**"
-      - "apps/web/**"
       - "wrangler.json"
       - "bun.lock"
   workflow_dispatch:
@@ -27,9 +26,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build web
-        run: bun build:web
-
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
@@ -44,6 +40,7 @@ jobs:
             OAUTH_GITHUB_CLIENT_ID
             OAUTH_GITHUB_CLIENT_SECRET
             OAUTH_PROXY_SECRET
+            ALLOWED_ORIGINS
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
@@ -52,3 +49,4 @@ jobs:
           OAUTH_GITHUB_CLIENT_ID: ${{ secrets.OAUTH_GITHUB_CLIENT_ID }}
           OAUTH_GITHUB_CLIENT_SECRET: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
           OAUTH_PROXY_SECRET: ${{ secrets.OAUTH_PROXY_SECRET }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}

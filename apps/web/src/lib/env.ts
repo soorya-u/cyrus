@@ -4,7 +4,7 @@ import { z } from "zod";
 export const env = createEnv({
 	clientPrefix: "VITE_",
 	client: {
-		VITE_SERVER_URL: z.url().optional(),
+		VITE_SERVER_URL: z.url(),
 	},
 	runtimeEnv: import.meta.env as Record<
 		string,

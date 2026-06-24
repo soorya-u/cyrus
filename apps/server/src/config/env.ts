@@ -11,6 +11,7 @@ export const env = createEnv({
 		OAUTH_GITHUB_CLIENT_SECRET: z.string(),
 		OAUTH_PROXY_SECRET: z.string(),
 		NODE_ENV: z.enum(["development", "production"]).default("development"),
+		LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 		PRODUCTION_URL: z.url(),
 		ALLOWED_ORIGINS: z
 			.string()
