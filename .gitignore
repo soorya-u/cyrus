@@ -51,8 +51,9 @@ coverage
 tmp
 temp
 
-# Cloudflare
+# Deployments
 .wrangler
+.vercel
 
 #region dotagents
 .agents/

@@ -1,12 +1,10 @@
-import { initLogger } from "evlog";
+import "./config/log";
 import { type ExecutionContext, Hono } from "hono";
 import { auth } from "./auth";
 import { type Env, middlewares } from "./middleware";
 
 // biome-ignore lint/performance/noBarrelFile: wrangler requires Durable Object class exported from entry point
 export { Room } from "./connections/socket";
-
-initLogger({ env: { service: "cyrus/server" } });
 
 const app = new Hono<Env>();
 

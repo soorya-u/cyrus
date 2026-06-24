@@ -100,6 +100,10 @@ url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl
 checksum = "sha256:09164ff59ba77722c76827170387e027f2ce323afd71e1d4dd157a9f503d3ad4"
 url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-win-x64.exe"
 
+[[tools.vercel]]
+version = "54.16.0"
+backend = "npm:vercel"
+
 [[tools.wrangler]]
 version = "4.104.0"
 backend = "npm:wrangler"
