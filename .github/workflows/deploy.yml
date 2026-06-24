@@ -8,6 +8,7 @@ on:
       - "apps/web/**"
       - "wrangler.json"
       - "bun.lock"
+  workflow_dispatch:
 
 jobs:
   deploy:
