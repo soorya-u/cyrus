@@ -4,15 +4,13 @@
   "workspaces": {
     "packages": [
       "apps/*",
-      "packages/*"
+      "shared/*"
     ],
     "catalog": {
       "@dotenvx/dotenvx": "^1.71.3",
       "zod": "^4.1.13",
       "typescript": "^6",
       "@types/bun": "^1.3.4",
-      "elysia": "^1.4.28",
-      "@sinclair/typebox": "^0.34.0",
       "better-auth": "1.6.11",
       "evlog": "^2.18.1",
       "next-themes": "^0.4.6",
@@ -40,44 +38,24 @@
     "dev:desktop": "turbo -F @cyrus/desktop dev:hmr",
     "build:desktop": "turbo -F @cyrus/desktop build:stable",
     "build:desktop:canary": "turbo -F @cyrus/desktop build:canary",
-    "build:vercel": "bun scripts/ci/vercel.ts",
     "dev:server": "turbo -F @cyrus/server dev",
     "dev:cli": "turbo -F @cyrus/cli dev",
-    "dev:db": "docker compose up",
-    "db:push": "bun env:load -- turbo -F @cyrus/db db:push",
-    "db:studio": "bun env:load -- turbo -F @cyrus/db db:studio",
-    "db:generate": "bun env:load -- turbo -F @cyrus/db db:generate",
-    "db:migrate": "bun env:load -- turbo -F @cyrus/db db:migrate",
-    "auth:generate": "bun env:load -- turbo -F @cyrus/auth auth:generate",
-    "db:stop": "docker compose stop",
-    "db:down": "docker compose down",
+    "db:push": "turbo -F @cyrus/server db:push",
+    "db:studio": "turbo -F @cyrus/server db:studio",
+    "db:generate": "turbo -F @cyrus/server db:generate",
+    "db:migrate": "turbo -F @cyrus/server db:migrate",
+    "auth:generate": "turbo -F @cyrus/server auth:generate",
+    "wrangler:types": "turbo -F @cyrus/server wrangler:types",
     "check": "ultracite check",
-    "fix": "ultracite fix",
-    "env:load": "bun x dotenvx run -f apps/server/.env --"
-  },
-  "dependencies": {
-    "@cyrus/env": "workspace:*",
-    "@dotenvx/dotenvx": "catalog:",
-    "zod": "catalog:"
+    "fix": "ultracite fix"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
     "@cyrus/config": "workspace:*",
-    "@noble/ciphers": "^1.3.0",
-    "@types/bun": "catalog:",
-    "@types/three": "^0.184.1",
     "lefthook": "latest",
     "turbo": "^2.9.18",
     "typescript": "catalog:",
     "ultracite": "7.8.1"
-  },
-  "overrides": {
-    "@babel/generator": "7.29.7",
-    "@babel/parser": "7.29.7",
-    "@babel/types": "7.29.7",
-    "@babel/template": "7.29.7",
-    "@babel/traverse": "7.29.7",
-    "@babel/helper-validator-identifier": "7.29.7"
   },
   "packageManager": "bun@1.3.14"
 }

@@ -11,7 +11,9 @@
     "rootDirs": ["."],
     "paths": {
       "@/*": ["./src/*"],
-      "@cyrus/ui/*": ["../../packages/ui/src/*"]
+      "@cyrus/hooks": ["../../shared/hooks/src/index.ts"],
+      "@cyrus/hooks/*": ["../../shared/hooks/src/*"],
+      "@cyrus/lib/*": ["../../shared/lib/src/*"]
     }
   }
 }

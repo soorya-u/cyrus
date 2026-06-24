@@ -1,6 +1,6 @@
-import type { Thread } from "@cyrus/ui/hooks/types";
-import { useMockThreads } from "@cyrus/ui/hooks/use-mock-threads";
-import { deriveFeed } from "@cyrus/ui/hooks/use-thread-feed";
+import type { Thread } from "@cyrus/hooks/types";
+import { useMockThreads } from "@cyrus/hooks/use-mock-threads";
+import { deriveFeed } from "@cyrus/hooks/use-thread-feed";
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { AppText as Text } from "./app-text";

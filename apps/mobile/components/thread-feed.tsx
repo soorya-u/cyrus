@@ -1,10 +1,5 @@
-import type {
-	FeedEntry,
-	GitDiff,
-	Message,
-	ToolCall,
-} from "@cyrus/ui/hooks/types";
-import { formatMessageTime } from "@cyrus/ui/hooks/use-relative-time";
+import type { FeedEntry, GitDiff, Message, ToolCall } from "@cyrus/hooks/types";
+import { formatMessageTime } from "@cyrus/hooks/use-relative-time";
 import { memo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { AppText as Text } from "./app-text";

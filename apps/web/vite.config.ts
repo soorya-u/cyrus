@@ -3,23 +3,18 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import evlog from "evlog/vite";
 import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-	resolve: {
-		tsconfigPaths: true,
-	},
-	optimizeDeps: {
-		include: ["evlog/client"],
-	},
+	optimizeDeps: { include: ["evlog/client"] },
 	plugins: [
+		tsconfigPaths(),
 		tailwindcss(),
 		tanstackRouter({
 			target: "react",
 			autoCodeSplitting: true,
 		}),
 		react(),
-		evlog({
-			service: "cyrus/web",
-		}),
+		evlog({ service: "cyrus/web" }),
 	],
 });

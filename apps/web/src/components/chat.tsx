@@ -1,18 +1,6 @@
 "use client";
 
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@cyrus/ui/components/collapsible";
-import { ScrollArea } from "@cyrus/ui/components/scroll-area";
-import { Separator } from "@cyrus/ui/components/separator";
-import {
-	Tooltip,
-	TooltipPopup,
-	TooltipTrigger,
-} from "@cyrus/ui/components/tooltip";
-import {
 	type FeedEntry,
 	formatMessageTime,
 	type GitDiff,
@@ -23,7 +11,7 @@ import {
 	type ToolCall,
 	useCopyToClipboard,
 	useThreadFeed,
-} from "@cyrus/ui/hooks";
+} from "@cyrus/hooks";
 import { PatchDiff } from "@pierre/diffs/react";
 import {
 	ArchiveIcon,
@@ -42,6 +30,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "../lib/utils";
 
 /* ─── Thread status pill ─────────────────────────────────────────────── */
@@ -837,4 +833,4 @@ export function DiffPanel({
 
 /* ─── Re-exports for compat ───────────────────────────────────────────── */
 
-export type { GitDiff, Message, Thread, ToolCall } from "@cyrus/ui/hooks";
+export type { GitDiff, Message, Thread, ToolCall } from "@cyrus/hooks";

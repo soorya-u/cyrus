@@ -1,6 +1,6 @@
-import { createWebAuthClient } from "@cyrus/auth/client/web";
-import { env } from "@cyrus/env/web";
+import { createAuthClient } from "better-auth/react";
+import { env } from "./env";
 
-export const authClient = createWebAuthClient({
+export const authClient = createAuthClient({
 	baseURL: env.VITE_SERVER_URL,
 });
