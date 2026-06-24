@@ -26,8 +26,7 @@
       "!**/wrangler.jsonc",
       "!**/.source",
       "!**/convex/_generated",
-      "!.dotagents",
-      "!api/server.js"
+      "!.dotagents"
     ]
   },
   "formatter": {

@@ -1,4 +1,4 @@
-@import "@cyrus/ui/styles/globals.css";
+@import "@cyrus/styles/globals.css";
 
 @custom-variant dark (&:is(.dark, .dark *));
 

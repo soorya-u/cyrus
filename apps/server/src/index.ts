@@ -1,45 +1,24 @@
-import { join } from "node:path";
-import { auth } from "@cyrus/auth";
-import { env } from "@cyrus/env/server";
-import { config as dotenvConfig } from "@dotenvx/dotenvx";
-import { Elysia } from "elysia";
-import { BunAdapter } from "elysia/adapter/bun";
-import { initLogger, log } from "evlog";
-import {
-	corsPlugin,
-	healthcheckPlugin,
-	loggingPlugin,
-	openApiDocsPlugin,
-	rateLimitPlugin,
-	securityPlugin,
-} from "./plugins";
-import { socket } from "./socket";
+import { initLogger } from "evlog";
+import { type ExecutionContext, Hono } from "hono";
+import { auth } from "./auth";
+import { type Env, middlewares } from "./middleware";
 
-dotenvConfig({
-	path: join(import.meta.dirname, "../.env"),
-	quiet: true,
-});
+// biome-ignore lint/performance/noBarrelFile: wrangler requires Durable Object class exported from entry point
+export { Room } from "./connections/socket";
 
 initLogger({ env: { service: "cyrus/server" } });
 
-export const app = new Elysia({ adapter: BunAdapter, aot: true })
-	.use(securityPlugin)
-	.use(corsPlugin)
-	.use(rateLimitPlugin)
-	.use(loggingPlugin)
-	.use(openApiDocsPlugin)
-	.use(healthcheckPlugin)
-	.mount(auth.handler)
-	.mount(socket);
+const app = new Hono<Env>();
 
-// Only start the HTTP server when run directly (not imported as a Vercel Function)
-if (import.meta.main) {
-	app.listen(env.PORT, (server) =>
-		log.info(
-			"server",
-			`Cyrus server running on http://${server.hostname}:${server.port}`
-		)
-	);
-}
+app.use("*", middlewares);
 
-export default app;
+// API routes
+app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+export default {
+	fetch: async (
+		request: Request,
+		env: Cloudflare.Env,
+		ctx: ExecutionContext
+	): Promise<Response> => app.fetch(request, env, ctx),
+};

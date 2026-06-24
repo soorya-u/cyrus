@@ -1,0 +1,35 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4.103/config-schema.json",
+  "name": "cyrus",
+  "main": "apps/server/src/index.ts",
+  "compatibility_date": "2025-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": "apps/web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/socket/*"]
+  },
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ROOM",
+        "class_name": "Room"
+      }
+    ]
+  },
+
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["Room"]
+    }
+  ],
+
+  "vars": {
+    "NODE_ENV": "production",
+    "PORT": "8787"
+  }
+}

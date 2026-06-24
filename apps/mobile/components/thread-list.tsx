@@ -1,5 +1,5 @@
-import type { Thread, ThreadStatus } from "@cyrus/ui/hooks/types";
-import { relativeTime } from "@cyrus/ui/hooks/use-relative-time";
+import type { Thread, ThreadStatus } from "@cyrus/hooks/types";
+import { relativeTime } from "@cyrus/hooks/use-relative-time";
 import { memo, useMemo } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { AppText as Text } from "./app-text";

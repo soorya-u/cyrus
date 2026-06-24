@@ -1,6 +1,0 @@
-{
-  "framework": null,
-  "bunVersion": "1.x",
-  "installCommand": "bun install",
-  "buildCommand": "bun run build:vercel"
-}

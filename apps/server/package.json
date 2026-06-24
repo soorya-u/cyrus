@@ -3,31 +3,34 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "check-types": "tsc --noEmit"
+    "dev": "wrangler dev",
+    "check-types": "tsc --noEmit",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "wrangler:types": "wrangler types",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "drizzle-kit migrate",
+    "auth:generate": "bun x @better-auth/cli generate -y --config src/auth/index.ts --output src/db/schema/auth.ts"
   },
   "dependencies": {
-    "@cyrus/auth": "workspace:*",
-    "@cyrus/db": "workspace:*",
-    "@cyrus/env": "workspace:*",
-    "@elysia/openapi": "^1.4.15",
-    "@elysia/server-timing": "^1.4.1",
-    "@elysiajs/cors": "^1.4.1",
-    "@sinclair/typebox": "catalog:",
-    "@socket.io/bun-engine": "^0.1.1",
+    "@neondatabase/serverless": "^1.1.0",
+    "@t3-oss/env-core": "^0.13.1",
+    "better-auth": "catalog:",
     "better-result": "catalog:",
-    "elysia": "catalog:",
-    "elysia-csrf": "^0.1.0",
-    "elysia-healthcheck": "^1.0.0",
-    "elysia-helmet": "^3.1.0",
-    "elysia-rate-limit": "^4.6.2",
+    "drizzle-orm": "catalog:",
     "evlog": "catalog:",
-    "socket.io": "^4.8.3"
+    "hono": "^4.12.27",
+    "hono-party": "^2.1.0",
+    "partyserver": "^0.5.8",
+    "pg": "^8.17.1",
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@better-auth/expo": "catalog:",
     "@cyrus/config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "^0.31.8",
     "typescript": "catalog:"
   }
 }

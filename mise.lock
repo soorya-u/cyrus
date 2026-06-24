@@ -52,6 +52,54 @@ url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-windows-
 version = "0.1.3"
 backend = "cargo:dotagents"
 
-[[tools.vercel]]
-version = "54.15.0"
-backend = "npm:vercel"
+[[tools.neonctl]]
+version = "2.27.0"
+backend = "aqua:neondatabase/neonctl"
+
+[tools.neonctl."platforms.linux-arm64"]
+checksum = "sha256:c6646458ed96e86152688d40ca6c8f97ea0442ea7b1a249c8e227b5c4af4522e"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-linux-arm64"
+
+[tools.neonctl."platforms.linux-arm64-musl"]
+checksum = "sha256:c6646458ed96e86152688d40ca6c8f97ea0442ea7b1a249c8e227b5c4af4522e"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-linux-arm64"
+
+[tools.neonctl."platforms.linux-x64"]
+checksum = "sha256:e6cd7fb2956cdb48c1a134b9820265dd87689ffca5cd7af52426d00e0376d5bf"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-linux-x64"
+
+[tools.neonctl."platforms.linux-x64-baseline"]
+checksum = "sha256:e6cd7fb2956cdb48c1a134b9820265dd87689ffca5cd7af52426d00e0376d5bf"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-linux-x64"
+
+[tools.neonctl."platforms.linux-x64-musl"]
+checksum = "sha256:e6cd7fb2956cdb48c1a134b9820265dd87689ffca5cd7af52426d00e0376d5bf"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-linux-x64"
+
+[tools.neonctl."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:e6cd7fb2956cdb48c1a134b9820265dd87689ffca5cd7af52426d00e0376d5bf"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-linux-x64"
+
+[tools.neonctl."platforms.macos-arm64"]
+checksum = "sha256:63db0af0b9f59313606fdfafc2602fe29c48f73b9fbd59f601a8cfd6a853e61d"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-macos-x64"
+
+[tools.neonctl."platforms.macos-x64"]
+checksum = "sha256:63db0af0b9f59313606fdfafc2602fe29c48f73b9fbd59f601a8cfd6a853e61d"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-macos-x64"
+
+[tools.neonctl."platforms.macos-x64-baseline"]
+checksum = "sha256:63db0af0b9f59313606fdfafc2602fe29c48f73b9fbd59f601a8cfd6a853e61d"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-macos-x64"
+
+[tools.neonctl."platforms.windows-x64"]
+checksum = "sha256:09164ff59ba77722c76827170387e027f2ce323afd71e1d4dd157a9f503d3ad4"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-win-x64.exe"
+
+[tools.neonctl."platforms.windows-x64-baseline"]
+checksum = "sha256:09164ff59ba77722c76827170387e027f2ce323afd71e1d4dd157a9f503d3ad4"
+url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl-win-x64.exe"
+
+[[tools.wrangler]]
+version = "4.104.0"
+backend = "npm:wrangler"
