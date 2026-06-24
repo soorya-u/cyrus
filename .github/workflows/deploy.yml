@@ -14,6 +14,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    environment: production
     timeout-minutes: 15
 
     steps:
@@ -27,8 +28,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build web
-        run: bun run build
-        working-directory: apps/web
+        run: bun build:web
 
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3

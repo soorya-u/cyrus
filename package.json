@@ -36,6 +36,7 @@
     "dev:mobile": "turbo -F @cyrus/mobile dev",
     "dev:web": "turbo -F @cyrus/web dev",
     "dev:desktop": "turbo -F @cyrus/desktop dev:hmr",
+    "build:web": "turbo -F @cyrus/web build",
     "build:desktop": "turbo -F @cyrus/desktop build:stable",
     "build:desktop:canary": "turbo -F @cyrus/desktop build:canary",
     "dev:server": "turbo -F @cyrus/server dev",
