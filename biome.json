@@ -66,7 +66,14 @@
         "noUnusedTemplateLiteral": "error",
         "useNumberNamespace": "error",
         "noInferrableTypes": "error",
-        "noUselessElse": "error"
+        "noUselessElse": "error",
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "fix": "safe",
+          "options": {
+            "style": "type"
+          }
+        }
       }
     }
   },
