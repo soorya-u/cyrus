@@ -2,18 +2,18 @@ export type Role = "user" | "assistant";
 
 export type MessageStatus = "streaming" | "complete" | "interrupted";
 
-export interface Message {
+export type Message = {
 	content: string;
 	createdAt: string;
 	id: string;
 	role: Role;
 	streaming?: boolean;
 	turnId: string;
-}
+};
 
 export type ToolStatus = "running" | "complete" | "error";
 
-export interface ToolCall {
+export type ToolCall = {
 	args: Record<string, unknown>;
 	createdAt: string;
 	id: string;
@@ -21,28 +21,28 @@ export interface ToolCall {
 	result?: string;
 	status: ToolStatus;
 	turnId: string;
-}
+};
 
-export interface GitDiff {
+export type GitDiff = {
 	additions: number;
 	deletions: number;
 	file: string;
 	id: string;
 	patch: string;
 	turnId: string;
-}
+};
 
-export interface Turn {
+export type Turn = {
 	completedAt: string | null;
 	id: string;
 	index: number;
 	state: "running" | "complete" | "interrupted";
 	threadId: string;
-}
+};
 
 export type ThreadStatus = "running" | "ready" | "starting" | "error" | "idle";
 
-export interface Thread {
+export type Thread = {
 	branch: string | null;
 	createdAt: string;
 	diffs: GitDiff[];
@@ -55,9 +55,9 @@ export interface Thread {
 	toolCalls: ToolCall[];
 	turns: Turn[];
 	updatedAt: string;
-}
+};
 
-export interface FeedEntry {
+export type FeedEntry = {
 	activities?: ToolCall[];
 	diffs?: GitDiff[];
 	expanded?: boolean;
@@ -66,4 +66,4 @@ export interface FeedEntry {
 	message?: Message;
 	turnId?: string;
 	type: "message" | "work" | "turn-fold";
-}
+};
