@@ -1,40 +1,40 @@
 import type { ClassNameValue } from "uniwind";
 
 declare module "react-native" {
-	interface ViewProps {
+	type ViewProps = {
 		className?: ClassNameValue;
-	}
-	interface TextProps {
+	};
+	type TextProps = {
 		className?: ClassNameValue;
-	}
-	interface PressableProps {
+	};
+	type PressableProps = {
 		className?: ClassNameValue;
-	}
-	interface TextInputProps {
+	};
+	type TextInputProps = {
 		className?: ClassNameValue;
-	}
-	interface ScrollViewProps {
+	};
+	type ScrollViewProps = {
 		className?: ClassNameValue;
-	}
-	interface ImageProps {
+	};
+	type ImageProps = {
 		className?: ClassNameValue;
-	}
-	interface FlatListProps<ItemT> {
+	};
+	type FlatListProps<ItemT> = {
 		className?: ClassNameValue;
-	}
-	interface ActivityIndicatorProps {
+	};
+	type ActivityIndicatorProps = {
 		className?: ClassNameValue;
-	}
-	interface SwitchProps {
+	};
+	type SwitchProps = {
 		className?: ClassNameValue;
-	}
-	interface ModalBaseProps {
+	};
+	type ModalBaseProps = {
 		className?: ClassNameValue;
-	}
+	};
 }
 
 declare module "react-native/Libraries/Animated/createAnimatedComponent" {
-	interface AnimatedComponent<P> {
+	type AnimatedComponent<P> = {
 		className?: ClassNameValue;
-	}
+	};
 }

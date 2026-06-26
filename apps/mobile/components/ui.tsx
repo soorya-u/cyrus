@@ -1,12 +1,12 @@
 import type React from "react";
 import { Pressable, Text, View, type ViewStyle } from "react-native";
 
-interface ButtonProps {
+type ButtonProps = {
 	children: React.ReactNode;
 	onPress?: () => void;
 	style?: ViewStyle;
 	variant?: "default" | "outline" | "ghost";
-}
+};
 
 export function Button({
 	children,
@@ -40,12 +40,12 @@ export function Button({
 	);
 }
 
-interface InputProps {
+type InputProps = {
 	onChangeText: (t: string) => void;
 	placeholder?: string;
 	style?: ViewStyle;
 	value: string;
-}
+};
 
 export function Input({ value, onChangeText, placeholder, style }: InputProps) {
 	return (
@@ -74,11 +74,11 @@ export function Input({ value, onChangeText, placeholder, style }: InputProps) {
 	);
 }
 
-interface TextInputLikeProps {
+type TextInputLikeProps = {
 	onChangeText: (text: string) => void;
 	placeholder?: string;
 	value: string;
-}
+};
 
 // Minimal TextInput poly to avoid import issues in this isolated file
 function TextInputLike({

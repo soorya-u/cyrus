@@ -2,14 +2,14 @@ import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { AppText as Text } from "./app-text";
 
-interface ThreadComposerProps {
+type ThreadComposerProps = {
 	busy: boolean;
 	onChange: (text: string) => void;
 	onSend: () => void;
 	onStop?: () => void;
 	placeholder?: string;
 	value: string;
-}
+};
 
 export const ThreadComposer = memo(function ThreadComposer({
 	value,
@@ -128,13 +128,13 @@ export const ThreadComposer = memo(function ThreadComposer({
 	);
 });
 
-interface ControlPillProps {
+type ControlPillProps = {
 	disabled?: boolean;
 	icon: string;
 	label?: string;
 	onPress: () => void;
 	variant: "primary" | "danger" | "ghost";
-}
+};
 
 function ControlPill({
 	icon,
