@@ -7,6 +7,7 @@ export default {
 		name: "cyrus",
 		identifier: "dev.soorya-u.cyrus",
 		version: "0.0.1",
+		urlSchemes: ["dev.soorya-u.cyrus"],
 	},
 	runtime: {
 		exitOnLastWindowClosed: true,
