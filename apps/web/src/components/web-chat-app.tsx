@@ -1,6 +1,6 @@
 "use client";
 
-import { useMockThreads } from "@cyrus/hooks";
+import { useMockThreads } from "@cyrus/hooks/use-mock-threads";
 import { useState } from "react";
 import { ChatFeed, ChatSidebar, Composer, DiffPanel } from "./chat";
 
