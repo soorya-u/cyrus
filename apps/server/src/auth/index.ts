@@ -1,4 +1,5 @@
 import { expo } from "@better-auth/expo";
+import { electrobun } from "@soorya-u/better-auth-electrobun/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { oAuthProxy } from "better-auth/plugins";
@@ -34,6 +35,12 @@ export const auth = betterAuth({
 	},
 	plugins: [
 		expo(),
+		electrobun({
+			crossDomain: {
+				webCallbackUrl: `${env.WEB_APP_URL}/auth/callback`,
+				hashKey: "token",
+			},
+		}),
 		oAuthProxy({
 			productionURL: env.PRODUCTION_URL,
 			secret: env.OAUTH_PROXY_SECRET,
