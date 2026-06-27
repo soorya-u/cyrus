@@ -15,7 +15,11 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["Hub"]
+      "new_sqlite_classes": ["Room"]
+    },
+    {
+      "tag": "v2",
+      "renamed_classes": [{ "from": "Room", "to": "Hub" }]
     }
   ],
   "build": {
