@@ -6,7 +6,8 @@ import type {
 } from "react";
 
 declare module "@better-auth-ui/core" {
-	type AuthConfig = {
+	// biome-ignore lint/style/useConsistentTypeDefinitions: must be an interface to merge with AuthConfig
+	interface AuthConfig {
 		Link: ComponentType<
 			PropsWithChildren<
 				{ className?: string; href: string; to?: string } & Pick<
@@ -15,9 +16,10 @@ declare module "@better-auth-ui/core" {
 				>
 			>
 		>;
-	};
+	}
 
-	type AdditionalFieldRegister = {
+	// biome-ignore lint/style/useConsistentTypeDefinitions: must be an interface to merge with AdditionalFieldRegister
+	interface AdditionalFieldRegister {
 		label: ReactNode;
-	};
+	}
 }

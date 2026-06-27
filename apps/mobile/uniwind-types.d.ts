@@ -1,40 +1,41 @@
+// biome-ignore-all lint/style/useConsistentTypeDefinitions: must be interfaces to merge className into RN's prop types
 import type { ClassNameValue } from "uniwind";
 
 declare module "react-native" {
-	type ViewProps = {
+	interface ViewProps {
 		className?: ClassNameValue;
-	};
-	type TextProps = {
+	}
+	interface TextProps {
 		className?: ClassNameValue;
-	};
-	type PressableProps = {
+	}
+	interface PressableProps {
 		className?: ClassNameValue;
-	};
-	type TextInputProps = {
+	}
+	interface TextInputProps {
 		className?: ClassNameValue;
-	};
-	type ScrollViewProps = {
+	}
+	interface ScrollViewProps {
 		className?: ClassNameValue;
-	};
-	type ImageProps = {
+	}
+	interface ImageProps {
 		className?: ClassNameValue;
-	};
-	type FlatListProps<ItemT> = {
+	}
+	interface FlatListProps<ItemT> {
 		className?: ClassNameValue;
-	};
-	type ActivityIndicatorProps = {
+	}
+	interface ActivityIndicatorProps {
 		className?: ClassNameValue;
-	};
-	type SwitchProps = {
+	}
+	interface SwitchProps {
 		className?: ClassNameValue;
-	};
-	type ModalBaseProps = {
+	}
+	interface ModalBaseProps {
 		className?: ClassNameValue;
-	};
+	}
 }
 
 declare module "react-native/Libraries/Animated/createAnimatedComponent" {
-	type AnimatedComponent<P> = {
+	interface AnimatedComponent<P> {
 		className?: ClassNameValue;
-	};
+	}
 }

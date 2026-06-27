@@ -13,7 +13,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@soorya-u/better-auth-electrobun": "file:../../../better-auth-electrobun",
+    "@soorya-u/better-auth-desktop": "file:../../../better-auth-electrobun",
     "@t3-oss/env-core": "catalog:",
     "better-auth": "catalog:",
     "conf": "^15.1.0",

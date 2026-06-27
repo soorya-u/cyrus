@@ -22,7 +22,7 @@
       "react": "19.2.3",
       "react-dom": "19.2.3",
       "@types/react-dom": "^19.2.3",
-      "@better-auth/expo": "1.6.11",
+      "@better-auth/expo": "1.6.21",
       "drizzle-orm": "^0.45.1",
       "@types/pg": "^8.16.0",
       "@base-ui/react": "^1.4.1",
@@ -35,7 +35,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check-types": "turbo check-types",
+    "check:types": "turbo check-types",
     "dev:mobile": "turbo -F @cyrus/mobile dev",
     "dev:web": "turbo -F @cyrus/web dev",
     "dev:desktop": "turbo -F @cyrus/desktop dev",

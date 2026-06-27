@@ -13,6 +13,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuthErrorToaster } from "@/hooks/use-auth-error-toaster";
+import { useDesktopAuthSync } from "@/hooks/use-desktop-auth-sync";
 import { authClient } from "@/lib/auth";
 
 import "../index.css";
@@ -36,6 +37,7 @@ function RootComponent() {
 	const router = useRouter();
 	const navigate = useNavigate();
 	useAuthErrorToaster();
+	useDesktopAuthSync();
 
 	return (
 		<>

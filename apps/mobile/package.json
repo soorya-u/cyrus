@@ -9,6 +9,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/expo": "catalog:",
     "@t3-oss/env-core": "catalog:",
     "better-auth": "catalog:",
     "zod": "catalog:"

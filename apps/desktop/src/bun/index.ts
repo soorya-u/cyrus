@@ -26,21 +26,18 @@ async function getMainViewUrl(): Promise<string> {
 }
 
 const url = await getMainViewUrl();
-
 log.info("desktop", `Opening BrowserWindow at ${url}`);
+
+// Dynamic import defers the keychain init until after the URL check.
+const { authClient, authBunRpc } = await import("../lib/auth");
+
 new BrowserWindow({
-	title: "cyrus",
+	title: "Cyrus",
 	url,
-	frame: {
-		width: 1280,
-		height: 820,
-		x: 120,
-		y: 120,
-	},
+	rpc: authBunRpc,
+	frame: { width: 1280, height: 820, x: 120, y: 120 },
 });
 
-import("../lib/auth").then(({ authClient }) =>
-	authClient.setupMain().catch((err) => console.error("setupMain failed", err))
-);
+authClient.setupMain().catch((err) => console.error("auth setup failed", err));
 
 log.info("desktop", "Electrobun desktop shell started.");

@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@soorya-u/better-auth-desktop": "file:../../../better-auth-electrobun",
     "@base-ui/react": "^1.6.0",
     "@better-auth-ui/core": "^1.6.27",
     "@better-auth-ui/react": "^1.6.27",

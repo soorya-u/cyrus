@@ -7,7 +7,13 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-	optimizeDeps: { include: ["evlog/client"] },
+	optimizeDeps: {
+		include: ["evlog/client"],
+		exclude: [
+			"@soorya-u/better-auth-desktop/rpc/webview",
+			"@soorya-u/better-auth-desktop/web",
+		],
+	},
 	plugins: [
 		devtools(),
 		tsconfigPaths({ ignoreConfigErrors: true }),
