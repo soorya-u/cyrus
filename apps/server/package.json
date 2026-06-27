@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@better-auth/expo": "catalog:",
-    "@soorya-u/better-auth-desktop": "file:../../../better-auth-electrobun",
+    "@soorya-u/better-auth-desktop": "catalog:",
     "@cyrus/connections": "workspace:*",
     "@neondatabase/serverless": "^1.1.0",
     "@orpc/server": "^1.14.6",
