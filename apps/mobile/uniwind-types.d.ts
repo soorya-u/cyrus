@@ -1,3 +1,4 @@
+// biome-ignore-all lint/style/useConsistentTypeDefinitions: must be interfaces to merge className into RN's prop types
 import type { ClassNameValue } from "uniwind";
 
 declare module "react-native" {

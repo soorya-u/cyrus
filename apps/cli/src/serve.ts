@@ -11,10 +11,10 @@ import {
 import { resolve as resolvePath } from "node:path";
 import { ensureDir, paths } from "./paths";
 
-export interface ServeOptions {
+export type ServeOptions = {
 	detached: boolean;
 	port: number;
-}
+};
 
 export function isRunning(pid: number): boolean {
 	try {
@@ -85,13 +85,13 @@ export function stopServer(): boolean {
 	return true;
 }
 
-export interface ServerStatus {
+export type ServerStatus = {
 	log: string | null;
 	pid: number | null;
 	port: number | null;
 	running: boolean;
 	uptimeMs: number | null;
-}
+};
 
 export function serverStatus(): ServerStatus {
 	const pid = readPid();

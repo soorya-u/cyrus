@@ -288,9 +288,9 @@ function FeedEntryView({ entry }: { entry: FeedEntry }) {
 	return null;
 }
 
-interface ThreadFeedProps {
+type ThreadFeedProps = {
 	feed: FeedEntry[];
-}
+};
 
 export const ThreadFeed = memo(function ThreadFeed({ feed }: ThreadFeedProps) {
 	if (feed.length === 0) {

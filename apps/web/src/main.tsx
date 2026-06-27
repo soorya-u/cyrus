@@ -29,6 +29,7 @@ const router = createRouter({
 });
 
 declare module "@tanstack/react-router" {
+	// biome-ignore lint/style/useConsistentTypeDefinitions: required for module-augmentation merge
 	interface Register {
 		router: typeof router;
 	}

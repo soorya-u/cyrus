@@ -1,25 +1,24 @@
 import { BrowserWindow, Updater } from "electrobun/bun";
 import { initLogger, log } from "evlog";
+import { env } from "../lib/env";
 
 initLogger({ env: { service: "cyrus/desktop" } });
-
-const DEV_SERVER_PORT = 5173;
-const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
 
 async function getMainViewUrl(): Promise<string> {
 	const channel = await Updater.localInfo.channel();
 	if (channel === "dev") {
 		try {
-			await fetch(DEV_SERVER_URL, { method: "HEAD" });
+			const signal = AbortSignal.timeout(3000);
+			await fetch(env.ELECTROBUN_WEB_APP_URL, { method: "HEAD", signal });
 			log.info(
 				"desktop",
-				`HMR enabled: Using web dev server at ${DEV_SERVER_URL}`
+				`HMR: using web dev server at ${env.ELECTROBUN_WEB_APP_URL}`
 			);
-			return DEV_SERVER_URL;
+			return env.ELECTROBUN_WEB_APP_URL;
 		} catch {
 			log.warn(
 				"desktop",
-				'Web dev server not running. Run "bun run dev:hmr" for HMR support.'
+				`Web dev server unreachable at ${env.ELECTROBUN_WEB_APP_URL}, falling back to built assets.`
 			);
 		}
 	}
@@ -27,16 +26,18 @@ async function getMainViewUrl(): Promise<string> {
 }
 
 const url = await getMainViewUrl();
+log.info("desktop", `Opening BrowserWindow at ${url}`);
+
+// Dynamic import defers the keychain init until after the URL check.
+const { authClient, authBunRpc } = await import("../lib/auth");
 
 new BrowserWindow({
-	title: "cyrus",
+	title: "Cyrus",
 	url,
-	frame: {
-		width: 1280,
-		height: 820,
-		x: 120,
-		y: 120,
-	},
+	rpc: authBunRpc,
+	frame: { width: 1280, height: 820, x: 120, y: 120 },
 });
+
+authClient.setupMain().catch((err) => console.error("auth setup failed", err));
 
 log.info("desktop", "Electrobun desktop shell started.");

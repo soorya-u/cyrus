@@ -1,16 +1,18 @@
 "use client";
 
+import type {
+	FeedEntry,
+	GitDiff,
+	Message,
+	Thread,
+	ThreadStatus,
+	ToolCall,
+} from "@cyrus/hooks/types";
 import {
-	type FeedEntry,
 	formatMessageTime,
-	type GitDiff,
-	type Message,
 	relativeTime,
-	type Thread,
-	type ThreadStatus,
-	type ToolCall,
-	useThreadFeed,
-} from "@cyrus/hooks";
+} from "@cyrus/hooks/use-relative-time";
+import { useThreadFeed } from "@cyrus/hooks/use-thread-feed";
 import { PatchDiff } from "@pierre/diffs/react";
 import {
 	ArchiveIcon,
@@ -108,14 +110,14 @@ function ThreadStatusPill({
 
 /* ─── Sidebar ─────────────────────────────────────────────────────────── */
 
-interface SidebarProps {
+type SidebarProps = {
 	activeId: string | null;
 	onArchive: (id: string) => void;
 	onNew: () => void;
 	onRename: (id: string, title: string) => void;
 	onSelect: (id: string) => void;
 	threads: Thread[];
-}
+};
 
 function ThreadRow({
 	thread,
@@ -556,13 +558,13 @@ function DiffRow({ diff }: { diff: GitDiff }) {
 	);
 }
 
-interface WorkLogEntry {
+type WorkLogEntry = {
 	activities?: ToolCall[];
 	diffs?: GitDiff[];
 	id: string;
 	turnId?: string;
 	type: "work";
-}
+};
 
 function WorkLog({ entry }: { entry: WorkLogEntry }) {
 	const [open, setOpen] = useState(true);
@@ -833,4 +835,4 @@ export function DiffPanel({
 
 /* ─── Re-exports for compat ───────────────────────────────────────────── */
 
-export type { GitDiff, Message, Thread, ToolCall } from "@cyrus/hooks";
+export type { GitDiff, Message, Thread, ToolCall } from "@cyrus/hooks/types";

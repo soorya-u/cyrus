@@ -4,6 +4,15 @@
 @custom-variant dark (&:is(.dark, .dark *));
 
 :root {
+	/* home page theme tokens */
+	--home-page-bg: #ffffff;
+	--home-nav-bg: rgba(255, 255, 255, 0.75);
+	--home-nav-scroll-border: rgba(0, 0, 0, 0.1);
+	--home-grid-line: rgba(0, 0, 0, 0.06);
+	--home-mark-card-bg: rgba(250, 250, 252, 0.92);
+	--home-mark-border: rgba(0, 0, 0, 0.08);
+	--home-mark-shadow-inset: rgba(0, 0, 0, 0.04);
+
 	--workspace-topbar-height: 52px;
 	--workspace-controls-top: 0px;
 	--workspace-controls-right: calc(env(safe-area-inset-right) + 0.75rem);
@@ -13,7 +22,7 @@
 @theme inline {
 	--animate-skeleton: skeleton 2s -1s infinite linear;
 	--font-sans:
-		"DM Sans Variable", "DM Sans", -apple-system, BlinkMacSystemFont,
+		"DM Sans", "DM Sans Variable", -apple-system, BlinkMacSystemFont,
 		"Segoe UI", system-ui, sans-serif;
 	--font-mono:
 		"SF Mono", "SFMono-Regular", "JetBrains Mono", Consolas, "Liberation Mono",
@@ -169,12 +178,23 @@
 	}
 }
 
+.dark {
+	--home-page-bg: #09090b;
+	--home-nav-bg: rgba(9, 9, 11, 0.75);
+	--home-nav-scroll-border: rgba(255, 255, 255, 0.08);
+	--home-grid-line: rgba(255, 255, 255, 0.035);
+	--home-mark-card-bg: rgba(20, 20, 24, 0.92);
+	--home-mark-border: rgba(255, 255, 255, 0.08);
+	--home-mark-shadow-inset: rgba(255, 255, 255, 0.04);
+}
+
 body {
 	padding: 0;
 	margin: 0;
 	font-family:
-		"DM Sans Variable", "DM Sans", -apple-system, BlinkMacSystemFont,
+		"DM Sans", "DM Sans Variable", -apple-system, BlinkMacSystemFont,
 		"Segoe UI", system-ui, sans-serif;
+	font-feature-settings: "ss01", "ss02";
 }
 
 html,

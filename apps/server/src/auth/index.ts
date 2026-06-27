@@ -1,4 +1,5 @@
 import { expo } from "@better-auth/expo";
+import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { oAuthProxy } from "better-auth/plugins";
@@ -34,6 +35,9 @@ export const auth = betterAuth({
 	},
 	plugins: [
 		expo(),
+		// Desktop OAuth hand-off via a 127.0.0.1 loopback navigation. Default is a
+		// direct redirect to the desktop loopback (no web callback page needed).
+		betterAuthDesktop({ clientID: "cyrus-desktop" }),
 		oAuthProxy({
 			productionURL: env.PRODUCTION_URL,
 			secret: env.OAUTH_PROXY_SECRET,

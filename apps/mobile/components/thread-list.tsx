@@ -35,11 +35,11 @@ const STATUS_TONES: Record<
 	},
 };
 
-interface ThreadRowProps {
+type ThreadRowProps = {
 	isLast: boolean;
 	onPress: () => void;
 	thread: Thread;
-}
+};
 
 export const ThreadRow = memo(function ThreadRow({
 	thread,
@@ -109,10 +109,10 @@ export const ThreadRow = memo(function ThreadRow({
 	);
 });
 
-interface ThreadListProps {
+type ThreadListProps = {
 	onSelect: (id: string) => void;
 	threads: Thread[];
-}
+};
 
 export function ThreadList({ threads, onSelect }: ThreadListProps) {
 	const groups = useMemo(() => {
