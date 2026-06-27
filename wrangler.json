@@ -22,7 +22,6 @@
     "command": "bun db:migrate"
   },
   "vars": {
-    "NODE_ENV": "production",
-    "PORT": "8787"
+    "NODE_ENV": "production"
   }
 }

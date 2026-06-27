@@ -4,7 +4,6 @@ import { z } from "zod";
 export const env = createEnv({
 	server: {
 		DATABASE_URL: z.string(),
-		PORT: z.coerce.number(),
 		BETTER_AUTH_SECRET: z.string().min(32),
 		BETTER_AUTH_URL: z.url(),
 		OAUTH_GITHUB_CLIENT_ID: z.string(),
