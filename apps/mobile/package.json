@@ -5,8 +5,7 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
-    "ios": "expo start --ios",
-    "check-types": "tsc --noEmit"
+    "ios": "expo start --ios"
   },
   "dependencies": {
     "@better-auth/expo": "catalog:",

@@ -18,9 +18,11 @@
     "better-auth": "catalog:",
     "conf": "^15.1.0",
     "electrobun": "^1.18.1",
-    "evlog": "catalog:"
+    "evlog": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
     "@types/three": "^0.184.1",
     "concurrently": "^9.1.0",
