@@ -1,6 +1,6 @@
 import { AuthProvider } from "@better-auth-ui/react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import type { QueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import {
 	createRootRouteWithContext,
@@ -36,6 +36,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 function RootComponent() {
 	const router = useRouter();
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	useAuthErrorToaster();
 	useDesktopAuthSync();
 
@@ -46,6 +47,7 @@ function RootComponent() {
 				<AuthProvider
 					authClient={authClient}
 					navigate={({ to, replace }) => navigate({ to, replace })}
+					queryClient={queryClient}
 				>
 					<Outlet />
 					<Toaster richColors />
