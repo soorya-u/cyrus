@@ -15,13 +15,12 @@ const IceCandidateSchema = z.object({
 const DeviceRoleSchema = z.enum(["controller", "worker"]);
 
 export const DeviceStateSchema = z.object({
-	deviceId: z.string(),
 	name: z.string(),
 	role: DeviceRoleSchema,
 });
 
 const DeviceInfoSchema = DeviceStateSchema.extend({
-	connectionId: z.string(),
+	id: z.string(),
 });
 
 export const OfferInputSchema = z.object({
@@ -41,7 +40,7 @@ export const IceCandidateInputSchema = z.object({
 
 const ServerEventSchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("peer-joined"), peer: DeviceInfoSchema }),
-	z.object({ type: z.literal("peer-left"), connectionId: z.string() }),
+	z.object({ type: z.literal("peer-left"), id: z.string() }),
 	z.object({
 		type: z.literal("offer"),
 		from: z.string(),

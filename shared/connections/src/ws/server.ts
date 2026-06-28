@@ -1,4 +1,4 @@
-import { os } from "@orpc/server";
+import { ORPCError, os } from "@orpc/server";
 import {
 	encodeHibernationRPCEvent,
 	HibernationEventIterator,
@@ -6,6 +6,7 @@ import {
 import {
 	AnswerInputSchema,
 	type DeviceInfo,
+	type DeviceState,
 	DeviceStateSchema,
 	IceCandidateInputSchema,
 	OfferInputSchema,
@@ -30,10 +31,12 @@ export type SignalingContext = {
 
 const base = os.$context<SignalingContext>();
 
+type Attachment = { eventId: string } & DeviceState;
+
 function pushEvent(ws: SignalingWS, event: ServerEvent): void {
-	const att = ws.deserializeAttachment<{ id?: string }>();
-	if (att?.id) {
-		ws.send(encodeHibernationRPCEvent(att.id, event));
+	const att = ws.deserializeAttachment<Attachment | null>();
+	if (att?.eventId) {
+		ws.send(encodeHibernationRPCEvent(att.eventId, event));
 	}
 }
 
@@ -91,40 +94,51 @@ export const router = {
 			}
 		}),
 
-	listPeers: base.handler(async ({ context }) =>
+	listPeers: base.handler(({ context }) =>
 		[...context.server.getConnections()]
 			.filter((c) => c.id !== context.ws.id)
 			.flatMap((c) => {
-				const att = c.deserializeAttachment<
-					({ id: string } & DeviceInfo) | null
-				>();
-				if (!att?.deviceId) {
+				const att = c.deserializeAttachment<Attachment | null>();
+				if (!att?.name) {
 					return [];
 				}
 				return [
-					{
-						connectionId: c.id,
-						deviceId: att.deviceId,
-						name: att.name,
-						role: att.role,
-					} satisfies DeviceInfo,
+					{ id: c.id, name: att.name, role: att.role } satisfies DeviceInfo,
 				];
 			})
 	),
 
-	onSignalingEvent: base.input(DeviceStateSchema).handler(
-		async ({ input, context }) =>
-			new HibernationEventIterator<ServerEvent>((id) => {
-				context.ws.serializeAttachment({ id, ...input });
+	onSignalingEvent: base
+		.input(DeviceStateSchema)
+		.handler(({ input, context }) => {
+			const nameTaken = [...context.server.getConnections()].some((c) => {
+				if (c.id === context.ws.id) {
+					return false;
+				}
+				return (
+					c.deserializeAttachment<Attachment | null>()?.name === input.name
+				);
+			});
+			if (nameTaken) {
+				throw new ORPCError("CONFLICT", {
+					message: `name "${input.name}" is already in use`,
+				});
+			}
 
-				const self: DeviceInfo = { connectionId: context.ws.id, ...input };
+			return new HibernationEventIterator<ServerEvent>((eventId) => {
+				context.ws.serializeAttachment({
+					eventId,
+					...input,
+				} satisfies Attachment);
+
+				const self: DeviceInfo = { id: context.ws.id, ...input };
 				broadcastSignalingEvent(
 					context.server.getConnections(),
 					{ type: "peer-joined", peer: self },
 					[context.ws.id]
 				);
-			})
-	),
+			});
+		}),
 };
 
 export type SignalingRouter = typeof router;

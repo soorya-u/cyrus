@@ -4,18 +4,21 @@
   "private": true,
   "type": "module",
   "bin": {
-    "cyrus": "src/index.ts"
+    "cyrusd": "src/cli.ts"
   },
   "scripts": {
-    "cli": "bun src/index.ts",
-    "check-types": "tsc --noEmit"
+    "cli": "bun src/cli.ts",
+    "check-types": "tsc --noEmit",
+    "build": "bun build src/cli.ts --compile --env 'CLI_PUBLIC_*' --outfile dist/cyrusd"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^15.0.0",
+    "@cyrus/connections": "workspace:*",
     "@t3-oss/env-core": "catalog:",
-    "better-result": "catalog:",
     "better-auth": "catalog:",
+    "better-result": "catalog:",
     "commander": "^15.0.0",
+    "random-word-slugs": "^0.1.7",
     "zod": "catalog:"
   },
   "devDependencies": {

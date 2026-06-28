@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/client";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
-import { readToken } from "@/utils/store";
+import { get } from "@/utils/store";
 import { env } from "./env";
 
 export const authClient = createAuthClient({
@@ -9,7 +9,7 @@ export const authClient = createAuthClient({
 	fetchOptions: {
 		auth: {
 			type: "Bearer",
-			token: async () => (await readToken()) ?? undefined,
+			token: async () => (await get("token")) ?? undefined,
 		},
 	},
 });

@@ -1,11 +1,15 @@
 import { authClient } from "@/lib/auth";
-import { clearToken, readToken } from "@/utils/store";
-import { print } from "@/utils/style";
+import { get, remove } from "@/utils/store";
+import { bold, print } from "@/utils/style";
 
-export async function whoami(): Promise<void> {
-	const token = await readToken();
+type WhoamiOptions = { email?: boolean };
+
+const field = (label: string) => bold(`${label}:`.padEnd(8));
+
+export async function whoami(opts: WhoamiOptions): Promise<void> {
+	const token = await get("token");
 	if (!token) {
-		print.dim`Not logged in. Run \`cyrus login\`.`;
+		print.dim`Not logged in. Run \`cyrusd login\`.`;
 		process.exit(1);
 	}
 	const { data, error } = await authClient.getSession();
@@ -14,10 +18,17 @@ export async function whoami(): Promise<void> {
 		process.exit(1);
 	}
 	if (!data?.user) {
-		await clearToken();
-		print.dim`Not logged in. Run \`cyrus login\`.`;
+		await remove("token");
+		print.dim`Not logged in. Run \`cyrusd login\`.`;
 		process.exit(1);
 	}
-	print.line`${data.user.name}`;
-	print.dim`${data.user.email}`;
+
+	const name = await get("name");
+	print.line`${field("User")}${data.user.name}`;
+	if (name) {
+		print.line`${field("Device")}${name}`;
+	}
+	if (opts.email) {
+		print.line`${field("Email")}${data.user.email}`;
+	}
 }

@@ -1,5 +1,6 @@
 import { authClient } from "@/lib/auth";
-import { saveToken } from "@/utils/store";
+import { generateName } from "@/utils/identity";
+import { getOrCreate, set } from "@/utils/store";
 import { blue, bold, cyan, print, underline } from "@/utils/style";
 
 export const CLIENT_ID = "cyrus-cli";
@@ -34,8 +35,6 @@ export async function login(): Promise<void> {
 
 	while (Date.now() < deadline) {
 		await Bun.sleep(interval);
-		// Network blips (e.g. a dev-server reload) shouldn't abort the login —
-		// treat them like a pending poll and try again.
 		const poll = await authClient.device
 			.token({
 				grant_type: GRANT_TYPE,
@@ -50,7 +49,8 @@ export async function login(): Promise<void> {
 		const accessToken = token?.access_token;
 
 		if (accessToken) {
-			await saveToken(accessToken);
+			await set("token", accessToken);
+			await getOrCreate("name", generateName);
 			const session = await authClient.getSession();
 			const email = session.data?.user?.email;
 			print.success`\n✓ Logged in${email ? ` as ${bold(email)}` : ""}.`;
@@ -68,7 +68,7 @@ export async function login(): Promise<void> {
 				process.exit(1);
 				break;
 			case "expired_token":
-				print.error`\nCode expired. Run \`cyrus login\` again.`;
+				print.error`\nCode expired. Run \`cyrusd login\` again.`;
 				process.exit(1);
 				break;
 			default:
@@ -77,6 +77,6 @@ export async function login(): Promise<void> {
 		}
 	}
 
-	print.error`\nCode expired. Run \`cyrus login\` again.`;
+	print.error`\nCode expired. Run \`cyrusd login\` again.`;
 	process.exit(1);
 }

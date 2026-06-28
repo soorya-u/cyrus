@@ -4,7 +4,7 @@ import type { BetterAuthVariables } from "./auth";
 
 export const socketMiddleware = partyserverMiddleware<BetterAuthVariables>({
 	options: {
-		prefix: "/hub",
+		prefix: "hub",
 		onBeforeRequest: (_req, _lobby, c) => {
 			const user = c.get("user");
 			const session = c.get("session");

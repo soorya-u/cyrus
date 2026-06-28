@@ -22,7 +22,7 @@ export class Hub extends Server {
 	onClose(connection: Connection) {
 		broadcastSignalingEvent(
 			this.getConnections(),
-			{ type: "peer-left", connectionId: connection.id },
+			{ type: "peer-left", id: connection.id },
 			[connection.id]
 		);
 	}
