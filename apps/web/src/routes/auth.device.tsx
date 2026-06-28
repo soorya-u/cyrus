@@ -86,10 +86,7 @@ function DevicePage() {
 		try {
 			// GET /device claims the code for the signed-in user. Approve/deny
 			// then act on a claimed code.
-			await authClient.$fetch("/device", {
-				method: "GET",
-				query: { user_code: userCode },
-			});
+			await authClient.device({ query: { user_code: userCode } });
 			const { error } = approve
 				? await authClient.device.approve({ userCode })
 				: await authClient.device.deny({ userCode });
