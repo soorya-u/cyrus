@@ -1,0 +1,23 @@
+schema: spec-driven
+
+context: |
+  Domain: control AI coding agents (Claude Code, Codex, …) across a user's own devices (desktop, mobile, web, laptops, servers); single-user, one room per user. Principle: shared metadata, owned execution — metadata syncs via a minimal server, agent execution stays local to the owning device.
+  Monorepo: Bun workspaces + Turborepo.
+  apps/web: Vite + React 19 + TanStack Router + Tailwind v4 (on Vercel).
+  apps/server: Cloudflare Workers + Hono + oRPC + Durable Objects; Drizzle ORM on Neon Postgres; real-time via hono-party (WebSockets).
+  apps/desktop: Electrobun shell wrapping the web build. apps/mobile: Expo / React Native. apps/cli: Bun CLI.
+  shared/*: connections, hooks, styles. tooling/*: typescript (@cyrus/typescript tsconfig base), github (CI setup action).
+  Cross-cutting: better-auth (incl. @better-auth/expo, desktop loopback), Zod + @t3-oss/env-core for env validation, nanostores, TanStack Query/Form.
+  Package manager: Bun; shared deps pinned via the workspace catalog.
+  Lint/format: Biome via Ultracite (`bun check` / `bun fix`). Types: `bun check:types` (turbo). Enforced in CI; lefthook runs them locally.
+  Commits: Conventional Commits.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+rules:
+  proposal:
+    - Keep proposals under 500 words
+    - Always include a "Non-goals" section
+  tasks:
+    - Break tasks into chunks of max 2 hours

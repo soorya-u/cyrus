@@ -1,0 +1,9 @@
+schema = "https://dotagents.soorya-u.dev/v1/schemas/config.schema.json"
+features = [
+    "command",
+    "instruction",
+    "skill",
+]
+
+targets = ["claude", "opencode"]
+variables = { "agent_name" = "my agent" }

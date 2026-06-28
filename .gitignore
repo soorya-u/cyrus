@@ -54,11 +54,9 @@ temp
 # Deployments
 .wrangler
 .vercel
-
 #region dotagents
-.agents/
-.claude/skills/
-.opencode/skills/
+.claude/
+.opencode/
 AGENTS.md
 CLAUDE.md
 #endregion dotagents
