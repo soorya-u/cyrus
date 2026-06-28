@@ -21,6 +21,11 @@ if command -v mise >/dev/null 2>&1; then
   echo "→ mise install"
   mise trust --quiet "$repo_root" || true
   mise install
+
+  # Generate agent files (CLAUDE.md, AGENTS.md, skills) from .dotagents/.
+  # dotagents is provided by mise (cargo:dotagents), so run it after install.
+  echo "→ dotagents deploy"
+  mise exec -- dotagents deploy
 fi
 
 # 2. Dependencies.
