@@ -1,6 +1,5 @@
-import { chmod, mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { Result } from "better-result";
 import { YAML } from "bun";
 import { env } from "@/lib/env";
 
@@ -10,10 +9,9 @@ const file = Bun.file(TOKEN_FILE_PATH);
 type Stored = { token: string };
 
 export async function saveToken(token: string) {
-	await mkdir(dirname(TOKEN_FILE_PATH), { recursive: true });
+	await mkdir(dirname(TOKEN_FILE_PATH), { recursive: true, mode: 0o700 });
 	const content = YAML.stringify({ token } satisfies Stored);
-	await file.write(content);
-	await chmod(TOKEN_FILE_PATH, 0o600);
+	await writeFile(TOKEN_FILE_PATH, content, { mode: 0o600 });
 }
 
 export async function readToken() {
@@ -21,10 +19,8 @@ export async function readToken() {
 	if (!exists) {
 		return null;
 	}
-
-	const content = await Result.tryPromise(() => file.text());
-	const storedValue = YAML.parse(content.unwrapOr("null")) as Stored | null;
-	return storedValue?.token ?? null;
+	const content = await file.text();
+	return (YAML.parse(content) as Stored | null)?.token ?? null;
 }
 
 export async function clearToken() {

@@ -9,7 +9,11 @@ export async function whoami(): Promise<void> {
 		process.exit(1);
 	}
 	const { data, error } = await authClient.getSession();
-	if (error || !data?.user) {
+	if (error) {
+		print.error`Couldn't verify session: ${error.message ?? "unknown error"}`;
+		process.exit(1);
+	}
+	if (!data?.user) {
 		await clearToken();
 		print.dim`Not logged in. Run \`cyrus login\`.`;
 		process.exit(1);
