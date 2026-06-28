@@ -4,7 +4,16 @@
 pre-commit:
   parallel: true
   jobs:
-    - name: biome
+    - name: ultracite
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: bun biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
-      stage_fixed: true
+      run: bun ultracite check {staged_files}
+
+pre-push:
+  jobs:
+    - name: check-types
+      run: bun check:types
+
+post-checkout:
+  jobs:
+    - name: setup-worktree
+      run: bash scripts/dev/setup_worktree.sh {1} {2} {3}
