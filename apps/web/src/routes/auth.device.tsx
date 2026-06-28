@@ -83,21 +83,26 @@ function DevicePage() {
 			return;
 		}
 		setBusy(true);
-		// GET /device claims the code for the signed-in user. Approve/deny then
-		// act on a claimed code.
-		await authClient.$fetch("/device", {
-			method: "GET",
-			query: { user_code: userCode },
-		});
-		const { error } = approve
-			? await authClient.device.approve({ userCode })
-			: await authClient.device.deny({ userCode });
-		setBusy(false);
-		if (error) {
-			toast.error(errorMessage(error));
-			return;
+		try {
+			// GET /device claims the code for the signed-in user. Approve/deny
+			// then act on a claimed code.
+			await authClient.$fetch("/device", {
+				method: "GET",
+				query: { user_code: userCode },
+			});
+			const { error } = approve
+				? await authClient.device.approve({ userCode })
+				: await authClient.device.deny({ userCode });
+			if (error) {
+				toast.error(errorMessage(error));
+				return;
+			}
+			setOutcome(approve ? "approved" : "denied");
+		} catch (err) {
+			toast.error(errorMessage(err as { message?: string }));
+		} finally {
+			setBusy(false);
 		}
-		setOutcome(approve ? "approved" : "denied");
 	};
 
 	return (
