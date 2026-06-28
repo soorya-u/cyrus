@@ -3,14 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "cyrus": "src/index.ts"
+  },
   "scripts": {
+    "cli": "bun src/index.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@clack/prompts": "^1.6.0",
     "@commander-js/extra-typings": "^15.0.0",
+    "@t3-oss/env-core": "catalog:",
+    "better-result": "catalog:",
     "better-auth": "catalog:",
-    "commander": "^15.0.0"
+    "commander": "^15.0.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
