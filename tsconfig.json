@@ -1,5 +1,5 @@
 {
-  "extends": "@cyrus/config/tsconfig.base.json",
+  "extends": "@cyrus/typescript/tsconfig.base.json",
   "compilerOptions": {
     "strictNullChecks": true
   }

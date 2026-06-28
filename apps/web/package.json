@@ -41,7 +41,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cyrus/config": "workspace:*",
+    "@cyrus/typescript": "workspace:*",
     "@cyrus/hooks": "workspace:*",
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/devtools-vite": "^0.8.1",

@@ -5,12 +5,12 @@
     "": {
       "name": "cyrus",
       "devDependencies": {
-        "@biomejs/biome": "2.4.15",
-        "@cyrus/config": "workspace:*",
-        "lefthook": "latest",
+        "@biomejs/biome": "^2.4.15",
+        "@cyrus/typescript": "workspace:*",
+        "lefthook": "^2.1.9",
         "turbo": "^2.10.0",
         "typescript": "catalog:",
-        "ultracite": "7.8.1",
+        "ultracite": "^7.8.1",
       },
     },
     "apps/cli": {
@@ -20,7 +20,7 @@
         "better-auth": "catalog:",
       },
       "devDependencies": {
-        "@cyrus/config": "workspace:*",
+        "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },
@@ -52,8 +52,8 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@cyrus/config": "workspace:*",
         "@cyrus/hooks": "workspace:*",
+        "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },
@@ -78,7 +78,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@cyrus/config": "workspace:*",
+        "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "@types/pg": "catalog:",
         "drizzle-kit": "^0.31.8",
@@ -120,8 +120,8 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@cyrus/config": "workspace:*",
         "@cyrus/hooks": "workspace:*",
+        "@cyrus/typescript": "workspace:*",
         "@tailwindcss/vite": "^4.3.1",
         "@tanstack/devtools-vite": "^0.8.1",
         "@tanstack/react-devtools": "^0.10.8",
@@ -136,10 +136,6 @@
         "vite-tsconfig-paths": "^5.1.4",
       },
     },
-    "shared/config": {
-      "name": "@cyrus/config",
-      "version": "0.0.0",
-    },
     "shared/connections": {
       "name": "@cyrus/connections",
       "version": "0.0.0",
@@ -150,14 +146,14 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@cyrus/config": "workspace:*",
+        "@cyrus/typescript": "workspace:*",
       },
     },
     "shared/hooks": {
       "name": "@cyrus/hooks",
       "version": "0.0.0",
       "devDependencies": {
-        "@cyrus/config": "workspace:*",
+        "@cyrus/typescript": "workspace:*",
         "@types/react": "^19.2.15",
         "react": "catalog:",
         "typescript": "catalog:",
@@ -165,6 +161,13 @@
     },
     "shared/styles": {
       "name": "@cyrus/styles",
+      "version": "0.0.0",
+    },
+    "tooling/github": {
+      "name": "@cyrus/github",
+    },
+    "tooling/typescript": {
+      "name": "@cyrus/typescript",
       "version": "0.0.0",
     },
   },
@@ -296,11 +299,11 @@
 
     "@cyrus/cli": ["@cyrus/cli@workspace:apps/cli"],
 
-    "@cyrus/config": ["@cyrus/config@workspace:shared/config"],
-
     "@cyrus/connections": ["@cyrus/connections@workspace:shared/connections"],
 
     "@cyrus/desktop": ["@cyrus/desktop@workspace:apps/desktop"],
+
+    "@cyrus/github": ["@cyrus/github@workspace:tooling/github"],
 
     "@cyrus/hooks": ["@cyrus/hooks@workspace:shared/hooks"],
 
@@ -309,6 +312,8 @@
     "@cyrus/server": ["@cyrus/server@workspace:apps/server"],
 
     "@cyrus/styles": ["@cyrus/styles@workspace:shared/styles"],
+
+    "@cyrus/typescript": ["@cyrus/typescript@workspace:tooling/typescript"],
 
     "@cyrus/web": ["@cyrus/web@workspace:apps/web"],
 

@@ -15,7 +15,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cyrus/config": "workspace:*",
+    "@cyrus/typescript": "workspace:*",
     "@cyrus/hooks": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"

@@ -10,7 +10,7 @@
     "better-auth": "catalog:"
   },
   "devDependencies": {
-    "@cyrus/config": "workspace:*",
+    "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

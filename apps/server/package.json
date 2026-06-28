@@ -30,7 +30,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cyrus/config": "workspace:*",
+    "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
     "@types/pg": "catalog:",
     "drizzle-kit": "^0.31.8",

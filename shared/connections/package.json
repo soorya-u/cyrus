@@ -13,6 +13,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cyrus/config": "workspace:*"
+    "@cyrus/typescript": "workspace:*"
   }
 }

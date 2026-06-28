@@ -4,7 +4,8 @@
   "workspaces": {
     "packages": [
       "apps/*",
-      "shared/*"
+      "shared/*",
+      "tooling/*"
     ],
     "catalog": {
       "@dotenvx/dotenvx": "^1.71.3",
@@ -55,12 +56,12 @@
     "fix": "ultracite fix"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.15",
-    "@cyrus/config": "workspace:*",
-    "lefthook": "latest",
+    "@biomejs/biome": "^2.4.15",
+    "@cyrus/typescript": "workspace:*",
+    "lefthook": "^2.1.9",
     "turbo": "^2.10.0",
     "typescript": "catalog:",
-    "ultracite": "7.8.1"
+    "ultracite": "^7.8.1"
   },
   "packageManager": "bun@1.3.14"
 }
