@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ThreadsIndexRouteImport } from './routes/threads/index'
 import { Route as ThreadsThreadIdRouteImport } from './routes/threads/$threadId'
+import { Route as AuthDeviceRouteImport } from './routes/auth.device'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const ThreadsThreadIdRoute = ThreadsThreadIdRouteImport.update({
   path: '/threads/$threadId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthDeviceRoute = AuthDeviceRouteImport.update({
+  id: '/auth/device',
+  path: '/auth/device',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -38,12 +44,14 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/device': typeof AuthDeviceRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads/': typeof ThreadsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/device': typeof AuthDeviceRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads': typeof ThreadsIndexRoute
 }
@@ -51,20 +59,38 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/device': typeof AuthDeviceRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads/': typeof ThreadsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/callback' | '/threads/$threadId' | '/threads/'
+  fullPaths:
+    | '/'
+    | '/auth/callback'
+    | '/auth/device'
+    | '/threads/$threadId'
+    | '/threads/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/callback' | '/threads/$threadId' | '/threads'
-  id: '__root__' | '/' | '/auth/callback' | '/threads/$threadId' | '/threads/'
+  to:
+    | '/'
+    | '/auth/callback'
+    | '/auth/device'
+    | '/threads/$threadId'
+    | '/threads'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth/callback'
+    | '/auth/device'
+    | '/threads/$threadId'
+    | '/threads/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthDeviceRoute: typeof AuthDeviceRoute
   ThreadsThreadIdRoute: typeof ThreadsThreadIdRoute
   ThreadsIndexRoute: typeof ThreadsIndexRoute
 }
@@ -92,6 +118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ThreadsThreadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/device': {
+      id: '/auth/device'
+      path: '/auth/device'
+      fullPath: '/auth/device'
+      preLoaderRoute: typeof AuthDeviceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -105,6 +138,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthDeviceRoute: AuthDeviceRoute,
   ThreadsThreadIdRoute: ThreadsThreadIdRoute,
   ThreadsIndexRoute: ThreadsIndexRoute,
 }

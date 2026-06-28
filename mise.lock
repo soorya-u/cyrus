@@ -104,6 +104,10 @@ url = "https://github.com/neondatabase/neonctl/releases/download/v2.27.0/neonctl
 version = "1.4.1"
 backend = "npm:@fission-ai/openspec"
 
+[[tools."npm:tui-devtools"]]
+version = "0.1.1"
+backend = "npm:tui-devtools"
+
 [[tools.vercel]]
 version = "54.16.0"
 backend = "npm:vercel"

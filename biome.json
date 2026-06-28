@@ -26,6 +26,7 @@
       "!**/wrangler.jsonc",
       "!**/.source",
       "!**/convex/_generated",
+      "!**/meta",
       "!.dotagents",
       "!.claude",
       "!.opencode"
@@ -110,6 +111,16 @@
           },
           "performance": {
             "noBarrelFile": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/cli/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnusedExpressions": "off"
           }
         }
       }
