@@ -17,4 +17,4 @@ export default {
 };
 
 // biome-ignore lint/performance/noBarrelFile: wrangler requires Durable Object class exported from entry point
-export { Hub } from "./connections/socket";
+export { Hub } from "./cloudflare/partyserver";

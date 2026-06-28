@@ -1,5 +1,7 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
+import { controllerRouter } from "@/handlers/controller";
+import { workerRouter } from "@/handlers/worker";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { generateId, generateName } from "@/utils/identity";
@@ -28,20 +30,17 @@ export async function worker(): Promise<void> {
 	const signalingSession = await connectSignaling({
 		host: env.CLI_PUBLIC_SERVER_URL,
 		room,
+		role: "worker",
 		id,
 		name,
-		role: "worker",
-		headers: { Authorization: `Bearer ${token}` },
+		token,
 	});
 	print.success`✓ connected — waiting for message…`;
 
 	const device = serveWorker({
 		signaling: signalingSession.signaling,
 		events: signalingSession.events,
-		onMessage: (peerId, message) => {
-			print.line`← ${peerId}: ${message}`;
-			print.dim`"  echoing back as a stream…"`;
-		},
+		routers: { controller: controllerRouter, worker: workerRouter },
 	});
 
 	const shutdown = () => {

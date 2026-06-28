@@ -1,10 +1,10 @@
 import { log } from "evlog";
-import { partyserverMiddleware } from "hono-party";
+import { partyserverMiddleware as psMiddleware } from "hono-party";
 import type { BetterAuthVariables } from "./auth";
 
-export const socketMiddleware = partyserverMiddleware<BetterAuthVariables>({
+export const partyserverMiddleware = psMiddleware<BetterAuthVariables>({
 	options: {
-		prefix: "hub",
+		prefix: "ws",
 		onBeforeRequest: (_req, _lobby, c) => {
 			const user = c.get("user");
 			const session = c.get("session");

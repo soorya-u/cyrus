@@ -1,14 +1,16 @@
-import { connectControllerWeb } from "@cyrus/connections/rtc/controller/web";
-import type { RtcConnection } from "@cyrus/connections/rtc/dial";
-import type { ControllerRouter } from "@cyrus/connections/rtc/routers/controller";
 import {
 	connectSignaling,
 	type SignalingSession,
 } from "@cyrus/connections/rtc/session";
-import type { DeviceInfo } from "@cyrus/connections/ws/schema";
+import type { DeviceInfo } from "@cyrus/connections/schemas/signaling";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+	type ControllerConnection,
+	connectController,
+	getControllerId,
+} from "@/handlers/controller";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
 
@@ -24,7 +26,7 @@ function ThreadsList() {
 	const room = auth?.user.id;
 
 	const sessionRef = useRef<SignalingSession | null>(null);
-	const connRef = useRef<RtcConnection<ControllerRouter> | null>(null);
+	const connRef = useRef<ControllerConnection | null>(null);
 
 	const [status, setStatus] = useState<Status>("connecting");
 	const [peers, setPeers] = useState<DeviceInfo[]>([]);
@@ -45,6 +47,7 @@ function ThreadsList() {
 					host: env.VITE_SERVER_URL,
 					room,
 					role: "controller",
+					id: getControllerId(),
 				});
 				if (cancelled) {
 					session.close();
@@ -92,7 +95,7 @@ function ThreadsList() {
 		setMessages([]);
 		setDialing(true);
 		try {
-			connRef.current = await connectControllerWeb({
+			connRef.current = await connectController({
 				signaling: session.signaling,
 				events: session.events,
 				to: peer.id,

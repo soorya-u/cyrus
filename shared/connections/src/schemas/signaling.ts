@@ -12,14 +12,16 @@ const IceCandidateSchema = z.object({
 	usernameFragment: z.string().nullish(),
 });
 
-const DeviceRoleSchema = z.enum(["controller", "worker"]);
+export const DeviceRoleSchema = z.enum(["controller", "worker"]);
 
+// metadata a device declares on join; its identity is the connection id
 export const DeviceStateSchema = z.object({
 	name: z.string(),
 	role: DeviceRoleSchema,
 });
 
-const DeviceInfoSchema = DeviceStateSchema.extend({
+// a peer as seen by others: its declared metadata plus its stable id
+export const DeviceInfoSchema = DeviceStateSchema.extend({
 	id: z.string(),
 });
 
@@ -38,7 +40,7 @@ export const IceCandidateInputSchema = z.object({
 	candidate: IceCandidateSchema,
 });
 
-const ServerEventSchema = z.discriminatedUnion("type", [
+export const ServerEventSchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("peer-joined"), peer: DeviceInfoSchema }),
 	z.object({ type: z.literal("peer-left"), id: z.string() }),
 	z.object({
@@ -58,6 +60,7 @@ const ServerEventSchema = z.discriminatedUnion("type", [
 	}),
 ]);
 
+export type DeviceRole = z.infer<typeof DeviceRoleSchema>;
 export type DeviceState = z.infer<typeof DeviceStateSchema>;
 export type DeviceInfo = z.infer<typeof DeviceInfoSchema>;
 export type ServerEvent = z.infer<typeof ServerEventSchema>;

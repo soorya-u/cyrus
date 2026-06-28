@@ -17,11 +17,12 @@
       "name": "@cyrus/cli",
       "version": "0.0.0",
       "bin": {
-        "cyrus": "src/index.ts",
+        "cyrusd": "src/cli.ts",
       },
       "dependencies": {
         "@commander-js/extra-typings": "^15.0.0",
         "@cyrus/connections": "workspace:*",
+        "@orpc/server": "^1.14.6",
         "@t3-oss/env-core": "catalog:",
         "better-auth": "catalog:",
         "better-result": "catalog:",
@@ -155,6 +156,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@orpc/client": "^1.14.6",
+        "@orpc/contract": "^1.14.6",
         "@orpc/server": "^1.14.6",
         "node-datachannel": "^0.32.3",
         "partysocket": "^1.3.0",

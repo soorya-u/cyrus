@@ -1,20 +1,13 @@
-import { broadcastSignalingEvent, router } from "@cyrus/connections/ws/server";
-import { onError } from "@orpc/server";
-import { HibernationPlugin } from "@orpc/server/hibernation";
-import { RPCHandler } from "@orpc/server/websocket";
 import { log } from "evlog";
 import { type Connection, Server, type WSMessage } from "partyserver";
-
-const handler = new RPCHandler(router, {
-	interceptors: [
-		onError((error) => log.error({ action: "socket-rpc-error", error })),
-	],
-	plugins: [new HibernationPlugin()],
-});
+import {
+	broadcastSignalingEvent,
+	signalingHandler,
+} from "../handlers/signaling";
 
 export class Hub extends Server {
 	async onMessage(connection: Connection, raw: WSMessage) {
-		await handler.message(connection, raw as string | ArrayBuffer, {
+		await signalingHandler.message(connection, raw as string | ArrayBuffer, {
 			context: { server: this, ws: connection },
 		});
 	}
