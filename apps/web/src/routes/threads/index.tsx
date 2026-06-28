@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import {
 	type ControllerConnection,
 	connectController,
-	getControllerId,
 } from "@/handlers/controller";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { getControllerId, getControllerName } from "@/lib/identity";
 
 export const Route = createFileRoute("/threads/")({
 	component: ThreadsList,
@@ -48,6 +48,7 @@ function ThreadsList() {
 					room,
 					role: "controller",
 					id: getControllerId(),
+					name: getControllerName(),
 				});
 				if (cancelled) {
 					session.close();

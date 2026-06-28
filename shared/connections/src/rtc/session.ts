@@ -2,27 +2,18 @@ import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import { PartySocket } from "partysocket";
 import type { SignalingClient } from "../contracts/signaling";
+import type { DeviceRole } from "../schemas/signaling";
 import { createSignalingEvents, type SignalingEvents } from "./peer";
 
-type SignalingBase = {
+export type ConnectSignalingOptions = {
 	host: string;
 	room: string;
 	id: string;
+	name: string;
+	role: DeviceRole;
+	// the worker authenticates with a bearer token; the browser uses its cookie
+	token?: string;
 };
-
-export type ConnectSignalingOptions = SignalingBase &
-	(
-		| {
-				role: "controller";
-				// mobile might pass a bearer token
-				token?: string;
-		  }
-		| {
-				role: "worker";
-				name: string;
-				token: string;
-		  }
-	);
 
 // Bun's WebSocket accepts a headers option; the browser's does not, so this is
 // only used when `headers` are supplied (the CLI worker).
@@ -60,13 +51,6 @@ export async function connectSignaling(
 ): Promise<SignalingSession> {
 	const { host, protocol } = normalizeHost(options.host);
 
-	// controllers have no name; the server still requires a unique one, so derive
-	// it from the (unique) id
-	const name =
-		options.role === "worker"
-			? options.name
-			: `controller-${options.id.slice(0, 8)}`;
-
 	const headers = options.token
 		? { Authorization: `Bearer ${options.token}` }
 		: undefined;
@@ -85,7 +69,10 @@ export async function connectSignaling(
 
 	const link = new RPCLink({ websocket: socket as unknown as WebSocket });
 	const signaling: SignalingClient = createORPCClient(link);
-	const stream = await signaling.onSignalingEvent({ name, role: options.role });
+	const stream = await signaling.onSignalingEvent({
+		name: options.name,
+		role: options.role,
+	});
 	const events = createSignalingEvents(stream);
 
 	return {

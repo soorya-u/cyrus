@@ -19,7 +19,7 @@
     "better-auth": "catalog:",
     "better-result": "catalog:",
     "commander": "^15.0.0",
-    "random-word-slugs": "^0.1.7",
+    "random-word-slugs": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
