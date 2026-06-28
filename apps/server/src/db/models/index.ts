@@ -2,6 +2,7 @@
 export {
 	account,
 	accountRelations,
+	deviceCode,
 	session,
 	sessionRelations,
 	user,

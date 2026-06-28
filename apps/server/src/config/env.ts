@@ -12,6 +12,7 @@ export const env = createEnv({
 		NODE_ENV: z.enum(["development", "production"]).default("development"),
 		LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 		PRODUCTION_URL: z.url(),
+		WEB_APP_URL: z.url(),
 		ALLOWED_ORIGINS: z
 			.string()
 			.optional()
