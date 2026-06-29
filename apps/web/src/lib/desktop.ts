@@ -20,20 +20,38 @@ function useDesktopSession() {
 			setIsPending(false);
 			return;
 		}
+		let disposed = false;
+		let sawEvent = false;
+		const applyUser = (user: DesktopUser | null) => {
+			sawEvent = true;
+			if (disposed) {
+				return;
+			}
+			setData(user ? { user } : null);
+			setIsPending(false);
+		};
+		const offAuth = bridge.onAuthenticated((user) =>
+			applyUser(user as DesktopUser)
+		);
+		const offUpdate = bridge.onUserUpdated((user) =>
+			applyUser(user ? (user as DesktopUser) : null)
+		);
 		bridge
 			.getUser()
 			.then((user) => {
+				if (disposed || sawEvent) {
+					return;
+				}
 				setData(user ? { user: user as DesktopUser } : null);
 				setIsPending(false);
 			})
-			.catch(() => setIsPending(false));
-		const offAuth = bridge.onAuthenticated((user) => {
-			setData({ user: user as DesktopUser });
-		});
-		const offUpdate = bridge.onUserUpdated((user) => {
-			setData(user ? { user: user as DesktopUser } : null);
-		});
+			.catch(() => {
+				if (!(disposed || sawEvent)) {
+					setIsPending(false);
+				}
+			});
 		return () => {
+			disposed = true;
 			offAuth();
 			offUpdate();
 		};
@@ -53,7 +71,10 @@ export function wrapAuthClientForDesktop<T extends object>(base: T): T {
 			}
 			if (prop === "getSession") {
 				return () =>
-					bridge.getUser().then((user) => ({ data: user ? { user } : null }));
+					bridge
+						.getUser()
+						.then((user) => ({ data: user ? { user } : null, error: null }))
+						.catch((error: unknown) => ({ data: null, error }));
 			}
 			if (prop !== "signIn") {
 				return Reflect.get(target, prop, receiver);

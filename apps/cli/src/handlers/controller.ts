@@ -17,8 +17,8 @@ export const controllerRouter = {
 		print.dim`  streaming reply to all controllers…`;
 		for (const chunk of input.message) {
 			const c: ChatChunk = { chunk };
-			yield c;
 			context.broadcaster.broadcast(c, context.peerId);
+			yield c;
 			await Bun.sleep(25);
 		}
 	}),

@@ -48,7 +48,9 @@ export function createPeerBroadcaster<T = unknown>(): PeerBroadcaster<T> {
 					}
 				}
 			} finally {
-				peers.delete(peerId);
+				if (peers.get(peerId) === peer) {
+					peers.delete(peerId);
+				}
 			}
 		},
 
