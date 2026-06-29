@@ -58,39 +58,42 @@ const router = {
 		const target = [...context.server.getConnections()].find(
 			(c) => c.id === input.to
 		);
-		if (target) {
-			pushEvent(target, {
-				type: "offer",
-				from: context.ws.id,
-				offer: input.offer,
-			});
+		if (!target) {
+			throw new ORPCError("NOT_FOUND", { message: "peer not connected" });
 		}
+		pushEvent(target, {
+			type: "offer",
+			from: context.ws.id,
+			offer: input.offer,
+		});
 	}),
 
 	answer: os.answer.handler(({ input, context }) => {
 		const target = [...context.server.getConnections()].find(
 			(c) => c.id === input.to
 		);
-		if (target) {
-			pushEvent(target, {
-				type: "answer",
-				from: context.ws.id,
-				answer: input.answer,
-			});
+		if (!target) {
+			throw new ORPCError("NOT_FOUND", { message: "peer not connected" });
 		}
+		pushEvent(target, {
+			type: "answer",
+			from: context.ws.id,
+			answer: input.answer,
+		});
 	}),
 
 	iceCandidate: os.iceCandidate.handler(({ input, context }) => {
 		const target = [...context.server.getConnections()].find(
 			(c) => c.id === input.to
 		);
-		if (target) {
-			pushEvent(target, {
-				type: "ice-candidate",
-				from: context.ws.id,
-				candidate: input.candidate,
-			});
+		if (!target) {
+			throw new ORPCError("NOT_FOUND", { message: "peer not connected" });
 		}
+		pushEvent(target, {
+			type: "ice-candidate",
+			from: context.ws.id,
+			candidate: input.candidate,
+		});
 	}),
 
 	listPeers: os.listPeers.handler(({ context }) =>

@@ -92,7 +92,7 @@ export function serveWorker(options: WorkerOptions): WorkerConnection {
 	const unsubscribe = events.subscribe((event) => {
 		switch (event.type) {
 			case "offer":
-				accept(event.from, event.offer);
+				accept(event.from, event.offer).catch(() => dispose(event.from));
 				break;
 			case "ice-candidate":
 				sessions.get(event.from)?.ice.addRemote(event.candidate);

@@ -1,3 +1,4 @@
+import { Result } from "better-result";
 import type { SignalingClient } from "../contracts/signaling";
 import type { ServerEvent } from "../schemas/signaling";
 
@@ -19,7 +20,7 @@ export function createSignalingEvents(
 	const handlers = new Set<(event: ServerEvent) => void>();
 	let active = true;
 
-	(async () => {
+	Result.tryPromise(async () => {
 		for await (const event of stream) {
 			if (!active) {
 				break;
@@ -28,7 +29,7 @@ export function createSignalingEvents(
 				handler(event);
 			}
 		}
-	})();
+	});
 
 	return {
 		subscribe(handler) {
@@ -78,15 +79,19 @@ export function relayLocalIce(
 	pc.addEventListener("icecandidate", (event) => {
 		const { candidate } = event;
 		if (candidate) {
-			signaling.iceCandidate({
-				to,
-				candidate: {
-					candidate: candidate.candidate,
-					sdpMid: candidate.sdpMid,
-					sdpMLineIndex: candidate.sdpMLineIndex,
-					usernameFragment: candidate.usernameFragment,
-				},
-			});
+			signaling
+				.iceCandidate({
+					to,
+					candidate: {
+						candidate: candidate.candidate,
+						sdpMid: candidate.sdpMid,
+						sdpMLineIndex: candidate.sdpMLineIndex,
+						usernameFragment: candidate.usernameFragment,
+					},
+				})
+				.catch(() => {
+					// transient signaling failure; ICE will timeout naturally
+				});
 		}
 	});
 }
@@ -101,6 +106,11 @@ export function whenOpen(channel: RTCDataChannel): Promise<void> {
 		channel.addEventListener(
 			"error",
 			() => reject(new Error("data channel failed to open")),
+			{ once: true }
+		);
+		channel.addEventListener(
+			"close",
+			() => reject(new Error("data channel closed before opening")),
 			{ once: true }
 		);
 	});

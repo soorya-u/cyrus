@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { Result } from "better-result";
 import { YAML } from "bun";
 import { CONFIG_FILE } from "@/constants/file";
 import { env } from "@/lib/env";
@@ -19,7 +20,15 @@ async function read(): Promise<Partial<Config>> {
 	if (!exists) {
 		return {};
 	}
-	return (YAML.parse(await file.text()) as Partial<Config> | null) ?? {};
+
+	const res = await Result.tryPromise(async () => {
+		const parsed = YAML.parse(await file.text());
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+			return parsed as Partial<Config>;
+		}
+	});
+
+	return res.match({ ok: (p) => p ?? {}, err: () => ({}) });
 }
 
 async function write(config: Partial<Config>): Promise<void> {

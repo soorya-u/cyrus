@@ -1,3 +1,4 @@
+import { Result } from "better-result";
 import { authClient } from "@/lib/auth";
 import { generateName } from "@/utils/identity";
 import { getOrCreate, set } from "@/utils/store";
@@ -50,7 +51,7 @@ export async function login(): Promise<void> {
 
 		if (accessToken) {
 			await set("token", accessToken);
-			await getOrCreate("name", generateName);
+			await Result.tryPromise(() => getOrCreate("name", generateName));
 			const session = await authClient.getSession();
 			const email = session.data?.user?.email;
 			print.success`\n✓ Logged in${email ? ` as ${bold(email)}` : ""}.`;

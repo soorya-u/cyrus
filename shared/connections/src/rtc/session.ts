@@ -1,5 +1,6 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
+import { Result } from "better-result";
 import { PartySocket } from "partysocket";
 import type { SignalingClient } from "../contracts/signaling";
 import type { DeviceRole } from "../schemas/signaling";
@@ -69,11 +70,15 @@ export async function connectSignaling(
 
 	const link = new RPCLink({ websocket: socket as unknown as WebSocket });
 	const signaling: SignalingClient = createORPCClient(link);
-	const stream = await signaling.onSignalingEvent({
-		name: options.name,
-		role: options.role,
+
+	const result = await Result.tryPromise(async () => {
+		const stream = await signaling.onSignalingEvent({
+			name: options.name,
+			role: options.role,
+		});
+		return createSignalingEvents(stream);
 	});
-	const events = createSignalingEvents(stream);
+	const events = result.tapError(() => socket.close()).unwrap();
 
 	return {
 		socket,

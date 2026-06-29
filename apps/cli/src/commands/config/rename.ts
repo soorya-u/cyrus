@@ -19,4 +19,5 @@ export async function rename(name: string): Promise<void> {
 	}
 	await set("name", result.data);
 	print.success`✓ renamed to "${result.data}"`;
+	print.dim`Restart the worker (cyrusd stop && cyrusd start) for the new name to take effect.`;
 }

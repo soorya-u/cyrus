@@ -40,6 +40,15 @@ function ThreadsList() {
 		if (!room) {
 			return;
 		}
+		// clear stale state from any previous room before the new connection resolves
+		setPeers([]);
+		setActivePeer(null);
+		setMessages([]);
+		setStatus("connecting");
+		connRef.current?.close();
+		connRef.current = null;
+		sessionRef.current?.close();
+		sessionRef.current = null;
 		let cancelled = false;
 		(async () => {
 			try {
@@ -186,7 +195,7 @@ function ThreadsList() {
 									<Button
 										className="mt-2 w-full"
 										data-testid="open-chat"
-										disabled={dialing && activePeer?.id === peer.id}
+										disabled={dialing}
 										onClick={() => openChat(peer)}
 										size="xs"
 										variant={activePeer?.id === peer.id ? "default" : "outline"}
@@ -236,6 +245,7 @@ function ThreadsList() {
 								}}
 							>
 								<input
+									aria-label="Message"
 									className="flex-1 rounded-md border bg-transparent px-3 py-1.5 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 									data-testid="chat-input"
 									disabled={dialing}

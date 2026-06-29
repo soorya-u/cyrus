@@ -42,21 +42,31 @@ export async function dial<TContract extends AnyContractRouter>(
 	const ice = createIceBuffer(pc);
 	relayLocalIce(pc, signaling, to);
 
+	const channel = pc.createDataChannel(label);
+
+	let rejectDial: ((err: unknown) => void) | null = null;
+	const failSignal = new Promise<never>((_, reject) => {
+		rejectDial = reject;
+	});
+
 	const unsubscribe = events.subscribe((event) => {
 		if (event.type === "answer" && event.from === to) {
-			ice.setRemote(event.answer);
+			ice.setRemote(event.answer).catch((err) => {
+				unsubscribe();
+				channel.close();
+				pc.close();
+				rejectDial?.(err);
+			});
 		} else if (event.type === "ice-candidate" && event.from === to) {
 			ice.addRemote(event.candidate);
 		}
 	});
 
-	const channel = pc.createDataChannel(label);
-
 	const offer = await pc.createOffer();
 	await pc.setLocalDescription(offer);
 	await signaling.offer({ to, offer });
 
-	await whenOpen(channel);
+	await Promise.race([whenOpen(channel), failSignal]);
 
 	const link = new RPCLink({ websocket: asWebSocket(channel) });
 	const client: ContractRouterClient<TContract> = createORPCClient(link);
