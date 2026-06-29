@@ -3,13 +3,16 @@ import { RPCHandler, type RPCHandlerOptions } from "@orpc/server/websocket";
 import { RTCPeerConnection as NodeRTCPeerConnection } from "node-datachannel/polyfill";
 import type { ControllerContract } from "../../contracts/controller";
 import type { WorkerContract } from "../../contracts/worker";
+import type { ChatChunk } from "../../schemas/rtc";
 import { DeviceRoleSchema } from "../../schemas/signaling";
+import { createPeerBroadcaster } from "../broadcaster";
 import {
 	createIceBuffer,
 	type RtcContext,
 	relayLocalIce,
 	type SignalingClient,
 	type SignalingEvents,
+	whenOpen,
 } from "../peer";
 import { asWebSocket } from "../socket";
 
@@ -34,6 +37,8 @@ export type WorkerConnection = {
 export function serveWorker(options: WorkerOptions): WorkerConnection {
 	const { signaling, events, config, routers } = options;
 
+	const broadcaster = createPeerBroadcaster<ChatChunk>();
+
 	const handlers = {
 		controller: new RPCHandler(routers.controller, options.rpc),
 		worker: new RPCHandler(routers.worker, options.rpc),
@@ -45,6 +50,7 @@ export function serveWorker(options: WorkerOptions): WorkerConnection {
 	>();
 
 	function dispose(peerId: string): void {
+		broadcaster.close(peerId);
 		const session = sessions.get(peerId);
 		if (session) {
 			session.pc.close();
@@ -70,11 +76,19 @@ export function serveWorker(options: WorkerOptions): WorkerConnection {
 			const { channel } = event;
 			// the channel label is the dialer's role; ignore unknown ones
 			const role = DeviceRoleSchema.safeParse(channel.label);
-			if (role.success) {
-				handlers[role.data].upgrade(asWebSocket(channel), {
-					context: { peerId: from } satisfies RtcContext,
-				});
+			if (!role.success) {
+				return;
 			}
+			// node-datachannel polyfill: `datachannel` fires before `onOpen`, so wait
+			whenOpen(channel)
+				.then(() => {
+					handlers[role.data].upgrade(asWebSocket(channel), {
+						context: { peerId: from, broadcaster } satisfies RtcContext,
+					});
+				})
+				.catch(() => {
+					// channel closed before opening — nothing to upgrade
+				});
 		});
 
 		pc.addEventListener("connectionstatechange", () => {
@@ -111,6 +125,7 @@ export function serveWorker(options: WorkerOptions): WorkerConnection {
 			for (const peerId of [...sessions.keys()]) {
 				dispose(peerId);
 			}
+			broadcaster.closeAll();
 		},
 	};
 }

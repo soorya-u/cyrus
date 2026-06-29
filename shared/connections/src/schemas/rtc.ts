@@ -10,3 +10,5 @@ export const HelloOutputSchema = z.object({
 export const ChatInputSchema = z.object({ message: z.string() });
 
 export const ChatChunkSchema = z.object({ chunk: z.string() });
+
+export type ChatChunk = z.infer<typeof ChatChunkSchema>;

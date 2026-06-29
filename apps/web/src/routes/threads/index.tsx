@@ -18,7 +18,11 @@ export const Route = createFileRoute("/threads/")({
 	component: ThreadsList,
 });
 
-type ChatMessage = { id: string; from: "me" | "worker"; text: string };
+type ChatMessage = {
+	id: string;
+	from: "me" | "worker" | "broadcast";
+	text: string;
+};
 type Status = "connecting" | "online" | "error";
 
 function ThreadsList() {
@@ -105,11 +109,36 @@ function ThreadsList() {
 		setMessages([]);
 		setDialing(true);
 		try {
-			connRef.current = await connectController({
+			const conn = await connectController({
 				signaling: session.signaling,
 				events: session.events,
 				to: peer.id,
 			});
+			connRef.current = conn;
+
+			// subscribe to chunks broadcast by the worker from other controllers
+			(async () => {
+				try {
+					const stream = await conn.client.subscribe();
+					for await (const { chunk } of stream) {
+						setMessages((prev) => {
+							const last = prev.at(-1);
+							if (last?.from === "broadcast") {
+								return [
+									...prev.slice(0, -1),
+									{ ...last, text: last.text + chunk },
+								];
+							}
+							return [
+								...prev,
+								{ id: crypto.randomUUID(), from: "broadcast", text: chunk },
+							];
+						});
+					}
+				} catch {
+					// stream closed with connection
+				}
+			})();
 		} catch (error) {
 			console.error("dial failed", error);
 		} finally {
@@ -148,6 +177,9 @@ function ThreadsList() {
 	}, [draft]);
 
 	if (!(isPending || room)) {
+		console.warn(
+			"[threads] showing sign-in gate — session resolved with no user (isPending=false, room=undefined)"
+		);
 		return (
 			<div className="p-6 text-muted-foreground text-sm">
 				Sign in to connect to your devices.
@@ -226,14 +258,21 @@ function ThreadsList() {
 								{messages.map((m) => (
 									<li
 										className={
-											m.from === "me"
-												? "self-end rounded-lg bg-primary px-3 py-1.5 text-primary-foreground text-sm"
-												: "self-start rounded-lg bg-muted px-3 py-1.5 text-sm"
+											{
+												me: "self-end rounded-lg bg-primary px-3 py-1.5 text-primary-foreground text-sm",
+												worker:
+													"self-start rounded-lg bg-muted px-3 py-1.5 text-sm",
+												broadcast:
+													"self-start rounded-lg border border-dashed px-3 py-1.5 text-muted-foreground text-sm",
+											}[m.from]
 										}
 										data-testid={`message-${m.from}`}
 										key={m.id}
 									>
-										{m.text || (m.from === "worker" ? "…" : "")}
+										{m.text ||
+											(m.from === "worker" || m.from === "broadcast"
+												? "…"
+												: "")}
 									</li>
 								))}
 							</ul>

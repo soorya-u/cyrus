@@ -51,4 +51,7 @@ export async function worker(): Promise<void> {
 	process.on("SIGINT", shutdown);
 	process.on("SIGTERM", shutdown);
 	process.on("SIGBREAK", shutdown); // Ctrl+Break on Windows
+	process.on("unhandledRejection", (reason) => {
+		print.error`[worker] unhandled rejection: ${String(reason)}`;
+	});
 }

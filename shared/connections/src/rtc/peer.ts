@@ -1,11 +1,14 @@
 import { Result } from "better-result";
 import type { SignalingClient } from "../contracts/signaling";
+import type { ChatChunk } from "../schemas/rtc";
 import type { ServerEvent } from "../schemas/signaling";
+import type { PeerBroadcaster } from "./broadcaster";
 
 export type { SignalingClient } from "../contracts/signaling";
 
 export type RtcContext = {
 	peerId: string;
+	broadcaster: PeerBroadcaster<ChatChunk>;
 };
 
 // fans one signaling event stream out to many subscribers (one socket, many peers)

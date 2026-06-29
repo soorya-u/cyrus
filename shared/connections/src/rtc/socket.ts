@@ -1,3 +1,5 @@
+import { Result } from "better-result";
+
 const READY_STATE = {
 	connecting: WebSocket.CONNECTING,
 	open: WebSocket.OPEN,
@@ -16,7 +18,7 @@ export function asWebSocket(channel: RTCDataChannel): ChannelSocket {
 		get readyState() {
 			return READY_STATE[channel.readyState];
 		},
-		send: (data) => channel.send(data as ArrayBuffer),
+		send: (data) => Result.try(() => channel.send(data as ArrayBuffer)),
 		addEventListener: channel.addEventListener.bind(channel),
 		removeEventListener: channel.removeEventListener.bind(channel),
 	};

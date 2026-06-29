@@ -1,15 +1,46 @@
-// Desktop (Electrobun WebView) integration — keeps desktop branching out of the
-// rest of the app, which uses the regular auth client and hooks.
 import { defineAuthWebviewRPC } from "@soorya-u/better-auth-desktop/rpc/webview";
+import { useEffect, useState } from "react";
 
-/** True when running inside an Electrobun WebView. */
 export const isDesktop =
 	typeof window !== "undefined" && !!window.__electrobunWebviewId;
 
-/** RPC bridge to the Bun main process; null in the browser. */
 export const desktopAuth = isDesktop ? defineAuthWebviewRPC() : null;
 
-/** Routes `signIn.social` through the RPC bridge on desktop; no-op in the browser. */
+type DesktopUser = { id: string; email: string; name: string } & Record<
+	string,
+	unknown
+>;
+
+function useDesktopSession() {
+	const [data, setData] = useState<{ user: DesktopUser } | null>(null);
+	const [isPending, setIsPending] = useState(true);
+	useEffect(() => {
+		const bridge = desktopAuth;
+		if (!bridge) {
+			setIsPending(false);
+			return;
+		}
+		bridge
+			.getUser()
+			.then((user) => {
+				setData(user ? { user: user as DesktopUser } : null);
+				setIsPending(false);
+			})
+			.catch(() => setIsPending(false));
+		const offAuth = bridge.onAuthenticated((user) => {
+			setData({ user: user as DesktopUser });
+		});
+		const offUpdate = bridge.onUserUpdated((user) => {
+			setData(user ? { user: user as DesktopUser } : null);
+		});
+		return () => {
+			offAuth();
+			offUpdate();
+		};
+	}, []);
+	return { data, isPending, error: null };
+}
+
 export function wrapAuthClientForDesktop<T extends object>(base: T): T {
 	const bridge = desktopAuth;
 	if (!bridge) {
@@ -17,6 +48,13 @@ export function wrapAuthClientForDesktop<T extends object>(base: T): T {
 	}
 	return new Proxy(base, {
 		get(target, prop, receiver) {
+			if (prop === "useSession") {
+				return useDesktopSession;
+			}
+			if (prop === "getSession") {
+				return () =>
+					bridge.getUser().then((user) => ({ data: user ? { user } : null }));
+			}
 			if (prop !== "signIn") {
 				return Reflect.get(target, prop, receiver);
 			}

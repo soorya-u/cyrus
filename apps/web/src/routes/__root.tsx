@@ -54,6 +54,7 @@ function RootComponent() {
 				</AuthProvider>
 			</ThemeProvider>
 			<TanStackDevtools
+				config={{ position: "top-right" }}
 				plugins={[
 					{ name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
 					{
