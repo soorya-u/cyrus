@@ -11,6 +11,9 @@ export const authClient = createAuthClient({
 		electrobunDesktop({
 			clientID: "cyrus-desktop",
 			storage: await keychainStorage(),
+			loopbackSuccess: {
+				redirectTo: `${env.ELECTROBUN_WEB_APP_URL}/auth/success`,
+			},
 		}),
 	],
 });

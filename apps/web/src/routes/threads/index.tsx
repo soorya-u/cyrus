@@ -3,7 +3,7 @@ import {
 	type SignalingSession,
 } from "@cyrus/connections/rtc/session";
 import type { DeviceInfo } from "@cyrus/connections/schemas/signaling";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,7 @@ type Status = "connecting" | "online" | "error";
 function ThreadsList() {
 	const { data: auth, isPending } = authClient.useSession();
 	const room = auth?.user.id;
+	const navigate = useNavigate();
 
 	const sessionRef = useRef<SignalingSession | null>(null);
 	const connRef = useRef<ControllerConnection | null>(null);
@@ -197,6 +198,14 @@ function ThreadsList() {
 				>
 					signaling: {status}
 				</span>
+				<Button
+					className="ml-auto"
+					onClick={() => authClient.signOut().then(() => navigate({ to: "/" }))}
+					size="sm"
+					variant="ghost"
+				>
+					Sign out
+				</Button>
 			</header>
 
 			<div className="grid min-h-0 flex-1 grid-cols-[18rem_1fr] gap-4">

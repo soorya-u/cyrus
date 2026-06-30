@@ -76,6 +76,9 @@ export function wrapAuthClientForDesktop<T extends object>(base: T): T {
 						.then((user) => ({ data: user ? { user } : null, error: null }))
 						.catch((error: unknown) => ({ data: null, error }));
 			}
+			if (prop === "signOut") {
+				return () => bridge.signOut();
+			}
 			if (prop !== "signIn") {
 				return Reflect.get(target, prop, receiver);
 			}
