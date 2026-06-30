@@ -28,6 +28,10 @@ export const auth = betterAuth({
 			secure: true,
 			httpOnly: true,
 		},
+		oauthConfig: {
+			storeStateStrategy: "database",
+			skipStateCookieCheck: true,
+		},
 	},
 	logger: {
 		log: (level, message, ...args) => log[level]({ message, ...args }),
