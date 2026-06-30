@@ -3,11 +3,13 @@
 import { authMutationKeys, getProviderName } from "@better-auth-ui/core";
 import { providerIcons, useAuth, useSignInSocial } from "@better-auth-ui/react";
 import { useIsMutating } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import type { SocialProvider } from "better-auth/social-providers";
 import type { ComponentProps, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { isDesktop } from "@/lib/desktop";
 
 export type ProviderButtonProps = {
 	provider: SocialProvider;
@@ -23,6 +25,7 @@ export function ProviderButton({
 	...props
 }: ProviderButtonProps) {
 	const { authClient, baseURL, localization, redirectTo } = useAuth();
+	const navigate = useNavigate();
 
 	const callbackURL = callbackUrl ?? `${baseURL}${redirectTo}`;
 
@@ -62,7 +65,12 @@ export function ProviderButton({
 	return (
 		<Button
 			disabled={isPending}
-			onClick={() => signInSocial({ provider, callbackURL })}
+			onClick={() => {
+				signInSocial({ provider, callbackURL });
+				if (isDesktop) {
+					navigate({ to: "/auth/desktop", search: { provider } });
+				}
+			}}
 			type="button"
 			variant={variant}
 			{...props}

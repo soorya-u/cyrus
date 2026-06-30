@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ThreadsIndexRouteImport } from './routes/threads/index'
 import { Route as ThreadsThreadIdRouteImport } from './routes/threads/$threadId'
+import { Route as AuthSuccessRouteImport } from './routes/auth.success'
 import { Route as AuthDeviceRouteImport } from './routes/auth.device'
+import { Route as AuthDesktopRouteImport } from './routes/auth.desktop'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -30,9 +32,19 @@ const ThreadsThreadIdRoute = ThreadsThreadIdRouteImport.update({
   path: '/threads/$threadId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSuccessRoute = AuthSuccessRouteImport.update({
+  id: '/auth/success',
+  path: '/auth/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthDeviceRoute = AuthDeviceRouteImport.update({
   id: '/auth/device',
   path: '/auth/device',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthDesktopRoute = AuthDesktopRouteImport.update({
+  id: '/auth/desktop',
+  path: '/auth/desktop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -44,14 +56,18 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads/': typeof ThreadsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads': typeof ThreadsIndexRoute
 }
@@ -59,7 +75,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads/': typeof ThreadsIndexRoute
 }
@@ -68,21 +86,27 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth/callback'
+    | '/auth/desktop'
     | '/auth/device'
+    | '/auth/success'
     | '/threads/$threadId'
     | '/threads/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth/callback'
+    | '/auth/desktop'
     | '/auth/device'
+    | '/auth/success'
     | '/threads/$threadId'
     | '/threads'
   id:
     | '__root__'
     | '/'
     | '/auth/callback'
+    | '/auth/desktop'
     | '/auth/device'
+    | '/auth/success'
     | '/threads/$threadId'
     | '/threads/'
   fileRoutesById: FileRoutesById
@@ -90,7 +114,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthDesktopRoute: typeof AuthDesktopRoute
   AuthDeviceRoute: typeof AuthDeviceRoute
+  AuthSuccessRoute: typeof AuthSuccessRoute
   ThreadsThreadIdRoute: typeof ThreadsThreadIdRoute
   ThreadsIndexRoute: typeof ThreadsIndexRoute
 }
@@ -118,11 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ThreadsThreadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/success': {
+      id: '/auth/success'
+      path: '/auth/success'
+      fullPath: '/auth/success'
+      preLoaderRoute: typeof AuthSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/device': {
       id: '/auth/device'
       path: '/auth/device'
       fullPath: '/auth/device'
       preLoaderRoute: typeof AuthDeviceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/desktop': {
+      id: '/auth/desktop'
+      path: '/auth/desktop'
+      fullPath: '/auth/desktop'
+      preLoaderRoute: typeof AuthDesktopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -138,7 +178,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthDesktopRoute: AuthDesktopRoute,
   AuthDeviceRoute: AuthDeviceRoute,
+  AuthSuccessRoute: AuthSuccessRoute,
   ThreadsThreadIdRoute: ThreadsThreadIdRoute,
   ThreadsIndexRoute: ThreadsIndexRoute,
 }

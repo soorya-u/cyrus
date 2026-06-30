@@ -24,8 +24,8 @@ export default {
 			defaultRenderer: "native",
 		},
 		linux: {
-			bundleCEF: false,
-			defaultRenderer: "native",
+			bundleCEF: true,
+			defaultRenderer: "cef",
 		},
 		win: {
 			bundleCEF: false,

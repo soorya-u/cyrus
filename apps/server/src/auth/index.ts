@@ -28,6 +28,10 @@ export const auth = betterAuth({
 			secure: true,
 			httpOnly: true,
 		},
+		oauthConfig: {
+			storeStateStrategy: "database",
+			skipStateCookieCheck: true,
+		},
 	},
 	logger: {
 		log: (level, message, ...args) => log[level]({ message, ...args }),
@@ -35,7 +39,10 @@ export const auth = betterAuth({
 	},
 	plugins: [
 		expo(),
-		betterAuthDesktop({ clientID: "cyrus-desktop" }),
+		betterAuthDesktop({
+			clientID: "cyrus-desktop",
+			webCallbackUrl: `${env.WEB_APP_URL}/auth/callback`,
+		}),
 		oAuthProxy({
 			productionURL: env.PRODUCTION_URL,
 			secret: env.OAUTH_PROXY_SECRET,

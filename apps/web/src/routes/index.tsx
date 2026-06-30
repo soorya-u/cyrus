@@ -1,8 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Hero } from "@/components/home/hero";
 import { HomeNav } from "@/components/home/home-nav";
+import { authClient } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
+	beforeLoad: async () => {
+		const { data } = await authClient.getSession();
+		if (data?.user) {
+			throw redirect({ to: "/threads" });
+		}
+	},
 	component: HomePage,
 });
 

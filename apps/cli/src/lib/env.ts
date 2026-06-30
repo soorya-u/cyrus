@@ -12,6 +12,11 @@ export const env = createEnv({
 	// runtime
 	server: {
 		CYRUS_HOME: z.string().default(join(homedir(), ".cyrus")),
+		// internal: set on the spawned background worker so it runs the loop
+		CYRUS_DAEMON: z
+			.string()
+			.optional()
+			.transform((v) => v === "1"),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

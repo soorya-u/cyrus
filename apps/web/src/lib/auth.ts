@@ -1,7 +1,8 @@
-import { webDesktop } from "@soorya-u/better-auth-desktop/web";
+import { useSession } from "@soorya-u/better-auth-desktop/react";
+import { webDesktop, wrapForDesktop } from "@soorya-u/better-auth-desktop/web";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
-import { isDesktop, wrapAuthClientForDesktop } from "./desktop";
+import { desktopAuth, isDesktop } from "./desktop";
 import { env } from "./env";
 
 const base = createAuthClient({
@@ -9,4 +10,6 @@ const base = createAuthClient({
 	plugins: [webDesktop(), deviceAuthorizationClient()],
 });
 
-export const authClient = isDesktop ? wrapAuthClientForDesktop(base) : base;
+export const authClient = isDesktop
+	? wrapForDesktop(base, desktopAuth, useSession)
+	: base;
