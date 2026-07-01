@@ -5,5 +5,4 @@ features = [
     "skill",
 ]
 
-targets = ["claude", "opencode"]
-variables = { "agent_name" = "my agent" }
+targets = ["claude", "opencode", "cursor"]
