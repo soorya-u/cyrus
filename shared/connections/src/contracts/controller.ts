@@ -1,13 +1,9 @@
 import { eventIterator, oc } from "@orpc/contract";
-import {
-	ChatChunkSchema,
-	ChatInputSchema,
-	HelloInputSchema,
-	HelloOutputSchema,
-} from "../schemas/rtc";
+import { ListAgentsOutputSchema } from "../schemas/agents";
+import { ChatChunkSchema, ChatInputSchema } from "../schemas/rtc";
 
 export const controllerContract = {
-	hello: oc.input(HelloInputSchema).output(HelloOutputSchema),
+	listAgents: oc.output(ListAgentsOutputSchema),
 	chat: oc.input(ChatInputSchema).output(eventIterator(ChatChunkSchema)),
 	subscribe: oc.output(eventIterator(ChatChunkSchema)),
 };
