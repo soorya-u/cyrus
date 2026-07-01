@@ -42,6 +42,12 @@ export type Turn = {
 
 export type ThreadStatus = "running" | "ready" | "starting" | "error" | "idle";
 
+export type Project = {
+	id: string;
+	name: string;
+	path: string;
+};
+
 export type Thread = {
 	branch: string | null;
 	createdAt: string;
@@ -50,6 +56,7 @@ export type Thread = {
 	latestUserMessageAt: string | null;
 	messages: Message[];
 	model: string;
+	projectId: string;
 	status: ThreadStatus;
 	title: string;
 	toolCalls: ToolCall[];
