@@ -1,5 +1,5 @@
 ---
-name: "OPSX: Verify"
+name: "opsx-verify"
 description: Verify implementation matches change artifacts before archiving
 category: Workflow
 tags: [workflow, verify, experimental]
