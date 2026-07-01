@@ -12,6 +12,7 @@
     "build": "bun build src/cli.ts --compile --env 'CLI_PUBLIC_*' --outfile dist/cyrusd"
   },
   "dependencies": {
+    "@agentclientprotocol/sdk": "^1.1.0",
     "@commander-js/extra-typings": "^15.0.0",
     "@cyrus/connections": "workspace:*",
     "@orpc/server": "catalog:",
