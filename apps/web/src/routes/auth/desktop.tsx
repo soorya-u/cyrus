@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { AuthPageLayout } from "@/components/auth/auth-page-layout";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth";
 
@@ -35,7 +36,7 @@ function DesktopAuthPage() {
 	};
 
 	return (
-		<div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-(--home-page-bg) px-6 text-foreground antialiased">
+		<AuthPageLayout>
 			<h1 className="font-medium text-2xl tracking-tight">Sign in</h1>
 			<p className="max-w-xs text-center text-muted-foreground text-sm">
 				A browser window should have opened. If it didn't:
@@ -48,6 +49,6 @@ function DesktopAuthPage() {
 					{copied ? "Copied!" : "Copy link"}
 				</Button>
 			</div>
-		</div>
+		</AuthPageLayout>
 	);
 }

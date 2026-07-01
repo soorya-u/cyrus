@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AuthPageLayout } from "@/components/auth/auth-page-layout";
 import { authClient } from "@/lib/auth";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -31,16 +32,12 @@ function AuthCallbackPage() {
 	}, []);
 
 	return (
-		<p
-			style={{
-				fontFamily: "sans-serif",
-				textAlign: "center",
-				marginTop: "20vh",
-			}}
-		>
-			{(done && "You can close this tab.") ||
-				(error && `Sign in failed: ${error}`) ||
-				"Completing sign in…"}
-		</p>
+		<AuthPageLayout>
+			<p className="text-center text-muted-foreground text-sm">
+				{(done && "You can close this tab.") ||
+					(error && `Sign in failed: ${error}`) ||
+					"Completing sign in…"}
+			</p>
+		</AuthPageLayout>
 	);
 }
