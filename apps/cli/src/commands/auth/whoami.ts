@@ -1,5 +1,5 @@
 import { authClient } from "@/lib/auth";
-import { get, remove } from "@/utils/store";
+import { get, remove } from "@/store/config";
 import { bold, print } from "@/utils/style";
 
 type WhoamiOptions = { email?: boolean };

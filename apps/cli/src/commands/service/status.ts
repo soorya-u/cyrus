@@ -1,5 +1,5 @@
+import { get } from "@/store/config";
 import { runningPid } from "@/utils/process";
-import { get } from "@/utils/store";
 import { print } from "@/utils/style";
 
 export async function status(): Promise<void> {

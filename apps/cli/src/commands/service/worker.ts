@@ -4,8 +4,8 @@ import { controllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { get, getOrCreate } from "@/store/config";
 import { generateId, generateName } from "@/utils/identity";
-import { get, getOrCreate } from "@/utils/store";
 import { print } from "@/utils/style";
 
 export async function worker(): Promise<void> {
