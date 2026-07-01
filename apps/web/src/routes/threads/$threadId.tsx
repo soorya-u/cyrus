@@ -1,18 +1,29 @@
 // biome-ignore lint/style/useFilenamingConvention: TanStack Router requires $threadId param syntax.
+
 import { createFileRoute } from "@tanstack/react-router";
+import { WebChatApp } from "@/components/web-chat-app";
+
+export type ThreadRouteParams = {
+	workerId: string;
+	projectId: string;
+	threadId: string;
+};
 
 export const Route = createFileRoute("/threads/$threadId")({
-	component: ThreadDetail,
+	component: () => <ThreadDetail projectId="" threadId="" workerId="" />,
 });
 
-function ThreadDetail() {
-	const { threadId } = Route.useParams();
+/** Thread detail shell — preserves route params for future wiring to live feed. */
+export function ThreadDetail({
+	workerId,
+	projectId,
+	threadId,
+}: ThreadRouteParams) {
 	return (
-		<div className="p-6">
-			<h1 className="text-xl">Thread {threadId}</h1>
-			<p className="text-muted-foreground text-sm">
-				Feed + composer will live here (seeded from t3code patterns).
-			</p>
-		</div>
+		<WebChatApp
+			initialThreadId={threadId}
+			projectId={projectId}
+			workerId={workerId}
+		/>
 	);
 }

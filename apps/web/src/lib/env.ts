@@ -5,6 +5,10 @@ export const env = createEnv({
 	clientPrefix: "VITE_",
 	client: {
 		VITE_SERVER_URL: z.url(),
+		VITE_IS_DESKTOP: z.preprocess(
+			() => typeof window !== "undefined" && !!window.__electrobunWebviewId,
+			z.boolean()
+		),
 	},
 	runtimeEnv: import.meta.env as Record<
 		string,

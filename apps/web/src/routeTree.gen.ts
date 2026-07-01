@@ -12,10 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ThreadsIndexRouteImport } from './routes/threads/index'
 import { Route as ThreadsThreadIdRouteImport } from './routes/threads/$threadId'
-import { Route as AuthSuccessRouteImport } from './routes/auth.success'
-import { Route as AuthDeviceRouteImport } from './routes/auth.device'
-import { Route as AuthDesktopRouteImport } from './routes/auth.desktop'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthSuccessRouteImport } from './routes/auth/success'
+import { Route as AuthDeviceRouteImport } from './routes/auth/device'
+import { Route as AuthDesktopRouteImport } from './routes/auth/desktop'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as WorkersWorkerIdProjectsProjectIdThreadsThreadIdRouteImport } from './routes/workers/$workerId/projects/$projectId/threads/$threadId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,12 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute =
+  WorkersWorkerIdProjectsProjectIdThreadsThreadIdRouteImport.update({
+    id: '/workers/$workerId/projects/$projectId/threads/$threadId',
+    path: '/workers/$workerId/projects/$projectId/threads/$threadId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/auth/success': typeof AuthSuccessRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads/': typeof ThreadsIndexRoute
+  '/workers/$workerId/projects/$projectId/threads/$threadId': typeof WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +78,7 @@ export interface FileRoutesByTo {
   '/auth/success': typeof AuthSuccessRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads': typeof ThreadsIndexRoute
+  '/workers/$workerId/projects/$projectId/threads/$threadId': typeof WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +89,7 @@ export interface FileRoutesById {
   '/auth/success': typeof AuthSuccessRoute
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/threads/': typeof ThreadsIndexRoute
+  '/workers/$workerId/projects/$projectId/threads/$threadId': typeof WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +101,7 @@ export interface FileRouteTypes {
     | '/auth/success'
     | '/threads/$threadId'
     | '/threads/'
+    | '/workers/$workerId/projects/$projectId/threads/$threadId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +111,7 @@ export interface FileRouteTypes {
     | '/auth/success'
     | '/threads/$threadId'
     | '/threads'
+    | '/workers/$workerId/projects/$projectId/threads/$threadId'
   id:
     | '__root__'
     | '/'
@@ -109,6 +121,7 @@ export interface FileRouteTypes {
     | '/auth/success'
     | '/threads/$threadId'
     | '/threads/'
+    | '/workers/$workerId/projects/$projectId/threads/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +132,7 @@ export interface RootRouteChildren {
   AuthSuccessRoute: typeof AuthSuccessRoute
   ThreadsThreadIdRoute: typeof ThreadsThreadIdRoute
   ThreadsIndexRoute: typeof ThreadsIndexRoute
+  WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute: typeof WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workers/$workerId/projects/$projectId/threads/$threadId': {
+      id: '/workers/$workerId/projects/$projectId/threads/$threadId'
+      path: '/workers/$workerId/projects/$projectId/threads/$threadId'
+      fullPath: '/workers/$workerId/projects/$projectId/threads/$threadId'
+      preLoaderRoute: typeof WorkersWorkerIdProjectsProjectIdThreadsThreadIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +204,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSuccessRoute: AuthSuccessRoute,
   ThreadsThreadIdRoute: ThreadsThreadIdRoute,
   ThreadsIndexRoute: ThreadsIndexRoute,
+  WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute:
+    WorkersWorkerIdProjectsProjectIdThreadsThreadIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
