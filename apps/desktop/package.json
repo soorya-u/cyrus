@@ -10,7 +10,7 @@
     "build": "turbo -F @cyrus/web build && electrobun build",
     "build:stable": "turbo -F @cyrus/web build && electrobun build --env=stable",
     "build:canary": "turbo -F @cyrus/web build && electrobun build --env=canary",
-    "check-types": "tsc --noEmit"
+    "check:types": "tsc --noEmit"
   },
   "dependencies": {
     "@soorya-u/better-auth-desktop": "catalog:",

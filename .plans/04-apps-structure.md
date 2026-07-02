@@ -4,7 +4,7 @@
 
 ## apps/web
 - Exact from homeland: Vite + TanStack Router + React 19 + oRPC + tanstack-query + better-auth client
-- package.json scripts: dev, build, check-types
+- package.json scripts: dev, build, check:types
 - src/: main, routes (index, login, _auth/*), components (header, loader, theme, auth forms), lib/auth, utils/orpc
 - Use @cyrus/ui, @cyrus/api, @cyrus/auth, @cyrus/env/web
 - Seed placeholder Thread list page (from later plan)
