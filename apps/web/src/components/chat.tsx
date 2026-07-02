@@ -5,319 +5,31 @@ import type {
 	GitDiff,
 	Message,
 	Thread,
-	ThreadStatus,
 	ToolCall,
 } from "@cyrus/hooks/types";
-import {
-	formatMessageTime,
-	relativeTime,
-} from "@cyrus/hooks/use-relative-time";
+import { formatMessageTime } from "@cyrus/hooks/use-relative-time";
 import { useThreadFeed } from "@cyrus/hooks/use-thread-feed";
 import { PatchDiff } from "@pierre/diffs/react";
 import {
-	ArchiveIcon,
 	CheckIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
-	CopyIcon,
 	GitBranchIcon,
-	PlusIcon,
-	SearchIcon,
-	SendIcon,
-	SquareIcon,
 	TerminalIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { MessageCopyButton } from "@/components/chat/message-copy-button";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { cn } from "@/utils/cn";
-
-/* ─── Thread status pill ─────────────────────────────────────────────── */
-
-const STATUS_TONES: Record<
-	ThreadStatus,
-	{ label: string; dot: string; text: string; bg: string }
-> = {
-	running: {
-		label: "Running",
-		dot: "bg-orange-500",
-		text: "text-orange-600 dark:text-orange-400",
-		bg: "bg-orange-500/12",
-	},
-	ready: {
-		label: "Ready",
-		dot: "bg-emerald-500",
-		text: "text-emerald-600 dark:text-emerald-400",
-		bg: "bg-emerald-500/12",
-	},
-	starting: {
-		label: "Starting",
-		dot: "bg-blue-500",
-		text: "text-blue-600 dark:text-blue-400",
-		bg: "bg-blue-500/12",
-	},
-	error: {
-		label: "Error",
-		dot: "bg-red-500",
-		text: "text-red-600 dark:text-red-400",
-		bg: "bg-red-500/12",
-	},
-	idle: {
-		label: "Idle",
-		dot: "bg-neutral-400",
-		text: "text-neutral-500 dark:text-neutral-400",
-		bg: "bg-neutral-500/10",
-	},
-};
-
-function ThreadStatusPill({
-	status,
-	compact = false,
-}: {
-	status: ThreadStatus;
-	compact?: boolean;
-}) {
-	const tone = STATUS_TONES[status];
-	return (
-		<span
-			className={cn(
-				"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-[10px]",
-				tone.bg,
-				tone.text
-			)}
-		>
-			<span
-				className={cn(
-					"size-1.5 rounded-full",
-					tone.dot,
-					status === "running" && "animate-pulse"
-				)}
-			/>
-			{!compact && tone.label}
-		</span>
-	);
-}
-
-/* ─── Sidebar ─────────────────────────────────────────────────────────── */
-
-type SidebarProps = {
-	activeId: string | null;
-	onArchive: (id: string) => void;
-	onNew: () => void;
-	onRename: (id: string, title: string) => void;
-	onSelect: (id: string) => void;
-	threads: Thread[];
-};
-
-function ThreadRow({
-	thread,
-	isActive,
-	onSelect,
-	onArchive,
-	onRename,
-}: {
-	thread: Thread;
-	isActive: boolean;
-	onSelect: (id: string) => void;
-	onArchive: (id: string) => void;
-	onRename: (id: string, title: string) => void;
-}) {
-	const [renaming, setRenaming] = useState(false);
-	const [draft, setDraft] = useState(thread.title);
-	const [confirmArchive, setConfirmArchive] = useState(false);
-	const inputRef = useRef<HTMLInputElement | null>(null);
-
-	useEffect(() => {
-		if (renaming && inputRef.current) {
-			inputRef.current.focus();
-			inputRef.current.select();
-		}
-	}, [renaming]);
-
-	const isRunning = thread.status === "running";
-	const timestamp = relativeTime(
-		thread.latestUserMessageAt ?? thread.updatedAt ?? thread.createdAt
-	);
-
-	return (
-		<li
-			className={cn(
-				"group/sub relative isolate flex w-full items-center rounded-md transition-colors",
-				isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"
-			)}
-		>
-			<button
-				className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left"
-				onClick={() => onSelect(thread.id)}
-				onDoubleClick={() => {
-					setDraft(thread.title);
-					setRenaming(true);
-				}}
-				type="button"
-			>
-				<ThreadStatusPill compact status={thread.status} />
-				{renaming ? (
-					<input
-						className="min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs outline-none"
-						onBlur={() => {
-							onRename(thread.id, draft.trim() || thread.title);
-							setRenaming(false);
-						}}
-						onChange={(e) => setDraft(e.target.value)}
-						onClick={(e) => e.stopPropagation()}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") {
-								e.preventDefault();
-								onRename(thread.id, draft.trim() || thread.title);
-								setRenaming(false);
-							} else if (e.key === "Escape") {
-								e.preventDefault();
-								setRenaming(false);
-							}
-						}}
-						ref={inputRef}
-						value={draft}
-					/>
-				) : (
-					<span className="min-w-0 flex-1 truncate text-xs">
-						{thread.title}
-					</span>
-				)}
-			</button>
-			<div className="ml-auto flex shrink-0 items-center gap-1.5 pr-1.5">
-				{thread.branch && (
-					<Tooltip>
-						<TooltipTrigger
-							render={
-								<span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70">
-									<GitBranchIcon className="size-3" />
-								</span>
-							}
-						/>
-						<TooltipPopup side="top">{thread.branch}</TooltipPopup>
-					</Tooltip>
-				)}
-				{confirmArchive ? (
-					<button
-						className="inline-flex h-5 cursor-pointer items-center rounded-md bg-destructive/12 px-2 font-medium text-[10px] text-destructive hover:bg-destructive/18"
-						onClick={(e) => {
-							e.stopPropagation();
-							onArchive(thread.id);
-						}}
-						type="button"
-					>
-						Confirm
-					</button>
-				) : (
-					!isRunning && (
-						<button
-							aria-label={`Archive ${thread.title}`}
-							className={cn(
-								"inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground",
-								"opacity-0 transition-opacity group-hover/sub:opacity-100 max-sm:opacity-100"
-							)}
-							onClick={(e) => {
-								e.stopPropagation();
-								setConfirmArchive(true);
-							}}
-							type="button"
-						>
-							<ArchiveIcon className="size-3.5" />
-						</button>
-					)
-				)}
-				<span
-					className={cn(
-						"text-[10px] tabular-nums",
-						isActive ? "text-foreground/70" : "text-muted-foreground/50"
-					)}
-				>
-					{timestamp}
-				</span>
-			</div>
-		</li>
-	);
-}
-
-export function ChatSidebar({
-	threads,
-	activeId,
-	onSelect,
-	onNew,
-	onArchive,
-	onRename,
-}: SidebarProps) {
-	const [query, setQuery] = useState("");
-	const filtered = useMemo(() => {
-		const q = query.trim().toLowerCase();
-		if (!q) {
-			return threads;
-		}
-		return threads.filter((t) => t.title.toLowerCase().includes(q));
-	}, [threads, query]);
-
-	return (
-		<aside className="flex h-full w-64 shrink-0 flex-col border-border border-r bg-card">
-			<div className="flex items-center justify-between border-border border-b px-3 py-2.5">
-				<div className="flex flex-col leading-tight">
-					<span className="font-semibold text-sm">Cyrus</span>
-					<span className="text-[10px] text-muted-foreground">
-						t3code style UI
-					</span>
-				</div>
-				<button
-					aria-label="New thread"
-					className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-					onClick={onNew}
-					type="button"
-				>
-					<PlusIcon className="size-4" />
-				</button>
-			</div>
-			<div className="px-2 py-2">
-				<div className="relative">
-					<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
-					<input
-						className="h-8 w-full rounded-md border border-input bg-background pr-2 pl-7 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
-						onChange={(e) => setQuery(e.target.value)}
-						placeholder="Search threads"
-						value={query}
-					/>
-				</div>
-			</div>
-			<ScrollArea className="flex-1 px-1.5">
-				<ul className="flex flex-col gap-0.5 py-1">
-					{filtered.map((t) => (
-						<ThreadRow
-							isActive={activeId === t.id}
-							key={t.id}
-							onArchive={onArchive}
-							onRename={onRename}
-							onSelect={onSelect}
-							thread={t}
-						/>
-					))}
-					{filtered.length === 0 && (
-						<li className="px-2 py-6 text-center text-[11px] text-muted-foreground/60">
-							No threads
-						</li>
-					)}
-				</ul>
-			</ScrollArea>
-			<Separator />
-		</aside>
-	);
-}
 
 /* ─── Markdown (react-markdown) ───────────────────────────────────────── */
 
@@ -408,40 +120,28 @@ function renderMarkdown(text: string): React.ReactNode {
 
 /* ─── Message bubble ──────────────────────────────────────────────────── */
 
-function MessageCopyButton({ text }: { text: string }) {
-	const { copied, copy } = useCopyToClipboard();
-	return (
-		<button
-			aria-label="Copy message"
-			className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-			onClick={() => {
-				copy(text);
-			}}
-			type="button"
-		>
-			{copied ? (
-				<CheckIcon className="size-3" />
-			) : (
-				<CopyIcon className="size-3" />
-			)}
-			{copied ? "Copied" : "Copy"}
-		</button>
-	);
-}
-
 function UserMessage({ message }: { message: Message }) {
 	return (
-		<div className="mb-5 flex flex-col items-end">
+		<div className="group/user mb-5 flex flex-col items-end">
 			<div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground">
 				<div className="chat-markdown text-sm leading-relaxed">
 					{renderMarkdown(message.content)}
 				</div>
 			</div>
-			<div className="mt-1 flex items-center gap-1 pr-0.5">
-				<span className="text-[10px] text-muted-foreground tabular-nums">
-					{formatMessageTime(message.createdAt)}
-				</span>
-				<MessageCopyButton text={message.content} />
+			<div className="mt-1 flex w-full max-w-[85%] items-center justify-end gap-2 pe-1 text-xs tabular-nums opacity-0 transition-opacity duration-200 focus-within:opacity-100 group-hover/user:opacity-100">
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<p className="text-muted-foreground text-xs tabular-nums" />
+						}
+					>
+						{formatMessageTime(message.createdAt)}
+					</TooltipTrigger>
+					<TooltipPopup side="top">
+						{formatMessageTime(message.createdAt)}
+					</TooltipPopup>
+				</Tooltip>
+				<MessageCopyButton text={message.content} variant="ghost" />
 			</div>
 		</div>
 	);
@@ -449,15 +149,24 @@ function UserMessage({ message }: { message: Message }) {
 
 function AssistantMessage({ message }: { message: Message }) {
 	return (
-		<div className="mb-2 px-0.5">
+		<div className="group/assistant mb-2 px-0.5">
 			<div className="chat-markdown text-foreground text-sm leading-relaxed">
 				{renderMarkdown(message.content)}
 			</div>
-			<div className="mt-1 flex items-center gap-1">
-				<MessageCopyButton text={message.content} />
-				<span className="text-[10px] text-muted-foreground tabular-nums">
-					{formatMessageTime(message.createdAt)}
-				</span>
+			<div className="mt-1.5 flex items-center gap-2 text-xs tabular-nums opacity-0 transition-opacity duration-200 focus-within:opacity-100 group-hover/assistant:opacity-100">
+				<MessageCopyButton text={message.content} variant="ghost" />
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<p className="text-muted-foreground text-xs tabular-nums" />
+						}
+					>
+						{formatMessageTime(message.createdAt)}
+					</TooltipTrigger>
+					<TooltipPopup side="top">
+						{formatMessageTime(message.createdAt)}
+					</TooltipPopup>
+				</Tooltip>
 			</div>
 		</div>
 	);
@@ -613,29 +322,27 @@ function FeedEntryView({ entry }: { entry: FeedEntry }) {
 	return null;
 }
 
-export function ChatFeed({ thread }: { thread: Thread | null }) {
+export function ChatFeed({
+	thread,
+	className,
+}: {
+	thread: Thread;
+	className?: string;
+}) {
 	const feed = useThreadFeed(thread);
 	const endRef = useRef<HTMLDivElement | null>(null);
 	useEffect(() => {
 		endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
 	}, []);
 
-	if (!thread) {
-		return (
-			<div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-				<div className="max-w-sm space-y-1.5">
-					<TerminalIcon className="mx-auto size-7 text-muted-foreground/50" />
-					<p className="font-medium text-sm">No thread selected</p>
-					<p className="text-muted-foreground text-xs">
-						Create a new thread from the sidebar to start a coding session.
-					</p>
-				</div>
-			</div>
-		);
-	}
 	if (feed.length === 0) {
 		return (
-			<div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+			<div
+				className={cn(
+					"flex flex-1 flex-col items-center justify-center px-6 pb-56 text-center",
+					className
+				)}
+			>
 				<div className="max-w-sm space-y-1.5">
 					<p className="font-medium text-sm">No conversation yet</p>
 					<p className="text-muted-foreground text-xs">
@@ -647,8 +354,8 @@ export function ChatFeed({ thread }: { thread: Thread | null }) {
 		);
 	}
 	return (
-		<ScrollArea className="flex-1">
-			<div className="mx-auto flex max-w-3xl flex-col px-4 py-4">
+		<ScrollArea className={cn("flex-1", className)}>
+			<div className="mx-auto flex max-w-3xl flex-col px-4 pt-4 pb-56">
 				{feed.map((entry) => (
 					<FeedEntryView entry={entry} key={entry.id} />
 				))}
@@ -658,110 +365,20 @@ export function ChatFeed({ thread }: { thread: Thread | null }) {
 	);
 }
 
-/* ─── Composer ────────────────────────────────────────────────────────── */
-
-export function Composer({
-	onSend,
-	onStop,
-	busy,
-}: {
-	onSend: (text: string) => void;
-	onStop?: () => void;
-	busy: boolean;
-}) {
-	const [value, setValue] = useState("");
-	const taRef = useRef<HTMLTextAreaElement | null>(null);
-
-	useEffect(() => {
-		const ta = taRef.current;
-		if (!ta) {
-			return;
-		}
-		ta.style.height = "auto";
-		ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
-	}, []);
-
-	function submit() {
-		const text = value.trim();
-		if (!text) {
-			return;
-		}
-		onSend(text);
-		setValue("");
-	}
-
-	return (
-		<div className="shrink-0 border-border border-t bg-background px-3 py-2.5">
-			<div className="mx-auto max-w-3xl">
-				<div className="flex items-end gap-2 rounded-xl border border-input bg-card px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-ring">
-					<textarea
-						className="max-h-48 min-h-[36px] flex-1 resize-none bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
-						onChange={(e) => setValue(e.target.value)}
-						onKeyDown={(e) => {
-							if (e.key === "Enter" && !e.shiftKey) {
-								e.preventDefault();
-								submit();
-							}
-						}}
-						placeholder="Ask the repo agent, or run a command…"
-						ref={taRef}
-						rows={1}
-						value={value}
-					/>
-					{busy ? (
-						<button
-							className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-destructive px-2.5 font-medium text-destructive-foreground text-xs hover:bg-destructive/90"
-							onClick={() => onStop?.()}
-							type="button"
-						>
-							<SquareIcon className="size-3.5" /> Stop
-						</button>
-					) : (
-						<button
-							className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-2.5 font-medium text-primary-foreground text-xs transition-colors hover:bg-primary/90 disabled:opacity-40"
-							disabled={!value.trim()}
-							onClick={submit}
-							type="button"
-						>
-							<SendIcon className="size-3.5" /> Send
-						</button>
-					)}
-				</div>
-				<p className="mt-1 px-1 text-[10px] text-muted-foreground">
-					<kbd className="rounded border border-border bg-muted px-1">
-						Enter
-					</kbd>{" "}
-					to send ·{" "}
-					<kbd className="rounded border border-border bg-muted px-1">
-						Shift+Enter
-					</kbd>{" "}
-					for newline
-				</p>
-			</div>
-		</div>
-	);
-}
-
 /* ─── Diff panel (right) ──────────────────────────────────────────────── */
 
 export function DiffPanel({
 	thread,
 	onClose,
 }: {
-	thread: Thread | null;
+	thread: Thread;
 	onClose: () => void;
 }) {
-	const diffs = thread?.diffs ?? [];
-	const turns = thread?.turns ?? [];
+	const diffs = thread.diffs ?? [];
+	const turns = thread.turns ?? [];
 
 	let diffPanelContent: React.ReactNode;
-	if (!thread) {
-		diffPanelContent = (
-			<p className="py-8 text-center text-muted-foreground/70 text-xs">
-				Select a thread to inspect turn diffs.
-			</p>
-		);
-	} else if (diffs.length === 0) {
+	if (diffs.length === 0) {
 		diffPanelContent = (
 			<p className="py-8 text-center text-muted-foreground/70 text-xs">
 				No diffs produced yet.
@@ -832,7 +449,3 @@ export function DiffPanel({
 		</div>
 	);
 }
-
-/* ─── Re-exports for compat ───────────────────────────────────────────── */
-
-export type { GitDiff, Message, Thread, ToolCall } from "@cyrus/hooks/types";

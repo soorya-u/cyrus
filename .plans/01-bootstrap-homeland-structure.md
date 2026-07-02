@@ -102,7 +102,7 @@ See sibling plans:
 
 ## Success Criteria
 - `bun install` succeeds with homeland catalog.
-- `bun run check-types` and biome clean on skeleton.
+- `bun run check:types` and biome clean on skeleton.
 - Can run `bun run dev:db`, `bun run dev` (server + web).
 - apps/cli can be invoked: `bun run --filter @cyrus/cli start`.
 - DB has auth tables + initial cyrus tables (devices, threads).

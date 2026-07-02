@@ -3,6 +3,10 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { initLog } from "evlog/client";
 import ReactDOM from "react-dom/client";
 
+import "@fontsource-variable/dm-sans";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/500.css";
+
 import Loader from "./components/loader";
 import { routeTree } from "./routeTree.gen";
 import { queryClient } from "./utils/query-client";

@@ -9,7 +9,7 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { isDesktop } from "@/lib/desktop";
+import { env } from "@/lib/env";
 
 export type ProviderButtonProps = {
 	provider: SocialProvider;
@@ -67,9 +67,8 @@ export function ProviderButton({
 			disabled={isPending}
 			onClick={() => {
 				signInSocial({ provider, callbackURL });
-				if (isDesktop) {
+				if (env.VITE_IS_DESKTOP)
 					navigate({ to: "/auth/desktop", search: { provider } });
-				}
 			}}
 			type="button"
 			variant={variant}

@@ -15,8 +15,29 @@
 
 	--workspace-topbar-height: 52px;
 	--workspace-controls-top: 0px;
+	--workspace-controls-left: calc(env(safe-area-inset-left) + 0.75rem);
+	--workspace-titlebar-control-size: 1.75rem;
+	--workspace-titlebar-control-gap: 0.75rem;
 	--workspace-controls-right: calc(env(safe-area-inset-right) + 0.75rem);
 	--workspace-native-controls-inset: 0px;
+	--app-scrollbar-width: 6px;
+
+	--sidebar: var(--card);
+	--sidebar-foreground: var(--foreground);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--accent-foreground);
+	--sidebar-border: var(--border);
+	--sidebar-ring: var(--ring);
+}
+
+[data-slot="sidebar-wrapper"] {
+	--workspace-titlebar-content-left: calc(
+		var(--workspace-controls-left) +
+		var(--workspace-titlebar-control-size) +
+		var(--workspace-titlebar-control-gap)
+	);
 }
 
 @theme inline {
@@ -35,6 +56,14 @@
 	--color-info: var(--info);
 	--color-destructive-foreground: var(--destructive-foreground);
 	--color-ring: var(--ring);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
 	--color-input: var(--input);
 	--color-border: var(--border);
 	--color-destructive: var(--destructive);
@@ -59,6 +88,7 @@
 	--radius-2xl: calc(var(--radius) + 8px);
 	--radius-3xl: calc(var(--radius) + 12px);
 	--radius-4xl: calc(var(--radius) + 16px);
+
 	@keyframes skeleton {
 		to {
 			background-position: -200% 0;
@@ -70,9 +100,11 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+
 	html {
 		background-color: var(--app-chrome-background);
 	}
+
 	body {
 		background-color: var(--app-chrome-background);
 		@apply text-foreground relative;
@@ -87,14 +119,78 @@
 		height: var(--workspace-topbar-height);
 		min-height: var(--workspace-topbar-height);
 	}
+
 	.surface-subheader {
-		@apply flex h-10 min-h-10 shrink-0 items-center border-b border-border/60 bg-background;
+		height: var(--workspace-topbar-height);
+		min-height: var(--workspace-topbar-height);
+		@apply flex shrink-0 items-center border-b border-border/60 bg-background;
+	}
+
+	.sidebar-icon-action-button {
+		padding-inline: calc(--spacing(1) - 1px);
+		@apply inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring;
+	}
+
+	.chat-composer-horizontal-inset {
+		padding-inline-start: calc(env(safe-area-inset-left) + 0.75rem);
+		padding-inline-end: calc(env(safe-area-inset-right) + 0.75rem);
+	}
+
+	.chat-composer-glass,
+	.chat-composer-lower-chrome {
+		background: color-mix(in srgb, var(--card) 20%, transparent);
+	}
+
+	.chat-composer-glass {
+		box-shadow:
+			0 18px 48px -20px rgb(0 0 0 / 28%),
+			0 4px 14px -7px rgb(0 0 0 / 22%);
+	}
+
+	.chat-composer-shared-blur {
+		-webkit-backdrop-filter: blur(16px);
+		backdrop-filter: blur(16px);
+	}
+
+	.dark .chat-composer-glass,
+	.dark .chat-composer-lower-chrome {
+		background: color-mix(in srgb, var(--card) 45%, transparent);
+	}
+
+	.dark .chat-composer-glass {
+		box-shadow:
+			0 18px 48px -20px rgb(0 0 0 / 60%),
+			0 4px 14px -7px rgb(0 0 0 / 40%);
+	}
+
+	.chat-composer-lower-chrome {
+		padding-top: 1px;
+		margin-inline-end: var(--app-scrollbar-width);
+		margin-top: -1px;
+	}
+
+	@media (min-width: 40rem) {
+		.chat-composer-horizontal-inset {
+			padding-inline-start: calc(env(safe-area-inset-left) + 1.25rem);
+			padding-inline-end: calc(env(safe-area-inset-right) + 1.25rem);
+		}
+	}
+
+	@supports not (
+			(-webkit-backdrop-filter: blur(1px)) or
+			(backdrop-filter: blur(1px))
+		) {
+		.chat-composer-glass,
+		.chat-composer-lower-chrome {
+			background: var(--card);
+		}
 	}
 }
 
 @utility pt-safe {
 	padding-top: max(env(safe-area-inset-top), 0px);
 }
+
 @utility pb-safe {
 	padding-bottom: max(env(safe-area-inset-bottom), 0px);
 }
@@ -219,19 +315,24 @@ body {
 ::-webkit-scrollbar {
 	width: 6px;
 }
+
 ::-webkit-scrollbar-track {
 	background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
 	background: rgba(0, 0, 0, 0.15);
 	border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
 	background: rgba(0, 0, 0, 0.25);
 }
+
 .dark ::-webkit-scrollbar-thumb {
 	background: rgba(255, 255, 255, 0.1);
 }
+
 .dark ::-webkit-scrollbar-thumb:hover {
 	background: rgba(255, 255, 255, 0.18);
 }
