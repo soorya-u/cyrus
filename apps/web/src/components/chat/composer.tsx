@@ -60,7 +60,7 @@ function ComposerFooterControls() {
 	const runtimeModeTooltip = "Ask before commands and file changes.";
 
 	return (
-		<div className="-m-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+		<div className="scrollbar-none -m-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto p-1 [&::-webkit-scrollbar]:hidden">
 			<Button
 				className="min-w-0 max-w-48 shrink justify-between whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:max-w-56 sm:px-3"
 				data-chat-provider-model-picker="true"
@@ -82,7 +82,7 @@ function ComposerFooterControls() {
 					</Tooltip>
 				</span>
 				<span aria-hidden="true" className="flex items-center">
-					<ChevronDownIcon className="!-me-1 !ms-0 size-3 shrink-0 opacity-60" />
+					<ChevronDownIcon className="ms-0! -me-1! size-3 shrink-0 opacity-60" />
 				</span>
 			</Button>
 
@@ -211,7 +211,7 @@ export function Composer({
 				aria-hidden="true"
 				className="chat-composer-horizontal-inset pointer-events-none absolute inset-x-0 top-1.5 bottom-0 z-0 sm:top-2"
 			>
-				<div className="relative mx-auto h-full w-full max-w-3xl overflow-clip rounded-t-[20px]">
+				<div className="relative mx-auto h-full w-full max-w-3xl overflow-clip rounded-t-4xl">
 					<div className="chat-composer-shared-blur absolute -inset-8" />
 				</div>
 			</div>
@@ -227,7 +227,7 @@ export function Composer({
 						}}
 					>
 						<div className="group rounded-[22px] p-px transition-colors duration-200">
-							<div className="chat-composer-glass rounded-[20px] border border-border transition-colors duration-200 has-focus-visible:border-ring/45">
+							<div className="chat-composer-glass rounded-4xl border border-border transition-colors duration-200 has-focus-visible:border-ring/45">
 								<div className="relative px-3 pt-3.5 pb-2 sm:px-4 sm:pt-4">
 									<div className="relative">
 										<textarea

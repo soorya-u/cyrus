@@ -14,7 +14,7 @@ const THREAD_MAIN_CONTENT_MIN_WIDTH = 40 * 16;
 function SidebarControl() {
 	return (
 		<div
-			className="pointer-events-none fixed top-[var(--workspace-controls-top)] left-[var(--workspace-controls-left)] z-50 flex h-[var(--workspace-topbar-height)] items-center"
+			className="pointer-events-none fixed top-(--workspace-controls-top) left-(--workspace-controls-left) z-50 flex h-(--workspace-topbar-height) items-center"
 			data-sidebar-control=""
 		>
 			<Tooltip>
