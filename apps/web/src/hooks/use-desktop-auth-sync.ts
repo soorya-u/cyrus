@@ -9,7 +9,7 @@ export function useDesktopAuthSync() {
 		if (!desktopAuth) return;
 
 		return desktopAuth.onAuthenticated(() =>
-			navigate({ to: "/threads" }).catch(() => undefined)
+			navigate({ to: "/workers" }).catch(() => undefined)
 		);
 	}, [navigate]);
 }

@@ -6,9 +6,7 @@ import { authClient } from "@/lib/auth";
 export const Route = createFileRoute("/")({
 	beforeLoad: async () => {
 		const { data } = await authClient.getSession();
-		if (data?.user) {
-			throw redirect({ to: "/threads" });
-		}
+		if (data?.user) throw redirect({ to: "/workers" });
 	},
 	component: HomePage,
 });

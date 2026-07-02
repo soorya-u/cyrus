@@ -326,7 +326,7 @@ export function ChatFeed({
 	thread,
 	className,
 }: {
-	thread: Thread | null;
+	thread: Thread;
 	className?: string;
 }) {
 	const feed = useThreadFeed(thread);
@@ -335,24 +335,6 @@ export function ChatFeed({
 		endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
 	}, []);
 
-	if (!thread) {
-		return (
-			<div
-				className={cn(
-					"flex flex-1 flex-col items-center justify-center px-6 pb-56 text-center",
-					className
-				)}
-			>
-				<div className="max-w-sm space-y-1.5">
-					<TerminalIcon className="mx-auto size-7 text-muted-foreground/50" />
-					<p className="font-medium text-sm">No thread selected</p>
-					<p className="text-muted-foreground text-xs">
-						Create a new thread from the sidebar to start a coding session.
-					</p>
-				</div>
-			</div>
-		);
-	}
 	if (feed.length === 0) {
 		return (
 			<div
@@ -389,20 +371,14 @@ export function DiffPanel({
 	thread,
 	onClose,
 }: {
-	thread: Thread | null;
+	thread: Thread;
 	onClose: () => void;
 }) {
-	const diffs = thread?.diffs ?? [];
-	const turns = thread?.turns ?? [];
+	const diffs = thread.diffs ?? [];
+	const turns = thread.turns ?? [];
 
 	let diffPanelContent: React.ReactNode;
-	if (!thread) {
-		diffPanelContent = (
-			<p className="py-8 text-center text-muted-foreground/70 text-xs">
-				Select a thread to inspect turn diffs.
-			</p>
-		);
-	} else if (diffs.length === 0) {
+	if (diffs.length === 0) {
 		diffPanelContent = (
 			<p className="py-8 text-center text-muted-foreground/70 text-xs">
 				No diffs produced yet.
@@ -473,7 +449,3 @@ export function DiffPanel({
 		</div>
 	);
 }
-
-/* ─── Re-exports for compat ───────────────────────────────────────────── */
-
-export type { GitDiff, Message, Thread, ToolCall } from "@cyrus/hooks/types";
