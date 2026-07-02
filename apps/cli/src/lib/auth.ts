@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/client";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
-import { get } from "@/utils/store";
+import { get } from "@/store/config";
 import { env } from "./env";
 
 export const authClient = createAuthClient({

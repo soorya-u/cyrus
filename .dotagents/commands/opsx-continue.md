@@ -1,5 +1,5 @@
 ---
-name: "OPSX: Continue"
+name: "opsx-continue"
 description: Continue working on a change - create the next artifact (Experimental)
 category: Workflow
 tags: [workflow, artifacts, experimental]

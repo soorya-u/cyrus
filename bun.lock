@@ -20,6 +20,8 @@
         "cyrusd": "src/cli.ts",
       },
       "dependencies": {
+        "@acp-kit/core": "^0.10.2",
+        "@agentclientprotocol/sdk": "^1.1.0",
         "@commander-js/extra-typings": "^15.0.0",
         "@cyrus/connections": "workspace:*",
         "@orpc/server": "catalog:",
@@ -233,6 +235,10 @@
     "zod": "^4.3.6",
   },
   "packages": {
+    "@acp-kit/core": ["@acp-kit/core@0.10.2", "", { "dependencies": { "@agentclientprotocol/sdk": "^0.18.0" } }, "sha512-+xYl9Fb42lwsAkjA1E2EQcTWOFYEpMU1UrehAXXwRy5zchHV6616KiMuZzh3CfossQNwKVX/vcaYHokxx2qgMQ=="],
+
+    "@agentclientprotocol/sdk": ["@agentclientprotocol/sdk@1.1.0", "", { "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-NT2KqphUJ3w6EksUL51ZhJgIYgq/ZLGcBPkyMKgRSO5PMVwe9DnKKX+Htnvk6KHh6dUuh34UHK4gKp+4te1Mdg=="],
+
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
 
     "@babel/compat-data": ["@babel/compat-data@7.29.7", "", {}, "sha512-locTkQyKvwIEgBzVrn8693ebc97F2U8ZHjbXwDXJ5Fn2TCpNwTlKcaKLkdHop5c/icOFE7qt7Q9JC5hnKNa6Gg=="],
@@ -2268,6 +2274,8 @@
     "zustand": ["zustand@5.0.14", "", { "peerDependencies": { "@types/react": ">=18.0.0", "immer": ">=9.0.6", "react": ">=18.0.0", "use-sync-external-store": ">=1.2.0" }, "optionalPeers": ["@types/react", "immer", "react", "use-sync-external-store"] }, "sha512-/8tAspM5LMPr28b3fwLYrtdj77ECpfZviaP75CMTnwO8ISyaE4GDIG/9rDDYq/cH9D2Xw2A2RXglLInmVBQB/g=="],
 
     "zwitch": ["zwitch@2.0.4", "", {}, "sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A=="],
+
+    "@acp-kit/core/@agentclientprotocol/sdk": ["@agentclientprotocol/sdk@0.18.2", "", { "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-l/o9NKvUc00GPa6RFJ4AccQq2O/PAf83xQ75mThHuL3H571iN4+PEdwnTBez67sS8Nv2aSA373xCZ5CbTXEwzA=="],
 
     "@babel/core/debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" }, "peerDependencies": { "supports-color": "*" }, "optionalPeers": ["supports-color"] }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
 

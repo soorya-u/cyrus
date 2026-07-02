@@ -1,5 +1,5 @@
 ---
-name: "OPSX: Archive"
+name: "opsx-archive"
 description: Archive a completed change in the experimental workflow
 category: Workflow
 tags: [workflow, archive, experimental]

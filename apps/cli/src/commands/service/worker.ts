@@ -1,11 +1,12 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
-import { controllerRouter } from "@/handlers/controller";
+import { createWorkerRuntime } from "@/core";
+import { createControllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { get, getOrCreate } from "@/store/config";
 import { generateId, generateName } from "@/utils/identity";
-import { get, getOrCreate } from "@/utils/store";
 import { print } from "@/utils/style";
 
 export async function worker(): Promise<void> {
@@ -25,6 +26,8 @@ export async function worker(): Promise<void> {
 	const name = await getOrCreate("name", generateName);
 	const room = session.user.id;
 
+	const runtime = createWorkerRuntime();
+
 	print.dim`worker "${name}" joining hub`;
 
 	const signalingSession = await connectSignaling({
@@ -40,17 +43,21 @@ export async function worker(): Promise<void> {
 	const device = serveWorker({
 		signaling: signalingSession.signaling,
 		events: signalingSession.events,
-		routers: { controller: controllerRouter, worker: workerRouter },
+		routers: {
+			controller: createControllerRouter(runtime),
+			worker: workerRouter,
+		},
 	});
 
 	const shutdown = () => {
+		runtime.agentPool.shutdown();
 		device.close();
 		signalingSession.close();
 		process.exit(0);
 	};
 	process.on("SIGINT", shutdown);
 	process.on("SIGTERM", shutdown);
-	process.on("SIGBREAK", shutdown); // Ctrl+Break on Windows
+	process.on("SIGBREAK", shutdown);
 	process.on("unhandledRejection", (reason) => {
 		print.error`[worker] unhandled rejection: ${String(reason)}`;
 	});

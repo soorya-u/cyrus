@@ -4,7 +4,7 @@ import { Result } from "better-result";
 import { YAML } from "bun";
 import { CONFIG_FILE } from "@/constants/file";
 import { env } from "@/lib/env";
-import { ensureDir } from "./dir";
+import { ensureDir } from "@/utils/dir";
 
 const CONFIG_PATH = join(env.CYRUS_HOME, CONFIG_FILE);
 
