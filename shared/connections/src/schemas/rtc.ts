@@ -1,8 +1,5 @@
 import { z } from "zod";
-
-const DirPathSchema = z
-	.string()
-	.regex(/^[A-Za-z0-9\s_\-/\\]+$/, "Invalid directory path");
+import { AgentEventSchema } from "./chat";
 
 export const HelloInputSchema = z.object({ name: z.string() });
 
@@ -15,9 +12,9 @@ export const ChatInputSchema = z.object({
 	agentName: z.string(),
 	message: z.string(),
 	threadId: z.uuidv7().optional(),
-	cwd: DirPathSchema,
+	projectId: z.string(),
 });
 
-export const ChatChunkSchema = z.object({ chunk: z.string() });
+export const ChatChunkSchema = AgentEventSchema;
 
 export type ChatChunk = z.infer<typeof ChatChunkSchema>;
