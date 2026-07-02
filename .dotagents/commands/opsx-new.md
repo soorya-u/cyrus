@@ -1,5 +1,5 @@
 ---
-name: "OPSX: New"
+name: "opsx-new"
 description: Start a new change using the experimental artifact workflow (OPSX)
 category: Workflow
 tags: [workflow, artifacts, experimental]

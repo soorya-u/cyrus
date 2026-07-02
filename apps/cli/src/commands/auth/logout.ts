@@ -1,5 +1,6 @@
+import { Result } from "better-result";
 import { authClient } from "@/lib/auth";
-import { get, remove } from "@/utils/store";
+import { get, remove } from "@/store/config";
 import { print } from "@/utils/style";
 
 export async function logout(): Promise<void> {
@@ -8,10 +9,8 @@ export async function logout(): Promise<void> {
 		print.dim`Not logged in.`;
 		return;
 	}
-	try {
-		await authClient.signOut();
-	} finally {
-		await remove("token");
-	}
+
+	await Result.tryPromise(() => authClient.signOut());
+	await remove("token");
 	print.success`✓ Logged out.`;
 }

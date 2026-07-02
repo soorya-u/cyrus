@@ -17,6 +17,15 @@ export const env = createEnv({
 			.string()
 			.optional()
 			.transform((v) => v === "1"),
+
+		// ACP handshake timeout when spawning an agent subprocess.
+		CYRUS_ACP_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+		CYRUS_ACP_IDLE_SHUTDOWN_MS: z.coerce
+			.number()
+			.int()
+			.positive()
+			.default(30 * 60 * 1000),
+		CYRUS_STREAM_THROTTLING_MS: z.coerce.number().positive().default(25),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

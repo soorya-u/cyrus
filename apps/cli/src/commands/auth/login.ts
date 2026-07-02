@@ -1,7 +1,7 @@
 import { Result } from "better-result";
 import { authClient } from "@/lib/auth";
+import { getOrCreate, set } from "@/store/config";
 import { generateName } from "@/utils/identity";
-import { getOrCreate, set } from "@/utils/store";
 import { blue, bold, cyan, print, underline } from "@/utils/style";
 
 export const CLIENT_ID = "cyrus-cli";
@@ -36,17 +36,24 @@ export async function login(): Promise<void> {
 
 	while (Date.now() < deadline) {
 		await Bun.sleep(interval);
-		const poll = await authClient.device
-			.token({
-				grant_type: GRANT_TYPE,
-				device_code: deviceCode,
-				client_id: CLIENT_ID,
-			})
-			.catch(() => ({
+		const poll = await Result.tryPromise({
+			try: () =>
+				authClient.device.token({
+					grant_type: GRANT_TYPE,
+					device_code: deviceCode,
+					client_id: CLIENT_ID,
+				}),
+			catch: () => ({
 				data: null,
 				error: { error: "authorization_pending", error_description: "" },
-			}));
-		const { data: token, error: tokenError } = poll;
+			}),
+		});
+		const { data: token, error: tokenError } = poll.isOk()
+			? poll.value
+			: {
+					data: null,
+					error: { error: "authorization_pending", error_description: "" },
+				};
 		const accessToken = token?.access_token;
 
 		if (accessToken) {
