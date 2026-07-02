@@ -1,6 +1,6 @@
 import { TerminalIcon } from "lucide-react";
+import SignOut from "@/components/auth/sign-out";
 import { cn } from "@/utils/cn";
-import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "@/workspace-titlebar";
 
 type ThreadEmptyStateProps = {
 	className?: string;
@@ -11,13 +11,14 @@ export function ThreadEmptyState({ className }: ThreadEmptyStateProps) {
 		<>
 			<div
 				className={cn(
-					"surface-subheader px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none",
-					COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS
+					"surface-subheader collapsed-sidebar-titlebar-inset px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none",
+					"justify-between"
 				)}
 			>
 				<span className="text-muted-foreground text-sm">
 					No thread selected
 				</span>
+				<SignOut />
 			</div>
 
 			<div className={cn("flex min-h-0 flex-1", className)}>

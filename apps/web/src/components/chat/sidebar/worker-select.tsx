@@ -1,6 +1,3 @@
-"use client";
-
-import { useNavigate } from "@tanstack/react-router";
 import {
 	Select,
 	SelectContent,
@@ -11,22 +8,20 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { SidebarGroup } from "@/components/ui/sidebar";
-import { MOCK_WORKERS } from "@/mocks/mock-workers";
+import { useWorker } from "@/hooks/use-worker";
 
 type WorkerSelectProps = {
 	workerId?: string;
 };
 
+// TODO: Handle Empty State
 export function WorkerSelect({ workerId }: WorkerSelectProps) {
-	const navigate = useNavigate();
+	const { handleWorkerSelect, workers } = useWorker();
 
 	return (
 		<SidebarGroup className="px-2 py-2">
 			<Select
-				onValueChange={(value) => {
-					if (!value) return navigate({ to: "/workers" });
-					navigate({ to: "/workers/$workerId", params: { workerId: value } });
-				}}
+				onValueChange={handleWorkerSelect}
 				{...(workerId ? { value: workerId } : {})}
 			>
 				<SelectTrigger className="max-h-8 w-full">
@@ -35,9 +30,9 @@ export function WorkerSelect({ workerId }: WorkerSelectProps) {
 				<SelectContent>
 					<SelectGroup>
 						<SelectLabel>Workers</SelectLabel>
-						{MOCK_WORKERS.map((worker) => (
+						{workers.map((worker) => (
 							<SelectItem key={worker.id} value={worker.id}>
-								{worker.label}
+								{worker.name}
 							</SelectItem>
 						))}
 					</SelectGroup>

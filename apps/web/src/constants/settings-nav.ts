@@ -54,8 +54,3 @@ export const SETTINGS_NAV_ITEMS: ReadonlyArray<{
 		path: "/settings/archived",
 	},
 ];
-
-export function settingsSectionFromPath(pathname: string): SettingsSectionId {
-	const item = SETTINGS_NAV_ITEMS.find((entry) => entry.path === pathname);
-	return item?.id ?? "general";
-}

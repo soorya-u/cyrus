@@ -8,10 +8,15 @@ import { ChatSidebarLayout } from "@/components/chat/chat-sidebar-layout";
 import { WorkersSidebar } from "@/components/chat/sidebar/workers-sidebar";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
+import { dialSignaling } from "@/lib/orpc";
 import { MockThreadsProvider } from "@/mocks/mock-threads-provider";
 import { cn } from "@/utils/cn";
 
 export const Route = createFileRoute("/_workspace")({
+	beforeLoad: async () => {
+		const { session, orpc } = await dialSignaling();
+		return { signaling: session, orpcSignaling: orpc };
+	},
 	component: WorkspaceLayout,
 });
 

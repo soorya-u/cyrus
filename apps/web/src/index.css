@@ -131,6 +131,10 @@
 		@apply inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring;
 	}
 
+	.collapsed-sidebar-titlebar-inset {
+		@apply in-data-[sidebar-state=collapsed]:pl-(--workspace-titlebar-content-left);
+	}
+
 	.chat-composer-horizontal-inset {
 		padding-inline-start: calc(env(safe-area-inset-left) + 0.75rem);
 		padding-inline-end: calc(env(safe-area-inset-right) + 0.75rem);

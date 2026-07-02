@@ -1,7 +1,6 @@
-import type { SettingsSectionId } from "@/mocks/settings-nav-items";
-import { SETTINGS_NAV_ITEMS } from "@/mocks/settings-nav-items";
+import type { SettingsSectionId } from "@/constants/settings-nav";
+import { SETTINGS_NAV_ITEMS } from "@/constants/settings-nav";
 import { cn } from "@/utils/cn";
-import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "@/workspace-titlebar";
 
 type SettingsSectionPanelProps = {
 	section: SettingsSectionId;
@@ -14,8 +13,7 @@ export function SettingsSectionPanel({ section }: SettingsSectionPanelProps) {
 		<>
 			<div
 				className={cn(
-					"surface-subheader px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none",
-					COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS
+					"surface-subheader collapsed-sidebar-titlebar-inset px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none"
 				)}
 			>
 				<span className="font-medium text-sm">Settings</span>

@@ -1,18 +1,10 @@
 import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useEffect, useRef } from "react";
-import { type Theme, useTheme } from "@/hooks/use-theme";
-
-function resolveTheme(theme: Theme, systemDark: boolean): "light" | "dark" {
-	if (theme === "system") {
-		return systemDark ? "dark" : "light";
-	}
-	return theme;
-}
 
 export function HomeNav() {
 	const navRef = useRef<HTMLElement>(null);
-	const { theme, setTheme, systemDark } = useTheme();
-	const resolvedTheme = resolveTheme(theme, systemDark);
+	const { resolvedTheme, setTheme } = useTheme();
 
 	useEffect(() => {
 		const nav = navRef.current;

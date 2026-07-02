@@ -1,10 +1,9 @@
 import { authClient } from "@/lib/auth";
 
-export default function UserMenu() {
+export default function SignOut() {
 	const { data } = authClient.useSession();
-	if (!data?.user) {
-		return null;
-	}
+	if (!data?.user) return null;
+
 	return (
 		<button
 			className="text-sm"

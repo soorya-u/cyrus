@@ -10,24 +10,29 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import {
-	SETTINGS_NAV_ITEMS,
-	settingsSectionFromPath,
-} from "@/mocks/settings-nav-items";
+import { SETTINGS_NAV_ITEMS } from "@/constants/settings-nav";
+import { useWorkerStore } from "@/stores/worker";
 
 export function SettingsSidebar() {
 	const navigate = useNavigate();
 	const { isMobile, setOpenMobile } = useSidebar();
+	const lastWorkerId = useWorkerStore((state) => state.lastWorkerId);
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
-	const activeSection = settingsSectionFromPath(pathname);
+
+	const activeSection =
+		SETTINGS_NAV_ITEMS.find((entry) => entry.path === pathname)?.id ??
+		"general";
 
 	const handleBack = () => {
-		if (isMobile) {
-			setOpenMobile(false);
-		}
-		navigate({ to: "/workers" });
+		if (isMobile) setOpenMobile(false);
+		if (lastWorkerId)
+			navigate({
+				to: "/workers/$workerId",
+				params: { workerId: lastWorkerId },
+			});
+		else navigate({ to: "/workers" });
 	};
 
 	return (
