@@ -2,6 +2,7 @@ import {
 	connectSignaling,
 	type SignalingSession,
 } from "@cyrus/connections/rtc/session";
+import type { AgentEvent } from "@cyrus/connections/schemas/chat";
 import type { DeviceInfo } from "@cyrus/connections/schemas/signaling";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,6 +25,16 @@ type ChatMessage = {
 	text: string;
 };
 type Status = "connecting" | "online" | "error";
+
+function appendAgentEventText(text: string, event: AgentEvent): string {
+	switch (event.type) {
+		case "token":
+		case "thought":
+			return text + event.text;
+		default:
+			return text;
+	}
+}
 
 function ThreadsList() {
 	const { data: auth, isPending } = authClient.useSession();
@@ -121,18 +132,25 @@ function ThreadsList() {
 			(async () => {
 				try {
 					const stream = await conn.client.subscribe();
-					for await (const { chunk } of stream) {
+					for await (const event of stream) {
 						setMessages((prev) => {
 							const last = prev.at(-1);
 							if (last?.from === "broadcast") {
 								return [
 									...prev.slice(0, -1),
-									{ ...last, text: last.text + chunk },
+									{
+										...last,
+										text: appendAgentEventText(last.text, event),
+									},
 								];
 							}
 							return [
 								...prev,
-								{ id: crypto.randomUUID(), from: "broadcast", text: chunk },
+								{
+									id: crypto.randomUUID(),
+									from: "broadcast",
+									text: appendAgentEventText("", event),
+								},
 							];
 						});
 					}
@@ -165,12 +183,14 @@ function ThreadsList() {
 			const stream = await conn.client.chat({
 				message: text,
 				agentName: "cursor",
-				cwd: "/tmp/cyrus-agent-test",
+				projectId: "default",
 			});
-			for await (const { chunk } of stream) {
+			for await (const event of stream) {
 				setMessages((prev) =>
 					prev.map((m) =>
-						m.id === replyId ? { ...m, text: m.text + chunk } : m
+						m.id === replyId
+							? { ...m, text: appendAgentEventText(m.text, event) }
+							: m
 					)
 				);
 			}
