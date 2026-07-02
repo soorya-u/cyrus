@@ -2,6 +2,7 @@ import { type AcpRuntime, createAcpRuntime } from "@acp-kit/core";
 import { Result } from "better-result";
 import { agentEntryToProfile } from "@/core/agents/profile";
 import { env } from "@/lib/env";
+import { isCommandAvailable } from "@/utils/command";
 import type { AgentEntry } from "@/validators/agent";
 import { createDefaultHost } from "./host";
 import { createTrackedTransport } from "./transport";
@@ -32,7 +33,7 @@ export class AgentPool {
 	}
 
 	isAvailable(entry: AgentEntry): boolean {
-		return Bun.which(entry.command) !== null;
+		return isCommandAvailable(entry.command);
 	}
 
 	getState(name: string): ProcessState {
@@ -49,29 +50,17 @@ export class AgentPool {
 			this.resetIdleTimer(name);
 			return existing.runtime;
 		}
-		if (existing?.startPromise) {
-			return existing.startPromise;
-		}
-		if (existing?.state === "crashed") {
-			await this.stopAgent(name);
-		}
-
-		const entry = await this.getEntry(name);
-		if (!entry) throw new Error(`agent "${name}" is not registered`);
-
-		if (!this.isAvailable(entry))
-			throw new Error(`command not found on PATH: ${entry.command}`);
+		if (existing?.startPromise) return existing.startPromise;
+		if (existing?.state === "crashed") await this.stopAgent(name);
 
 		const { transport, getConnection } = createTrackedTransport();
+		const startPromise = this.startRuntime(name, transport);
 		this.agents.set(name, {
 			runtime: undefined as unknown as AcpRuntime,
 			getConnection,
 			state: "starting",
+			startPromise,
 		});
-
-		const startPromise = this.bootRuntime(name, entry, transport);
-		const starting = this.agents.get(name);
-		if (starting) starting.startPromise = startPromise;
 
 		const booted = await Result.tryPromise(() => startPromise);
 		if (booted.isErr()) {
@@ -90,10 +79,23 @@ export class AgentPool {
 		return runtime;
 	}
 
-	shutdown(): void {
-		for (const name of [...this.agents.keys()]) {
-			Result.tryPromise(() => this.stopAgent(name)).catch(() => undefined);
-		}
+	async shutdown(): Promise<void> {
+		await Promise.allSettled(
+			[...this.agents.keys()].map((name) => this.stopAgent(name))
+		);
+	}
+
+	private async startRuntime(
+		name: string,
+		transport: ReturnType<typeof createTrackedTransport>["transport"]
+	): Promise<AcpRuntime> {
+		const entry = await this.getEntry(name);
+		if (!entry) throw new Error(`agent "${name}" is not registered`);
+
+		if (!this.isAvailable(entry))
+			throw new Error(`command not found or not executable: ${entry.command}`);
+
+		return this.bootRuntime(name, entry, transport);
 	}
 
 	private bootRuntime(
@@ -126,11 +128,9 @@ export class AgentPool {
 
 		if (record.idleTimer) clearTimeout(record.idleTimer);
 
-		record.idleTimer = setTimeout(
-			() =>
-				Result.tryPromise(() => this.stopAgent(name)).catch(() => undefined),
-			this.idleMs
-		);
+		record.idleTimer = setTimeout(() => {
+			Result.tryPromise(() => this.stopAgent(name));
+		}, this.idleMs);
 	}
 
 	private async stopAgent(name: string): Promise<void> {
@@ -139,7 +139,7 @@ export class AgentPool {
 
 		if (record.idleTimer) clearTimeout(record.idleTimer);
 
-		await Result.tryPromise(record.runtime.shutdown);
+		await Result.tryPromise(() => record.runtime.shutdown());
 
 		this.agents.set(name, {
 			runtime: record.runtime,

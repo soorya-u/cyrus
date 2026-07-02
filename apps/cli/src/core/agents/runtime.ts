@@ -35,21 +35,25 @@ export class AgentRuntime {
 	}
 
 	async getModels(): Promise<ModelOption[]> {
+		await this.ensureHealthyPool();
 		const session = await this.getProbeSession();
 		return modelsFromSession(session);
 	}
 
 	async getModes(): Promise<SelectOption[]> {
+		await this.ensureHealthyPool();
 		const session = await this.getProbeSession();
 		return modesFromSession(session);
 	}
 
 	async getEfforts(): Promise<SelectOption[]> {
+		await this.ensureHealthyPool();
 		const session = await this.getProbeSession();
 		return effortsFromSession(session);
 	}
 
 	async getPersonas(): Promise<SelectOption[]> {
+		await this.ensureHealthyPool();
 		const session = await this.getProbeSession();
 		return personasFromSession(session);
 	}
@@ -60,6 +64,7 @@ export class AgentRuntime {
 		cwd: string,
 		modelId: string
 	): Promise<void> {
+		await this.ensureHealthyPool();
 		const session = await this.requireSession(threadId, projectId, cwd);
 		await session.setModel(modelId);
 	}
@@ -70,6 +75,7 @@ export class AgentRuntime {
 		cwd: string,
 		modeId: string
 	): Promise<void> {
+		await this.ensureHealthyPool();
 		const session = await this.requireSession(threadId, projectId, cwd);
 		await session.setMode(modeId);
 	}
@@ -122,8 +128,7 @@ export class AgentRuntime {
 		cwd: string,
 		content: string
 	): AsyncGenerator<AgentEvent> {
-		if (this.pool.getState(this.agentName) === "crashed")
-			await this.recoverSessions();
+		await this.ensureHealthyPool();
 
 		const session = await this.requireSession(threadId, projectId, cwd);
 		const queue: AgentEvent[] = [];
@@ -171,13 +176,19 @@ export class AgentRuntime {
 	}
 
 	private async recoverSessions(): Promise<void> {
-		if (this.sessions.size === 0) return;
+		if (this.sessions.size === 0) {
+			this.probeSession = null;
+			return;
+		}
 
 		const runtime = await this.pool.getRuntime(this.agentName);
 		if (!runtime.agentCapabilities?.loadSession) {
 			this.sessions.clear();
+			this.probeSession = null;
 			return;
 		}
+
+		this.probeSession = null;
 
 		for (const [threadId, thread] of this.sessions) {
 			const recovered = await Result.tryPromise(() =>
@@ -203,7 +214,14 @@ export class AgentRuntime {
 		}
 	}
 
+	private async ensureHealthyPool(): Promise<void> {
+		if (this.pool.getState(this.agentName) !== "crashed") return;
+		this.probeSession = null;
+		await this.recoverSessions();
+	}
+
 	private async getProbeSession(): Promise<RuntimeSession> {
+		await this.ensureHealthyPool();
 		if (this.probeSession) return this.probeSession;
 
 		const runtime = await this.pool.getRuntime(this.agentName);
@@ -216,6 +234,7 @@ export class AgentRuntime {
 		projectId: string,
 		cwd: string
 	): Promise<RuntimeSession> {
+		await this.ensureHealthyPool();
 		const existing = this.sessions.get(threadId);
 		if (existing) return existing.session;
 

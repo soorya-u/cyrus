@@ -4,6 +4,7 @@ import { Result } from "better-result";
 import { YAML } from "bun";
 import { AGENTS_FILE } from "@/constants/file";
 import { env } from "@/lib/env";
+import { isCommandAvailable } from "@/utils/command";
 import type { AgentEntry } from "@/validators/agent";
 import { agentEntrySchema } from "@/validators/agent";
 import { ensureDir } from "../utils/dir";
@@ -13,26 +14,29 @@ const AGENTS_PATH = join(env.CYRUS_HOME, AGENTS_FILE);
 
 type AgentsRegistry = Record<string, AgentEntry>;
 
-async function readRegistry(): Promise<AgentsRegistry> {
+async function readRegistry(): Promise<Result<AgentsRegistry, string>> {
 	const file = Bun.file(AGENTS_PATH);
-	if (!(await file.exists())) {
-		return {};
-	}
+	if (!(await file.exists())) return Result.ok({});
 
-	const res = await Result.tryPromise(async () => {
-		const parsed = YAML.parse(await file.text());
-		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-			return {};
-		}
-		const registry: AgentsRegistry = {};
-		for (const [name, value] of Object.entries(parsed)) {
-			const entry = agentEntrySchema.safeParse(value);
-			if (entry.success) registry[name] = entry.data;
-		}
-		return registry;
-	});
-
-	return res.match({ ok: (r) => r, err: () => ({}) });
+	return (
+		await Result.tryPromise(async () => {
+			const parsed = YAML.parse(await file.text());
+			if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+				throw new Error(
+					"agents.yml must be a mapping of agent names to entries"
+				);
+			}
+			const registry: AgentsRegistry = {};
+			for (const [name, value] of Object.entries(parsed)) {
+				const entry = agentEntrySchema.safeParse(value);
+				if (!entry.success) {
+					throw new Error(`invalid entry for agent "${name}" in agents.yml`);
+				}
+				registry[name] = entry.data;
+			}
+			return registry;
+		})
+	).mapError(toMessage);
 }
 
 async function writeRegistry(
@@ -46,13 +50,15 @@ async function writeRegistry(
 	).mapError(toMessage);
 }
 
-export function listAgents(): Promise<AgentsRegistry> {
+export function listAgents(): Promise<Result<AgentsRegistry, string>> {
 	return readRegistry();
 }
 
-export async function getAgent(name: string): Promise<AgentEntry | null> {
+export async function getAgent(
+	name: string
+): Promise<Result<AgentEntry | null, string>> {
 	const registry = await readRegistry();
-	return registry[name] ?? null;
+	return registry.map((agents) => agents[name] ?? null);
 }
 
 export async function addAgent(
@@ -60,11 +66,14 @@ export async function addAgent(
 	entry: AgentEntry
 ): Promise<Result<void, string>> {
 	const registry = await readRegistry();
-	if (registry[name]) {
+	if (registry.isErr()) return Result.err(registry.error);
+
+	const agents = registry.value;
+	if (agents[name]) {
 		return Result.err(`agent "${name}" already exists`);
 	}
-	registry[name] = entry;
-	return writeRegistry(registry);
+	agents[name] = entry;
+	return writeRegistry(agents);
 }
 
 export async function updateAgent(
@@ -72,24 +81,30 @@ export async function updateAgent(
 	partial: Partial<AgentEntry>
 ): Promise<Result<void, string>> {
 	const registry = await readRegistry();
-	const existing = registry[name];
+	if (registry.isErr()) return Result.err(registry.error);
+
+	const agents = registry.value;
+	const existing = agents[name];
 	if (!existing) {
 		return Result.err(`agent "${name}" not found`);
 	}
-	registry[name] = {
+	agents[name] = {
 		command: partial.command ?? existing.command,
 		args: partial.args ?? existing.args,
 	};
-	return writeRegistry(registry);
+	return writeRegistry(agents);
 }
 
 export async function removeAgent(name: string): Promise<Result<void, string>> {
 	const registry = await readRegistry();
-	if (!registry[name]) {
+	if (registry.isErr()) return Result.err(registry.error);
+
+	const agents = registry.value;
+	if (!agents[name]) {
 		return Result.err(`agent "${name}" not found`);
 	}
-	delete registry[name];
-	return writeRegistry(registry);
+	delete agents[name];
+	return writeRegistry(agents);
 }
 
 export type RegisteredAgent = {
@@ -101,8 +116,10 @@ export type RegisteredAgent = {
 /** Registered agents whose command is on PATH (worker capability list). */
 export async function listAvailableAgents(): Promise<RegisteredAgent[]> {
 	const registry = await readRegistry();
-	return Object.entries(registry)
-		.filter(([, entry]) => Bun.which(entry.command) !== null)
+	if (registry.isErr()) return [];
+
+	return Object.entries(registry.value)
+		.filter(([, entry]) => isCommandAvailable(entry.command))
 		.map(([name, entry]) => ({
 			name,
 			command: entry.command,

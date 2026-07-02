@@ -49,8 +49,8 @@ export async function worker(): Promise<void> {
 		},
 	});
 
-	const shutdown = () => {
-		runtime.agentPool.shutdown();
+	const shutdown = async () => {
+		await runtime.agentPool.shutdown();
 		device.close();
 		signalingSession.close();
 		process.exit(0);

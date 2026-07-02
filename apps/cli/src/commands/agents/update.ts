@@ -14,22 +14,30 @@ export async function update(name: string, patch: AgentUpdate): Promise<void> {
 	}
 
 	const existing = await getAgent(name);
-	if (!existing) {
-		print.error`agent "${name}" not found`;
-		process.exit(1);
-	}
+	await existing.match({
+		ok: async (agent) => {
+			if (!agent) {
+				print.error`agent "${name}" not found`;
+				process.exit(1);
+			}
 
-	const entry: AgentEntry = {
-		command: patch.command ?? existing.command,
-		args: patch.args ?? existing.args,
-	};
+			const entry: AgentEntry = {
+				command: patch.command ?? agent.command,
+				args: patch.args ?? agent.args,
+			};
 
-	const saved = await updateAgent(name, entry);
-	saved.match({
-		ok: () => {
-			print.success`✓ updated agent "${name}"`;
-			const args = entry.args.length > 0 ? ` ${entry.args.join(" ")}` : "";
-			print.dim`  ${entry.command}${args}`;
+			const saved = await updateAgent(name, entry);
+			saved.match({
+				ok: () => {
+					print.success`✓ updated agent "${name}"`;
+					const args = entry.args.length > 0 ? ` ${entry.args.join(" ")}` : "";
+					print.dim`  ${entry.command}${args}`;
+				},
+				err: (message) => {
+					print.error`${message}`;
+					process.exit(1);
+				},
+			});
 		},
 		err: (message) => {
 			print.error`${message}`;

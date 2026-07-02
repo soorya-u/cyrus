@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+
 export type Project = {
 	id: string;
 	cwd: string;
@@ -6,12 +8,16 @@ export type Project = {
 
 export const DEFAULT_PROJECT_ID = "default";
 
+const DEFAULT_CWD = "/tmp/cyrus-agent-test";
+
+mkdirSync(DEFAULT_CWD, { recursive: true });
+
 const projects = new Map<string, Project>([
 	[
 		DEFAULT_PROJECT_ID,
 		{
 			id: DEFAULT_PROJECT_ID,
-			cwd: "/tmp/cyrus-agent-test",
+			cwd: DEFAULT_CWD,
 			name: "Default",
 		},
 	],
@@ -30,5 +36,6 @@ export function resolveProjectCwd(projectId: string): string {
 	if (!project) {
 		throw new Error(`project not found: ${projectId}`);
 	}
+	mkdirSync(project.cwd, { recursive: true });
 	return project.cwd;
 }

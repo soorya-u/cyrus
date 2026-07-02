@@ -208,7 +208,13 @@ export const SessionUpdateEventSchema = z.object({
 	raw: z.unknown(),
 });
 
+export const ThreadStartedEventSchema = z.object({
+	type: z.literal("thread_started"),
+	threadId: z.string(),
+});
+
 export const AgentEventSchema = z.discriminatedUnion("type", [
+	ThreadStartedEventSchema,
 	TokenEventSchema,
 	ThoughtEventSchema,
 	ToolCallEventSchema,

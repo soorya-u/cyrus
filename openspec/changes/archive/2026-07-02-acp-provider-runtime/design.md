@@ -69,7 +69,7 @@ ACP defines a client/server model over stdio JSON-RPC: one agent subprocess can 
 
 ### 6. Module layout in `apps/cli`
 
-```
+```text
 src/
   acp/
     client.ts          # ClientSideConnection wrapper

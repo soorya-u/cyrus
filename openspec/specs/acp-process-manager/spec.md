@@ -82,14 +82,19 @@ The worker SHALL terminate all agent subprocesses on worker shutdown (SIGINT/SIG
 
 ### Requirement: Agent availability check
 
-The worker SHALL verify an agent's command is executable on PATH before spawning or advertising it.
+The worker SHALL verify an agent's configured command resolves to an executable before spawning or advertising it. Bare command names MAY be resolved via PATH; absolute or relative paths SHALL be checked directly.
 
 #### Scenario: Agent binary not found
 
-- **WHEN** an agent command is not on PATH
+- **WHEN** an agent command cannot be resolved to an executable
 - **THEN** spawn or doctor checks report unavailability with an external install hint
 
-#### Scenario: Agent binary found
+#### Scenario: Agent binary found on PATH
 
-- **WHEN** an agent command exists on PATH
-- **THEN** availability checks pass the PATH validation step
+- **WHEN** an agent command name exists on PATH
+- **THEN** availability checks pass the resolution step
+
+#### Scenario: Agent binary found by path
+
+- **WHEN** an agent command is configured as an absolute or relative executable path
+- **THEN** availability checks pass when that path is executable, even if it is not on PATH

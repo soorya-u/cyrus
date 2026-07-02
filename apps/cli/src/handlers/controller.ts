@@ -81,6 +81,11 @@ export function createControllerRouter(runtime: WorkerRuntime) {
 				message,
 				projectId,
 			} = input;
+
+			const started = { type: "thread_started" as const, threadId };
+			context.broadcaster.broadcast(started, context.peerId);
+			yield started;
+
 			const gen = runtime.threadCoordinator.prompt(
 				agentName,
 				threadId,

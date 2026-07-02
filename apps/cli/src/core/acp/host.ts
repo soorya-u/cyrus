@@ -7,8 +7,7 @@ export function createDefaultHost(
 		requestPermission: (request) => {
 			const allow =
 				request.options.find((o) => o.kind === "allow_once") ??
-				request.options.find((o) => o.kind === "allow_always") ??
-				request.options[0];
+				request.options.find((o) => o.kind === "allow_always");
 
 			if (!allow?.optionId) return Promise.resolve(PermissionDecision.Deny);
 
