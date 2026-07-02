@@ -162,7 +162,11 @@ function ThreadsList() {
 		const replyId = crypto.randomUUID();
 		setMessages((prev) => [...prev, { id: replyId, from: "worker", text: "" }]);
 		try {
-			const stream = await conn.client.chat({ message: text });
+			const stream = await conn.client.chat({
+				message: text,
+				agentName: "cursor",
+				cwd: "/tmp/cyrus-agent-test",
+			});
 			for await (const { chunk } of stream) {
 				setMessages((prev) =>
 					prev.map((m) =>
