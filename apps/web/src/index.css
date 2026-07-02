@@ -4,329 +4,343 @@
 @custom-variant dark (&:is(.dark, .dark *));
 
 :root {
-    /* home page theme tokens */
-    --home-page-bg: #ffffff;
-    --home-nav-bg: rgba(255, 255, 255, 0.75);
-    --home-nav-scroll-border: rgba(0, 0, 0, 0.1);
-    --home-grid-line: rgba(0, 0, 0, 0.06);
-    --home-mark-card-bg: rgba(250, 250, 252, 0.92);
-    --home-mark-border: rgba(0, 0, 0, 0.08);
-    --home-mark-shadow-inset: rgba(0, 0, 0, 0.04);
+	/* home page theme tokens */
+	--home-page-bg: #ffffff;
+	--home-nav-bg: rgba(255, 255, 255, 0.75);
+	--home-nav-scroll-border: rgba(0, 0, 0, 0.1);
+	--home-grid-line: rgba(0, 0, 0, 0.06);
+	--home-mark-card-bg: rgba(250, 250, 252, 0.92);
+	--home-mark-border: rgba(0, 0, 0, 0.08);
+	--home-mark-shadow-inset: rgba(0, 0, 0, 0.04);
 
-    --workspace-topbar-height: 52px;
-    --workspace-controls-top: 0px;
-    --workspace-controls-left: calc(env(safe-area-inset-left) + 0.75rem);
-    --workspace-titlebar-control-size: 1.75rem;
-    --workspace-titlebar-control-gap: 0.75rem;
-    --workspace-controls-right: calc(env(safe-area-inset-right) + 0.75rem);
-    --workspace-native-controls-inset: 0px;
-    --app-scrollbar-width: 6px;
+	--workspace-topbar-height: 52px;
+	--workspace-controls-top: 0px;
+	--workspace-controls-left: calc(env(safe-area-inset-left) + 0.75rem);
+	--workspace-titlebar-control-size: 1.75rem;
+	--workspace-titlebar-control-gap: 0.75rem;
+	--workspace-controls-right: calc(env(safe-area-inset-right) + 0.75rem);
+	--workspace-native-controls-inset: 0px;
+	--app-scrollbar-width: 6px;
 
-    --sidebar: var(--card);
-    --sidebar-foreground: var(--foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: var(--accent);
-    --sidebar-accent-foreground: var(--accent-foreground);
-    --sidebar-border: var(--border);
-    --sidebar-ring: var(--ring);
+	--sidebar: var(--card);
+	--sidebar-foreground: var(--foreground);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--accent-foreground);
+	--sidebar-border: var(--border);
+	--sidebar-ring: var(--ring);
 }
 
 [data-slot="sidebar-wrapper"] {
-    --workspace-titlebar-content-left: calc(var(--workspace-controls-left) + var(--workspace-titlebar-control-size) + var(--workspace-titlebar-control-gap));
+	--workspace-titlebar-content-left: calc(
+		var(--workspace-controls-left) +
+		var(--workspace-titlebar-control-size) +
+		var(--workspace-titlebar-control-gap)
+	);
 }
 
 @theme inline {
-    --animate-skeleton: skeleton 2s -1s infinite linear;
-    --font-sans:
-        "DM Sans", "DM Sans Variable", -apple-system, BlinkMacSystemFont,
-        "Segoe UI", system-ui, sans-serif;
-    --font-mono:
-        "SF Mono", "SFMono-Regular", "JetBrains Mono", Consolas, "Liberation Mono",
-        Menlo, monospace;
-    --color-warning-foreground: var(--warning-foreground);
-    --color-warning: var(--warning);
-    --color-success-foreground: var(--success-foreground);
-    --color-success: var(--success);
-    --color-info-foreground: var(--info-foreground);
-    --color-info: var(--info);
-    --color-destructive-foreground: var(--destructive-foreground);
-    --color-ring: var(--ring);
-    --color-sidebar: var(--sidebar);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) - 4px);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) + 4px);
-    --radius-2xl: calc(var(--radius) + 8px);
-    --radius-3xl: calc(var(--radius) + 12px);
-    --radius-4xl: calc(var(--radius) + 16px);
+	--animate-skeleton: skeleton 2s -1s infinite linear;
+	--font-sans:
+		"DM Sans", "DM Sans Variable", -apple-system, BlinkMacSystemFont,
+		"Segoe UI", system-ui, sans-serif;
+	--font-mono:
+		"SF Mono", "SFMono-Regular", "JetBrains Mono", Consolas, "Liberation Mono",
+		Menlo, monospace;
+	--color-warning-foreground: var(--warning-foreground);
+	--color-warning: var(--warning);
+	--color-success-foreground: var(--success-foreground);
+	--color-success: var(--success);
+	--color-info-foreground: var(--info-foreground);
+	--color-info: var(--info);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-ring: var(--ring);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+	--radius-2xl: calc(var(--radius) + 8px);
+	--radius-3xl: calc(var(--radius) + 12px);
+	--radius-4xl: calc(var(--radius) + 16px);
 
-    @keyframes skeleton {
-        to {
-            background-position: -200% 0;
-        }
-    }
+	@keyframes skeleton {
+		to {
+			background-position: -200% 0;
+		}
+	}
 }
 
 @layer base {
-    * {
-        @apply border-border outline-ring/50;
-    }
+	* {
+		@apply border-border outline-ring/50;
+	}
 
-    html {
-        background-color: var(--app-chrome-background);
-    }
+	html {
+		background-color: var(--app-chrome-background);
+	}
 
-    body {
-        background-color: var(--app-chrome-background);
-        @apply text-foreground relative;
-    }
+	body {
+		background-color: var(--app-chrome-background);
+		@apply text-foreground relative;
+	}
 }
 
 @layer components {
-    .workspace-topbar {
-        display: flex;
-        flex-shrink: 0;
-        align-items: center;
-        height: var(--workspace-topbar-height);
-        min-height: var(--workspace-topbar-height);
-    }
+	.workspace-topbar {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+		height: var(--workspace-topbar-height);
+		min-height: var(--workspace-topbar-height);
+	}
 
-    .surface-subheader {
-        height: var(--workspace-topbar-height);
-        min-height: var(--workspace-topbar-height);
-        @apply flex shrink-0 items-center border-b border-border/60 bg-background;
-    }
+	.surface-subheader {
+		height: var(--workspace-topbar-height);
+		min-height: var(--workspace-topbar-height);
+		@apply flex shrink-0 items-center border-b border-border/60 bg-background;
+	}
 
-    .sidebar-icon-action-button {
-        padding-inline: calc(--spacing(1) - 1px);
-        @apply inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring;
-    }
+	.sidebar-icon-action-button {
+		padding-inline: calc(--spacing(1) - 1px);
+		@apply inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring;
+	}
 
-    .chat-composer-horizontal-inset {
-        padding-inline-start: calc(env(safe-area-inset-left) + 0.75rem);
-        padding-inline-end: calc(env(safe-area-inset-right) + 0.75rem);
-    }
+	.chat-composer-horizontal-inset {
+		padding-inline-start: calc(env(safe-area-inset-left) + 0.75rem);
+		padding-inline-end: calc(env(safe-area-inset-right) + 0.75rem);
+	}
 
-    .chat-composer-glass,
-    .chat-composer-lower-chrome {
-        background: color-mix(in srgb, var(--card) 20%, transparent);
-    }
+	.chat-composer-glass,
+	.chat-composer-lower-chrome {
+		background: color-mix(in srgb, var(--card) 20%, transparent);
+	}
 
-    .chat-composer-glass {
-        box-shadow:
-            0 18px 48px -20px rgb(0 0 0 / 28%),
-            0 4px 14px -7px rgb(0 0 0 / 22%);
-    }
+	.chat-composer-glass {
+		box-shadow:
+			0 18px 48px -20px rgb(0 0 0 / 28%),
+			0 4px 14px -7px rgb(0 0 0 / 22%);
+	}
 
-    .chat-composer-shared-blur {
-        -webkit-backdrop-filter: blur(16px);
-        backdrop-filter: blur(16px);
-    }
+	.chat-composer-shared-blur {
+		-webkit-backdrop-filter: blur(16px);
+		backdrop-filter: blur(16px);
+	}
 
-    .dark .chat-composer-glass,
-    .dark .chat-composer-lower-chrome {
-        background: color-mix(in srgb, var(--card) 45%, transparent);
-    }
+	.dark .chat-composer-glass,
+	.dark .chat-composer-lower-chrome {
+		background: color-mix(in srgb, var(--card) 45%, transparent);
+	}
 
-    .dark .chat-composer-glass {
-        box-shadow:
-            0 18px 48px -20px rgb(0 0 0 / 60%),
-            0 4px 14px -7px rgb(0 0 0 / 40%);
-    }
+	.dark .chat-composer-glass {
+		box-shadow:
+			0 18px 48px -20px rgb(0 0 0 / 60%),
+			0 4px 14px -7px rgb(0 0 0 / 40%);
+	}
 
-    .chat-composer-lower-chrome {
-        padding-top: 1px;
-        margin-inline-end: var(--app-scrollbar-width);
-        margin-top: -1px;
-    }
+	.chat-composer-lower-chrome {
+		padding-top: 1px;
+		margin-inline-end: var(--app-scrollbar-width);
+		margin-top: -1px;
+	}
 
-    @media (min-width: 40rem) {
-        .chat-composer-horizontal-inset {
-            padding-inline-start: calc(env(safe-area-inset-left) + 1.25rem);
-            padding-inline-end: calc(env(safe-area-inset-right) + 1.25rem);
-        }
-    }
+	@media (min-width: 40rem) {
+		.chat-composer-horizontal-inset {
+			padding-inline-start: calc(env(safe-area-inset-left) + 1.25rem);
+			padding-inline-end: calc(env(safe-area-inset-right) + 1.25rem);
+		}
+	}
 
-    @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-
-        .chat-composer-glass,
-        .chat-composer-lower-chrome {
-            background: var(--card);
-        }
-    }
+	@supports not (
+			(-webkit-backdrop-filter: blur(1px)) or
+			(backdrop-filter: blur(1px))
+		) {
+		.chat-composer-glass,
+		.chat-composer-lower-chrome {
+			background: var(--card);
+		}
+	}
 }
 
 @utility pt-safe {
-    padding-top: max(env(safe-area-inset-top), 0px);
+	padding-top: max(env(safe-area-inset-top), 0px);
 }
 
 @utility pb-safe {
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+	padding-bottom: max(env(safe-area-inset-bottom), 0px);
 }
 
 :root {
-    --radius: 0.625rem;
-    --background: var(--color-white);
-    --app-chrome-background: var(--background);
-    --foreground: var(--color-neutral-800);
-    --card: var(--color-white);
-    --card-foreground: var(--color-neutral-800);
-    --popover: var(--color-white);
-    --popover-foreground: var(--color-neutral-800);
-    --primary: oklch(0.488 0.217 264);
-    --primary-foreground: var(--color-white);
-    --secondary: --alpha(var(--color-black) / 4%);
-    --secondary-foreground: var(--color-neutral-800);
-    --muted: --alpha(var(--color-black) / 4%);
-    --muted-foreground: color-mix(in srgb,
-            var(--color-neutral-500) 90%,
-            var(--color-black));
-    --accent: --alpha(var(--color-black) / 4%);
-    --accent-foreground: var(--color-neutral-800);
-    --destructive: var(--color-red-500);
-    --border: --alpha(var(--color-black) / 8%);
-    --input: --alpha(var(--color-black) / 10%);
-    --ring: oklch(0.488 0.217 264);
-    --destructive-foreground: var(--color-red-700);
-    --info: var(--color-blue-500);
-    --info-foreground: var(--color-blue-700);
-    --success: var(--color-emerald-500);
-    --success-foreground: var(--color-emerald-700);
-    --warning: var(--color-amber-500);
-    --warning-foreground: var(--color-amber-700);
-    color-scheme: light;
+	--radius: 0.625rem;
+	--background: var(--color-white);
+	--app-chrome-background: var(--background);
+	--foreground: var(--color-neutral-800);
+	--card: var(--color-white);
+	--card-foreground: var(--color-neutral-800);
+	--popover: var(--color-white);
+	--popover-foreground: var(--color-neutral-800);
+	--primary: oklch(0.488 0.217 264);
+	--primary-foreground: var(--color-white);
+	--secondary: --alpha(var(--color-black) / 4%);
+	--secondary-foreground: var(--color-neutral-800);
+	--muted: --alpha(var(--color-black) / 4%);
+	--muted-foreground: color-mix(
+		in srgb,
+		var(--color-neutral-500) 90%,
+		var(--color-black)
+	);
+	--accent: --alpha(var(--color-black) / 4%);
+	--accent-foreground: var(--color-neutral-800);
+	--destructive: var(--color-red-500);
+	--border: --alpha(var(--color-black) / 8%);
+	--input: --alpha(var(--color-black) / 10%);
+	--ring: oklch(0.488 0.217 264);
+	--destructive-foreground: var(--color-red-700);
+	--info: var(--color-blue-500);
+	--info-foreground: var(--color-blue-700);
+	--success: var(--color-emerald-500);
+	--success-foreground: var(--color-emerald-700);
+	--warning: var(--color-amber-500);
+	--warning-foreground: var(--color-amber-700);
+	color-scheme: light;
 
-    @variant dark {
-        /* biome-ignore lint/suspicious/noDuplicateCustomProperties: dark variant override */
-        --background: color-mix(in srgb,
-                var(--color-neutral-950) 95%,
-                var(--color-white));
-        --app-chrome-background: var(--background);
-        --foreground: var(--color-neutral-100);
-        --card: color-mix(in srgb, var(--background) 98%, var(--color-white));
-        --card-foreground: var(--color-neutral-100);
-        --popover: color-mix(in srgb, var(--background) 98%, var(--color-white));
-        --popover-foreground: var(--color-neutral-100);
-        --primary: oklch(0.588 0.217 264);
-        --primary-foreground: var(--color-white);
-        --secondary: --alpha(var(--color-white) / 4%);
-        --secondary-foreground: var(--color-neutral-100);
-        --muted: --alpha(var(--color-white) / 4%);
-        --muted-foreground: color-mix(in srgb,
-                var(--color-neutral-500) 90%,
-                var(--color-white));
-        --accent: --alpha(var(--color-white) / 4%);
-        --accent-foreground: var(--color-neutral-100);
-        --destructive: color-mix(in srgb,
-                var(--color-red-500) 90%,
-                var(--color-white));
-        --border: --alpha(var(--color-white) / 6%);
-        --input: --alpha(var(--color-white) / 8%);
-        --ring: oklch(0.588 0.217 264);
-        --destructive-foreground: var(--color-red-400);
-        --info: var(--color-blue-500);
-        --info-foreground: var(--color-blue-400);
-        --success: var(--color-emerald-500);
-        --success-foreground: var(--color-emerald-400);
-        --warning: var(--color-amber-500);
-        --warning-foreground: var(--color-amber-400);
-        /* biome-ignore lint/suspicious/noDuplicateProperties: dark variant override */
-        color-scheme: dark;
-    }
+	@variant dark {
+		/* biome-ignore lint/suspicious/noDuplicateCustomProperties: dark variant override */
+		--background: color-mix(
+			in srgb,
+			var(--color-neutral-950) 95%,
+			var(--color-white)
+		);
+		--app-chrome-background: var(--background);
+		--foreground: var(--color-neutral-100);
+		--card: color-mix(in srgb, var(--background) 98%, var(--color-white));
+		--card-foreground: var(--color-neutral-100);
+		--popover: color-mix(in srgb, var(--background) 98%, var(--color-white));
+		--popover-foreground: var(--color-neutral-100);
+		--primary: oklch(0.588 0.217 264);
+		--primary-foreground: var(--color-white);
+		--secondary: --alpha(var(--color-white) / 4%);
+		--secondary-foreground: var(--color-neutral-100);
+		--muted: --alpha(var(--color-white) / 4%);
+		--muted-foreground: color-mix(
+			in srgb,
+			var(--color-neutral-500) 90%,
+			var(--color-white)
+		);
+		--accent: --alpha(var(--color-white) / 4%);
+		--accent-foreground: var(--color-neutral-100);
+		--destructive: color-mix(
+			in srgb,
+			var(--color-red-500) 90%,
+			var(--color-white)
+		);
+		--border: --alpha(var(--color-white) / 6%);
+		--input: --alpha(var(--color-white) / 8%);
+		--ring: oklch(0.588 0.217 264);
+		--destructive-foreground: var(--color-red-400);
+		--info: var(--color-blue-500);
+		--info-foreground: var(--color-blue-400);
+		--success: var(--color-emerald-500);
+		--success-foreground: var(--color-emerald-400);
+		--warning: var(--color-amber-500);
+		--warning-foreground: var(--color-amber-400);
+		/* biome-ignore lint/suspicious/noDuplicateProperties: dark variant override */
+		color-scheme: dark;
+	}
 }
 
 .dark {
-    --home-page-bg: #09090b;
-    --home-nav-bg: rgba(9, 9, 11, 0.75);
-    --home-nav-scroll-border: rgba(255, 255, 255, 0.08);
-    --home-grid-line: rgba(255, 255, 255, 0.035);
-    --home-mark-card-bg: rgba(20, 20, 24, 0.92);
-    --home-mark-border: rgba(255, 255, 255, 0.08);
-    --home-mark-shadow-inset: rgba(255, 255, 255, 0.04);
+	--home-page-bg: #09090b;
+	--home-nav-bg: rgba(9, 9, 11, 0.75);
+	--home-nav-scroll-border: rgba(255, 255, 255, 0.08);
+	--home-grid-line: rgba(255, 255, 255, 0.035);
+	--home-mark-card-bg: rgba(20, 20, 24, 0.92);
+	--home-mark-border: rgba(255, 255, 255, 0.08);
+	--home-mark-shadow-inset: rgba(255, 255, 255, 0.04);
 }
 
 body {
-    padding: 0;
-    margin: 0;
-    font-family:
-        "DM Sans", "DM Sans Variable", -apple-system, BlinkMacSystemFont,
-        "Segoe UI", system-ui, sans-serif;
-    font-feature-settings: "ss01", "ss02";
+	padding: 0;
+	margin: 0;
+	font-family:
+		"DM Sans", "DM Sans Variable", -apple-system, BlinkMacSystemFont,
+		"Segoe UI", system-ui, sans-serif;
+	font-feature-settings: "ss01", "ss02";
 }
 
 html,
 body {
-    min-height: calc(100svh + env(safe-area-inset-top));
-    overscroll-behavior: none;
+	min-height: calc(100svh + env(safe-area-inset-top));
+	overscroll-behavior: none;
 }
 
 body {
-    height: 100%;
-    overflow: hidden;
+	height: 100%;
+	overflow: hidden;
 }
 
 #root,
 #app {
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    overflow: hidden;
+	width: 100%;
+	max-width: 100%;
+	height: 100%;
+	overflow: hidden;
 }
 
 ::-webkit-scrollbar {
-    width: 6px;
+	width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+	background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 3px;
+	background: rgba(0, 0, 0, 0.15);
+	border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.25);
+	background: rgba(0, 0, 0, 0.25);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+	background: rgba(255, 255, 255, 0.1);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.18);
+	background: rgba(255, 255, 255, 0.18);
 }
 
 .chat-markdown p,
 .chat-markdown ul,
 .chat-markdown ol {
-    margin: 0.5rem 0;
+	margin: 0.5rem 0;
 }
 
 /* @pierre/diffs theme overrides — matches t3code DiffPanel styling */
@@ -335,111 +349,143 @@ body {
 [data-file],
 [data-error-wrapper],
 [data-virtualizer-buffer] {
-    --diffs-header-font-family: var(--font-sans) !important;
-    --diffs-font-family: var(--font-mono) !important;
-    --diffs-bg: color-mix(in srgb, var(--card) 90%, var(--background)) !important;
-    --diffs-light-bg: color-mix(in srgb,
-            var(--card) 90%,
-            var(--background)) !important;
-    --diffs-dark-bg: color-mix(in srgb,
-            var(--card) 90%,
-            var(--background)) !important;
-    --diffs-token-light-bg: transparent;
-    --diffs-token-dark-bg: transparent;
-    --diffs-bg-context-override: color-mix(in srgb,
-            var(--background) 97%,
-            var(--foreground));
-    --diffs-bg-hover-override: color-mix(in srgb,
-            var(--background) 94%,
-            var(--foreground));
-    --diffs-bg-separator-override: color-mix(in srgb,
-            var(--background) 95%,
-            var(--foreground));
-    --diffs-bg-buffer-override: color-mix(in srgb,
-            var(--background) 90%,
-            var(--foreground));
-    --diffs-bg-addition-override: color-mix(in srgb,
-            var(--background) 92%,
-            var(--success));
-    --diffs-bg-addition-number-override: color-mix(in srgb,
-            var(--background) 88%,
-            var(--success));
-    --diffs-bg-addition-hover-override: color-mix(in srgb,
-            var(--background) 85%,
-            var(--success));
-    --diffs-bg-addition-emphasis-override: color-mix(in srgb,
-            var(--background) 80%,
-            var(--success));
-    --diffs-bg-deletion-override: color-mix(in srgb,
-            var(--background) 92%,
-            var(--destructive));
-    --diffs-bg-deletion-number-override: color-mix(in srgb,
-            var(--background) 88%,
-            var(--destructive));
-    --diffs-bg-deletion-hover-override: color-mix(in srgb,
-            var(--background) 85%,
-            var(--destructive));
-    --diffs-bg-deletion-emphasis-override: color-mix(in srgb,
-            var(--background) 80%,
-            var(--destructive));
-    background-color: var(--diffs-bg) !important;
+	--diffs-header-font-family: var(--font-sans) !important;
+	--diffs-font-family: var(--font-mono) !important;
+	--diffs-bg: color-mix(in srgb, var(--card) 90%, var(--background)) !important;
+	--diffs-light-bg: color-mix(
+		in srgb,
+		var(--card) 90%,
+		var(--background)
+	) !important;
+	--diffs-dark-bg: color-mix(
+		in srgb,
+		var(--card) 90%,
+		var(--background)
+	) !important;
+	--diffs-token-light-bg: transparent;
+	--diffs-token-dark-bg: transparent;
+	--diffs-bg-context-override: color-mix(
+		in srgb,
+		var(--background) 97%,
+		var(--foreground)
+	);
+	--diffs-bg-hover-override: color-mix(
+		in srgb,
+		var(--background) 94%,
+		var(--foreground)
+	);
+	--diffs-bg-separator-override: color-mix(
+		in srgb,
+		var(--background) 95%,
+		var(--foreground)
+	);
+	--diffs-bg-buffer-override: color-mix(
+		in srgb,
+		var(--background) 90%,
+		var(--foreground)
+	);
+	--diffs-bg-addition-override: color-mix(
+		in srgb,
+		var(--background) 92%,
+		var(--success)
+	);
+	--diffs-bg-addition-number-override: color-mix(
+		in srgb,
+		var(--background) 88%,
+		var(--success)
+	);
+	--diffs-bg-addition-hover-override: color-mix(
+		in srgb,
+		var(--background) 85%,
+		var(--success)
+	);
+	--diffs-bg-addition-emphasis-override: color-mix(
+		in srgb,
+		var(--background) 80%,
+		var(--success)
+	);
+	--diffs-bg-deletion-override: color-mix(
+		in srgb,
+		var(--background) 92%,
+		var(--destructive)
+	);
+	--diffs-bg-deletion-number-override: color-mix(
+		in srgb,
+		var(--background) 88%,
+		var(--destructive)
+	);
+	--diffs-bg-deletion-hover-override: color-mix(
+		in srgb,
+		var(--background) 85%,
+		var(--destructive)
+	);
+	--diffs-bg-deletion-emphasis-override: color-mix(
+		in srgb,
+		var(--background) 80%,
+		var(--destructive)
+	);
+	background-color: var(--diffs-bg) !important;
 }
 
 [data-file-info] {
-    background-color: color-mix(in srgb,
-            var(--card) 94%,
-            var(--foreground)) !important;
-    border-block-color: var(--border) !important;
-    color: var(--foreground) !important;
+	background-color: color-mix(
+		in srgb,
+		var(--card) 94%,
+		var(--foreground)
+	) !important;
+	border-block-color: var(--border) !important;
+	color: var(--foreground) !important;
 }
 
 [data-diffs-header] {
-    position: sticky !important;
-    top: 0;
-    z-index: 4;
-    align-items: center !important;
-    min-height: 32px !important;
-    padding-block: 6px !important;
-    font-family: var(--font-sans) !important;
-    font-size: 12px !important;
-    line-height: 1 !important;
-    background-color: color-mix(in srgb,
-            var(--card) 94%,
-            var(--foreground)) !important;
-    border-bottom: 1px solid var(--border) !important;
+	position: sticky !important;
+	top: 0;
+	z-index: 4;
+	align-items: center !important;
+	min-height: 32px !important;
+	padding-block: 6px !important;
+	font-family: var(--font-sans) !important;
+	font-size: 12px !important;
+	line-height: 1 !important;
+	background-color: color-mix(
+		in srgb,
+		var(--card) 94%,
+		var(--foreground)
+	) !important;
+	border-bottom: 1px solid var(--border) !important;
 }
 
 [data-diffs-header] [data-header-content] {
-    align-items: center !important;
-    line-height: 1 !important;
+	align-items: center !important;
+	line-height: 1 !important;
 }
 
 [data-diffs-header] [data-metadata] {
-    align-items: center !important;
-    font-variant-numeric: tabular-nums;
-    line-height: 1 !important;
+	align-items: center !important;
+	font-variant-numeric: tabular-nums;
+	line-height: 1 !important;
 }
 
 [data-diffs-header] [data-additions-count],
 [data-diffs-header] [data-deletions-count] {
-    font-family: var(--font-mono) !important;
-    font-size: 11px !important;
-    font-variant-numeric: tabular-nums;
-    line-height: 1 !important;
+	font-family: var(--font-mono) !important;
+	font-size: 11px !important;
+	font-variant-numeric: tabular-nums;
+	line-height: 1 !important;
 }
 
 [data-title] {
-    font-family: var(--font-sans) !important;
-    text-decoration: underline;
-    text-decoration-color: transparent;
-    text-underline-offset: 2px;
-    cursor: pointer;
-    transition:
-        color 120ms ease,
-        text-decoration-color 120ms ease;
+	font-family: var(--font-sans) !important;
+	text-decoration: underline;
+	text-decoration-color: transparent;
+	text-underline-offset: 2px;
+	cursor: pointer;
+	transition:
+		color 120ms ease,
+		text-decoration-color 120ms ease;
 }
 
 [data-title]:hover {
-    color: color-mix(in srgb, var(--foreground) 84%, var(--primary)) !important;
-    text-decoration-color: currentColor;
+	color: color-mix(in srgb, var(--foreground) 84%, var(--primary)) !important;
+	text-decoration-color: currentColor;
 }
