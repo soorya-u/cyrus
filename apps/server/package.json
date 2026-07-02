@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "check-types": "tsc --noEmit",
+    "check:types": "tsc --noEmit",
     "db:push": "dotenvx run -- drizzle-kit push",
     "db:generate": "dotenvx run -- drizzle-kit generate",
     "wrangler:types": "wrangler types --cwd src",

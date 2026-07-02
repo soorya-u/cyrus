@@ -39,7 +39,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check:types": "turbo check-types",
+    "check:types": "turbo check:types",
     "dev:mobile": "turbo -F @cyrus/mobile dev",
     "dev:web": "turbo -F @cyrus/web dev",
     "dev:desktop": "turbo -F @cyrus/desktop dev",

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { AuthPageLayout } from "@/components/auth/auth-page-layout";
 import { ProviderButton } from "@/components/auth/provider-button";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -27,9 +28,9 @@ function DevicePage() {
 
 	if (isPending) {
 		return (
-			<Centered>
+			<AuthPageLayout>
 				<Spinner />
-			</Centered>
+			</AuthPageLayout>
 		);
 	}
 
@@ -40,7 +41,7 @@ function DevicePage() {
 			code ? `?user_code=${encodeURIComponent(code)}` : ""
 		}`;
 		return (
-			<Centered>
+			<AuthPageLayout>
 				<h1 className="font-medium text-2xl tracking-tight">
 					Authorize device
 				</h1>
@@ -48,31 +49,31 @@ function DevicePage() {
 					Sign in to connect a device to your Cyrus account.
 				</p>
 				<ProviderButton callbackUrl={callbackUrl} provider="github" />
-			</Centered>
+			</AuthPageLayout>
 		);
 	}
 
 	if (outcome === "approved") {
 		return (
-			<Centered>
+			<AuthPageLayout>
 				<h1 className="font-medium text-2xl tracking-tight">
 					Device connected
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					You can return to your terminal — it’s signed in now.
+					You can return to your terminal — it's signed in now.
 				</p>
-			</Centered>
+			</AuthPageLayout>
 		);
 	}
 
 	if (outcome === "denied") {
 		return (
-			<Centered>
+			<AuthPageLayout>
 				<h1 className="font-medium text-2xl tracking-tight">Request denied</h1>
 				<p className="text-muted-foreground text-sm">
 					The device was not connected.
 				</p>
-			</Centered>
+			</AuthPageLayout>
 		);
 	}
 
@@ -103,7 +104,7 @@ function DevicePage() {
 	};
 
 	return (
-		<Centered>
+		<AuthPageLayout>
 			<h1 className="font-medium text-2xl tracking-tight">Authorize device</h1>
 			<p className="max-w-sm text-center text-muted-foreground text-sm">
 				Confirm the code shown in your terminal to connect this device as{" "}
@@ -126,14 +127,6 @@ function DevicePage() {
 					{busy ? <Spinner /> : "Approve"}
 				</Button>
 			</div>
-		</Centered>
-	);
-}
-
-function Centered({ children }: { children: React.ReactNode }) {
-	return (
-		<div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-(--home-page-bg) px-6 text-foreground antialiased">
-			{children}
-		</div>
+		</AuthPageLayout>
 	);
 }

@@ -1,10 +1,22 @@
 import { useCallback, useState } from "react";
-import type { GitDiff, Message, Thread, ToolCall, Turn } from "./types";
+import type {
+	GitDiff,
+	Message,
+	Project,
+	Thread,
+	ToolCall,
+	Turn,
+} from "./types";
 import { createId } from "./use-id";
 
+const MOCK_PROJECTS: Project[] = [
+	{ id: "p-cyrus", name: "cyrus", path: "~/oss/cyrus" },
+	{ id: "p-web", name: "cyrus-web", path: "~/oss/cyrus/apps/web" },
+];
+
 const MOCK_TITLES = [
-	"Fix auth redirect",
-	"Refactor composer layout",
+	"Fix auth redirect asdasd",
+	"Refactor composer layout asdladjsaklsdjlks",
 	"Add diff panel tests",
 	"Wire up terminal drawer",
 	"Migrate sidebar to base-ui",
@@ -100,6 +112,7 @@ export function useMockThreads() {
 		const turn1Id = "turn1";
 		const seed: Thread = {
 			id: t1Id,
+			projectId: "p-cyrus",
 			title: MOCK_TITLES[0] ?? "New thread",
 			status: "ready",
 			createdAt: nowISO(),
@@ -156,13 +169,46 @@ export function useMockThreads() {
 				},
 			],
 		};
-		return [seed];
+		return [
+			seed,
+			{
+				id: "t2",
+				projectId: "p-cyrus",
+				title: MOCK_TITLES[1] ?? "Refactor composer layout asdasldkjaldsjl",
+				status: "idle",
+				createdAt: nowISO(),
+				updatedAt: nowISO(),
+				latestUserMessageAt: null,
+				model: "codex-default",
+				branch: "feat/composer",
+				messages: [],
+				toolCalls: [],
+				diffs: [],
+				turns: [],
+			},
+			{
+				id: "t3",
+				projectId: "p-web",
+				title: MOCK_TITLES[2] ?? "Add diff panel tests",
+				status: "ready",
+				createdAt: nowISO(),
+				updatedAt: nowISO(),
+				latestUserMessageAt: nowISO(),
+				model: "codex-default",
+				branch: "test/diff-panel",
+				messages: [],
+				toolCalls: [],
+				diffs: [],
+				turns: [],
+			},
+		];
 	});
 
-	const createThread = useCallback((): string => {
+	const createThread = useCallback((projectId = "p-cyrus"): string => {
 		const id = createId("t");
 		const thread: Thread = {
 			id,
+			projectId,
 			title: "New thread",
 			status: "idle",
 			createdAt: nowISO(),
@@ -244,6 +290,7 @@ export function useMockThreads() {
 	}, []);
 
 	return {
+		projects: MOCK_PROJECTS,
 		threads,
 		createThread,
 		renameThread,
