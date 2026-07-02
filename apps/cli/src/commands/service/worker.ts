@@ -1,6 +1,6 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
-import { createWorkerRuntime } from "@/acp/runtime";
+import { createWorkerRuntime } from "@/core";
 import { createControllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
 import { authClient } from "@/lib/auth";
@@ -50,7 +50,7 @@ export async function worker(): Promise<void> {
 	});
 
 	const shutdown = () => {
-		runtime.processManager.shutdown();
+		runtime.agentPool.shutdown();
 		device.close();
 		signalingSession.close();
 		process.exit(0);

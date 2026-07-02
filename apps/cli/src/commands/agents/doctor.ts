@@ -1,4 +1,4 @@
-import { pingAcpAgent } from "@/acp/ping";
+import { pingAcpAgent } from "@/core/acp/ping";
 import { getAgent, listAgents } from "@/store/agents";
 import { green, print, red } from "@/utils/style";
 import type { AgentEntry } from "@/validators/agent";
@@ -9,18 +9,10 @@ type HealthResult = {
 };
 
 async function checkAgent(entry: AgentEntry): Promise<HealthResult> {
-	if (!Bun.which(entry.command))
-		return {
-			healthy: false,
-			error: `command not found on PATH: ${entry.command}`,
-		};
-
-	const ping = await pingAcpAgent(entry);
-	if (!ping.ok) {
-		return { healthy: false, error: ping.error };
-	}
-
-	return { healthy: true };
+	return (await pingAcpAgent(entry)).match<HealthResult>({
+		ok: () => ({ healthy: true }),
+		err: (error) => ({ healthy: false, error }),
+	});
 }
 
 function printHealth(name: string, result: HealthResult): void {
