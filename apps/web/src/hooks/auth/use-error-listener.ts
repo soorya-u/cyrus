@@ -5,10 +5,11 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import type { BetterFetchError } from "better-auth/react";
+import { log } from "evlog";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-export function useAuthErrorToaster() {
+export function useAuthErrorListener() {
 	const queryClient = useQueryClient();
 
 	useEffect(() => {
@@ -27,6 +28,7 @@ export function useAuthErrorToaster() {
 				return;
 			}
 			if (err?.error) {
+				log.error({ kind: "auth_query_error", error: err.error });
 				toast.error(err.error.message);
 			}
 		};
@@ -57,6 +59,7 @@ export function useAuthErrorToaster() {
 			if (err.error?.code === "EMAIL_NOT_VERIFIED") {
 				return;
 			}
+			log.error({ kind: "auth_mutation_error", error: err.error ?? err });
 			toast.error(err.error?.message ?? err.message);
 		};
 

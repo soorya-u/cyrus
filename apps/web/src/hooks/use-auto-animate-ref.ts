@@ -1,5 +1,5 @@
 import { autoAnimate } from "@formkit/auto-animate";
-import { useCallback, useRef } from "react";
+import { useRef } from "react";
 
 const SIDEBAR_LIST_ANIMATION_OPTIONS = {
 	duration: 180,
@@ -8,11 +8,11 @@ const SIDEBAR_LIST_ANIMATION_OPTIONS = {
 
 export function useAutoAnimateRef() {
 	const animatedNodesRef = useRef(new WeakSet<HTMLElement>());
-	return useCallback((node: HTMLElement | null) => {
+	return (node: HTMLElement | null) => {
 		if (!node || animatedNodesRef.current.has(node)) {
 			return;
 		}
 		autoAnimate(node, SIDEBAR_LIST_ANIMATION_OPTIONS);
 		animatedNodesRef.current.add(node);
-	}, []);
+	};
 }

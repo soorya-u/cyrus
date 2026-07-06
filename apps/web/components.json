@@ -9,9 +9,13 @@
     "baseColor": "zinc",
     "cssVariables": true
   },
+  "iconLibrary": "radix",
   "aliases": {
     "components": "@/components",
-    "ui": "@/components/ui",
-    "utils": "@/utils/cn"
+    "utils": "cnfast",
+    "ui": "@/components/ui"
+  },
+  "registries": {
+    "@magicui": "https://magicui.design/r/{name}"
   }
 }

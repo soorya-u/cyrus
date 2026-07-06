@@ -1,0 +1,17 @@
+{
+  "name": "@cyrus/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "date-fns": "catalog:"
+  },
+  "devDependencies": {
+    "@cyrus/typescript": "workspace:*",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  }
+}
