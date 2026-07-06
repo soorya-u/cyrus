@@ -1,3 +1,4 @@
+// TODO: Delete this and store in turso
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { generateId } from "@/utils/identity";
@@ -14,16 +15,7 @@ const DEFAULT_CWD = "/tmp/cyrus-agent-test";
 
 mkdirSync(DEFAULT_CWD, { recursive: true });
 
-const projects = new Map<string, Project>([
-	[
-		DEFAULT_PROJECT_ID,
-		{
-			id: DEFAULT_PROJECT_ID,
-			cwd: DEFAULT_CWD,
-			name: "Default Project",
-		},
-	],
-]);
+const projects = new Map<string, Project>();
 
 export function listProjects(): Project[] {
 	return [...projects.values()].sort((a, b) => a.id.localeCompare(b.id));

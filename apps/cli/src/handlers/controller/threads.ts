@@ -7,7 +7,7 @@ import {
 	getThread,
 	listThreads,
 	renameThread,
-} from "@/mocks/threads";
+} from "@/store/threads";
 import type { ControllerOs } from "./deps";
 
 export function threadsHandlers(os: ControllerOs) {

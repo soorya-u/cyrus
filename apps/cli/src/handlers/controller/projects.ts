@@ -5,8 +5,8 @@ import {
 	deleteProject as deleteStoredProject,
 	listProjects,
 	renameProject,
-} from "@/mocks/projects";
-import { deleteThreadsForProject } from "@/mocks/threads";
+} from "@/store/projects";
+import { deleteThreadsForProject } from "@/store/threads";
 import type { ControllerOs } from "./deps";
 
 export function projectsHandlers(os: ControllerOs) {

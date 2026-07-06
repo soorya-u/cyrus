@@ -1,4 +1,5 @@
-import type { AgentEvent } from "@cyrus/connections/schemas/rtc/chat";
+// TODO: Delete this and store in turso
+import type { ChatChunk } from "@cyrus/connections/schemas/rtc/chat";
 import type {
 	ConversationEntry,
 	Thread,
@@ -75,12 +76,12 @@ export function listThreads(projectId: string): Thread[] {
 
 export function appendConversation(
 	threadId: string,
-	event: AgentEvent
+	chunk: ChatChunk
 ): ConversationEntry {
 	const entry: ConversationEntry = {
 		id: String(++conversationSeq),
 		threadId,
-		event,
+		chunk,
 		createdAt: nowISO(),
 	};
 	const list = conversations.get(threadId) ?? [];

@@ -18,6 +18,42 @@ import {
 	ToolCallStatusSchema,
 	ToolCallUpdateEventSchema,
 } from "@cyrus/connections/schemas/rtc/chat";
+import { createPatch } from "diff";
+
+// TODO: check if ACP supports diff and we dont have to do this hack
+type DiffContentLike = {
+	type: "diff";
+	path: string;
+	oldText?: string | null;
+	newText: string;
+};
+
+function isDiffContent(item: unknown): item is DiffContentLike {
+	return (
+		typeof item === "object" &&
+		item !== null &&
+		(item as { type?: unknown }).type === "diff"
+	);
+}
+
+function enrichDiffContent<T>(
+	content: T[] | null | undefined
+): T[] | undefined {
+	if (!content) return;
+	return content.map((item) => {
+		if (!isDiffContent(item)) return item;
+		const oldText = item.oldText ?? "";
+		const patch = createPatch(item.path, oldText, item.newText);
+		let additions = 0;
+		let deletions = 0;
+		for (const line of patch.split("\n")) {
+			if (line.startsWith("+++") || line.startsWith("---")) continue;
+			if (line.startsWith("+")) additions++;
+			else if (line.startsWith("-")) deletions++;
+		}
+		return { ...item, patch, additions, deletions } as T;
+	});
+}
 
 export function mapRuntimeSessionEvent(
 	event: RuntimeSessionEvent
@@ -47,7 +83,7 @@ export function mapRuntimeSessionEvent(
 					title: event.title ?? event.name,
 					kind: event.kind,
 					status: mapToolStatus(event.status),
-					content: event.content,
+					content: enrichDiffContent(event.content),
 					rawInput: event.input,
 				}),
 			];
@@ -58,7 +94,7 @@ export function mapRuntimeSessionEvent(
 					toolCallId: event.toolCallId,
 					title: event.title,
 					status: mapToolStatus(event.status),
-					content: event.content,
+					content: enrichDiffContent(event.content),
 					rawOutput: event.output,
 				}),
 			];
@@ -69,7 +105,7 @@ export function mapRuntimeSessionEvent(
 					toolCallId: event.toolCallId,
 					title: event.title,
 					status: mapToolStatus(event.status),
-					content: event.content,
+					content: enrichDiffContent(event.content),
 					rawOutput: event.output,
 				}),
 			];
@@ -193,17 +229,22 @@ export function mapApprovalRequest(
 function mapToolCall(
 	update: Extract<SessionUpdate, { sessionUpdate: "tool_call" }>
 ): AgentEvent {
-	const { sessionUpdate: _, _meta, ...fields } = update;
-	return ToolCallEventSchema.parse({ type: "tool_call", ...fields });
+	const { sessionUpdate: _, _meta, content, ...fields } = update;
+	return ToolCallEventSchema.parse({
+		type: "tool_call",
+		...fields,
+		content: enrichDiffContent(content),
+	});
 }
 
 function mapToolCallUpdate(
 	update: Extract<SessionUpdate, { sessionUpdate: "tool_call_update" }>
 ): AgentEvent {
-	const { sessionUpdate: _, _meta, ...fields } = update;
+	const { sessionUpdate: _, _meta, content, ...fields } = update;
 	return ToolCallUpdateEventSchema.parse({
 		type: "tool_call_update",
 		...fields,
+		content: enrichDiffContent(content),
 	});
 }
 

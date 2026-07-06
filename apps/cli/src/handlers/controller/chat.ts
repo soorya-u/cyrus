@@ -1,5 +1,6 @@
+import type { ChatChunk } from "@cyrus/connections/schemas/rtc/chat";
 import { env } from "@/lib/env";
-import { appendConversation, ensureThread } from "@/mocks/threads";
+import { appendConversation, ensureThread } from "@/store/threads";
 import type { ControllerDeps } from "./deps";
 
 export function chatHandlers({ os, runtime }: ControllerDeps) {
@@ -14,10 +15,17 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 
 			ensureThread(threadId, projectId, { agentName, firstMessage: message });
 
-			const started = { type: "thread_started" as const, threadId };
-			context.broadcaster.broadcast(started, context.peerId);
-			appendConversation(threadId, started);
-			yield started;
+			const turnId = Bun.randomUUIDv7();
+
+			function emit(event: ChatChunk["event"]): ChatChunk {
+				const chunk = { threadId, turnId, event };
+				context.broadcaster.broadcast(chunk, context.peerId);
+				appendConversation(threadId, chunk);
+				return chunk;
+			}
+
+			yield emit({ type: "user_message", content: message });
+			yield emit({ type: "thread_started", threadId });
 
 			const gen = runtime.threadCoordinator.prompt(
 				agentName,
@@ -26,16 +34,19 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				message
 			);
 			for await (const event of gen) {
-				context.broadcaster.broadcast(event, context.peerId);
-				appendConversation(threadId, event);
-				yield event;
+				yield emit(event);
 				await Bun.sleep(env.CYRUS_STREAM_THROTTLING_MS);
 			}
 		}),
 
 		subscribe: os.subscribe.handler(async function* ({ context }) {
-			for await (const event of context.broadcaster.subscribe(context.peerId))
-				yield event;
+			for await (const chunk of context.broadcaster.subscribe(context.peerId))
+				yield chunk;
+		}),
+
+		cancel: os.cancel.handler(async ({ input }) => {
+			await runtime.threadCoordinator.cancel(input.agentName, input.threadId);
+			return {};
 		}),
 	};
 }
