@@ -1,10 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ChatFeed, DiffPanel } from "@/components/chat";
 import { Composer } from "@/components/chat/composer";
+import { DiffPanel } from "@/components/chat/diff/diff-panel";
+import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
-import { useMockThreadsContext } from "@/mocks/mock-threads-provider";
-import { useChatUiStore } from "@/stores/chat-ui-store";
+import { useThreadConversation } from "@/hooks/chat/use-thread-conversation";
+import { useControllerThreads } from "@/hooks/use-controller-threads";
+import { useChatUiStore } from "@/stores/chat-ui";
 
 type ThreadWorkspaceProps = {
 	workerId: string;
@@ -18,10 +20,13 @@ export function ThreadWorkspace({
 	threadId,
 }: ThreadWorkspaceProps) {
 	const navigate = useNavigate();
-	const { threads, sendMessage, createThread } = useMockThreadsContext();
+	const { threads, sendMessage, stopThread, createThread } =
+		useControllerThreads();
 	const { diffOpen, setDiffOpen } = useChatUiStore();
 
-	const thread = threads.find((item) => item.id === threadId) ?? null;
+	const baseThread = threads.find((item) => item.id === threadId) ?? null;
+	const conversation = useThreadConversation(baseThread ? threadId : undefined);
+	const thread = baseThread ? { ...baseThread, ...conversation } : null;
 	const busy = thread?.status === "running";
 
 	useEffect(() => {
@@ -39,15 +44,20 @@ export function ThreadWorkspace({
 
 	function handleSend(text: string) {
 		if (!thread) {
-			const id = createThread(projectId);
-			sendMessage(id, text);
-			navigate({
-				to: "/workers/$workerId/p/$projectId/t/$threadId",
-				params: { workerId, projectId, threadId: id },
+			createThread(projectId).then((id) => {
+				sendMessage(id, text).catch(() => {
+					/* surfaced via thread status on next getConversations poll */
+				});
+				navigate({
+					to: "/workers/$workerId/p/$projectId/t/$threadId",
+					params: { workerId, projectId, threadId: id },
+				});
 			});
 			return;
 		}
-		sendMessage(thread.id, text);
+		sendMessage(thread.id, text).catch(() => {
+			/* surfaced via thread status on next getConversations poll */
+		});
 	}
 
 	if (!thread) {
@@ -65,12 +75,16 @@ export function ThreadWorkspace({
 						busy={Boolean(busy)}
 						onSend={handleSend}
 						onStop={() => {
-							/* noop */
+							stopThread(thread.id).catch(() => {
+								/* noop */
+							});
 						}}
+						projectId={projectId}
+						threadId={thread.id}
 					/>
 				</div>
 				{diffOpen ? (
-					<div className="w-[420px] shrink-0">
+					<div className="w-105 shrink-0">
 						<DiffPanel onClose={() => setDiffOpen(false)} thread={thread} />
 					</div>
 				) : null}

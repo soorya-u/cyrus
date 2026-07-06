@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AuthPageLayout } from "@/components/auth/auth-page-layout";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/auth/success")({
@@ -19,7 +18,7 @@ function DesktopSuccessPage() {
 	}, []);
 
 	return (
-		<AuthPageLayout>
+		<>
 			<h1 className="font-medium text-2xl tracking-tight">Signed in</h1>
 			<p className="text-muted-foreground text-sm">Cyrus is ready to use.</p>
 			<Button asChild>
@@ -30,6 +29,6 @@ function DesktopSuccessPage() {
 					App didn't open? Switch back to the Cyrus window.
 				</p>
 			)}
-		</AuthPageLayout>
+		</>
 	);
 }

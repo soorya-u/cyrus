@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 export function useCopyToClipboard(): {
 	copied: boolean;
@@ -6,7 +6,7 @@ export function useCopyToClipboard(): {
 } {
 	const [copied, setCopied] = useState(false);
 
-	const copy = useCallback(async (text: string) => {
+	async function copy(text: string) {
 		try {
 			if (typeof navigator !== "undefined" && navigator.clipboard) {
 				await navigator.clipboard.writeText(text);
@@ -25,7 +25,7 @@ export function useCopyToClipboard(): {
 		} catch {
 			setCopied(false);
 		}
-	}, []);
+	}
 
 	return { copied, copy };
 }

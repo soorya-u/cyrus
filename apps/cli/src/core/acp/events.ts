@@ -17,7 +17,8 @@ import {
 	ToolCallEventSchema,
 	ToolCallStatusSchema,
 	ToolCallUpdateEventSchema,
-} from "@cyrus/connections/schemas/chat";
+} from "@cyrus/connections/schemas/rtc/chat";
+import { enrichDiffContent } from "@/utils/diff";
 
 export function mapRuntimeSessionEvent(
 	event: RuntimeSessionEvent
@@ -47,7 +48,7 @@ export function mapRuntimeSessionEvent(
 					title: event.title ?? event.name,
 					kind: event.kind,
 					status: mapToolStatus(event.status),
-					content: event.content,
+					content: enrichDiffContent(event.content),
 					rawInput: event.input,
 				}),
 			];
@@ -58,7 +59,7 @@ export function mapRuntimeSessionEvent(
 					toolCallId: event.toolCallId,
 					title: event.title,
 					status: mapToolStatus(event.status),
-					content: event.content,
+					content: enrichDiffContent(event.content),
 					rawOutput: event.output,
 				}),
 			];
@@ -69,7 +70,7 @@ export function mapRuntimeSessionEvent(
 					toolCallId: event.toolCallId,
 					title: event.title,
 					status: mapToolStatus(event.status),
-					content: event.content,
+					content: enrichDiffContent(event.content),
 					rawOutput: event.output,
 				}),
 			];
@@ -193,17 +194,22 @@ export function mapApprovalRequest(
 function mapToolCall(
 	update: Extract<SessionUpdate, { sessionUpdate: "tool_call" }>
 ): AgentEvent {
-	const { sessionUpdate: _, _meta, ...fields } = update;
-	return ToolCallEventSchema.parse({ type: "tool_call", ...fields });
+	const { sessionUpdate: _, _meta, content, ...fields } = update;
+	return ToolCallEventSchema.parse({
+		type: "tool_call",
+		...fields,
+		content: enrichDiffContent(content),
+	});
 }
 
 function mapToolCallUpdate(
 	update: Extract<SessionUpdate, { sessionUpdate: "tool_call_update" }>
 ): AgentEvent {
-	const { sessionUpdate: _, _meta, ...fields } = update;
+	const { sessionUpdate: _, _meta, content, ...fields } = update;
 	return ToolCallUpdateEventSchema.parse({
 		type: "tool_call_update",
 		...fields,
+		content: enrichDiffContent(content),
 	});
 }
 

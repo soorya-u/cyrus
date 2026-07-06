@@ -1,6 +1,6 @@
 import { Result } from "better-result";
 import type { SignalingClient } from "../contracts/signaling";
-import type { ChatChunk } from "../schemas/rtc";
+import type { ChatChunk } from "../schemas/rtc/chat";
 import type { ServerEvent } from "../schemas/signaling";
 import type { PeerBroadcaster } from "./broadcaster";
 

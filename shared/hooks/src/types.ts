@@ -1,3 +1,8 @@
+import type {
+	ToolCallStatus,
+	ToolKind,
+} from "@cyrus/connections/schemas/rtc/chat";
+
 export type Role = "user" | "assistant";
 
 export type MessageStatus = "streaming" | "complete" | "interrupted";
@@ -11,12 +16,14 @@ export type Message = {
 	turnId: string;
 };
 
-export type ToolStatus = "running" | "complete" | "error";
+// re-exported so components don't need to reach into @cyrus/connections directly
+export type ToolStatus = ToolCallStatus;
 
 export type ToolCall = {
 	args: Record<string, unknown>;
 	createdAt: string;
 	id: string;
+	kind?: ToolKind;
 	name: string;
 	result?: string;
 	status: ToolStatus;
@@ -26,9 +33,9 @@ export type ToolCall = {
 export type GitDiff = {
 	additions: number;
 	deletions: number;
-	file: string;
 	id: string;
 	patch: string;
+	path: string;
 	turnId: string;
 };
 

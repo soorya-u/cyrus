@@ -21,12 +21,14 @@
     "better-auth": "catalog:",
     "better-result": "catalog:",
     "commander": "^15.0.0",
+    "diff": "^7.0.0",
     "random-word-slugs": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/diff": "^7.0.0",
     "typescript": "catalog:"
   }
 }

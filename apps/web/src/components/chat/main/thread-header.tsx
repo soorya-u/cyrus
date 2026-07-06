@@ -1,9 +1,6 @@
-"use client";
-
 import type { Thread } from "@cyrus/hooks/types";
-import { useChatUiStore } from "@/stores/chat-ui-store";
-import { cn } from "@/utils/cn";
-import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "@/workspace-titlebar";
+import { cn } from "cnfast";
+import { useChatUiStore } from "@/stores/chat-ui";
 
 type ThreadHeaderProps = {
 	thread: Thread;
@@ -22,8 +19,7 @@ export function ThreadHeader({
 	return (
 		<div
 			className={cn(
-				"surface-subheader px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none",
-				COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS
+				"surface-subheader collapsed-sidebar-titlebar-inset px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none"
 			)}
 		>
 			<span className="truncate font-medium text-sm">{thread.title}</span>

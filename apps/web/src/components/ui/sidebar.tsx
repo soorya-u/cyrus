@@ -1,6 +1,7 @@
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cnfast";
 import { PanelLeftCloseIcon, PanelLeftIcon } from "lucide-react";
 import {
 	type ComponentProps,
@@ -30,11 +31,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-media-query";
-import { cn } from "@/utils/cn";
-import {
-	type ResponsiveSidebarState,
-	resolveSidebarState,
-} from "./sidebar-state";
+
+type ResponsiveSidebarState = "expanded" | "collapsed";
+
+function resolveSidebarState(input: {
+	isMobile: boolean;
+	open: boolean;
+	openMobile: boolean;
+}): ResponsiveSidebarState {
+	return (input.isMobile ? input.openMobile : input.open)
+		? "expanded"
+		: "collapsed";
+}
 
 function readStoredSidebarWidth(key: string): number | null {
 	if (typeof window === "undefined") {
@@ -666,7 +674,7 @@ function SidebarRail({
 						aria-label={railLabel}
 						className={cn(
 							/* disable pointer events only when offcanvas sidebar is collapsed, that's when the rail sits over the native scrollbar on windows and linux. icon mode stays fully clickable. */
-							"absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear after:absolute after:inset-y-0 after:w-[2px] hover:after:bg-sidebar-border sm:flex [[data-collapsible=offcanvas][data-state=collapsed]_&]:pointer-events-none",
+							"absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear after:absolute after:inset-y-0 after:w-0.5 hover:after:bg-sidebar-border sm:flex [[data-collapsible=offcanvas][data-state=collapsed]_&]:pointer-events-none",
 							"in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
 							"[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
 							/* Expanded: keep the resize hit target in the outer gutter so thread rows stay hoverable. */
