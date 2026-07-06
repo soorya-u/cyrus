@@ -50,21 +50,3 @@ export function deriveFeed(thread: Thread | null): FeedEntry[] {
 export function useThreadFeed(thread: Thread | null): FeedEntry[] {
 	return useMemo(() => deriveFeed(thread), [thread]);
 }
-
-export function turnDiffSummary(thread: Thread | null) {
-	if (!thread) {
-		return [];
-	}
-	return thread.turns.map((turn) => {
-		const diffs = thread.diffs.filter((d) => d.turnId === turn.id);
-		const additions = diffs.reduce((n, d) => n + d.additions, 0);
-		const deletions = diffs.reduce((n, d) => n + d.deletions, 0);
-		return {
-			turnId: turn.id,
-			index: turn.index,
-			additions,
-			deletions,
-			fileCount: diffs.length,
-		};
-	});
-}
