@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as WorkspaceRouteRouteImport } from './routes/_workspace/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthSuccessRouteImport } from './routes/auth/success'
 import { Route as AuthDeviceRouteImport } from './routes/auth/device'
 import { Route as AuthDesktopRouteImport } from './routes/auth/desktop'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as WorkspaceSettingsRouteRouteImport } from './routes/_workspace/settings/route'
 import { Route as WorkspaceWorkersIndexRouteImport } from './routes/_workspace/workers/index'
 import { Route as WorkspaceSettingsIndexRouteImport } from './routes/_workspace/settings/index'
 import { Route as WorkspaceSettingsSourceControlRouteImport } from './routes/_workspace/settings/source-control'
@@ -26,6 +28,11 @@ import { Route as WorkspaceWorkersWorkerIdRouteRouteImport } from './routes/_wor
 import { Route as WorkspaceWorkersWorkerIdIndexRouteImport } from './routes/_workspace/workers/$workerId/index'
 import { Route as WorkspaceWorkersWorkerIdPProjectIdTThreadIdRouteImport } from './routes/_workspace/workers/$workerId/p/$projectId/t/$threadId'
 
+const AuthRouteRoute = AuthRouteRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkspaceRouteRoute = WorkspaceRouteRouteImport.update({
   id: '/_workspace',
   getParentRoute: () => rootRouteImport,
@@ -36,24 +43,29 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSuccessRoute = AuthSuccessRouteImport.update({
-  id: '/auth/success',
-  path: '/auth/success',
-  getParentRoute: () => rootRouteImport,
+  id: '/success',
+  path: '/success',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthDeviceRoute = AuthDeviceRouteImport.update({
-  id: '/auth/device',
-  path: '/auth/device',
-  getParentRoute: () => rootRouteImport,
+  id: '/device',
+  path: '/device',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthDesktopRoute = AuthDesktopRouteImport.update({
-  id: '/auth/desktop',
-  path: '/auth/desktop',
-  getParentRoute: () => rootRouteImport,
+  id: '/desktop',
+  path: '/desktop',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const WorkspaceSettingsRouteRoute = WorkspaceSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => WorkspaceRouteRoute,
 } as any)
 const WorkspaceWorkersIndexRoute = WorkspaceWorkersIndexRouteImport.update({
   id: '/workers/',
@@ -61,39 +73,39 @@ const WorkspaceWorkersIndexRoute = WorkspaceWorkersIndexRouteImport.update({
   getParentRoute: () => WorkspaceRouteRoute,
 } as any)
 const WorkspaceSettingsIndexRoute = WorkspaceSettingsIndexRouteImport.update({
-  id: '/settings/',
-  path: '/settings/',
-  getParentRoute: () => WorkspaceRouteRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorkspaceSettingsRouteRoute,
 } as any)
 const WorkspaceSettingsSourceControlRoute =
   WorkspaceSettingsSourceControlRouteImport.update({
-    id: '/settings/source-control',
-    path: '/settings/source-control',
-    getParentRoute: () => WorkspaceRouteRoute,
+    id: '/source-control',
+    path: '/source-control',
+    getParentRoute: () => WorkspaceSettingsRouteRoute,
   } as any)
 const WorkspaceSettingsProvidersRoute =
   WorkspaceSettingsProvidersRouteImport.update({
-    id: '/settings/providers',
-    path: '/settings/providers',
-    getParentRoute: () => WorkspaceRouteRoute,
+    id: '/providers',
+    path: '/providers',
+    getParentRoute: () => WorkspaceSettingsRouteRoute,
   } as any)
 const WorkspaceSettingsKeybindingsRoute =
   WorkspaceSettingsKeybindingsRouteImport.update({
-    id: '/settings/keybindings',
-    path: '/settings/keybindings',
-    getParentRoute: () => WorkspaceRouteRoute,
+    id: '/keybindings',
+    path: '/keybindings',
+    getParentRoute: () => WorkspaceSettingsRouteRoute,
   } as any)
 const WorkspaceSettingsConnectionsRoute =
   WorkspaceSettingsConnectionsRouteImport.update({
-    id: '/settings/connections',
-    path: '/settings/connections',
-    getParentRoute: () => WorkspaceRouteRoute,
+    id: '/connections',
+    path: '/connections',
+    getParentRoute: () => WorkspaceSettingsRouteRoute,
   } as any)
 const WorkspaceSettingsArchivedRoute =
   WorkspaceSettingsArchivedRouteImport.update({
-    id: '/settings/archived',
-    path: '/settings/archived',
-    getParentRoute: () => WorkspaceRouteRoute,
+    id: '/archived',
+    path: '/archived',
+    getParentRoute: () => WorkspaceSettingsRouteRoute,
   } as any)
 const WorkspaceWorkersWorkerIdRouteRoute =
   WorkspaceWorkersWorkerIdRouteRouteImport.update({
@@ -116,6 +128,8 @@ const WorkspaceWorkersWorkerIdPProjectIdTThreadIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteRouteWithChildren
+  '/settings': typeof WorkspaceSettingsRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
@@ -133,6 +147,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
@@ -151,6 +166,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_workspace': typeof WorkspaceRouteRouteWithChildren
+  '/auth': typeof AuthRouteRouteWithChildren
+  '/_workspace/settings': typeof WorkspaceSettingsRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
@@ -170,6 +187,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/settings'
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
@@ -187,6 +206,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
@@ -204,6 +224,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_workspace'
+    | '/auth'
+    | '/_workspace/settings'
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
@@ -223,14 +245,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   WorkspaceRouteRoute: typeof WorkspaceRouteRouteWithChildren
-  AuthCallbackRoute: typeof AuthCallbackRoute
-  AuthDesktopRoute: typeof AuthDesktopRoute
-  AuthDeviceRoute: typeof AuthDeviceRoute
-  AuthSuccessRoute: typeof AuthSuccessRoute
+  AuthRouteRoute: typeof AuthRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_workspace': {
       id: '/_workspace'
       path: ''
@@ -247,31 +273,38 @@ declare module '@tanstack/react-router' {
     }
     '/auth/success': {
       id: '/auth/success'
-      path: '/auth/success'
+      path: '/success'
       fullPath: '/auth/success'
       preLoaderRoute: typeof AuthSuccessRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
     '/auth/device': {
       id: '/auth/device'
-      path: '/auth/device'
+      path: '/device'
       fullPath: '/auth/device'
       preLoaderRoute: typeof AuthDeviceRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
     '/auth/desktop': {
       id: '/auth/desktop'
-      path: '/auth/desktop'
+      path: '/desktop'
       fullPath: '/auth/desktop'
       preLoaderRoute: typeof AuthDesktopRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
     '/auth/callback': {
       id: '/auth/callback'
-      path: '/auth/callback'
+      path: '/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_workspace/settings': {
+      id: '/_workspace/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof WorkspaceSettingsRouteRouteImport
+      parentRoute: typeof WorkspaceRouteRoute
     }
     '/_workspace/workers/': {
       id: '/_workspace/workers/'
@@ -282,45 +315,45 @@ declare module '@tanstack/react-router' {
     }
     '/_workspace/settings/': {
       id: '/_workspace/settings/'
-      path: '/settings'
+      path: '/'
       fullPath: '/settings/'
       preLoaderRoute: typeof WorkspaceSettingsIndexRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      parentRoute: typeof WorkspaceSettingsRouteRoute
     }
     '/_workspace/settings/source-control': {
       id: '/_workspace/settings/source-control'
-      path: '/settings/source-control'
+      path: '/source-control'
       fullPath: '/settings/source-control'
       preLoaderRoute: typeof WorkspaceSettingsSourceControlRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      parentRoute: typeof WorkspaceSettingsRouteRoute
     }
     '/_workspace/settings/providers': {
       id: '/_workspace/settings/providers'
-      path: '/settings/providers'
+      path: '/providers'
       fullPath: '/settings/providers'
       preLoaderRoute: typeof WorkspaceSettingsProvidersRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      parentRoute: typeof WorkspaceSettingsRouteRoute
     }
     '/_workspace/settings/keybindings': {
       id: '/_workspace/settings/keybindings'
-      path: '/settings/keybindings'
+      path: '/keybindings'
       fullPath: '/settings/keybindings'
       preLoaderRoute: typeof WorkspaceSettingsKeybindingsRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      parentRoute: typeof WorkspaceSettingsRouteRoute
     }
     '/_workspace/settings/connections': {
       id: '/_workspace/settings/connections'
-      path: '/settings/connections'
+      path: '/connections'
       fullPath: '/settings/connections'
       preLoaderRoute: typeof WorkspaceSettingsConnectionsRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      parentRoute: typeof WorkspaceSettingsRouteRoute
     }
     '/_workspace/settings/archived': {
       id: '/_workspace/settings/archived'
-      path: '/settings/archived'
+      path: '/archived'
       fullPath: '/settings/archived'
       preLoaderRoute: typeof WorkspaceSettingsArchivedRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      parentRoute: typeof WorkspaceSettingsRouteRoute
     }
     '/_workspace/workers/$workerId': {
       id: '/_workspace/workers/$workerId'
@@ -346,6 +379,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface WorkspaceSettingsRouteRouteChildren {
+  WorkspaceSettingsArchivedRoute: typeof WorkspaceSettingsArchivedRoute
+  WorkspaceSettingsConnectionsRoute: typeof WorkspaceSettingsConnectionsRoute
+  WorkspaceSettingsKeybindingsRoute: typeof WorkspaceSettingsKeybindingsRoute
+  WorkspaceSettingsProvidersRoute: typeof WorkspaceSettingsProvidersRoute
+  WorkspaceSettingsSourceControlRoute: typeof WorkspaceSettingsSourceControlRoute
+  WorkspaceSettingsIndexRoute: typeof WorkspaceSettingsIndexRoute
+}
+
+const WorkspaceSettingsRouteRouteChildren: WorkspaceSettingsRouteRouteChildren =
+  {
+    WorkspaceSettingsArchivedRoute: WorkspaceSettingsArchivedRoute,
+    WorkspaceSettingsConnectionsRoute: WorkspaceSettingsConnectionsRoute,
+    WorkspaceSettingsKeybindingsRoute: WorkspaceSettingsKeybindingsRoute,
+    WorkspaceSettingsProvidersRoute: WorkspaceSettingsProvidersRoute,
+    WorkspaceSettingsSourceControlRoute: WorkspaceSettingsSourceControlRoute,
+    WorkspaceSettingsIndexRoute: WorkspaceSettingsIndexRoute,
+  }
+
+const WorkspaceSettingsRouteRouteWithChildren =
+  WorkspaceSettingsRouteRoute._addFileChildren(
+    WorkspaceSettingsRouteRouteChildren,
+  )
+
 interface WorkspaceWorkersWorkerIdRouteRouteChildren {
   WorkspaceWorkersWorkerIdIndexRoute: typeof WorkspaceWorkersWorkerIdIndexRoute
   WorkspaceWorkersWorkerIdPProjectIdTThreadIdRoute: typeof WorkspaceWorkersWorkerIdPProjectIdTThreadIdRoute
@@ -364,25 +421,15 @@ const WorkspaceWorkersWorkerIdRouteRouteWithChildren =
   )
 
 interface WorkspaceRouteRouteChildren {
+  WorkspaceSettingsRouteRoute: typeof WorkspaceSettingsRouteRouteWithChildren
   WorkspaceWorkersWorkerIdRouteRoute: typeof WorkspaceWorkersWorkerIdRouteRouteWithChildren
-  WorkspaceSettingsArchivedRoute: typeof WorkspaceSettingsArchivedRoute
-  WorkspaceSettingsConnectionsRoute: typeof WorkspaceSettingsConnectionsRoute
-  WorkspaceSettingsKeybindingsRoute: typeof WorkspaceSettingsKeybindingsRoute
-  WorkspaceSettingsProvidersRoute: typeof WorkspaceSettingsProvidersRoute
-  WorkspaceSettingsSourceControlRoute: typeof WorkspaceSettingsSourceControlRoute
-  WorkspaceSettingsIndexRoute: typeof WorkspaceSettingsIndexRoute
   WorkspaceWorkersIndexRoute: typeof WorkspaceWorkersIndexRoute
 }
 
 const WorkspaceRouteRouteChildren: WorkspaceRouteRouteChildren = {
+  WorkspaceSettingsRouteRoute: WorkspaceSettingsRouteRouteWithChildren,
   WorkspaceWorkersWorkerIdRouteRoute:
     WorkspaceWorkersWorkerIdRouteRouteWithChildren,
-  WorkspaceSettingsArchivedRoute: WorkspaceSettingsArchivedRoute,
-  WorkspaceSettingsConnectionsRoute: WorkspaceSettingsConnectionsRoute,
-  WorkspaceSettingsKeybindingsRoute: WorkspaceSettingsKeybindingsRoute,
-  WorkspaceSettingsProvidersRoute: WorkspaceSettingsProvidersRoute,
-  WorkspaceSettingsSourceControlRoute: WorkspaceSettingsSourceControlRoute,
-  WorkspaceSettingsIndexRoute: WorkspaceSettingsIndexRoute,
   WorkspaceWorkersIndexRoute: WorkspaceWorkersIndexRoute,
 }
 
@@ -390,13 +437,28 @@ const WorkspaceRouteRouteWithChildren = WorkspaceRouteRoute._addFileChildren(
   WorkspaceRouteRouteChildren,
 )
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  WorkspaceRouteRoute: WorkspaceRouteRouteWithChildren,
+interface AuthRouteRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthDesktopRoute: typeof AuthDesktopRoute
+  AuthDeviceRoute: typeof AuthDeviceRoute
+  AuthSuccessRoute: typeof AuthSuccessRoute
+}
+
+const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthDesktopRoute: AuthDesktopRoute,
   AuthDeviceRoute: AuthDeviceRoute,
   AuthSuccessRoute: AuthSuccessRoute,
+}
+
+const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
+  AuthRouteRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  WorkspaceRouteRoute: WorkspaceRouteRouteWithChildren,
+  AuthRouteRoute: AuthRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,11 +1,9 @@
-"use client";
-
 import type { Thread, ThreadStatus } from "@cyrus/hooks/types";
-import { relativeTime } from "@cyrus/hooks/use-relative-time";
+import { relativeTime } from "@cyrus/utils/time";
+import { cn } from "cnfast";
 import { ArchiveIcon, GitBranchIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/utils/cn";
 
 const STATUS_TONES: Record<
 	ThreadStatus,

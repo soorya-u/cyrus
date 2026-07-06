@@ -493,3 +493,9 @@ body {
 	color: color-mix(in srgb, var(--foreground) 84%, var(--primary)) !important;
 	text-decoration-color: currentColor;
 }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+	mix-blend-mode: normal;
+	animation: none;
+}

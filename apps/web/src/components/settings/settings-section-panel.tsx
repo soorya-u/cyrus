@@ -1,6 +1,6 @@
+import { cn } from "cnfast";
 import type { SettingsSectionId } from "@/constants/settings-nav";
 import { SETTINGS_NAV_ITEMS } from "@/constants/settings-nav";
-import { cn } from "@/utils/cn";
 
 type SettingsSectionPanelProps = {
 	section: SettingsSectionId;

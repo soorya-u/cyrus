@@ -14,6 +14,18 @@ export const RTC_OPERATION_KEYS = {
 	deleteProject: ["controller", "delete-project"],
 	renameThread: ["controller", "rename-thread"],
 	deleteThread: ["controller", "delete-thread"],
+	getConversations: (threadId: string) =>
+		["controller", "get-conversations", threadId] as const,
+	listAgents: ["controller", "list-agents"],
+	getModels: (agentName: string) =>
+		["controller", "get-models", agentName] as const,
+	getEfforts: (agentName: string) =>
+		["controller", "get-efforts", agentName] as const,
+	getPersona: (agentName: string) =>
+		["controller", "get-persona", agentName] as const,
+	setModel: ["controller", "set-model"],
+	setEffort: ["controller", "set-effort"],
+	setPersona: ["controller", "set-persona"],
 };
 
 export const AUTH_OPERATION_KEYS = {

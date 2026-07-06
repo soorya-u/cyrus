@@ -11,6 +11,7 @@ import { env } from "./env";
 export type { SignalingClient } from "@cyrus/connections/contracts/signaling";
 export type { SignalingSession } from "@cyrus/connections/rtc/session";
 export type ControllerConnection = RtcConnection<ControllerContract>;
+export type OrpcController = Awaited<ReturnType<typeof dialController>>["orpc"];
 
 export async function dialSignaling() {
 	const { data } = await authClient.getSession();

@@ -1,8 +1,6 @@
-"use client";
-
 import type { Thread } from "@cyrus/hooks/types";
-import { useChatUiStore } from "@/stores/chat-ui-store";
-import { cn } from "@/utils/cn";
+import { cn } from "cnfast";
+import { useChatUiStore } from "@/stores/chat-ui";
 
 type ThreadHeaderProps = {
 	thread: Thread;

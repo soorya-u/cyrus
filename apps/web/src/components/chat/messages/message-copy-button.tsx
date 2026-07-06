@@ -1,16 +1,13 @@
-"use client";
-
+import { cn } from "cnfast";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { memo, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
-import { cn } from "@/utils/cn";
 
 const COPY_TOAST_TIMEOUT_MS = 1000;
 
-export const MessageCopyButton = memo(function MessageCopyButton({
+export function MessageCopyButton({
 	text,
 	size = "xs",
 	variant = "outline",
@@ -21,7 +18,6 @@ export const MessageCopyButton = memo(function MessageCopyButton({
 	variant?: "outline" | "ghost";
 	className?: string;
 }) {
-	const ref = useRef<HTMLButtonElement>(null);
 	const { copied, copy } = useCopyToClipboard();
 
 	return (
@@ -40,7 +36,6 @@ export const MessageCopyButton = memo(function MessageCopyButton({
 								toast.success("Copied!", { duration: COPY_TOAST_TIMEOUT_MS });
 							});
 						}}
-						ref={ref}
 						size={size}
 						type="button"
 						variant={variant}
@@ -58,4 +53,4 @@ export const MessageCopyButton = memo(function MessageCopyButton({
 			</TooltipPopup>
 		</Tooltip>
 	);
-});
+}

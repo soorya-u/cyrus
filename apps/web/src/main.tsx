@@ -10,7 +10,6 @@ import "@fontsource-variable/dm-sans";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 
-import Loader from "./components/loader";
 import { DevTools } from "./devtools";
 import { authClient } from "./lib/auth";
 import { routeTree } from "./routeTree.gen";
@@ -26,7 +25,7 @@ const router = createRouter({
 	routeTree,
 	defaultPreload: "intent",
 	scrollRestoration: true,
-	defaultPendingComponent: () => <Loader />,
+	defaultViewTransition: true,
 	context: { queryClient },
 	Wrap({ children }: PropsWithChildren) {
 		return (
