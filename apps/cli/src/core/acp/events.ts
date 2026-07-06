@@ -17,7 +17,7 @@ import {
 	ToolCallEventSchema,
 	ToolCallStatusSchema,
 	ToolCallUpdateEventSchema,
-} from "@cyrus/connections/schemas/chat";
+} from "@cyrus/connections/schemas/rtc/chat";
 
 export function mapRuntimeSessionEvent(
 	event: RuntimeSessionEvent

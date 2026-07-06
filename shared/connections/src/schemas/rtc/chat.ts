@@ -235,3 +235,14 @@ export type ToolCallFields = z.infer<typeof ToolCallFieldsSchema>;
 export type ToolCallUpdateFields = z.infer<typeof ToolCallUpdateFieldsSchema>;
 export type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
 export type AgentEvent = z.infer<typeof AgentEventSchema>;
+
+export const ChatInputSchema = z.object({
+	agentName: z.string(),
+	message: z.string(),
+	threadId: z.uuidv7().optional(),
+	projectId: z.string(),
+});
+
+export const ChatChunkSchema = AgentEventSchema;
+
+export type ChatChunk = z.infer<typeof ChatChunkSchema>;

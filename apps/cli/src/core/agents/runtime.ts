@@ -1,10 +1,8 @@
 import { homedir } from "node:os";
 import { openOrCreateRuntimeSession, type RuntimeSession } from "@acp-kit/core";
-import type {
-	ModelOption,
-	SelectOption,
-} from "@cyrus/connections/schemas/agents";
-import type { AgentEvent } from "@cyrus/connections/schemas/chat";
+import type { ModelOption } from "@cyrus/connections/schemas/rtc/catalog";
+import type { AgentEvent } from "@cyrus/connections/schemas/rtc/chat";
+import type { SelectOption } from "@cyrus/connections/schemas/rtc/common";
 import { Result } from "better-result";
 import { setSessionConfigOption } from "@/core/acp/config";
 import type { AgentPool } from "@/core/acp/pool";

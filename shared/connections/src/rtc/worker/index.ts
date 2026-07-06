@@ -3,7 +3,7 @@ import { RPCHandler, type RPCHandlerOptions } from "@orpc/server/websocket";
 import { RTCPeerConnection as NodeRTCPeerConnection } from "node-datachannel/polyfill";
 import type { ControllerContract } from "../../contracts/controller";
 import type { WorkerContract } from "../../contracts/worker";
-import type { ChatChunk } from "../../schemas/rtc";
+import type { ChatChunk } from "../../schemas/rtc/chat";
 import { DeviceRoleSchema } from "../../schemas/signaling";
 import { createPeerBroadcaster } from "../broadcaster";
 import {

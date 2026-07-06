@@ -1,8 +1,6 @@
-import type {
-	ModelOption,
-	SelectOption,
-} from "@cyrus/connections/schemas/agents";
-import type { AgentEvent } from "@cyrus/connections/schemas/chat";
+import type { ModelOption } from "@cyrus/connections/schemas/rtc/catalog";
+import type { AgentEvent } from "@cyrus/connections/schemas/rtc/chat";
+import type { SelectOption } from "@cyrus/connections/schemas/rtc/common";
 import type { AgentPool } from "@/core/acp/pool";
 import { AgentRuntime } from "@/core/agents/runtime";
 import { resolveProjectCwd } from "@/mocks/projects";

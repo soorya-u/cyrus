@@ -1,8 +1,8 @@
-import type { AgentEvent } from "@cyrus/connections/schemas/chat";
+import type { AgentEvent } from "@cyrus/connections/schemas/rtc/chat";
 import type {
 	ConversationEntry,
 	Thread,
-} from "@cyrus/connections/schemas/threads";
+} from "@cyrus/connections/schemas/rtc/threads";
 import { generateId } from "@/utils/identity";
 import { getProject } from "./projects";
 
