@@ -10,7 +10,11 @@ import {
 	SetModelInputSchema,
 	SetPersonaInputSchema,
 } from "../schemas/rtc/catalog";
-import { ChatChunkSchema, ChatInputSchema } from "../schemas/rtc/chat";
+import {
+	CancelInputSchema,
+	ChatChunkSchema,
+	ChatInputSchema,
+} from "../schemas/rtc/chat";
 import { AgentQueryInputSchema, VoidOutputSchema } from "../schemas/rtc/common";
 import { ListDirInputSchema, ListDirOutputSchema } from "../schemas/rtc/dir";
 import {
@@ -60,6 +64,7 @@ export const controllerContract = {
 	setPersona: oc.input(SetPersonaInputSchema).output(VoidOutputSchema),
 	chat: oc.input(ChatInputSchema).output(eventIterator(ChatChunkSchema)),
 	subscribe: oc.output(eventIterator(ChatChunkSchema)),
+	cancel: oc.input(CancelInputSchema).output(VoidOutputSchema),
 };
 
 export type ControllerContract = typeof controllerContract;

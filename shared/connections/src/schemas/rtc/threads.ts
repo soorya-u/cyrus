@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AgentEventSchema } from "./chat";
+import { ChatChunkSchema } from "./chat";
 
 export const ThreadSchema = z.object({
 	id: z.string(),
@@ -13,7 +13,7 @@ export const ThreadSchema = z.object({
 export const ConversationEntrySchema = z.object({
 	id: z.string(),
 	threadId: z.string(),
-	event: AgentEventSchema,
+	chunk: ChatChunkSchema,
 	createdAt: z.string(),
 });
 

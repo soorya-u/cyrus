@@ -84,6 +84,9 @@ export const DiffSchema = z.object({
 	path: z.string(),
 	oldText: z.string().nullish(),
 	newText: z.string(),
+	patch: z.string(),
+	additions: z.number(),
+	deletions: z.number(),
 });
 
 export const TerminalSchema = z.object({
@@ -213,8 +216,14 @@ export const ThreadStartedEventSchema = z.object({
 	threadId: z.string(),
 });
 
+export const UserMessageEventSchema = z.object({
+	type: z.literal("user_message"),
+	content: z.string(),
+});
+
 export const AgentEventSchema = z.discriminatedUnion("type", [
 	ThreadStartedEventSchema,
+	UserMessageEventSchema,
 	TokenEventSchema,
 	ThoughtEventSchema,
 	ToolCallEventSchema,
@@ -235,6 +244,7 @@ export type ToolCallFields = z.infer<typeof ToolCallFieldsSchema>;
 export type ToolCallUpdateFields = z.infer<typeof ToolCallUpdateFieldsSchema>;
 export type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
 export type AgentEvent = z.infer<typeof AgentEventSchema>;
+export type Diff = z.infer<typeof DiffSchema>;
 
 export const ChatInputSchema = z.object({
 	agentName: z.string(),
@@ -243,6 +253,17 @@ export const ChatInputSchema = z.object({
 	projectId: z.string(),
 });
 
-export const ChatChunkSchema = AgentEventSchema;
+export const ChatChunkSchema = z.object({
+	threadId: z.string(),
+	turnId: z.string(),
+	event: AgentEventSchema,
+});
 
 export type ChatChunk = z.infer<typeof ChatChunkSchema>;
+
+export const CancelInputSchema = z.object({
+	agentName: z.string(),
+	threadId: z.string(),
+});
+
+export type CancelInput = z.infer<typeof CancelInputSchema>;
