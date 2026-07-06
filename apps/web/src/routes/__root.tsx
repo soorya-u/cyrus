@@ -5,8 +5,8 @@ import {
 	Outlet,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
-import { useAuthErrorToaster } from "@/hooks/use-auth-error-toaster";
-import { useDesktopAuthSync } from "@/hooks/use-desktop-auth-sync";
+import { useDesktopAuthSync } from "@/hooks/auth/use-desktop-sync";
+import { useAuthErrorListener } from "@/hooks/auth/use-error-listener";
 
 import "../index.css";
 
@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function RootComponent() {
-	useAuthErrorToaster();
+	useAuthErrorListener();
 	useDesktopAuthSync();
 
 	return (

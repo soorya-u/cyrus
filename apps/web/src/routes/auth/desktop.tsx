@@ -1,54 +1,49 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { AuthPageLayout } from "@/components/auth/auth-page-layout";
+import type { SocialProvider } from "better-auth/social-providers";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth";
+import { Spinner } from "@/components/ui/spinner";
+import { useAuthDesktop } from "@/hooks/auth/use-desktop";
 
 export const Route = createFileRoute("/auth/desktop")({
 	validateSearch: (search) => ({
-		provider: (search.provider as string | undefined) ?? "github",
+		provider: (search.provider as SocialProvider | undefined) ?? "github",
 	}),
 	component: DesktopAuthPage,
 });
 
 function DesktopAuthPage() {
 	const { provider } = Route.useSearch();
-	const [copied, setCopied] = useState(false);
-
-	const trySignIn = () => {
-		authClient.signIn.social({ provider } as Parameters<
-			typeof authClient.signIn.social
-		>[0]);
-	};
-
-	const copyLink = async () => {
-		const result = await authClient.signIn.social({
-			provider,
-			disableRedirect: true,
-		} as Parameters<typeof authClient.signIn.social>[0]);
-		const url = result?.data?.url;
-		if (!url) {
-			return;
-		}
-		await navigator.clipboard.writeText(url);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
-	};
+	const { trySignIn, copyLink, isCopying } = useAuthDesktop(provider);
 
 	return (
-		<AuthPageLayout>
+		<>
 			<h1 className="font-medium text-2xl tracking-tight">Sign in</h1>
-			<p className="max-w-xs text-center text-muted-foreground text-sm">
-				A browser window should have opened. If it didn't:
+			<p className="max-w-sm text-center text-muted-foreground text-sm leading-relaxed">
+				Please authenticate yourself in the browser window that opened. If it
+				hasn't,{" "}
+				<Button
+					className="inline-flex h-7 px-2 align-baseline"
+					onClick={trySignIn}
+					size="sm"
+					type="button"
+					variant="outline"
+				>
+					try again
+				</Button>{" "}
+				or{" "}
+				<Button
+					className="inline-flex h-7 gap-1 px-2 align-baseline"
+					disabled={isCopying}
+					onClick={copyLink}
+					size="sm"
+					type="button"
+					variant="outline"
+				>
+					{isCopying ? <Spinner className="size-3" /> : null}
+					copy link
+				</Button>{" "}
+				and open it in your browser.
 			</p>
-			<div className="flex flex-col items-center gap-3">
-				<Button onClick={trySignIn} variant="link">
-					Try again
-				</Button>
-				<Button onClick={copyLink} size="sm" variant="outline">
-					{copied ? "Copied!" : "Copy link"}
-				</Button>
-			</div>
-		</AuthPageLayout>
+		</>
 	);
 }
