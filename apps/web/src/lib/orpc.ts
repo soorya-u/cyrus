@@ -8,8 +8,6 @@ import { getControllerId, getControllerName } from "@/utils/identity";
 import { authClient } from "./auth";
 import { env } from "./env";
 
-export type { SignalingClient } from "@cyrus/connections/contracts/signaling";
-export type { SignalingSession } from "@cyrus/connections/rtc/session";
 export type ControllerConnection = RtcConnection<ControllerContract>;
 export type OrpcController = Awaited<ReturnType<typeof dialController>>["orpc"];
 

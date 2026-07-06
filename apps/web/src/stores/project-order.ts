@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { SIDEBAR_PROJECT_ORDER } from "@/constants/storage-keys";
+import { PROJECT_ORDER } from "@/constants/storage-keys";
 
 type ProjectOrderState = {
 	projectOrder: string[];
@@ -19,6 +19,6 @@ export const useProjectOrderStore = create<ProjectOrderState>()(
 						typeof order === "function" ? order(state.projectOrder) : order,
 				})),
 		}),
-		{ name: SIDEBAR_PROJECT_ORDER }
+		{ name: PROJECT_ORDER }
 	)
 );

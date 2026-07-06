@@ -1,6 +1,6 @@
 export const SIGNALING_OPERATION_KEYS = {
 	listPeers: ["signaling", "list-peers"],
-};
+} as const;
 
 export const RTC_OPERATION_KEYS = {
 	listProjects: ["controller", "list-projects"],
@@ -26,9 +26,9 @@ export const RTC_OPERATION_KEYS = {
 	setModel: ["controller", "set-model"],
 	setEffort: ["controller", "set-effort"],
 	setPersona: ["controller", "set-persona"],
-};
+} as const;
 
 export const AUTH_OPERATION_KEYS = {
 	copySignInLink: ["auth", "copy-sign-in-link"],
 	deviceDecide: ["auth", "device", "decide"],
-};
+} as const;

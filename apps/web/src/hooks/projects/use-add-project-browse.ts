@@ -1,14 +1,5 @@
 import type { DirListing } from "@cyrus/connections/schemas/rtc/dir";
 import {
-	type KeyboardEvent,
-	useCallback,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
-import { useListDir } from "@/hooks/use-list-dir";
-import { filterBrowseEntries } from "@/utils/dir";
-import {
 	appendBrowsePathSegment,
 	canNavigateUp,
 	getBrowseDirectoryPath,
@@ -21,7 +12,16 @@ import {
 	isUnsupportedWindowsProjectPath,
 	joinBrowseEntryPath,
 	normalizeProjectPathForDispatch,
-} from "@/utils/path";
+} from "@cyrus/utils/path";
+import {
+	type KeyboardEvent,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
+import { useListDir } from "@/hooks/use-list-dir";
+import { filterBrowseEntries } from "@/utils/dir";
 
 const INITIAL_BROWSE_QUERY = "~/";
 

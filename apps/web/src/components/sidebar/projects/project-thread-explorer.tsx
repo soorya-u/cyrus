@@ -56,7 +56,7 @@ export function ProjectThreadExplorer({
 		removeProject,
 		createThread,
 		renameThread,
-		archiveThread,
+		deleteThread,
 	} = useControllerThreads();
 	const [query, setQuery] = useState("");
 	const [addProjectOpen, setAddProjectOpen] = useState(false);
@@ -153,8 +153,8 @@ export function ProjectThreadExplorer({
 		});
 	}
 
-	function handleArchive(threadId: string) {
-		archiveThread(threadId);
+	function handleDelete(threadId: string) {
+		deleteThread(threadId);
 		if (activeThreadId === threadId)
 			navigate({ to: "/workers/$workerId", params: { workerId } });
 	}
@@ -224,7 +224,7 @@ export function ProjectThreadExplorer({
 											}
 											dragHandleProps={dragHandleProps}
 											expanded={expandedProjects[project.id] ?? true}
-											onArchive={handleArchive}
+											onDelete={handleDelete}
 											onNew={() => handleNewThread(project.id)}
 											onRemoveProject={removeProject}
 											onRename={renameThread}

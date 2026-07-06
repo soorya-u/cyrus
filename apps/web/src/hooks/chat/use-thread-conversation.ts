@@ -19,13 +19,6 @@ const EMPTY: ConversationExtras = {
 	turns: [],
 };
 
-/**
- * Reads the real conversation history for one thread (via getConversations)
- * and folds it into the aggregated shape ChatFeed/DiffPanel/WorkLog render.
- * Live updates (this device's own sendMessage, or another device's) land in
- * the same TanStack Query cache entry — see use-controller-threads.ts —
- * so every mounted instance for a given threadId reflects the same state.
- */
 export function useThreadConversation(
 	threadId: string | undefined
 ): ConversationExtras {

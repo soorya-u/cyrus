@@ -1,7 +1,7 @@
 import type { Thread, ThreadStatus } from "@cyrus/hooks/types";
 import { relativeTime } from "@cyrus/utils/time";
 import { cn } from "cnfast";
-import { ArchiveIcon, GitBranchIcon } from "lucide-react";
+import { GitBranchIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -53,20 +53,20 @@ export function ThreadRow({
 	thread,
 	isActive,
 	onSelect,
-	onArchive,
+	onDelete,
 	onRename,
 	variant = "list",
 }: {
 	thread: Thread;
 	isActive: boolean;
 	onSelect: (id: string) => void;
-	onArchive: (id: string) => void;
+	onDelete: (id: string) => void;
 	onRename: (id: string, title: string) => void;
 	variant?: "list" | "sub";
 }) {
 	const [renaming, setRenaming] = useState(false);
 	const [draft, setDraft] = useState(thread.title);
-	const [confirmArchive, setConfirmArchive] = useState(false);
+	const [confirmDelete, setConfirmDelete] = useState(false);
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	useEffect(() => {
@@ -192,12 +192,12 @@ export function ThreadRow({
 						<TooltipPopup side="top">{thread.branch}</TooltipPopup>
 					</Tooltip>
 				)}
-				{confirmArchive ? (
+				{confirmDelete ? (
 					<button
 						className="inline-flex h-5 cursor-pointer items-center rounded-md bg-destructive/12 px-2 font-medium text-[10px] text-destructive hover:bg-destructive/18"
 						onClick={(event) => {
 							event.stopPropagation();
-							onArchive(thread.id);
+							onDelete(thread.id);
 						}}
 						type="button"
 					>
@@ -206,18 +206,18 @@ export function ThreadRow({
 				) : (
 					!isRunning && (
 						<button
-							aria-label={`Archive ${thread.title}`}
+							aria-label={`Delete ${thread.title}`}
 							className={cn(
 								"inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground",
 								"opacity-0 transition-opacity group-hover/sub:opacity-100 max-sm:opacity-100"
 							)}
 							onClick={(event) => {
 								event.stopPropagation();
-								setConfirmArchive(true);
+								setConfirmDelete(true);
 							}}
 							type="button"
 						>
-							<ArchiveIcon className="size-3.5" />
+							<Trash2Icon className="size-3.5" />
 						</button>
 					)
 				)}

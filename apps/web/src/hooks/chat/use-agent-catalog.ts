@@ -16,11 +16,6 @@ type UseAgentCatalogOptions = {
 	projectId: string;
 };
 
-// wires the composer's agent/model/effort/persona pickers to the real
-// listAgents/getModels/getEfforts/getPersona/setModel/setEffort/setPersona
-// RPCs. The "currently selected" value has no server-side concept (the
-// get* RPCs only return the option list), so selection is tracked
-// client-side per thread in useAgentCatalogStore.
 export function useAgentCatalog({
 	threadId,
 	projectId,
@@ -29,11 +24,8 @@ export function useAgentCatalog({
 		orpcController?: OrpcController;
 	};
 
-	const agentByThread = useAgentCatalogStore((state) => state.agentByThread);
-	const modelByThread = useAgentCatalogStore((state) => state.modelByThread);
-	const effortByThread = useAgentCatalogStore((state) => state.effortByThread);
-	const personaByThread = useAgentCatalogStore(
-		(state) => state.personaByThread
+	const selection = useAgentCatalogStore(
+		(state) => state.selectionByThread[threadId]
 	);
 	const setAgentSelection = useAgentCatalogStore((state) => state.setAgent);
 	const setModelSelection = useAgentCatalogStore((state) => state.setModel);
@@ -48,7 +40,7 @@ export function useAgentCatalog({
 		enabled: Boolean(orpcController),
 	});
 	const agents = agentsQuery.data?.agents ?? [];
-	const selectedAgent = agentByThread[threadId] ?? agents[0]?.name ?? "";
+	const selectedAgent = selection?.agentName ?? agents[0]?.name ?? "";
 
 	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(selectedAgent);
 	const modelsQuery = useQuery({
@@ -83,9 +75,9 @@ export function useAgentCatalog({
 	});
 	const personas = personaQuery.data?.personas ?? [];
 
-	const selectedModel = pickValid(modelByThread[threadId], models);
-	const selectedEffort = pickValid(effortByThread[threadId], efforts);
-	const selectedPersona = pickValid(personaByThread[threadId], personas);
+	const selectedModel = pickValid(selection?.modelId, models);
+	const selectedEffort = pickValid(selection?.effortId, efforts);
+	const selectedPersona = pickValid(selection?.personaId, personas);
 
 	const setModelMutation = useMutation({
 		...orpcController?.setModel.mutationOptions({

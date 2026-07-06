@@ -6,8 +6,8 @@ import {
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
+import { SIDEBAR_WIDTH } from "@/constants/storage-keys";
 
-const THREAD_SIDEBAR_WIDTH_STORAGE_KEY = "chat_thread_sidebar_width";
 const THREAD_SIDEBAR_MIN_WIDTH = 13 * 16;
 const THREAD_MAIN_CONTENT_MIN_WIDTH = 40 * 16;
 
@@ -50,7 +50,7 @@ export function ChatSidebarLayout({
 					minWidth: THREAD_SIDEBAR_MIN_WIDTH,
 					shouldAcceptWidth: ({ nextWidth, wrapper }) =>
 						wrapper.clientWidth - nextWidth >= THREAD_MAIN_CONTENT_MIN_WIDTH,
-					storageKey: THREAD_SIDEBAR_WIDTH_STORAGE_KEY,
+					storageKey: SIDEBAR_WIDTH,
 				}}
 				side="left"
 			>

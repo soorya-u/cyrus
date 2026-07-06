@@ -1,6 +1,6 @@
 import type { Project } from "@cyrus/hooks/types";
 import { useMutation, useQueries } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 import type { OrpcController } from "@/lib/orpc";
 import { mapThread } from "@/utils/map-controller";
@@ -56,38 +56,26 @@ export function useThreads({
 		onSuccess: () => invalidateThreads(),
 	});
 
-	const createThread = useCallback(
-		async (projectId: string): Promise<string> => {
-			if (!orpcController) {
-				throw new Error("worker not connected");
-			}
-			const { thread } = await createThreadMutation.mutateAsync({ projectId });
-			return thread.id;
-		},
-		[createThreadMutation, orpcController]
-	);
+	async function createThread(projectId: string): Promise<string> {
+		if (!orpcController) {
+			throw new Error("worker not connected");
+		}
+		const { thread } = await createThreadMutation.mutateAsync({ projectId });
+		return thread.id;
+	}
 
-	const renameThread = useCallback(
-		(id: string, title: string) => {
-			renameThreadMutation.mutate({ threadId: id, name: title });
-		},
-		[renameThreadMutation]
-	);
+	function renameThread(id: string, title: string) {
+		renameThreadMutation.mutate({ threadId: id, name: title });
+	}
 
-	const archiveThread = useCallback(
-		(id: string) => {
-			deleteThreadMutation.mutate({ threadId: id });
-		},
-		[deleteThreadMutation]
-	);
-
-	const deleteThread = archiveThread;
+	function deleteThread(id: string) {
+		deleteThreadMutation.mutate({ threadId: id });
+	}
 
 	return {
 		baseThreads,
 		createThread,
 		renameThread,
-		archiveThread,
 		deleteThread,
 	};
 }

@@ -48,7 +48,7 @@ type ProjectThreadGroupProps = {
 	onToggle: () => void;
 	onNew: () => void;
 	onSelect: (thread: Thread) => void;
-	onArchive: (id: string) => void;
+	onDelete: (id: string) => void;
 	onRename: (id: string, title: string) => void;
 	onRenameProject: (id: string, name: string) => void;
 	onRemoveProject: (id: string) => void;
@@ -68,7 +68,7 @@ export function ProjectThreadGroup({
 	onToggle,
 	onNew,
 	onSelect,
-	onArchive,
+	onDelete,
 	onRename,
 	onRenameProject,
 	onRemoveProject,
@@ -219,7 +219,7 @@ export function ProjectThreadGroup({
 							<SidebarMenuSubItem className="w-full" key={thread.id}>
 								<ThreadRow
 									isActive={activeThreadId === thread.id}
-									onArchive={onArchive}
+									onDelete={onDelete}
 									onRename={onRename}
 									onSelect={() => onSelect(thread)}
 									thread={thread}

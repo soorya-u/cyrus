@@ -1,7 +1,5 @@
 import { generateSlug } from "random-word-slugs";
-
-const ID_KEY = "cyrus-controller-id";
-const NAME_KEY = "cyrus-controller-name";
+import { CONTROLLER_ID, CONTROLLER_NAME } from "@/constants/storage-keys";
 
 function generateId(): string {
 	return crypto.randomUUID();
@@ -22,9 +20,9 @@ function getOrCreate(key: string, create: () => string): string {
 }
 
 export function getControllerId(): string {
-	return getOrCreate(ID_KEY, generateId);
+	return getOrCreate(CONTROLLER_ID, generateId);
 }
 
 export function getControllerName(): string {
-	return getOrCreate(NAME_KEY, generateName);
+	return getOrCreate(CONTROLLER_NAME, generateName);
 }

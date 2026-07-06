@@ -1,1 +1,4 @@
-export const SIDEBAR_PROJECT_ORDER = "chat_sidebar_project_order";
+export const PROJECT_ORDER = "cyrus:project-order";
+export const SIDEBAR_WIDTH = "cyrus:sidebar-width";
+export const CONTROLLER_ID = "cyrus:controller-id";
+export const CONTROLLER_NAME = "cyrus:controller-name";

@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
-import { useCallback } from "react";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 import { useProjects } from "@/hooks/projects/use-projects";
 import { useThreads } from "@/hooks/threads/use-threads";
@@ -34,7 +33,6 @@ export function useControllerThreads() {
 		baseThreads: threads,
 		createThread,
 		renameThread,
-		archiveThread,
 		deleteThread,
 	} = useThreads({
 		orpcController,
@@ -50,57 +48,44 @@ export function useControllerThreads() {
 		enabled: Boolean(orpcController),
 	});
 
-	const agentByThread = useAgentCatalogStore((state) => state.agentByThread);
-
-	const resolveAgentName = useCallback(
-		(threadId: string): string => {
-			const thread = threads.find((item) => item.id === threadId);
-			return (
-				agentByThread[threadId] ??
-				thread?.branch ??
-				agentsQuery.data?.agents[0]?.name ??
-				""
-			);
-		},
-		[threads, agentsQuery.data, agentByThread]
+	const selectionByThread = useAgentCatalogStore(
+		(state) => state.selectionByThread
 	);
 
-	const sendMessage = useCallback(
-		async (threadId: string, text: string) => {
-			if (!workerConnection) throw new Error("worker not connected");
-			const thread = threads.find((item) => item.id === threadId);
-			if (!thread) throw new Error(`thread not found: ${threadId}`);
+	function resolveAgentName(threadId: string): string {
+		const thread = threads.find((item) => item.id === threadId);
+		return (
+			selectionByThread[threadId]?.agentName ??
+			thread?.branch ??
+			agentsQuery.data?.agents[0]?.name ??
+			""
+		);
+	}
 
-			const iterator = await workerConnection.client.chat({
-				agentName: resolveAgentName(threadId),
-				message: text,
-				projectId: thread.projectId,
-				threadId,
-			});
-			for await (const chunk of iterator) {
-				appendChunkToCache(queryClient, chunk);
-			}
-			invalidateThreads(thread.projectId);
-		},
-		[
-			workerConnection,
-			threads,
-			resolveAgentName,
-			queryClient,
-			invalidateThreads,
-		]
-	);
+	async function sendMessage(threadId: string, text: string) {
+		if (!workerConnection) throw new Error("worker not connected");
+		const thread = threads.find((item) => item.id === threadId);
+		if (!thread) throw new Error(`thread not found: ${threadId}`);
 
-	const stopThread = useCallback(
-		async (threadId: string) => {
-			if (!workerConnection) return;
-			await workerConnection.client.cancel({
-				agentName: resolveAgentName(threadId),
-				threadId,
-			});
-		},
-		[workerConnection, resolveAgentName]
-	);
+		const iterator = await workerConnection.client.chat({
+			agentName: resolveAgentName(threadId),
+			message: text,
+			projectId: thread.projectId,
+			threadId,
+		});
+		for await (const chunk of iterator) {
+			appendChunkToCache(queryClient, chunk);
+		}
+		invalidateThreads(thread.projectId);
+	}
+
+	async function stopThread(threadId: string) {
+		if (!workerConnection) return;
+		await workerConnection.client.cancel({
+			agentName: resolveAgentName(threadId),
+			threadId,
+		});
+	}
 
 	return {
 		projects,
@@ -111,7 +96,6 @@ export function useControllerThreads() {
 		removeProject,
 		createThread,
 		renameThread,
-		archiveThread,
 		deleteThread,
 		sendMessage,
 		stopThread,
