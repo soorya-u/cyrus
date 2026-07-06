@@ -5,7 +5,7 @@ export const nameSchema = z
 	.min(1, "name cannot be empty")
 	.max(64, "name is too long (max 64 characters)")
 	.regex(
-		/^[a-zA-Z0-9_-]+$/,
+		/^[a-zA-Z0-9-]+$/,
 		"name may only contain letters, numbers, hyphens and underscores"
 	);
 
