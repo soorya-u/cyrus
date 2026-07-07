@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ChatSidebarLayout } from "@/components/sidebar/chat-sidebar-layout";
 import { WorkersSidebar } from "@/components/sidebar/workers/workers-sidebar";
 import { useWorkerConversationSync } from "@/hooks/chat/use-worker-conversation-sync";
+import { ChatSidebarLayout } from "@/layouts/chat-sidebar-layout";
 import { WorkspaceInset } from "@/layouts/workspace-inset";
 import { dialController } from "@/lib/orpc";
 import { useWorkerStore } from "@/stores/worker";
