@@ -5,9 +5,9 @@
 
 ## 2. Workers layout route
 
-- [x] 2.1 Create `apps/web/src/routes/_workspace/workers/route.tsx` as a pathless layout: `beforeLoad`-free, rendering `<ChatSidebarLayout sidebar={<WorkersSidebar/>}><WorkspaceInset><Outlet/></WorkspaceInset></ChatSidebarLayout>`, modeled on `settings/route.tsx`.
-- [x] 2.2 Update `workers/index.tsx` to drop the `ChatSidebarLayout`/`WorkspaceInset` wrapper and its now-unused imports, returning just its page content.
-- [x] 2.3 Update `workers/$workerId/route.tsx` to drop the `ChatSidebarLayout`/`WorkspaceInset` wrapper (keep `beforeLoad` and existing effects), returning a bare `<Outlet/>`.
+- [x] 2.1 **Skipped:** do not add a pathless `workers/route.tsx`. `WorkersSidebar` (and `ProjectThreadExplorer`) must render under `workers/$workerId` so `orpcController` from that route's `beforeLoad` is available in route context.
+- [x] 2.2 Keep `workers/index.tsx` rendering its own `ChatSidebarLayout`/`WorkspaceInset` wrapper for the `/workers` empty state (no `orpcController` needed there).
+- [x] 2.3 Keep `workers/$workerId/route.tsx` rendering `ChatSidebarLayout`/`WorkspaceInset` with `WorkersSidebar` (preserve `beforeLoad`, effects, and `<Outlet/>` inside `WorkspaceInset`).
 
 ## 3. Shared sidebar section layout
 
@@ -18,4 +18,4 @@
 ## 4. Verification
 
 - [x] 4.1 Run `bun check:types` and `bun check` for `apps/web`.
-- [x] 4.2 Manually verify: `/workers`, `/workers/$workerId`, and `/settings/*` render identical sidebar chrome and content to before; sidebar open/closed state now persists when navigating between `/workers` and `/workers/$workerId`; mobile viewport still works for both sections.
+- [x] 4.2 Manually verify: `/workers`, `/workers/$workerId`, and `/settings/*` render identical sidebar chrome and content to before; selecting a worker shows projects/add-project; mobile viewport still works for both sections.
