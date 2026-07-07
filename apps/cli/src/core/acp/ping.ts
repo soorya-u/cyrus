@@ -16,9 +16,8 @@ export type AcpPingSuccess = {
 export async function pingAcpAgent(
 	entry: AgentEntry
 ): Promise<Result<AcpPingSuccess, string>> {
-	if (!isCommandAvailable(entry.command)) {
+	if (!isCommandAvailable(entry.command))
 		return Result.err(`command not found or not executable: ${entry.command}`);
-	}
 
 	const created = Result.try(() =>
 		createAcpRuntime({
@@ -41,7 +40,7 @@ export async function pingAcpAgent(
 	await Result.tryPromise(() => acp.shutdown());
 
 	return ready.map(() => ({
-		agentName: acp.agentInfo?.name ?? undefined,
-		agentVersion: acp.agentInfo?.version ?? undefined,
+		agentName: acp.agentInfo?.name,
+		agentVersion: acp.agentInfo?.version,
 	}));
 }
