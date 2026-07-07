@@ -46,6 +46,7 @@
     "radix-ui": "^1.6.0",
     "random-word-slugs": "catalog:",
     "react": "catalog:",
+    "react-call": "^2.0.2",
     "react-day-picker": "^10.0.1",
     "react-dom": "catalog:",
     "react-markdown": "^10.1.0",
