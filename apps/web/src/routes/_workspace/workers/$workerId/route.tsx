@@ -1,5 +1,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { DeleteProjectDialog } from "@/components/portals/delete-project-dialog";
+import { NewProjectDialog } from "@/components/portals/new-project-dialog";
+import { RenameProjectDialog } from "@/components/portals/rename-project-dialog";
 import { WorkersSidebar } from "@/components/sidebar/workers/workers-sidebar";
 import { useWorkerConversationSync } from "@/hooks/chat/use-worker-conversation-sync";
 import { ChatSidebarLayout } from "@/layouts/chat-sidebar-layout";
@@ -28,10 +31,15 @@ function WorkerLayout() {
 	useEffect(() => setLastWorkerId(workerId), [workerId, setLastWorkerId]);
 
 	return (
-		<ChatSidebarLayout sidebar={<WorkersSidebar />}>
-			<WorkspaceInset>
-				<Outlet />
-			</WorkspaceInset>
-		</ChatSidebarLayout>
+		<>
+			<ChatSidebarLayout sidebar={<WorkersSidebar />}>
+				<WorkspaceInset>
+					<Outlet />
+				</WorkspaceInset>
+			</ChatSidebarLayout>
+			<NewProjectDialog />
+			<RenameProjectDialog />
+			<DeleteProjectDialog />
+		</>
 	);
 }

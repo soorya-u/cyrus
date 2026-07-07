@@ -7,33 +7,15 @@ import {
 	MoreHorizontalIcon,
 	SquarePenIcon,
 } from "lucide-react";
-import { useState } from "react";
 import { ThreadRow } from "@/components/chat/thread-row";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+import { DeleteProjectDialog } from "@/components/portals/delete-project-dialog";
+import { RenameProjectDialog } from "@/components/portals/rename-project-dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
 	SidebarMenuButton,
 	SidebarMenuSub,
@@ -75,17 +57,6 @@ export function ProjectThreadGroup({
 	attachThreadListAutoAnimateRef,
 	dragHandleProps,
 }: ProjectThreadGroupProps) {
-	const [renameOpen, setRenameOpen] = useState(false);
-	const [renameValue, setRenameValue] = useState(project.name);
-	const [deleteOpen, setDeleteOpen] = useState(false);
-
-	const submitRename = () => {
-		const trimmed = renameValue.trim();
-		if (trimmed) onRenameProject(project.id, trimmed);
-
-		setRenameOpen(false);
-	};
-
 	return (
 		<>
 			<div className="group/project-header relative">
@@ -139,15 +110,23 @@ export function ProjectThreadGroup({
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem
-								onSelect={() => {
-									setRenameValue(project.name);
-									setRenameOpen(true);
+								onSelect={async () => {
+									const name = await RenameProjectDialog.call({
+										currentName: project.name,
+									});
+									if (name) onRenameProject(project.id, name);
 								}}
 							>
 								Rename
 							</DropdownMenuItem>
 							<DropdownMenuItem
-								onSelect={() => setDeleteOpen(true)}
+								onSelect={async () => {
+									const confirmed = await DeleteProjectDialog.call({
+										projectName: project.name,
+										threadCount: threads.length,
+									});
+									if (confirmed) onRemoveProject(project.id);
+								}}
 								variant="destructive"
 							>
 								Delete
@@ -156,52 +135,6 @@ export function ProjectThreadGroup({
 					</DropdownMenu>
 				</div>
 			</div>
-
-			<Dialog onOpenChange={setRenameOpen} open={renameOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Rename project</DialogTitle>
-					</DialogHeader>
-					<Input
-						aria-label="Project name"
-						autoFocus
-						onChange={(event) => setRenameValue(event.target.value)}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") {
-								event.preventDefault();
-								submitRename();
-							}
-						}}
-						value={renameValue}
-					/>
-					<DialogFooter>
-						<Button onClick={() => setRenameOpen(false)} variant="outline">
-							Cancel
-						</Button>
-						<Button disabled={!renameValue.trim()} onClick={submitRename}>
-							Save
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			<AlertDialog onOpenChange={setDeleteOpen} open={deleteOpen}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Delete {project.name}?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This removes the project and its {threads.length} thread
-							{threads.length === 1 ? "" : "s"}. This can't be undone.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={() => onRemoveProject(project.id)}>
-							Delete
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
 
 			<SidebarMenuSub
 				className="mx-0.5 my-0 w-full translate-x-0 gap-0.5 overflow-hidden px-1 py-0 sm:mx-1 sm:px-1.5"

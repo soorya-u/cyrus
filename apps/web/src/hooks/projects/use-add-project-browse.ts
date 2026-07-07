@@ -127,9 +127,8 @@ export function useAddProjectBrowse({
 
 	function browseUp() {
 		const parentPath = getBrowseParentPath(query);
-		if (parentPath === null) {
-			return;
-		}
+		if (parentPath === null) return;
+
 		setHighlightedItemValue(null);
 		setQuery(parentPath);
 		setBrowseGeneration((generation) => generation + 1);
@@ -172,18 +171,12 @@ export function useAddProjectBrowse({
 
 	async function handleAddProject(rawPath: string) {
 		const trimmedPath = rawPath.trim();
-		if (trimmedPath.length === 0) {
-			return;
-		}
+		if (trimmedPath.length === 0) return;
 
-		if (isUnsupportedWindowsProjectPath(trimmedPath, browsePlatform)) {
-			return;
-		}
+		if (isUnsupportedWindowsProjectPath(trimmedPath, browsePlatform)) return;
 
 		const path = normalizeProjectPathForDispatch(trimmedPath);
-		if (path.length === 0) {
-			return;
-		}
+		if (path.length === 0) return;
 
 		const name = inferProjectTitleFromPath(path);
 		await onCreate(name, path);

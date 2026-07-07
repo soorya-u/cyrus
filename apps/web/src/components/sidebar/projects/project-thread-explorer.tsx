@@ -20,7 +20,7 @@ import {
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { FolderPlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { AddProjectDialog } from "@/components/sidebar/projects/add-project-dialog";
+import { NewProjectDialog } from "@/components/portals/new-project-dialog";
 import { ProjectThreadGroup } from "@/components/sidebar/projects/project-thread-group";
 import { SortableProjectItem } from "@/components/sidebar/projects/sortable-project-item";
 import { ThreadSearchField } from "@/components/sidebar/projects/thread-search-field";
@@ -59,7 +59,6 @@ export function ProjectThreadExplorer({
 		deleteThread,
 	} = useControllerThreads();
 	const [query, setQuery] = useState("");
-	const [addProjectOpen, setAddProjectOpen] = useState(false);
 	const [expandedProjects, setExpandedProjects] = useState<
 		Record<string, boolean>
 	>(() => Object.fromEntries(projects.map((project) => [project.id, true])));
@@ -180,7 +179,10 @@ export function ProjectThreadExplorer({
 								<button
 									aria-label="Add project"
 									className="sidebar-icon-action-button"
-									onClick={() => setAddProjectOpen(true)}
+									onClick={async () => {
+										const result = await NewProjectDialog.call();
+										if (result) createProject(result.name, result.path);
+									}}
 									type="button"
 								/>
 							}
@@ -190,12 +192,6 @@ export function ProjectThreadExplorer({
 						<TooltipPopup side="right">Add project</TooltipPopup>
 					</Tooltip>
 				</div>
-
-				<AddProjectDialog
-					onCreate={createProject}
-					onOpenChange={setAddProjectOpen}
-					open={addProjectOpen}
-				/>
 
 				<DndContext
 					collisionDetection={projectCollisionDetection}
