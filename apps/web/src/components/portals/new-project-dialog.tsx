@@ -6,6 +6,7 @@ import {
 	FolderIcon,
 	FolderPlusIcon,
 } from "lucide-react";
+import { createCallable } from "react-call";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -27,17 +28,14 @@ import { buildBrowseGroups } from "@/utils/dir";
 
 const ITEM_ICON_CLASS = "size-4 text-muted-foreground/80";
 
-type AddProjectDialogProps = {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	onCreate: (name: string, path: string) => Promise<unknown> | undefined;
-};
-
-export function AddProjectDialog({
-	open,
-	onOpenChange,
-	onCreate,
-}: AddProjectDialogProps) {
+function NewProjectDialogContent({
+	call,
+}: {
+	call: {
+		end: (response: { name: string; path: string } | null) => void;
+		ended: boolean;
+	};
+}) {
 	const {
 		query,
 		setQuery,
@@ -58,7 +56,18 @@ export function AddProjectDialog({
 		submitAddProject,
 		resolvedAddProjectPath,
 		emptyStateMessage,
-	} = useAddProjectBrowse({ open, onCreate, onOpenChange });
+	} = useAddProjectBrowse({
+		open: true,
+		onCreate: (name, path) => {
+			call.end({ name, path });
+		},
+		onOpenChange: (nextOpen) => {
+			if (!(nextOpen || call.ended)) {
+				reset();
+				call.end(null);
+			}
+		},
+	});
 
 	const browseGroups = buildBrowseGroups({
 		browseEntries: filteredBrowseEntries,
@@ -73,16 +82,16 @@ export function AddProjectDialog({
 		<CommandDialog
 			onOpenChange={(nextOpen) => {
 				if (!nextOpen) reset();
-				onOpenChange(nextOpen);
+				if (!(nextOpen || call.ended)) call.end(null);
 			}}
-			open={open}
+			open
 		>
 			<CommandDialogPopup
 				aria-label="Add project"
 				className="overflow-hidden p-0"
 				data-testid="add-project-dialog"
 				onBackdropPointerDown={() => {
-					onOpenChange(false);
+					if (!call.ended) call.end(null);
 				}}
 			>
 				<Command
@@ -210,3 +219,8 @@ export function AddProjectDialog({
 		</CommandDialog>
 	);
 }
+
+export const NewProjectDialog = createCallable<
+	void,
+	{ name: string; path: string } | null
+>(NewProjectDialogContent);
