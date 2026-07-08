@@ -1,12 +1,13 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
+import { generateName, randomId } from "@cyrus/utils/identity";
 import { createWorkerRuntime } from "@/core";
 import { createControllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { get, getOrCreate } from "@/store/config";
-import { generateId, generateName } from "@/utils/identity";
+import { initDatabase } from "@/store/database";
 import { print } from "@/utils/style";
 
 export async function worker(): Promise<void> {
@@ -22,11 +23,13 @@ export async function worker(): Promise<void> {
 		process.exit(1);
 	}
 
-	const id = await getOrCreate("id", generateId);
+	const id = await getOrCreate("id", randomId);
 	const name = await getOrCreate("name", generateName);
 	const room = session.user.id;
 
 	const runtime = createWorkerRuntime();
+
+	await initDatabase();
 
 	print.dim`worker "${name}" joining hub`;
 

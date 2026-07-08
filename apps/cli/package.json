@@ -16,13 +16,15 @@
     "@agentclientprotocol/sdk": "^1.1.0",
     "@commander-js/extra-typings": "^15.0.0",
     "@cyrus/connections": "workspace:*",
+    "@cyrus/database": "workspace:*",
+    "@cyrus/utils": "workspace:*",
+    "@tursodatabase/database": "^0.6.1",
     "@orpc/server": "catalog:",
     "@t3-oss/env-core": "catalog:",
     "better-auth": "catalog:",
     "better-result": "catalog:",
     "commander": "^15.0.0",
     "diff": "^7.0.0",
-    "random-word-slugs": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

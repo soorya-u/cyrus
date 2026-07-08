@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { ChatChunkSchema } from "./chat";
+import { optionalString } from "./common";
 
 export const ThreadSchema = z.object({
 	id: z.string(),
 	projectId: z.string(),
 	name: z.string(),
-	agentName: z.string().optional(),
+	agentName: optionalString,
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });
@@ -13,6 +14,7 @@ export const ThreadSchema = z.object({
 export const ConversationEntrySchema = z.object({
 	id: z.string(),
 	threadId: z.string(),
+	seq: z.number(),
 	chunk: ChatChunkSchema,
 	createdAt: z.string(),
 });
@@ -23,6 +25,7 @@ export const ProjectQueryInputSchema = z.object({
 
 export const ThreadQueryInputSchema = z.object({
 	threadId: z.string(),
+	afterSeq: z.number().optional(),
 });
 
 export const RenameThreadInputSchema = z.object({

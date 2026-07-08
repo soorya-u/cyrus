@@ -1,7 +1,7 @@
 import { generateSlug } from "random-word-slugs";
 
-export function generateId(): string {
-	return Bun.randomUUIDv7();
+export function randomId(): string {
+	return crypto.randomUUID();
 }
 
 export function generateName(): string {

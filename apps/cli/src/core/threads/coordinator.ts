@@ -1,9 +1,10 @@
 import type { ModelOption } from "@cyrus/connections/schemas/rtc/catalog";
 import type { AgentEvent } from "@cyrus/connections/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/connections/schemas/rtc/common";
+import { resolveProjectCwd } from "@cyrus/database/repositories/projects";
+import { repositoryErrorMessage } from "@cyrus/database/utils/error";
 import type { AgentPool } from "@/core/acp/pool";
 import { AgentRuntime } from "@/core/agents/runtime";
-import { resolveProjectCwd } from "@/store/projects";
 
 export class ThreadCoordinator {
 	private readonly agents = new Map<string, AgentRuntime>();
@@ -44,7 +45,7 @@ export class ThreadCoordinator {
 		projectId: string,
 		modelId: string
 	): Promise<void> {
-		const cwd = resolveProjectCwd(projectId);
+		const cwd = await this.resolveCwd(projectId);
 		await this.getAgent(agentName).setModel(threadId, projectId, cwd, modelId);
 	}
 
@@ -54,7 +55,7 @@ export class ThreadCoordinator {
 		projectId: string,
 		modeId: string
 	): Promise<void> {
-		const cwd = resolveProjectCwd(projectId);
+		const cwd = await this.resolveCwd(projectId);
 		await this.getAgent(agentName).setMode(threadId, projectId, cwd, modeId);
 	}
 
@@ -64,7 +65,7 @@ export class ThreadCoordinator {
 		projectId: string,
 		effortId: string
 	): Promise<void> {
-		const cwd = resolveProjectCwd(projectId);
+		const cwd = await this.resolveCwd(projectId);
 		await this.getAgent(agentName).setEffort(
 			threadId,
 			projectId,
@@ -79,7 +80,7 @@ export class ThreadCoordinator {
 		projectId: string,
 		personaId: string
 	): Promise<void> {
-		const cwd = resolveProjectCwd(projectId);
+		const cwd = await this.resolveCwd(projectId);
 		await this.getAgent(agentName).setPersona(
 			threadId,
 			projectId,
@@ -94,12 +95,20 @@ export class ThreadCoordinator {
 		projectId: string,
 		content: string
 	): AsyncGenerator<AgentEvent> {
-		const cwd = resolveProjectCwd(projectId);
+		const cwd = await this.resolveCwd(projectId);
 		yield* this.getAgent(agentName).prompt(threadId, projectId, cwd, content);
 	}
 
 	async cancel(agentName: string, threadId: string): Promise<void> {
 		await this.getAgent(agentName).cancel(threadId);
+	}
+
+	private async resolveCwd(projectId: string): Promise<string> {
+		const result = await resolveProjectCwd(projectId);
+		if (result.isErr()) {
+			throw new Error(repositoryErrorMessage(result.error));
+		}
+		return result.value;
 	}
 
 	async close(agentName: string, threadId: string): Promise<void> {

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const optionalString = z
+	.string()
+	.nullish()
+	.transform((value) => value ?? undefined);
+
 export const VoidOutputSchema = z.object({});
 
 export const AgentQueryInputSchema = z.object({

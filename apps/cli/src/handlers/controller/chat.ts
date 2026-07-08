@@ -1,31 +1,58 @@
 import type { ChatChunk } from "@cyrus/connections/schemas/rtc/chat";
+import { appendConversation } from "@cyrus/database/repositories/conversations";
+import { ensureThread } from "@cyrus/database/repositories/threads";
+import { randomId } from "@cyrus/utils/identity";
 import { env } from "@/lib/env";
-import { appendConversation, ensureThread } from "@/store/threads";
+import { throwOrpcFromRepositoryError } from "@/utils/error";
+import {
+	isStreamingDelta,
+	resolvePersistEvent,
+	trackDelta,
+} from "@/utils/streams";
 import type { ControllerDeps } from "./deps";
 
 export function chatHandlers({ os, runtime }: ControllerDeps) {
 	return {
 		chat: os.chat.handler(async function* ({ input, context }) {
-			const {
+			const { agentName, threadId = randomId(), message, projectId } = input;
+
+			const thread = await ensureThread(threadId, projectId, {
 				agentName,
-				threadId = Bun.randomUUIDv7(),
-				message,
-				projectId,
-			} = input;
+				firstMessage: message,
+			});
+			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
 
-			ensureThread(threadId, projectId, { agentName, firstMessage: message });
+			const turnId = randomId();
+			const messageBuffers = new Map<string, string>();
+			const thoughtBuffers = new Map<string, string>();
 
-			const turnId = Bun.randomUUIDv7();
+			async function emit(event: ChatChunk["event"]): Promise<ChatChunk> {
+				trackDelta(event, messageBuffers, thoughtBuffers);
 
-			function emit(event: ChatChunk["event"]): ChatChunk {
-				const chunk = { threadId, turnId, event };
+				if (isStreamingDelta(event)) {
+					const chunk: ChatChunk = { threadId, turnId, seq: 0, event };
+					context.broadcaster.broadcast(chunk, context.peerId);
+					return chunk;
+				}
+
+				const persistEvent = resolvePersistEvent(
+					event,
+					messageBuffers,
+					thoughtBuffers
+				);
+				const entry = await appendConversation(threadId, {
+					threadId,
+					turnId,
+					event: persistEvent,
+				});
+				if (entry.isErr()) throwOrpcFromRepositoryError(entry.error);
+				const chunk = entry.value.chunk;
 				context.broadcaster.broadcast(chunk, context.peerId);
-				appendConversation(threadId, chunk);
 				return chunk;
 			}
 
-			yield emit({ type: "user_message", content: message });
-			yield emit({ type: "thread_started", threadId });
+			yield await emit({ type: "user_message", content: message });
+			yield await emit({ type: "thread_started", threadId });
 
 			const gen = runtime.threadCoordinator.prompt(
 				agentName,
@@ -34,7 +61,7 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				message
 			);
 			for await (const event of gen) {
-				yield emit(event);
+				yield await emit(event);
 				await Bun.sleep(env.CYRUS_STREAM_THROTTLING_MS);
 			}
 		}),

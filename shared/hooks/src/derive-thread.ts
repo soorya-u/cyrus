@@ -149,6 +149,27 @@ function applyToolCallUpdate(
 	upsertDiffs(state.diffs, event.content, turnId);
 }
 
+function applyMessageCompleted(
+	state: MutableState,
+	entry: ConversationEntry,
+	event: Extract<AgentEvent, { type: "message_completed" }>,
+	turnId: string
+): void {
+	const key = event.messageId ?? turnId;
+	const existing = state.messages.get(key);
+	if (existing) {
+		existing.content = event.text;
+		return;
+	}
+	state.messages.set(key, {
+		content: event.text,
+		createdAt: entry.createdAt,
+		id: key,
+		role: "assistant",
+		turnId,
+	});
+}
+
 function applyEvent(state: MutableState, entry: ConversationEntry): void {
 	const { turnId, event } = entry.chunk;
 	switch (event.type) {
@@ -157,6 +178,9 @@ function applyEvent(state: MutableState, entry: ConversationEntry): void {
 			return;
 		case "token":
 			applyToken(state, entry, event, turnId);
+			return;
+		case "message_completed":
+			applyMessageCompleted(state, entry, event, turnId);
 			return;
 		case "tool_call":
 			applyToolCall(state, entry, event, turnId);

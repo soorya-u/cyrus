@@ -9,9 +9,11 @@ import {
 	type AgentEvent,
 	AgentEventSchema,
 	ApprovalRequestEventSchema,
+	MessageCompletedEventSchema,
 	PlanEventSchema,
 	PlanRemovedEventSchema,
 	PlanUpdateEventSchema,
+	ReasoningCompletedEventSchema,
 	ThoughtEventSchema,
 	TokenEventSchema,
 	ToolCallEventSchema,
@@ -32,11 +34,27 @@ export function mapRuntimeSessionEvent(
 					messageId: event.messageId,
 				}),
 			];
+		case "message.completed":
+			return [
+				MessageCompletedEventSchema.parse({
+					type: "message_completed",
+					text: event.content,
+					messageId: event.messageId,
+				}),
+			];
 		case "reasoning.delta":
 			return [
 				ThoughtEventSchema.parse({
 					type: "thought",
 					text: event.delta,
+					messageId: event.reasoningId,
+				}),
+			];
+		case "reasoning.completed":
+			return [
+				ReasoningCompletedEventSchema.parse({
+					type: "reasoning_completed",
+					text: event.content,
 					messageId: event.reasoningId,
 				}),
 			];

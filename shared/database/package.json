@@ -1,0 +1,26 @@
+{
+  "name": "@cyrus/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@cyrus/connections": "workspace:*",
+    "@cyrus/utils": "workspace:*",
+    "@tursodatabase/database-common": "^0.6.1",
+    "better-result": "catalog:",
+    "drizzle-kit": "catalog:",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@cyrus/typescript": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
