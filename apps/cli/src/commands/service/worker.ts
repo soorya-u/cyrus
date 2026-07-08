@@ -1,5 +1,6 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
+import { connection } from "@cyrus/database/connection";
 import { generateName, randomId } from "@cyrus/utils/identity";
 import { createWorkerRuntime } from "@/core";
 import { createControllerRouter } from "@/handlers/controller";
@@ -56,6 +57,7 @@ export async function worker(): Promise<void> {
 		await runtime.agentPool.shutdown();
 		device.close();
 		signalingSession.close();
+		await connection.close();
 		process.exit(0);
 	};
 	process.on("SIGINT", shutdown);

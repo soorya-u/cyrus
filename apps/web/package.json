@@ -38,7 +38,6 @@
     "better-result": "catalog:",
     "class-variance-authority": "^0.7.1",
     "cnfast": "^0.0.8",
-    "date-fns": "catalog:",
     "evlog": "^2.19.2",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.21.0",

@@ -7,7 +7,7 @@
     "cyrusd": "src/cli.ts"
   },
   "scripts": {
-    "cli": "bun src/cli.ts",
+    "dev": "bun src/cli.ts",
     "check:types": "tsc --noEmit",
     "build": "bun build src/cli.ts --compile --env 'CLI_PUBLIC_*' --outfile dist/cyrusd"
   },

@@ -73,9 +73,8 @@ export function useControllerThreads() {
 			projectId: thread.projectId,
 			threadId,
 		});
-		for await (const chunk of iterator) {
-			appendChunkToCache(queryClient, chunk);
-		}
+		for await (const chunk of iterator) appendChunkToCache(queryClient, chunk);
+
 		invalidateThreads(thread.projectId);
 	}
 

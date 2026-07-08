@@ -4,6 +4,6 @@ export default defineConfig({
 	schema: "./src/models/index.ts",
 	dialect: "turso",
 	dbCredentials: {
-		url: "file:store.db",
+		url: process.env.DATABASE_PATH ?? "file:store.db",
 	},
 });

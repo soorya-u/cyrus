@@ -8,7 +8,8 @@
   },
   "scripts": {
     "check:types": "tsc --noEmit",
-    "db:push": "drizzle-kit push"
+    "db:push": "dotenvx run -- drizzle-kit push",
+    "db:studio": "dotenvx run -- drizzle-kit studio"
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",

@@ -9,6 +9,8 @@ const STORE_DB_PATH = join(env.CYRUS_HOME, DATABASE_FILE);
 
 export async function initDatabase() {
 	await ensureDir();
-	const client = await connect(STORE_DB_PATH, { timeout: 5000 });
-	return connection.open(client, "worker");
+	return connection.open(
+		() => connect(STORE_DB_PATH, { timeout: 5000 }),
+		"worker"
+	);
 }

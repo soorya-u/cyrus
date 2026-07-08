@@ -46,11 +46,8 @@ export function broadcastSignalingEvent(
 	event: ServerEvent,
 	excludeIds: string[] = []
 ): void {
-	for (const conn of connections) {
-		if (!excludeIds.includes(conn.id)) {
-			pushEvent(conn, event);
-		}
-	}
+	for (const conn of connections)
+		if (!excludeIds.includes(conn.id)) pushEvent(conn, event);
 }
 
 const router = {
@@ -58,9 +55,9 @@ const router = {
 		const target = [...context.server.getConnections()].find(
 			(c) => c.id === input.to
 		);
-		if (!target) {
+		if (!target)
 			throw new ORPCError("NOT_FOUND", { message: "peer not connected" });
-		}
+
 		pushEvent(target, {
 			type: "offer",
 			from: context.ws.id,
@@ -72,9 +69,9 @@ const router = {
 		const target = [...context.server.getConnections()].find(
 			(c) => c.id === input.to
 		);
-		if (!target) {
+		if (!target)
 			throw new ORPCError("NOT_FOUND", { message: "peer not connected" });
-		}
+
 		pushEvent(target, {
 			type: "answer",
 			from: context.ws.id,
@@ -86,9 +83,9 @@ const router = {
 		const target = [...context.server.getConnections()].find(
 			(c) => c.id === input.to
 		);
-		if (!target) {
+		if (!target)
 			throw new ORPCError("NOT_FOUND", { message: "peer not connected" });
-		}
+
 		pushEvent(target, {
 			type: "ice-candidate",
 			from: context.ws.id,
