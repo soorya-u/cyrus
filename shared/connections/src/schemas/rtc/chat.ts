@@ -233,9 +233,19 @@ export const UserMessageEventSchema = z.object({
 	content: z.string(),
 });
 
+export const TurnCompletedEventSchema = z.object({
+	type: z.literal("turn_completed"),
+});
+
+export const TurnInterruptedEventSchema = z.object({
+	type: z.literal("turn_interrupted"),
+});
+
 export const AgentEventSchema = z.discriminatedUnion("type", [
 	ThreadStartedEventSchema,
 	UserMessageEventSchema,
+	TurnCompletedEventSchema,
+	TurnInterruptedEventSchema,
 	TokenEventSchema,
 	ThoughtEventSchema,
 	MessageCompletedEventSchema,
@@ -263,7 +273,7 @@ export type Diff = z.infer<typeof DiffSchema>;
 export const ChatInputSchema = z.object({
 	agentName: z.string(),
 	message: z.string(),
-	threadId: z.uuidv7().optional(),
+	threadId: z.uuid().optional(),
 	projectId: z.string(),
 });
 

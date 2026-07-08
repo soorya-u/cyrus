@@ -60,9 +60,15 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				projectId,
 				message
 			);
-			for await (const event of gen) {
-				yield await emit(event);
-				await Bun.sleep(env.CYRUS_STREAM_THROTTLING_MS);
+			try {
+				for await (const event of gen) {
+					yield await emit(event);
+					await Bun.sleep(env.CYRUS_STREAM_THROTTLING_MS);
+				}
+				yield await emit({ type: "turn_completed" });
+			} catch (error) {
+				yield await emit({ type: "turn_interrupted" });
+				throw error;
 			}
 		}),
 

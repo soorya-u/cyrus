@@ -57,7 +57,7 @@
     "@biomejs/biome": "^2.4.15",
     "@cyrus/typescript": "workspace:*",
     "lefthook": "^2.1.9",
-    "turbo": "^2.10.0",
+    "turbo": "^2.10.4",
     "typescript": "catalog:",
     "ultracite": "^7.8.1"
   },

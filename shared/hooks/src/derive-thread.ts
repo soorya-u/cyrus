@@ -170,6 +170,46 @@ function applyMessageCompleted(
 	});
 }
 
+function inferTurnState(
+	turnEntries: ConversationEntry[],
+	isLatest: boolean
+): Turn["state"] {
+	const events = turnEntries.map((entry) => entry.chunk.event);
+
+	if (events.some((event) => event.type === "turn_interrupted")) {
+		return "interrupted";
+	}
+	if (
+		events.some(
+			(event) =>
+				event.type === "turn_completed" || event.type === "message_completed"
+		)
+	) {
+		return "complete";
+	}
+	if (!isLatest) return "complete";
+
+	const hasInProgressTool = events.some((event) => {
+		if (event.type !== "tool_call" && event.type !== "tool_call_update") {
+			return false;
+		}
+		return event.status === "pending" || event.status === "in_progress";
+	});
+	if (hasInProgressTool) return "running";
+
+	const hasStreamingDelta = events.some(
+		(event) => event.type === "token" || event.type === "thought"
+	);
+	if (hasStreamingDelta) return "running";
+
+	const isAwaitingAgent = events.every(
+		(event) => event.type === "user_message" || event.type === "thread_started"
+	);
+	if (isAwaitingAgent) return "running";
+
+	return "complete";
+}
+
 function applyEvent(state: MutableState, entry: ConversationEntry): void {
 	const { turnId, event } = entry.chunk;
 	switch (event.type) {
@@ -198,11 +238,6 @@ function applyEvent(state: MutableState, entry: ConversationEntry): void {
  * the aggregated shape the UI renders. Mirrors how use-thread-feed.ts folds a
  * Thread into FeedEntry[] — this is the layer below it, building the Thread
  * fields in the first place.
- *
- * Known limitation: the wire protocol has no turn-completion marker, so a
- * turn's `state` can only be inferred (latest turn = "running", everything
- * earlier = "complete") rather than asserted. Good enough until a
- * turn_completed event exists.
  */
 export function deriveThreadFromConversation(
 	entries: ConversationEntry[]
@@ -221,14 +256,22 @@ export function deriveThreadFromConversation(
 
 	const orderedTurns = [...turns.values()];
 	const latestTurn = orderedTurns.at(-1);
-	if (latestTurn) latestTurn.state = "running";
+
+	for (const turn of orderedTurns) {
+		const turnEntries = entries.filter(
+			(entry) => entry.chunk.turnId === turn.id
+		);
+		turn.state = inferTurnState(turnEntries, turn.id === latestTurn?.id);
+	}
 
 	return {
 		diffs: [...state.diffs.values()],
 		messages: [...state.messages.values()].map((message) => ({
 			...message,
 			streaming:
-				message.role === "assistant" && message.turnId === latestTurn?.id,
+				message.role === "assistant" &&
+				message.turnId === latestTurn?.id &&
+				latestTurn?.state === "running",
 		})),
 		toolCalls: [...state.toolCalls.values()],
 		turns: orderedTurns,

@@ -13,7 +13,7 @@ export const AgentQueryInputSchema = z.object({
 
 export const AgentMutationInputSchema = z.object({
 	agentName: z.string(),
-	threadId: z.uuidv7(),
+	threadId: z.uuid(),
 	projectId: z.string(),
 });
 
