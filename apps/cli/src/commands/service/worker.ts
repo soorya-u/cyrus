@@ -2,6 +2,7 @@ import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
 import { connection } from "@cyrus/database/connection";
 import { generateName, randomId } from "@cyrus/utils/identity";
+import { Result } from "better-result";
 import { createWorkerRuntime } from "@/core";
 import { createControllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
@@ -30,7 +31,10 @@ export async function worker(): Promise<void> {
 
 	const runtime = createWorkerRuntime();
 
-	await initDatabase();
+	(await Result.tryPromise(() => initDatabase())).tapError((err) => {
+		print.error`Failed to initialize database: ${String(err)}`;
+		process.exit(1);
+	});
 
 	print.dim`worker "${name}" joining hub`;
 

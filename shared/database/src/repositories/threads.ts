@@ -3,7 +3,7 @@ import { ThreadSchema } from "@cyrus/connections/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { nowISO } from "@cyrus/utils/time";
 import { Result } from "better-result";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { connection } from "../connection";
 import { threads } from "../models/threads";
 import type { RepositoryError } from "../utils/error";
@@ -31,7 +31,7 @@ export async function ensureThread(
 		const [existing] = await connection.db
 			.select()
 			.from(threads)
-			.where(eq(threads.id, id))
+			.where(and(eq(threads.id, id), eq(threads.projectId, projectId)))
 			.limit(1);
 
 		if (existing) {
@@ -48,10 +48,10 @@ export async function ensureThread(
 					agentName: agentName ?? null,
 					updatedAt,
 				})
-				.where(eq(threads.id, id));
+				.where(and(eq(threads.id, id), eq(threads.projectId, projectId)));
 			return ThreadSchema.parse({
 				id,
-				projectId,
+				projectId: existing.projectId,
 				name,
 				agentName,
 				createdAt: existing.createdAt,

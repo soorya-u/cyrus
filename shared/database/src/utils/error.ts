@@ -16,20 +16,25 @@ export function repositoryErrorMessage(error: RepositoryError): string {
 		case "database":
 		case "persist_failed":
 			return error.message;
-		default:
-			return error;
+		default: {
+			const _exhaustive: never = error;
+			return _exhaustive;
+		}
 	}
 }
 
+function isRepositoryError(error: unknown): error is RepositoryError {
+	if (typeof error !== "object" || error === null || !("type" in error))
+		return false;
+
+	const type = (error as { type: unknown }).type;
+	return (
+		type === "not_found" || type === "database" || type === "persist_failed"
+	);
+}
+
 function fromUnknown(error: unknown): RepositoryError {
-	if (
-		typeof error === "object" &&
-		error !== null &&
-		"type" in error &&
-		(error as RepositoryError).type !== undefined
-	) {
-		return error as RepositoryError;
-	}
+	if (isRepositoryError(error)) return error;
 	return {
 		type: "database",
 		message: error instanceof Error ? error.message : String(error),

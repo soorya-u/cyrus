@@ -17,10 +17,7 @@ export function trackDelta(
 		thought: thoughtBuffers,
 	}[event.type];
 
-	buffer.set(
-		event.messageId,
-		(messageBuffers.get(event.messageId) ?? "") + event.text
-	);
+	buffer.set(event.messageId, (buffer.get(event.messageId) ?? "") + event.text);
 }
 
 export function resolvePersistEvent(
