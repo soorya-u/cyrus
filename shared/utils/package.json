@@ -7,7 +7,8 @@
     "./*": "./src/*.ts"
   },
   "dependencies": {
-    "date-fns": "catalog:"
+    "date-fns": "^4.4.0",
+    "random-word-slugs": "^0.1.7"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",

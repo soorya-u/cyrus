@@ -1,59 +1,65 @@
-import { ORPCError } from "@orpc/server";
-import { Result } from "better-result";
+import { getConversations } from "@cyrus/database/repositories/conversations";
 import {
 	createThread as createStoredThread,
 	deleteThread,
-	getConversations,
 	getThread,
 	listThreads,
 	renameThread,
-} from "@/store/threads";
+} from "@cyrus/database/repositories/threads";
+import { throwOrpcFromRepositoryError } from "@/utils/error";
 import type { ControllerOs } from "./deps";
 
 export function threadsHandlers(os: ControllerOs) {
 	return {
-		listThreads: os.listThreads.handler(async ({ input }) => ({
-			threads: listThreads(input.projectId),
-		})),
-
-		createThread: os.createThread.handler(({ input }) =>
-			Result.try(() => createStoredThread(input.projectId)).match({
-				ok: (thread) => ({ thread }),
-				err: () => {
-					throw new ORPCError("NOT_FOUND", {
-						message: `project not found: ${input.projectId}`,
-					});
-				},
+		listThreads: os.listThreads.handler(async ({ input }) =>
+			(await listThreads(input.projectId)).match({
+				ok: (threads) => ({ threads }),
+				err: throwOrpcFromRepositoryError,
 			})
 		),
 
-		getConversations: os.getConversations.handler(({ input }) => {
-			if (!getThread(input.threadId)) {
-				throw new ORPCError("NOT_FOUND", {
-					message: `thread not found: ${input.threadId}`,
+		createThread: os.createThread.handler(async ({ input }) =>
+			(await createStoredThread(input.projectId)).match({
+				ok: (thread) => ({ thread }),
+				err: throwOrpcFromRepositoryError,
+			})
+		),
+
+		getConversations: os.getConversations.handler(async ({ input }) => {
+			const thread = await getThread(input.threadId);
+			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
+			if (!thread.value) {
+				throwOrpcFromRepositoryError({
+					type: "not_found",
+					entity: "thread",
+					id: input.threadId,
 				});
 			}
-			return { conversations: getConversations(input.threadId) };
+
+			return (await getConversations(input.threadId, input.afterSeq)).match({
+				ok: (conversations) => ({ conversations }),
+				err: throwOrpcFromRepositoryError,
+			});
 		}),
 
-		renameThread: os.renameThread.handler(({ input }) =>
-			Result.try(() => renameThread(input.threadId, input.name)).match({
+		renameThread: os.renameThread.handler(async ({ input }) =>
+			(await renameThread(input.threadId, input.name)).match({
 				ok: () => ({}),
-				err: () => {
-					throw new ORPCError("NOT_FOUND", {
-						message: `thread not found: ${input.threadId}`,
-					});
-				},
+				err: throwOrpcFromRepositoryError,
 			})
 		),
 
-		deleteThread: os.deleteThread.handler(({ input }) => {
-			const deleted = deleteThread(input.threadId);
-			if (!deleted) {
-				throw new ORPCError("NOT_FOUND", {
-					message: `thread not found: ${input.threadId}`,
+		deleteThread: os.deleteThread.handler(async ({ input }) => {
+			const deleted = await deleteThread(input.threadId);
+			if (deleted.isErr()) throwOrpcFromRepositoryError(deleted.error);
+			if (!deleted.value) {
+				throwOrpcFromRepositoryError({
+					type: "not_found",
+					entity: "thread",
+					id: input.threadId,
 				});
 			}
+
 			return {};
 		}),
 	};

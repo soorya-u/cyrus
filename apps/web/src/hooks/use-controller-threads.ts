@@ -5,6 +5,7 @@ import { useProjects } from "@/hooks/projects/use-projects";
 import { useThreads } from "@/hooks/threads/use-threads";
 import type { ControllerConnection } from "@/lib/orpc";
 import { useAgentCatalogStore } from "@/stores/agent-catalog";
+import { useChatUiStore } from "@/stores/chat-ui";
 import { appendChunkToCache } from "@/utils/conversation-cache";
 
 // plain hook — safe to call from as many components as need it.
@@ -67,16 +68,22 @@ export function useControllerThreads() {
 		const thread = threads.find((item) => item.id === threadId);
 		if (!thread) throw new Error(`thread not found: ${threadId}`);
 
-		const iterator = await workerConnection.client.chat({
-			agentName: resolveAgentName(threadId),
-			message: text,
-			projectId: thread.projectId,
-			threadId,
-		});
-		for await (const chunk of iterator) {
-			appendChunkToCache(queryClient, chunk);
+		const { setThreadStreaming } = useChatUiStore.getState();
+		setThreadStreaming(threadId, true);
+		try {
+			const iterator = await workerConnection.client.chat({
+				agentName: resolveAgentName(threadId),
+				message: text,
+				projectId: thread.projectId,
+				threadId,
+			});
+			for await (const chunk of iterator)
+				appendChunkToCache(queryClient, chunk);
+
+			invalidateThreads(thread.projectId);
+		} finally {
+			setThreadStreaming(threadId, false);
 		}
-		invalidateThreads(thread.projectId);
 	}
 
 	async function stopThread(threadId: string) {

@@ -4,7 +4,7 @@ import type { RtcConnection } from "@cyrus/connections/rtc/dial";
 import type { SignalingSession } from "@cyrus/connections/rtc/session";
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import { getControllerId, getControllerName } from "@/utils/identity";
+import { getControllerId, getControllerName } from "@/stores/identity";
 import { authClient } from "./auth";
 import { env } from "./env";
 

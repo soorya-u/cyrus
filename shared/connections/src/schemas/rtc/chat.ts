@@ -211,6 +211,18 @@ export const SessionUpdateEventSchema = z.object({
 	raw: z.unknown(),
 });
 
+export const MessageCompletedEventSchema = z.object({
+	type: z.literal("message_completed"),
+	text: z.string(),
+	messageId: z.string().nullish(),
+});
+
+export const ReasoningCompletedEventSchema = z.object({
+	type: z.literal("reasoning_completed"),
+	text: z.string(),
+	messageId: z.string().nullish(),
+});
+
 export const ThreadStartedEventSchema = z.object({
 	type: z.literal("thread_started"),
 	threadId: z.string(),
@@ -221,11 +233,23 @@ export const UserMessageEventSchema = z.object({
 	content: z.string(),
 });
 
+export const TurnCompletedEventSchema = z.object({
+	type: z.literal("turn_completed"),
+});
+
+export const TurnInterruptedEventSchema = z.object({
+	type: z.literal("turn_interrupted"),
+});
+
 export const AgentEventSchema = z.discriminatedUnion("type", [
 	ThreadStartedEventSchema,
 	UserMessageEventSchema,
+	TurnCompletedEventSchema,
+	TurnInterruptedEventSchema,
 	TokenEventSchema,
 	ThoughtEventSchema,
+	MessageCompletedEventSchema,
+	ReasoningCompletedEventSchema,
 	ToolCallEventSchema,
 	ToolCallUpdateEventSchema,
 	PlanEventSchema,
@@ -249,13 +273,14 @@ export type Diff = z.infer<typeof DiffSchema>;
 export const ChatInputSchema = z.object({
 	agentName: z.string(),
 	message: z.string(),
-	threadId: z.uuidv7().optional(),
+	threadId: z.uuid().optional(),
 	projectId: z.string(),
 });
 
 export const ChatChunkSchema = z.object({
 	threadId: z.string(),
 	turnId: z.string(),
+	seq: z.number(),
 	event: AgentEventSchema,
 });
 

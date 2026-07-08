@@ -1,12 +1,15 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
+import { connection } from "@cyrus/database/connection";
+import { generateName, randomId } from "@cyrus/utils/identity";
+import { Result } from "better-result";
 import { createWorkerRuntime } from "@/core";
 import { createControllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { get, getOrCreate } from "@/store/config";
-import { generateId, generateName } from "@/utils/identity";
+import { initDatabase } from "@/store/database";
 import { print } from "@/utils/style";
 
 export async function worker(): Promise<void> {
@@ -22,11 +25,16 @@ export async function worker(): Promise<void> {
 		process.exit(1);
 	}
 
-	const id = await getOrCreate("id", generateId);
+	const id = await getOrCreate("id", randomId);
 	const name = await getOrCreate("name", generateName);
 	const room = session.user.id;
 
 	const runtime = createWorkerRuntime();
+
+	(await Result.tryPromise(() => initDatabase())).tapError((err) => {
+		print.error`Failed to initialize database: ${String(err)}`;
+		process.exit(1);
+	});
 
 	print.dim`worker "${name}" joining hub`;
 
@@ -53,6 +61,7 @@ export async function worker(): Promise<void> {
 		await runtime.agentPool.shutdown();
 		device.close();
 		signalingSession.close();
+		await connection.close();
 		process.exit(0);
 	};
 	process.on("SIGINT", shutdown);

@@ -22,12 +22,13 @@ export function ThreadWorkspace({
 	const navigate = useNavigate();
 	const { threads, sendMessage, stopThread, createThread } =
 		useControllerThreads();
-	const { diffOpen, setDiffOpen } = useChatUiStore();
+	const { diffOpen, setDiffOpen, streamingThreadIds } = useChatUiStore();
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
 	const conversation = useThreadConversation(baseThread ? threadId : undefined);
 	const thread = baseThread ? { ...baseThread, ...conversation } : null;
-	const busy = thread?.status === "running";
+	const busy =
+		Boolean(streamingThreadIds[threadId]) || thread?.status === "running";
 
 	useEffect(() => {
 		if (thread && thread.projectId !== projectId) {

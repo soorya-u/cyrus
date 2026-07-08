@@ -19,6 +19,7 @@ export function appendChunkToCache(queryClient: QueryClient, chunk: ChatChunk) {
 					chunk,
 					createdAt: new Date().toISOString(),
 					id: `local-${chunk.turnId}-${++syntheticEntrySeq}`,
+					seq: chunk.seq,
 					threadId: chunk.threadId,
 				},
 			],

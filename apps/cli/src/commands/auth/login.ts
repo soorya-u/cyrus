@@ -1,7 +1,7 @@
+import { generateName } from "@cyrus/utils/identity";
 import { Result } from "better-result";
 import { authClient } from "@/lib/auth";
 import { getOrCreate, set } from "@/store/config";
-import { generateName } from "@/utils/identity";
 import { blue, bold, cyan, print, underline } from "@/utils/style";
 
 export const CLIENT_ID = "cyrus-cli";

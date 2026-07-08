@@ -7,8 +7,13 @@ import {
 	differenceInWeeks,
 	differenceInYears,
 	format,
+	formatISO,
 	isValid,
 } from "date-fns";
+
+export function nowISO(): string {
+	return formatISO(new Date());
+}
 
 function parseTimeInput(input: string | number | Date): Date | null {
 	const date = input instanceof Date ? input : new Date(input);

@@ -1,43 +1,49 @@
-import { ORPCError } from "@orpc/server";
-import { Result } from "better-result";
 import {
 	createProject as createStoredProject,
 	deleteProject as deleteStoredProject,
 	listProjects,
 	renameProject,
-} from "@/store/projects";
-import { deleteThreadsForProject } from "@/store/threads";
+} from "@cyrus/database/repositories/projects";
+import { deleteThreadsForProject } from "@cyrus/database/repositories/threads";
+import { throwOrpcFromRepositoryError } from "@/utils/error";
 import type { ControllerOs } from "./deps";
 
 export function projectsHandlers(os: ControllerOs) {
 	return {
-		listProjects: os.listProjects.handler(async () => ({
-			projects: listProjects(),
-		})),
-
-		createProject: os.createProject.handler(({ input }) => ({
-			project: createStoredProject(input.name, input.cwd),
-		})),
-
-		renameProject: os.renameProject.handler(({ input }) =>
-			Result.try(() => renameProject(input.projectId, input.name)).match({
-				ok: () => ({}),
-				err: () => {
-					throw new ORPCError("NOT_FOUND", {
-						message: `project not found: ${input.projectId}`,
-					});
-				},
+		listProjects: os.listProjects.handler(async () =>
+			(await listProjects()).match({
+				ok: (projects) => ({ projects }),
+				err: throwOrpcFromRepositoryError,
 			})
 		),
 
-		deleteProject: os.deleteProject.handler(({ input }) => {
-			const deleted = deleteStoredProject(input.projectId);
-			if (!deleted)
-				throw new ORPCError("NOT_FOUND", {
-					message: `project not found: ${input.projectId}`,
-				});
+		createProject: os.createProject.handler(async ({ input }) =>
+			(await createStoredProject(input.name, input.cwd)).match({
+				ok: (project) => ({ project }),
+				err: throwOrpcFromRepositoryError,
+			})
+		),
 
-			deleteThreadsForProject(input.projectId);
+		renameProject: os.renameProject.handler(async ({ input }) =>
+			(await renameProject(input.projectId, input.name)).match({
+				ok: () => ({}),
+				err: throwOrpcFromRepositoryError,
+			})
+		),
+
+		deleteProject: os.deleteProject.handler(async ({ input }) => {
+			const deleted = await deleteStoredProject(input.projectId);
+			if (deleted.isErr()) throwOrpcFromRepositoryError(deleted.error);
+			if (!deleted.value) {
+				throwOrpcFromRepositoryError({
+					type: "not_found",
+					entity: "project",
+					id: input.projectId,
+				});
+			}
+
+			const threads = await deleteThreadsForProject(input.projectId);
+			if (threads.isErr()) throwOrpcFromRepositoryError(threads.error);
 			return {};
 		}),
 	};
