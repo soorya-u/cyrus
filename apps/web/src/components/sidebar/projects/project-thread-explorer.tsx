@@ -1,3 +1,4 @@
+import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import {
 	type CollisionDetection,
@@ -27,7 +28,6 @@ import { ThreadSearchField } from "@/components/sidebar/projects/thread-search-f
 import { SidebarGroup, SidebarMenu } from "@/components/ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAutoAnimateRef } from "@/hooks/use-auto-animate-ref";
-import { useControllerThreads } from "@/hooks/use-controller-threads";
 import { useProjectOrderStore } from "@/stores/project-order";
 
 type ProjectThreadExplorerProps = {

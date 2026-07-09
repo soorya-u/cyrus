@@ -1,29 +1,19 @@
+import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import { appendChunkToCache } from "@cyrus/utils/conversation-cache";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
 import { Result } from "better-result";
-import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
-import { useProjects } from "@/hooks/projects/use-projects";
-import { useThreads } from "@/hooks/threads/use-threads";
-import type { ControllerConnection } from "@/lib/orpc";
-import { useAgentCatalogStore } from "@/stores/agent-catalog";
-import { appendChunkToCache } from "@/utils/conversation-cache";
+import { useRtc } from "../contexts/rtc";
+import { useAgentCatalogStore } from "../stores/agent-catalog";
+import { useProjects } from "./use-projects";
+import { useThreads } from "./use-threads";
 
-// plain hook — safe to call from as many components as need it.
-// TanStack Query dedupes the underlying queries by key, and sendMessage/
-// stopThread hold no state of their own (they just call workerConnection.client
-// and write into the shared query cache). The one thing that does need a
-// single instance — the subscribe() live-sync loop — lives in
-// useWorkerConversationSync instead, mounted once via <WorkerConversationSync />.
 export function useControllerThreads() {
 	const queryClient = useQueryClient();
-	const { workerConnection } = useRouteContext({ strict: false }) as {
-		workerConnection?: ControllerConnection;
-	};
+	const { connection: workerConnection, orpc: orpcController } = useRtc();
 
 	const {
 		projects,
 		isLoading,
-		orpcController,
 		invalidateThreads,
 		createProject,
 		renameProject,
@@ -36,17 +26,15 @@ export function useControllerThreads() {
 		renameThread,
 		deleteThread,
 	} = useThreads({
-		orpcController,
 		projects,
 		invalidateThreads,
 	});
 
 	const agentsQuery = useQuery({
-		...orpcController?.listAgents.queryOptions({
+		...orpcController.listAgents.queryOptions({
 			queryKey: RTC_OPERATION_KEYS.listAgents,
 		}),
 		queryKey: RTC_OPERATION_KEYS.listAgents,
-		enabled: Boolean(orpcController),
 	});
 
 	const selectionByThread = useAgentCatalogStore(
@@ -67,9 +55,6 @@ export function useControllerThreads() {
 		threadId: string,
 		text: string
 	): Promise<Result<void, unknown>> {
-		// TODO: These kind of errors will eventually be very harder to track. Maybe we need better types of errors altogether.
-		if (!workerConnection) return Result.err(new Error("worker not connected"));
-
 		const thread = threads.find((item) => item.id === threadId);
 		if (!thread) return Result.err(new Error(`thread not found: ${threadId}`));
 
@@ -80,15 +65,15 @@ export function useControllerThreads() {
 				projectId: thread.projectId,
 				threadId,
 			});
-			for await (const chunk of iterator)
+			for await (const chunk of iterator) {
 				appendChunkToCache(queryClient, chunk);
+			}
 		});
 		invalidateThreads(thread.projectId);
 		return result;
 	}
 
 	async function stopThread(threadId: string): Promise<Result<void, unknown>> {
-		if (!workerConnection) return Result.ok(undefined);
 		const result = await Result.tryPromise(() =>
 			workerConnection.client.cancel({
 				agentName: resolveAgentName(threadId),

@@ -1,0 +1,16 @@
+{
+  "name": "@cyrus/constants",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cyrus/typescript": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

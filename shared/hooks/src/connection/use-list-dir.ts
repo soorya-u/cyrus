@@ -1,21 +1,19 @@
+import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { skipToken, useQuery } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
-import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
+import { useRtc } from "../contexts/rtc";
 
 export function useListDir(cwd: string, depth = 1, enabled = true) {
-	const { orpcController } = useRouteContext({ strict: false });
+	const { orpc: orpcController } = useRtc();
 
 	return useQuery(
-		orpcController
+		enabled && cwd.length > 0
 			? orpcController.listDir.queryOptions({
 					queryKey: RTC_OPERATION_KEYS.listDir(cwd, depth),
 					input: { cwd, depth },
-					enabled: enabled && cwd.length > 0,
 				})
 			: {
 					queryKey: RTC_OPERATION_KEYS.listDir(cwd, depth),
 					queryFn: skipToken,
-					enabled: false,
 				}
 	);
 }

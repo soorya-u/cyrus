@@ -1,19 +1,17 @@
+import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
-import type { OrpcController } from "@/lib/orpc";
+import { useRtc } from "../contexts/rtc";
 
 export function useProjects() {
 	const queryClient = useQueryClient();
-	const { orpcController } = useRouteContext({ strict: false });
+	const { orpc: orpcController } = useRtc();
 
 	const listProjectsQuery = useQuery({
-		...orpcController?.listProjects.queryOptions({
+		...orpcController.listProjects.queryOptions({
 			queryKey: RTC_OPERATION_KEYS.listProjects,
 		}),
 		queryKey: RTC_OPERATION_KEYS.listProjects,
-		enabled: Boolean(orpcController),
 	});
 
 	const projects = useMemo(
@@ -42,21 +40,21 @@ export function useProjects() {
 	}
 
 	const createProjectMutation = useMutation({
-		...orpcController?.createProject.mutationOptions({
+		...orpcController.createProject.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.createProject,
 		}),
 		onSuccess: invalidateProjects,
 	});
 
 	const renameProjectMutation = useMutation({
-		...orpcController?.renameProject.mutationOptions({
+		...orpcController.renameProject.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.renameProject,
 		}),
 		onSuccess: invalidateProjects,
 	});
 
 	const deleteProjectMutation = useMutation({
-		...orpcController?.deleteProject.mutationOptions({
+		...orpcController.deleteProject.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.deleteProject,
 		}),
 		onSuccess: () => {
@@ -66,9 +64,6 @@ export function useProjects() {
 	});
 
 	async function createProject(name: string, cwd: string): Promise<string> {
-		if (!orpcController) {
-			throw new Error("worker not connected");
-		}
 		const { project } = await createProjectMutation.mutateAsync({
 			name,
 			cwd,
@@ -85,7 +80,6 @@ export function useProjects() {
 	}
 
 	return {
-		orpcController: orpcController as OrpcController | undefined,
 		projects,
 		isLoading: listProjectsQuery.isLoading,
 		invalidateThreads,
@@ -96,3 +90,4 @@ export function useProjects() {
 }
 
 export type UseProjects = ReturnType<typeof useProjects>;
+export type { Project } from "@cyrus/schemas/rtc/projects";

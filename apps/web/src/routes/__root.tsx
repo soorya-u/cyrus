@@ -1,20 +1,11 @@
-import type { QueryClient } from "@tanstack/react-query";
-import {
-	createRootRouteWithContext,
-	HeadContent,
-	Outlet,
-} from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { useDesktopAuthSync } from "@/hooks/auth/use-desktop-sync";
 import { useAuthErrorListener } from "@/hooks/auth/use-error-listener";
 
 import "../index.css";
 
-export type RouterAppContext = {
-	queryClient: QueryClient;
-};
-
-export const Route = createRootRouteWithContext<RouterAppContext>()({
+export const Route = createRootRoute({
 	component: RootComponent,
 	head: () => ({
 		meta: [

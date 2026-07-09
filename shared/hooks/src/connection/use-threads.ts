@@ -1,28 +1,24 @@
+import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { Project } from "@cyrus/schemas/rtc/projects";
 import { useMutation, useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
-import type { OrpcController } from "@/lib/orpc";
+import { useRtc } from "../contexts/rtc";
 
 type UseThreadsOptions = {
-	orpcController: OrpcController | undefined;
 	projects: Project[];
 	invalidateThreads: (projectId?: string) => void;
 };
 
-export function useThreads({
-	orpcController,
-	projects,
-	invalidateThreads,
-}: UseThreadsOptions) {
+export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
+	const { orpc: orpcController } = useRtc();
+
 	const threadQueries = useQueries({
 		queries: projects.map((project) => ({
-			...orpcController?.listThreads.queryOptions({
+			...orpcController.listThreads.queryOptions({
 				queryKey: RTC_OPERATION_KEYS.listThreads(project.id),
 				input: { projectId: project.id },
 			}),
 			queryKey: RTC_OPERATION_KEYS.listThreads(project.id),
-			enabled: Boolean(orpcController),
 		})),
 	});
 
@@ -32,30 +28,27 @@ export function useThreads({
 	);
 
 	const createThreadMutation = useMutation({
-		...orpcController?.createThread.mutationOptions({
+		...orpcController.createThread.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.createThread,
 		}),
 		onSuccess: (data) => invalidateThreads(data.thread.projectId),
 	});
 
 	const renameThreadMutation = useMutation({
-		...orpcController?.renameThread.mutationOptions({
+		...orpcController.renameThread.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.renameThread,
 		}),
 		onSuccess: () => invalidateThreads(),
 	});
 
 	const deleteThreadMutation = useMutation({
-		...orpcController?.deleteThread.mutationOptions({
+		...orpcController.deleteThread.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.deleteThread,
 		}),
 		onSuccess: () => invalidateThreads(),
 	});
 
 	async function createThread(projectId: string): Promise<string> {
-		if (!orpcController) {
-			throw new Error("worker not connected");
-		}
 		const { thread } = await createThreadMutation.mutateAsync({ projectId });
 		return thread.id;
 	}
@@ -77,3 +70,4 @@ export function useThreads({
 }
 
 export type UseThreads = ReturnType<typeof useThreads>;
+export type { Thread } from "@cyrus/schemas/rtc/threads";

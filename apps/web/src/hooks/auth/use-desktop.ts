@@ -1,7 +1,7 @@
+import { AUTH_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { useMutation } from "@tanstack/react-query";
 import { log } from "evlog";
 import { toast } from "sonner";
-import { AUTH_OPERATION_KEYS } from "@/constants/operation-keys";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { authClient } from "@/lib/auth";
 
