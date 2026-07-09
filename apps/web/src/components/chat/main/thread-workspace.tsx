@@ -73,9 +73,7 @@ export function ThreadWorkspace({
 					<Composer
 						busy={Boolean(busy)}
 						onSend={handleSend}
-						onStop={async () => {
-							await stopThread(thread.id);
-						}}
+						onStop={async () => await stopThread(thread.id)}
 						projectId={projectId}
 						threadId={thread.id}
 					/>

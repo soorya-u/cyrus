@@ -12,6 +12,7 @@ import {
 	type TurnView,
 } from "@cyrus/schemas/view";
 import { Result } from "better-result";
+import type { ZodError } from "zod";
 
 type MutableState = {
 	messages: Map<string, MessageView>;
@@ -227,7 +228,7 @@ function applyEvent(state: MutableState, entry: ConversationEntry): void {
 
 export function fold(
 	entries: ConversationEntry[]
-): Result<ThreadConversation, unknown> {
+): Result<ThreadConversation, ZodError> {
 	const state: MutableState = {
 		diffs: new Map(),
 		messages: new Map(),

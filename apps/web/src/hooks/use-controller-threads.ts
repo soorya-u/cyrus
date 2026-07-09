@@ -67,13 +67,11 @@ export function useControllerThreads() {
 		threadId: string,
 		text: string
 	): Promise<Result<void, unknown>> {
-		if (!workerConnection) {
-			return Result.err(new Error("worker not connected"));
-		}
+		// TODO: These kind of errors will eventually be very harder to track. Maybe we need better types of errors altogether.
+		if (!workerConnection) return Result.err(new Error("worker not connected"));
+
 		const thread = threads.find((item) => item.id === threadId);
-		if (!thread) {
-			return Result.err(new Error(`thread not found: ${threadId}`));
-		}
+		if (!thread) return Result.err(new Error(`thread not found: ${threadId}`));
 
 		const result = await Result.tryPromise(async () => {
 			const iterator = await workerConnection.client.chat({

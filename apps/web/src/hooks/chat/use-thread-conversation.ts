@@ -2,7 +2,7 @@ import type { ThreadConversation } from "@cyrus/schemas/view";
 import { fold } from "@cyrus/utils/fold";
 import { useQuery } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { log } from "evlog";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 import type { OrpcController } from "@/lib/orpc";
 
@@ -31,13 +31,15 @@ export function useThreadConversation(
 		}),
 		queryKey,
 		enabled: Boolean(orpcController && threadId),
+		select: (data) =>
+			fold(data.conversations).match({
+				ok: (conversation) => conversation,
+				err: (error) => {
+					log.error({ kind: "fold_conversation", error, threadId });
+					return EMPTY;
+				},
+			}),
 	});
 
-	return useMemo(() => {
-		if (!conversationsQuery.data) return EMPTY;
-		return fold(conversationsQuery.data.conversations).match({
-			ok: (conversation) => conversation,
-			err: () => EMPTY,
-		});
-	}, [conversationsQuery.data]);
+	return conversationsQuery.data ?? EMPTY;
 }
