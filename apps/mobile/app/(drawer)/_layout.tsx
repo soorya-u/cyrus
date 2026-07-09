@@ -5,8 +5,15 @@ import { authClient } from "@/lib/auth";
 import { dialSignaling } from "@/lib/orpc";
 
 export default function DrawerLayout() {
-	const { data: session } = authClient.useSession();
-	const userId = session?.user.id ?? "pending";
+	const { data: session, isPending } = authClient.useSession();
+
+	if (isPending || !session?.user) {
+		return (
+			<View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+				<Text>Loading…</Text>
+			</View>
+		);
+	}
 
 	return (
 		<SignalingProvider
@@ -26,7 +33,7 @@ export default function DrawerLayout() {
 					<Text>Connecting…</Text>
 				</View>
 			}
-			queryKey={["signaling", userId]}
+			queryKey={["signaling", session.user.id]}
 		>
 			<Slot />
 		</SignalingProvider>

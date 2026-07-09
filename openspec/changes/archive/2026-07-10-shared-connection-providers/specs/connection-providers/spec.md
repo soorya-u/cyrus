@@ -8,8 +8,7 @@ The system SHALL provide a `SignalingProvider` React component that establishes 
 
 - **WHEN** `SignalingProvider` mounts with a valid authenticated session and the dial function succeeds
 - **THEN** the provider renders its children
-- **AND** `useSignaling()` returns the active `SignalingSession`
-- **AND** `useOrpcSignaling()` returns the oRPC TanStack Query utils for signaling
+- **AND** internal `useSignaling()` returns `{ session, orpc }` for the active signaling connection
 
 #### Scenario: Signaling connection pending
 
@@ -53,14 +52,13 @@ TanStack Router context SHALL NOT include `queryClient`.
 
 ### Requirement: Worker connection provider bootstraps controller RTC
 
-The system SHALL provide an `OrpcProvider` React component in `@cyrus/providers` that establishes a controller RTC connection to a specific worker, depending on an active signaling session from `SignalingProvider`.
+The system SHALL provide an `RtcProvider` React component in `@cyrus/providers` that establishes a controller RTC connection to a specific worker, depending on an active signaling session from `SignalingProvider`.
 
 #### Scenario: Successful worker connection
 
-- **WHEN** `OrpcProvider` mounts with a `workerId` and the dial function succeeds
+- **WHEN** `RtcProvider` mounts with a `workerId` and the dial function succeeds
 - **THEN** the provider renders its children
-- **AND** `useWorkerConnection()` returns the active `ControllerConnection`
-- **AND** `useOrpcController()` returns the oRPC TanStack Query utils for the controller
+- **AND** internal `useRtc()` returns `{ connection, orpc }` for the active controller connection
 
 #### Scenario: Worker connection pending
 
@@ -90,12 +88,12 @@ Internal context consumption hooks in `@cyrus/hooks/src/contexts/` SHALL return 
 
 #### Scenario: Internal hook called inside provider
 
-- **WHEN** an internal `useOrpcController()` is called inside `OrpcProvider` after a successful connection
-- **THEN** the return type is `OrpcController` with no `undefined` union
+- **WHEN** an internal `useRtc()` is called inside `RtcProvider` after a successful connection
+- **THEN** the return type is `RtcConnectionValue` with no `undefined` union
 
 #### Scenario: Internal hook called outside provider
 
-- **WHEN** an internal `useOrpcController()` is called outside `OrpcProvider`
+- **WHEN** internal `useRtc()` is called outside `RtcProvider`
 - **THEN** the hook throws an error identifying the missing provider
 
 #### Scenario: Apps use data hooks not context hooks
@@ -115,17 +113,17 @@ Providers SHALL close underlying connections when unmounting or when the scoped 
 
 #### Scenario: Worker provider unmount
 
-- **WHEN** `OrpcProvider` unmounts
+- **WHEN** `RtcProvider` unmounts
 - **THEN** the controller RTC connection is closed
 
 ### Requirement: Providers package exports providers only
 
-`@cyrus/providers` SHALL export `QueryProvider`, `SignalingProvider`, and `OrpcProvider`. Apps decide where to mount them.
+`@cyrus/providers` SHALL export `QueryProvider`, `SignalingProvider`, and `RtcProvider`. Apps decide where to mount them.
 
 #### Scenario: Web mounts providers in route layouts
 
 - **WHEN** web workspace and worker routes render
-- **THEN** they mount `SignalingProvider` and `OrpcProvider` from `@cyrus/providers` in layout components
+- **THEN** they mount `SignalingProvider` and `RtcProvider` from `@cyrus/providers` in layout components
 
 #### Scenario: Mobile mounts providers in expo layouts
 
@@ -138,7 +136,7 @@ Shared connection providers SHALL NOT import platform-specific connection code d
 
 #### Scenario: Web platform
 
-- **WHEN** web mounts `SignalingProvider` and `WorkerConnectionProvider`
+- **WHEN** web mounts `SignalingProvider` and `RtcProvider`
 - **THEN** each provider receives dial functions from `apps/web` that use web RTC primitives
 
 #### Scenario: Mobile platform
@@ -152,8 +150,8 @@ Shared data hooks that depend on controller or signaling RPC SHALL consume conne
 
 #### Scenario: Projects hook
 
-- **WHEN** `useProjects()` is called inside `OrpcProvider`
-- **THEN** it uses internal `useOrpcController()` from `hooks/src/contexts/`
+- **WHEN** `useProjects()` is called inside `RtcProvider`
+- **THEN** it uses internal `useRtc()` from `hooks/src/contexts/`
 - **AND** does not import `@tanstack/react-router`
 
 ### Requirement: Mobile uses Expo color themes
@@ -179,5 +177,5 @@ Web workspace and worker routes SHALL mount connection providers in layout compo
 #### Scenario: Worker route
 
 - **WHEN** a user navigates to `/_workspace/workers/$workerId/*`
-- **THEN** `OrpcProvider` in the worker layout handles controller bootstrap
+- **THEN** `RtcProvider` in the worker layout handles controller bootstrap
 - **AND** no controller dial occurs in route `beforeLoad`
