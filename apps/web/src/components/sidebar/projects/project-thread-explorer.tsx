@@ -1,4 +1,4 @@
-import type { Thread } from "@cyrus/hooks/types";
+import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
 import {
 	type CollisionDetection,
 	closestCorners,
@@ -90,7 +90,7 @@ export function ProjectThreadExplorer({
 
 	const q = query.trim().toLowerCase();
 	const filteredThreads = q
-		? threads.filter((thread) => thread.title.toLowerCase().includes(q))
+		? threads.filter((thread) => thread.name.toLowerCase().includes(q))
 		: threads;
 
 	const threadsByProject = new Map<string, Thread[]>();

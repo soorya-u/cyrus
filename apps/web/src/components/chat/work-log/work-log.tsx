@@ -1,4 +1,4 @@
-import type { GitDiff, ToolCall } from "@cyrus/hooks/types";
+import type { DiffView, ToolCallView } from "@cyrus/schemas/view";
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
 import { DiffRow } from "@/components/chat/work-log/diff-row";
@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/collapsible";
 
 export type WorkLogEntry = {
-	activities?: ToolCall[];
-	diffs?: GitDiff[];
+	activities?: ToolCallView[];
+	diffs?: DiffView[];
 	id: string;
 	turnId?: string;
 	type: "work";
@@ -19,8 +19,8 @@ export type WorkLogEntry = {
 
 export function WorkLog({ entry }: { entry: WorkLogEntry }) {
 	const [open, setOpen] = useState(true);
-	const tools: ToolCall[] = entry.activities ?? [];
-	const diffs: GitDiff[] = entry.diffs ?? [];
+	const tools: ToolCallView[] = entry.activities ?? [];
+	const diffs: DiffView[] = entry.diffs ?? [];
 	return (
 		<Collapsible className="mb-3" onOpenChange={setOpen} open={open}>
 			<div className="flex items-center gap-2 py-1">
@@ -37,11 +37,11 @@ export function WorkLog({ entry }: { entry: WorkLogEntry }) {
 				</CollapsibleTrigger>
 			</div>
 			<CollapsibleContent className="flex flex-col gap-1.5 pl-1">
-				{tools.map((t) => (
-					<ToolRow key={t.id} tool={t} />
+				{tools.map((tool) => (
+					<ToolRow key={tool.toolCallId} tool={tool} />
 				))}
-				{diffs.map((d) => (
-					<DiffRow diff={d} key={d.id} />
+				{diffs.map((diff) => (
+					<DiffRow diff={diff} key={diff.id} />
 				))}
 			</CollapsibleContent>
 		</Collapsible>

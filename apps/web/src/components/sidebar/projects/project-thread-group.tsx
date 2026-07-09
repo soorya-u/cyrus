@@ -1,4 +1,5 @@
-import type { Project, Thread } from "@cyrus/hooks/types";
+import type { Project } from "@cyrus/connections/schemas/rtc/projects";
+import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
 import type { useSortable } from "@dnd-kit/sortable";
 import { cn } from "cnfast";
 import {
@@ -31,7 +32,7 @@ type ProjectThreadGroupProps = {
 	onNew: () => void;
 	onSelect: (thread: Thread) => void;
 	onDelete: (id: string) => void;
-	onRename: (id: string, title: string) => void;
+	onRename: (id: string, name: string) => void;
 	onRenameProject: (id: string, name: string) => void;
 	onRemoveProject: (id: string) => void;
 	attachThreadListAutoAnimateRef: (node: HTMLElement | null) => void;

@@ -1,10 +1,10 @@
-import type { GitDiff } from "@cyrus/hooks/types";
+import type { DiffView } from "@cyrus/schemas/view";
 import { PatchDiff } from "@pierre/diffs/react";
 import { ChevronDownIcon, ChevronRightIcon, GitBranchIcon } from "lucide-react";
 import { useState } from "react";
 import { PATCH_DIFF_OPTIONS } from "@/components/chat/diff/patch-diff-options";
 
-export function DiffRow({ diff }: { diff: GitDiff }) {
+export function DiffRow({ diff }: { diff: DiffView }) {
 	const [open, setOpen] = useState(false);
 	return (
 		<div className="overflow-hidden rounded-md border border-border/60 bg-card text-xs">

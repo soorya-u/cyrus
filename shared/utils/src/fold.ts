@@ -3,28 +3,25 @@ import type {
 	ToolCallContent,
 } from "@cyrus/connections/schemas/rtc/chat";
 import type { ConversationEntry } from "@cyrus/connections/schemas/rtc/threads";
-import type { GitDiff, Message, ToolCall, Turn } from "./types";
+import {
+	type DiffView,
+	type MessageView,
+	type ThreadConversation,
+	ThreadConversationSchema,
+	type ToolCallView,
+	type TurnView,
+} from "@cyrus/schemas/view";
+import { Result } from "better-result";
+import type { ZodError } from "zod";
 
-type ConversationDerived = {
-	messages: Message[];
-	toolCalls: ToolCall[];
-	diffs: GitDiff[];
-	turns: Turn[];
+type MutableState = {
+	messages: Map<string, MessageView>;
+	toolCalls: Map<string, ToolCallView>;
+	diffs: Map<string, DiffView>;
 };
 
-function asArgs(value: unknown): Record<string, unknown> {
-	return value && typeof value === "object" && !Array.isArray(value)
-		? (value as Record<string, unknown>)
-		: {};
-}
-
-function asResult(value: unknown): string | undefined {
-	if (value === undefined) return;
-	return typeof value === "string" ? value : JSON.stringify(value);
-}
-
 function touchTurn(
-	turns: Map<string, Turn>,
+	turns: Map<string, TurnView>,
 	turnId: string,
 	threadId: string,
 	createdAt: string
@@ -44,7 +41,7 @@ function touchTurn(
 }
 
 function upsertDiffs(
-	diffs: Map<string, GitDiff>,
+	diffs: Map<string, DiffView>,
 	content: ToolCallContent[] | null | undefined,
 	turnId: string
 ): void {
@@ -61,12 +58,6 @@ function upsertDiffs(
 		});
 	}
 }
-
-type MutableState = {
-	messages: Map<string, Message>;
-	toolCalls: Map<string, ToolCall>;
-	diffs: Map<string, GitDiff>;
-};
 
 function applyUserMessage(
 	state: MutableState,
@@ -111,13 +102,13 @@ function applyToolCall(
 	turnId: string
 ): void {
 	state.toolCalls.set(event.toolCallId, {
-		args: asArgs(event.rawInput),
 		createdAt: entry.createdAt,
-		id: event.toolCallId,
 		kind: event.kind,
-		name: event.title,
-		result: asResult(event.rawOutput),
+		rawInput: event.rawInput,
+		rawOutput: event.rawOutput,
 		status: event.status ?? "pending",
+		title: event.title,
+		toolCallId: event.toolCallId,
 		turnId,
 	});
 	upsertDiffs(state.diffs, event.content, turnId);
@@ -131,18 +122,20 @@ function applyToolCallUpdate(
 ): void {
 	const existing = state.toolCalls.get(event.toolCallId);
 	if (existing) {
-		if (event.title) existing.name = event.title;
+		if (event.title) existing.title = event.title;
 		if (event.status) existing.status = event.status;
-		if (event.rawOutput !== undefined)
-			existing.result = asResult(event.rawOutput);
+		if (event.kind) existing.kind = event.kind;
+		if (event.rawInput !== undefined) existing.rawInput = event.rawInput;
+		if (event.rawOutput !== undefined) existing.rawOutput = event.rawOutput;
 	} else {
 		state.toolCalls.set(event.toolCallId, {
-			args: {},
 			createdAt: entry.createdAt,
-			id: event.toolCallId,
-			name: event.title ?? event.toolCallId,
-			result: asResult(event.rawOutput),
+			kind: event.kind ?? undefined,
+			rawInput: event.rawInput,
+			rawOutput: event.rawOutput,
 			status: event.status ?? "pending",
+			title: event.title ?? event.toolCallId,
+			toolCallId: event.toolCallId,
 			turnId,
 		});
 	}
@@ -173,7 +166,7 @@ function applyMessageCompleted(
 function inferTurnState(
 	turnEntries: ConversationEntry[],
 	isLatest: boolean
-): Turn["state"] {
+): TurnView["state"] {
 	const events = turnEntries.map((entry) => entry.chunk.event);
 
 	if (events.some((event) => event.type === "turn_interrupted")) {
@@ -233,38 +226,35 @@ function applyEvent(state: MutableState, entry: ConversationEntry): void {
 	}
 }
 
-/**
- * Folds a thread's raw ConversationEntry log (the CLI's source of truth) into
- * the aggregated shape the UI renders. Mirrors how use-thread-feed.ts folds a
- * Thread into FeedEntry[] — this is the layer below it, building the Thread
- * fields in the first place.
- */
-export function deriveThreadFromConversation(
+export function fold(
 	entries: ConversationEntry[]
-): ConversationDerived {
+): Result<ThreadConversation, ZodError> {
 	const state: MutableState = {
 		diffs: new Map(),
 		messages: new Map(),
 		toolCalls: new Map(),
 	};
-	const turns = new Map<string, Turn>();
+	const turns = new Map<string, TurnView>();
+	const entriesByTurn = new Map<string, ConversationEntry[]>();
 
 	for (const entry of entries) {
 		touchTurn(turns, entry.chunk.turnId, entry.threadId, entry.createdAt);
 		applyEvent(state, entry);
+
+		const turnEntries = entriesByTurn.get(entry.chunk.turnId) ?? [];
+		turnEntries.push(entry);
+		entriesByTurn.set(entry.chunk.turnId, turnEntries);
 	}
 
 	const orderedTurns = [...turns.values()];
 	const latestTurn = orderedTurns.at(-1);
 
 	for (const turn of orderedTurns) {
-		const turnEntries = entries.filter(
-			(entry) => entry.chunk.turnId === turn.id
-		);
+		const turnEntries = entriesByTurn.get(turn.id) ?? [];
 		turn.state = inferTurnState(turnEntries, turn.id === latestTurn?.id);
 	}
 
-	return {
+	const parsed = ThreadConversationSchema.safeParse({
 		diffs: [...state.diffs.values()],
 		messages: [...state.messages.values()].map((message) => ({
 			...message,
@@ -275,5 +265,8 @@ export function deriveThreadFromConversation(
 		})),
 		toolCalls: [...state.toolCalls.values()],
 		turns: orderedTurns,
-	};
+	});
+
+	if (!parsed.success) return Result.err(parsed.error);
+	return Result.ok(parsed.data);
 }

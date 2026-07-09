@@ -1,3 +1,5 @@
+import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
+import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Composer } from "@/components/chat/composer";
@@ -14,6 +16,8 @@ type ThreadWorkspaceProps = {
 	threadId: string;
 };
 
+type ThreadView = Thread & ThreadConversation;
+
 export function ThreadWorkspace({
 	workerId,
 	projectId,
@@ -22,13 +26,14 @@ export function ThreadWorkspace({
 	const navigate = useNavigate();
 	const { threads, sendMessage, stopThread, createThread } =
 		useControllerThreads();
-	const { diffOpen, setDiffOpen, streamingThreadIds } = useChatUiStore();
+	const { diffOpen, setDiffOpen } = useChatUiStore();
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
 	const conversation = useThreadConversation(baseThread ? threadId : undefined);
-	const thread = baseThread ? { ...baseThread, ...conversation } : null;
-	const busy =
-		Boolean(streamingThreadIds[threadId]) || thread?.status === "running";
+	const thread: ThreadView | null = baseThread
+		? { ...baseThread, ...conversation }
+		: null;
+	const busy = conversation.turns.at(-1)?.state === "running";
 
 	useEffect(() => {
 		if (thread && thread.projectId !== projectId) {
@@ -43,27 +48,20 @@ export function ThreadWorkspace({
 		}
 	}, [navigate, projectId, thread, workerId]);
 
-	function handleSend(text: string) {
+	async function handleSend(text: string) {
 		if (!thread) {
-			createThread(projectId).then((id) => {
-				sendMessage(id, text).catch(() => {
-					/* surfaced via thread status on next getConversations poll */
-				});
-				navigate({
-					to: "/workers/$workerId/p/$projectId/t/$threadId",
-					params: { workerId, projectId, threadId: id },
-				});
+			const id = await createThread(projectId);
+			await sendMessage(id, text);
+			navigate({
+				to: "/workers/$workerId/p/$projectId/t/$threadId",
+				params: { workerId, projectId, threadId: id },
 			});
 			return;
 		}
-		sendMessage(thread.id, text).catch(() => {
-			/* surfaced via thread status on next getConversations poll */
-		});
+		await sendMessage(thread.id, text);
 	}
 
-	if (!thread) {
-		return null;
-	}
+	if (!thread) return null;
 
 	return (
 		<>
@@ -71,22 +69,21 @@ export function ThreadWorkspace({
 
 			<div className="flex min-h-0 flex-1">
 				<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-					<ChatFeed className="min-h-0" thread={thread} />
+					<ChatFeed className="min-h-0" conversation={conversation} />
 					<Composer
 						busy={Boolean(busy)}
 						onSend={handleSend}
-						onStop={() => {
-							stopThread(thread.id).catch(() => {
-								/* noop */
-							});
-						}}
+						onStop={async () => await stopThread(thread.id)}
 						projectId={projectId}
 						threadId={thread.id}
 					/>
 				</div>
 				{diffOpen ? (
 					<div className="w-105 shrink-0">
-						<DiffPanel onClose={() => setDiffOpen(false)} thread={thread} />
+						<DiffPanel
+							conversation={conversation}
+							onClose={() => setDiffOpen(false)}
+						/>
 					</div>
 				) : null}
 			</div>

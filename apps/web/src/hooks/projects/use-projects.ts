@@ -3,7 +3,6 @@ import { useRouteContext } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 import type { OrpcController } from "@/lib/orpc";
-import { mapProject } from "@/utils/map-controller";
 
 export function useProjects() {
 	const queryClient = useQueryClient();
@@ -18,7 +17,7 @@ export function useProjects() {
 	});
 
 	const projects = useMemo(
-		() => (listProjectsQuery.data?.projects ?? []).map(mapProject),
+		() => listProjectsQuery.data?.projects ?? [],
 		[listProjectsQuery.data?.projects]
 	);
 
@@ -66,13 +65,13 @@ export function useProjects() {
 		},
 	});
 
-	async function createProject(name: string, path: string): Promise<string> {
+	async function createProject(name: string, cwd: string): Promise<string> {
 		if (!orpcController) {
 			throw new Error("worker not connected");
 		}
 		const { project } = await createProjectMutation.mutateAsync({
 			name,
-			cwd: path,
+			cwd,
 		});
 		return project.id;
 	}
@@ -97,4 +96,4 @@ export function useProjects() {
 }
 
 export type UseProjects = ReturnType<typeof useProjects>;
-export type { Project } from "@cyrus/hooks/types";
+export type { Project } from "@cyrus/connections/schemas/rtc/projects";

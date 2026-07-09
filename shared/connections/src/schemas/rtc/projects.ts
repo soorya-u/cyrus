@@ -1,10 +1,9 @@
 import { z } from "zod";
-import { optionalString } from "./common";
 
 export const ProjectSchema = z.object({
 	id: z.string(),
 	cwd: z.string(),
-	name: optionalString,
+	name: z.string().min(1),
 });
 
 export const ListProjectsOutputSchema = z.object({

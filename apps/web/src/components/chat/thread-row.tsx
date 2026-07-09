@@ -1,53 +1,8 @@
-import type { Thread, ThreadStatus } from "@cyrus/hooks/types";
+import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
 import { relativeTime } from "@cyrus/utils/time";
 import { cn } from "cnfast";
-import { GitBranchIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
-
-const STATUS_TONES: Record<
-	ThreadStatus,
-	{ dot: string; text: string; bg: string }
-> = {
-	running: {
-		dot: "bg-orange-500",
-		text: "text-orange-600 dark:text-orange-400",
-		bg: "bg-orange-500/12",
-	},
-	ready: {
-		dot: "bg-emerald-500",
-		text: "text-emerald-600 dark:text-emerald-400",
-		bg: "bg-emerald-500/12",
-	},
-	starting: {
-		dot: "bg-blue-500",
-		text: "text-blue-600 dark:text-blue-400",
-		bg: "bg-blue-500/12",
-	},
-	error: {
-		dot: "bg-red-500",
-		text: "text-red-600 dark:text-red-400",
-		bg: "bg-red-500/12",
-	},
-	idle: {
-		dot: "bg-neutral-400",
-		text: "text-neutral-500 dark:text-neutral-400",
-		bg: "bg-neutral-500/10",
-	},
-};
-
-function ThreadStatusPill({ status }: { status: ThreadStatus }) {
-	const tone = STATUS_TONES[status];
-	return (
-		<span
-			className={cn(
-				"size-1.5 rounded-full",
-				tone.dot,
-				status === "running" && "animate-pulse"
-			)}
-		/>
-	);
-}
 
 export function ThreadRow({
 	thread,
@@ -61,11 +16,11 @@ export function ThreadRow({
 	isActive: boolean;
 	onSelect: (id: string) => void;
 	onDelete: (id: string) => void;
-	onRename: (id: string, title: string) => void;
+	onRename: (id: string, name: string) => void;
 	variant?: "list" | "sub";
 }) {
 	const [renaming, setRenaming] = useState(false);
-	const [draft, setDraft] = useState(thread.title);
+	const [draft, setDraft] = useState(thread.name);
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -76,10 +31,7 @@ export function ThreadRow({
 		}
 	}, [renaming]);
 
-	const isRunning = thread.status === "running";
-	const timestamp = relativeTime(
-		thread.latestUserMessageAt ?? thread.updatedAt ?? thread.createdAt
-	);
+	const timestamp = relativeTime(thread.updatedAt ?? thread.createdAt);
 
 	if (variant === "sub") {
 		return (
@@ -91,17 +43,16 @@ export function ThreadRow({
 				)}
 				onClick={() => onSelect(thread.id)}
 				onDoubleClick={() => {
-					setDraft(thread.title);
+					setDraft(thread.name);
 					setRenaming(true);
 				}}
 				type="button"
 			>
-				<ThreadStatusPill status={thread.status} />
 				{renaming ? (
 					<input
 						className="min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs outline-none"
 						onBlur={() => {
-							onRename(thread.id, draft.trim() || thread.title);
+							onRename(thread.id, draft.trim() || thread.name);
 							setRenaming(false);
 						}}
 						onChange={(event) => setDraft(event.target.value)}
@@ -109,7 +60,7 @@ export function ThreadRow({
 						onKeyDown={(event) => {
 							if (event.key === "Enter") {
 								event.preventDefault();
-								onRename(thread.id, draft.trim() || thread.title);
+								onRename(thread.id, draft.trim() || thread.name);
 								setRenaming(false);
 							} else if (event.key === "Escape") {
 								event.preventDefault();
@@ -120,7 +71,7 @@ export function ThreadRow({
 						value={draft}
 					/>
 				) : (
-					<span className="min-w-0 flex-1 truncate">{thread.title}</span>
+					<span className="min-w-0 flex-1 truncate">{thread.name}</span>
 				)}
 				<span
 					className={cn(
@@ -145,17 +96,16 @@ export function ThreadRow({
 				className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left"
 				onClick={() => onSelect(thread.id)}
 				onDoubleClick={() => {
-					setDraft(thread.title);
+					setDraft(thread.name);
 					setRenaming(true);
 				}}
 				type="button"
 			>
-				<ThreadStatusPill status={thread.status} />
 				{renaming ? (
 					<input
 						className="min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs outline-none"
 						onBlur={() => {
-							onRename(thread.id, draft.trim() || thread.title);
+							onRename(thread.id, draft.trim() || thread.name);
 							setRenaming(false);
 						}}
 						onChange={(event) => setDraft(event.target.value)}
@@ -163,7 +113,7 @@ export function ThreadRow({
 						onKeyDown={(event) => {
 							if (event.key === "Enter") {
 								event.preventDefault();
-								onRename(thread.id, draft.trim() || thread.title);
+								onRename(thread.id, draft.trim() || thread.name);
 								setRenaming(false);
 							} else if (event.key === "Escape") {
 								event.preventDefault();
@@ -174,24 +124,10 @@ export function ThreadRow({
 						value={draft}
 					/>
 				) : (
-					<span className="min-w-0 flex-1 truncate text-xs">
-						{thread.title}
-					</span>
+					<span className="min-w-0 flex-1 truncate text-xs">{thread.name}</span>
 				)}
 			</button>
 			<div className="ml-auto flex shrink-0 items-center gap-1.5 pr-1.5">
-				{thread.branch && (
-					<Tooltip>
-						<TooltipTrigger
-							render={
-								<span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70">
-									<GitBranchIcon className="size-3" />
-								</span>
-							}
-						/>
-						<TooltipPopup side="top">{thread.branch}</TooltipPopup>
-					</Tooltip>
-				)}
 				{confirmDelete ? (
 					<button
 						className="inline-flex h-5 cursor-pointer items-center rounded-md bg-destructive/12 px-2 font-medium text-[10px] text-destructive hover:bg-destructive/18"
@@ -204,22 +140,20 @@ export function ThreadRow({
 						Confirm
 					</button>
 				) : (
-					!isRunning && (
-						<button
-							aria-label={`Delete ${thread.title}`}
-							className={cn(
-								"inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground",
-								"opacity-0 transition-opacity group-hover/sub:opacity-100 max-sm:opacity-100"
-							)}
-							onClick={(event) => {
-								event.stopPropagation();
-								setConfirmDelete(true);
-							}}
-							type="button"
-						>
-							<Trash2Icon className="size-3.5" />
-						</button>
-					)
+					<button
+						aria-label={`Delete ${thread.name}`}
+						className={cn(
+							"inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground",
+							"opacity-0 transition-opacity group-hover/sub:opacity-100 max-sm:opacity-100"
+						)}
+						onClick={(event) => {
+							event.stopPropagation();
+							setConfirmDelete(true);
+						}}
+						type="button"
+					>
+						<Trash2Icon className="size-3.5" />
+					</button>
 				)}
 				<span
 					className={cn(

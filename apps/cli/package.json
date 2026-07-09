@@ -17,6 +17,7 @@
     "@commander-js/extra-typings": "^15.0.0",
     "@cyrus/connections": "workspace:*",
     "@cyrus/database": "workspace:*",
+    "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
     "@tursodatabase/database": "^0.6.1",
     "@orpc/server": "catalog:",

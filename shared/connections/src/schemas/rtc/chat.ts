@@ -1,24 +1,8 @@
+import {
+	ToolCallStatusSchema,
+	ToolKindSchema,
+} from "@cyrus/schemas/enums/tools";
 import { z } from "zod";
-
-export const ToolCallStatusSchema = z.enum([
-	"pending",
-	"in_progress",
-	"completed",
-	"failed",
-]);
-
-export const ToolKindSchema = z.enum([
-	"read",
-	"edit",
-	"delete",
-	"move",
-	"search",
-	"execute",
-	"think",
-	"fetch",
-	"switch_mode",
-	"other",
-]);
 
 export const PlanEntryPrioritySchema = z.enum(["high", "medium", "low"]);
 

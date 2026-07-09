@@ -1,10 +1,10 @@
-import type { Message } from "@cyrus/hooks/types";
+import type { MessageView } from "@cyrus/schemas/view";
 import { formatMessageTime } from "@cyrus/utils/time";
 import { renderMarkdown } from "@/components/chat/markdown/markdown-components";
 import { MessageCopyButton } from "@/components/chat/messages/message-copy-button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function UserMessage({ message }: { message: Message }) {
+export function UserMessage({ message }: { message: MessageView }) {
 	return (
 		<div className="group/user mb-5 flex flex-col items-end">
 			<div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground">

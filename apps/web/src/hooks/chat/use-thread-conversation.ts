@@ -1,27 +1,21 @@
-import { deriveThreadFromConversation } from "@cyrus/hooks/derive-thread";
-import type { Thread } from "@cyrus/hooks/types";
+import type { ThreadConversation } from "@cyrus/schemas/view";
+import { fold } from "@cyrus/utils/fold";
 import { useQuery } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { log } from "evlog";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 import type { OrpcController } from "@/lib/orpc";
 
-type ConversationExtras = Pick<
-	Thread,
-	"messages" | "toolCalls" | "diffs" | "turns" | "status"
->;
-
-const EMPTY: ConversationExtras = {
+const EMPTY: ThreadConversation = {
 	diffs: [],
 	messages: [],
-	status: "idle",
 	toolCalls: [],
 	turns: [],
 };
 
 export function useThreadConversation(
 	threadId: string | undefined
-): ConversationExtras {
+): ThreadConversation {
 	const { orpcController } = useRouteContext({ strict: false }) as {
 		orpcController?: OrpcController;
 	};
@@ -37,17 +31,15 @@ export function useThreadConversation(
 		}),
 		queryKey,
 		enabled: Boolean(orpcController && threadId),
+		select: (data) =>
+			fold(data.conversations).match({
+				ok: (conversation) => conversation,
+				err: (error) => {
+					log.error({ kind: "fold_conversation", error, threadId });
+					return EMPTY;
+				},
+			}),
 	});
 
-	return useMemo(() => {
-		if (!conversationsQuery.data) return EMPTY;
-		const derived = deriveThreadFromConversation(
-			conversationsQuery.data.conversations
-		);
-		const latestTurn = derived.turns.at(-1);
-		return {
-			...derived,
-			status: latestTurn?.state === "running" ? "running" : "ready",
-		};
-	}, [conversationsQuery.data]);
+	return conversationsQuery.data ?? EMPTY;
 }
