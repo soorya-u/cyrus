@@ -5,6 +5,7 @@ import type {
 	SessionUpdate,
 	ToolCallUpdate,
 } from "@agentclientprotocol/sdk";
+import { ToolCallStatusSchema } from "@cyrus/schemas/enums/tools";
 import {
 	type AgentEvent,
 	AgentEventSchema,
@@ -18,8 +19,7 @@ import {
 	TokenEventSchema,
 	ToolCallEventSchema,
 	ToolCallUpdateEventSchema,
-} from "@cyrus/connections/schemas/rtc/chat";
-import { ToolCallStatusSchema } from "@cyrus/schemas/enums/tools";
+} from "@cyrus/schemas/rtc/chat";
 import { enrichDiffContent } from "@/utils/diff";
 
 export function mapRuntimeSessionEvent(

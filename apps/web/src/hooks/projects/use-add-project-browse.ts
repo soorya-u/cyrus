@@ -1,4 +1,4 @@
-import type { DirListing } from "@cyrus/connections/schemas/rtc/dir";
+import type { DirListing } from "@cyrus/schemas/rtc/dir";
 import {
 	appendBrowsePathSegment,
 	canNavigateUp,

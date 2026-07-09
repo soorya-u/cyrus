@@ -1,5 +1,3 @@
-import { type ContractRouterClient, eventIterator, oc } from "@orpc/contract";
-import { z } from "zod";
 import {
 	AnswerInputSchema,
 	DeviceInfoSchema,
@@ -7,7 +5,9 @@ import {
 	IceCandidateInputSchema,
 	OfferInputSchema,
 	ServerEventSchema,
-} from "../schemas/signaling";
+} from "@cyrus/schemas/signaling";
+import { type ContractRouterClient, eventIterator, oc } from "@orpc/contract";
+import { z } from "zod";
 
 // skip output validation for HibernationEventIterators; wrapping breaks hibernation
 function hibernationSafe<S extends ReturnType<typeof eventIterator>>(

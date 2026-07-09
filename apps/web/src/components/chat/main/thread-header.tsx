@@ -1,4 +1,4 @@
-import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
+import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { cn } from "cnfast";
 import { useChatUiStore } from "@/stores/chat-ui";
 

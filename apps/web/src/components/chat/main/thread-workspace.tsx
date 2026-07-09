@@ -1,4 +1,4 @@
-import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
+import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";

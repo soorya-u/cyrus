@@ -1,5 +1,4 @@
-import { eventIterator, oc } from "@orpc/contract";
-import { ListAgentsOutputSchema } from "../schemas/rtc/agents";
+import { ListAgentsOutputSchema } from "@cyrus/schemas/rtc/agents";
 import {
 	ListEffortsOutputSchema,
 	ListModelsOutputSchema,
@@ -9,21 +8,27 @@ import {
 	SetModeInputSchema,
 	SetModelInputSchema,
 	SetPersonaInputSchema,
-} from "../schemas/rtc/catalog";
+} from "@cyrus/schemas/rtc/catalog";
 import {
 	CancelInputSchema,
 	ChatChunkSchema,
 	ChatInputSchema,
-} from "../schemas/rtc/chat";
-import { AgentQueryInputSchema, VoidOutputSchema } from "../schemas/rtc/common";
-import { ListDirInputSchema, ListDirOutputSchema } from "../schemas/rtc/dir";
+} from "@cyrus/schemas/rtc/chat";
+import {
+	AgentQueryInputSchema,
+	VoidOutputSchema,
+} from "@cyrus/schemas/rtc/common";
+import {
+	ListDirInputSchema,
+	ListDirOutputSchema,
+} from "@cyrus/schemas/rtc/dir";
 import {
 	CreateProjectInputSchema,
 	CreateProjectOutputSchema,
 	DeleteProjectInputSchema,
 	ListProjectsOutputSchema,
 	RenameProjectInputSchema,
-} from "../schemas/rtc/projects";
+} from "@cyrus/schemas/rtc/projects";
 import {
 	CreateThreadInputSchema,
 	CreateThreadOutputSchema,
@@ -32,7 +37,8 @@ import {
 	ProjectQueryInputSchema,
 	RenameThreadInputSchema,
 	ThreadQueryInputSchema,
-} from "../schemas/rtc/threads";
+} from "@cyrus/schemas/rtc/threads";
+import { eventIterator, oc } from "@orpc/contract";
 
 export const controllerContract = {
 	listAgents: oc.output(ListAgentsOutputSchema),

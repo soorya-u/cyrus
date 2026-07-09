@@ -7,7 +7,6 @@
     "./*": "./src/*.ts"
   },
   "dependencies": {
-    "@cyrus/connections": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "better-result": "catalog:",
     "date-fns": "^4.4.0",

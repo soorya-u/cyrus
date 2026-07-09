@@ -1,4 +1,4 @@
-import type { Project } from "@cyrus/connections/schemas/rtc/projects";
+import type { Project } from "@cyrus/schemas/rtc/projects";
 import { useMutation, useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
@@ -77,4 +77,3 @@ export function useThreads({
 }
 
 export type UseThreads = ReturnType<typeof useThreads>;
-export type { Thread } from "@cyrus/connections/schemas/rtc/threads";

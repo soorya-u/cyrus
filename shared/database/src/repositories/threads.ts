@@ -1,5 +1,5 @@
-import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
-import { ThreadSchema } from "@cyrus/connections/schemas/rtc/threads";
+import type { Thread } from "@cyrus/schemas/rtc/threads";
+import { ThreadSchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { nowISO } from "@cyrus/utils/time";
 import { Result } from "better-result";

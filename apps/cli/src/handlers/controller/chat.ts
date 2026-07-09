@@ -1,6 +1,6 @@
-import type { ChatChunk } from "@cyrus/connections/schemas/rtc/chat";
 import { appendConversation } from "@cyrus/database/repositories/conversations";
 import { ensureThread } from "@cyrus/database/repositories/threads";
+import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
 import { env } from "@/lib/env";
 import { throwOrpcFromRepositoryError } from "@/utils/error";

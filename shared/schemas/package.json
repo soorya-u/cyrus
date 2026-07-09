@@ -5,7 +5,9 @@
   "type": "module",
   "exports": {
     "./view": "./src/view/index.ts",
-    "./enums/*": "./src/enums/*.ts"
+    "./enums/*": "./src/enums/*.ts",
+    "./rtc/*": "./src/rtc/*.ts",
+    "./signaling": "./src/signaling.ts"
   },
   "dependencies": {
     "zod": "catalog:"

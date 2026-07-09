@@ -1,7 +1,7 @@
 import { mkdir, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { DirListing } from "@cyrus/connections/schemas/rtc/dir";
+import type { DirListing } from "@cyrus/schemas/rtc/dir";
 import { env } from "@/lib/env";
 
 function expandHomeDirectory(cwd: string): string {

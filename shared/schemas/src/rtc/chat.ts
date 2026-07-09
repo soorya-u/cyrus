@@ -1,23 +1,13 @@
+import { PermissionOptionKindSchema } from "@cyrus/schemas/enums/permissions";
+import {
+	PlanEntryPrioritySchema,
+	PlanEntryStatusSchema,
+} from "@cyrus/schemas/enums/plan";
 import {
 	ToolCallStatusSchema,
 	ToolKindSchema,
 } from "@cyrus/schemas/enums/tools";
 import { z } from "zod";
-
-export const PlanEntryPrioritySchema = z.enum(["high", "medium", "low"]);
-
-export const PlanEntryStatusSchema = z.enum([
-	"pending",
-	"in_progress",
-	"completed",
-]);
-
-export const PermissionOptionKindSchema = z.enum([
-	"allow_once",
-	"allow_always",
-	"reject_once",
-	"reject_always",
-]);
 
 export const TextContentBlockSchema = z.object({
 	type: z.literal("text"),
@@ -243,8 +233,12 @@ export const AgentEventSchema = z.discriminatedUnion("type", [
 	SessionUpdateEventSchema,
 ]);
 
-export type ToolCallStatus = z.infer<typeof ToolCallStatusSchema>;
-export type ToolKind = z.infer<typeof ToolKindSchema>;
+export type { PermissionOptionKind } from "@cyrus/schemas/enums/permissions";
+export type {
+	PlanEntryPriority,
+	PlanEntryStatus,
+} from "@cyrus/schemas/enums/plan";
+export type { ToolCallStatus, ToolKind } from "@cyrus/schemas/enums/tools";
 export type PlanEntry = z.infer<typeof PlanEntrySchema>;
 export type ToolCallContent = z.infer<typeof ToolCallContentSchema>;
 export type ToolCallLocation = z.infer<typeof ToolCallLocationSchema>;

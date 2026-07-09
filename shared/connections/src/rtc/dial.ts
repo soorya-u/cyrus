@@ -1,7 +1,7 @@
+import type { DeviceRole } from "@cyrus/schemas/signaling";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import type { AnyContractRouter, ContractRouterClient } from "@orpc/contract";
-import type { DeviceRole } from "../schemas/signaling";
 import {
 	createIceBuffer,
 	relayLocalIce,

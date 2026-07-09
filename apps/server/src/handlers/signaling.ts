@@ -3,7 +3,7 @@ import type {
 	DeviceInfo,
 	DeviceState,
 	ServerEvent,
-} from "@cyrus/connections/schemas/signaling";
+} from "@cyrus/schemas/signaling";
 import { implement, ORPCError, onError } from "@orpc/server";
 import {
 	encodeHibernationRPCEvent,

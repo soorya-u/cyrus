@@ -1,5 +1,5 @@
-import type { ChatChunk } from "@cyrus/connections/schemas/rtc/chat";
-import { ConversationEntrySchema } from "@cyrus/connections/schemas/rtc/threads";
+import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
+import { ConversationEntrySchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { nowISO } from "@cyrus/utils/time";
 import { and, asc, eq, gt } from "drizzle-orm";

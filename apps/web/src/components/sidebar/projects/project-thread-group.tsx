@@ -1,5 +1,5 @@
-import type { Project } from "@cyrus/connections/schemas/rtc/projects";
-import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
+import type { Project } from "@cyrus/schemas/rtc/projects";
+import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { useSortable } from "@dnd-kit/sortable";
 import { cn } from "cnfast";
 import {
