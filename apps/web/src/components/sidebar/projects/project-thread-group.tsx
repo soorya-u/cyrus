@@ -1,4 +1,5 @@
-import type { Project, Thread } from "@cyrus/hooks/types";
+import type { Project } from "@cyrus/connections/schemas/rtc/projects";
+import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
 import type { useSortable } from "@dnd-kit/sortable";
 import { cn } from "cnfast";
 import {
@@ -31,7 +32,7 @@ type ProjectThreadGroupProps = {
 	onNew: () => void;
 	onSelect: (thread: Thread) => void;
 	onDelete: (id: string) => void;
-	onRename: (id: string, title: string) => void;
+	onRename: (id: string, name: string) => void;
 	onRenameProject: (id: string, name: string) => void;
 	onRemoveProject: (id: string) => void;
 	attachThreadListAutoAnimateRef: (node: HTMLElement | null) => void;
@@ -80,7 +81,7 @@ export function ProjectThreadGroup({
 					<FolderIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
 					<span className="flex min-w-0 flex-1 items-center gap-2">
 						<span className="truncate font-medium text-foreground/90 text-xs">
-							{project.name}
+							{project.name ?? project.id}
 						</span>
 						<span className="shrink-0 text-[10px] text-muted-foreground/60">
 							{threads.length}
@@ -112,7 +113,7 @@ export function ProjectThreadGroup({
 							<DropdownMenuItem
 								onSelect={async () => {
 									const name = await RenameProjectDialog.call({
-										currentName: project.name,
+										currentName: project.name ?? project.id,
 									});
 									if (name) onRenameProject(project.id, name);
 								}}
@@ -122,7 +123,7 @@ export function ProjectThreadGroup({
 							<DropdownMenuItem
 								onSelect={async () => {
 									const confirmed = await DeleteProjectDialog.call({
-										projectName: project.name,
+										projectName: project.name ?? project.id,
 										threadCount: threads.length,
 									});
 									if (confirmed) onRemoveProject(project.id);

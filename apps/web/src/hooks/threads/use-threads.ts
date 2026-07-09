@@ -1,9 +1,8 @@
-import type { Project } from "@cyrus/hooks/types";
+import type { Project } from "@cyrus/connections/schemas/rtc/projects";
 import { useMutation, useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 import type { OrpcController } from "@/lib/orpc";
-import { mapThread } from "@/utils/map-controller";
 
 type UseThreadsOptions = {
 	orpcController: OrpcController | undefined;
@@ -28,10 +27,7 @@ export function useThreads({
 	});
 
 	const baseThreads = useMemo(
-		() =>
-			threadQueries.flatMap(
-				(query) => query.data?.threads.map(mapThread) ?? []
-			),
+		() => threadQueries.flatMap((query) => query.data?.threads ?? []),
 		[threadQueries]
 	);
 
@@ -64,8 +60,8 @@ export function useThreads({
 		return thread.id;
 	}
 
-	function renameThread(id: string, title: string) {
-		renameThreadMutation.mutate({ threadId: id, name: title });
+	function renameThread(id: string, name: string) {
+		renameThreadMutation.mutate({ threadId: id, name });
 	}
 
 	function deleteThread(id: string) {
@@ -81,4 +77,4 @@ export function useThreads({
 }
 
 export type UseThreads = ReturnType<typeof useThreads>;
-export type { Thread } from "@cyrus/hooks/types";
+export type { Thread } from "@cyrus/connections/schemas/rtc/threads";

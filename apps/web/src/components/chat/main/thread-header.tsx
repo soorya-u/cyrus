@@ -1,4 +1,4 @@
-import type { Thread } from "@cyrus/hooks/types";
+import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
 import { cn } from "cnfast";
 import { useChatUiStore } from "@/stores/chat-ui";
 
@@ -22,13 +22,7 @@ export function ThreadHeader({
 				"surface-subheader collapsed-sidebar-titlebar-inset px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none"
 			)}
 		>
-			<span className="truncate font-medium text-sm">{thread.title}</span>
-			{thread.branch ? (
-				<span className="ml-2 inline-flex items-center gap-1 rounded-md bg-muted/70 px-1.5 py-0.5 text-[11px] text-muted-foreground">
-					<span className="size-1.5 rounded-full bg-emerald-500" />
-					{thread.branch}
-				</span>
-			) : null}
+			<span className="truncate font-medium text-sm">{thread.name}</span>
 			<span className="ml-2 truncate font-mono text-[10px] text-muted-foreground/70">
 				{contextLabel}
 			</span>

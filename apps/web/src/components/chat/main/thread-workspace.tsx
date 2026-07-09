@@ -1,3 +1,5 @@
+import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
+import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Composer } from "@/components/chat/composer";
@@ -14,6 +16,8 @@ type ThreadWorkspaceProps = {
 	threadId: string;
 };
 
+type ThreadView = Thread & ThreadConversation;
+
 export function ThreadWorkspace({
 	workerId,
 	projectId,
@@ -22,13 +26,14 @@ export function ThreadWorkspace({
 	const navigate = useNavigate();
 	const { threads, sendMessage, stopThread, createThread } =
 		useControllerThreads();
-	const { diffOpen, setDiffOpen, streamingThreadIds } = useChatUiStore();
+	const { diffOpen, setDiffOpen } = useChatUiStore();
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
 	const conversation = useThreadConversation(baseThread ? threadId : undefined);
-	const thread = baseThread ? { ...baseThread, ...conversation } : null;
-	const busy =
-		Boolean(streamingThreadIds[threadId]) || thread?.status === "running";
+	const thread: ThreadView | null = baseThread
+		? { ...baseThread, ...conversation }
+		: null;
+	const busy = conversation.turns.at(-1)?.state === "running";
 
 	useEffect(() => {
 		if (thread && thread.projectId !== projectId) {
@@ -47,7 +52,7 @@ export function ThreadWorkspace({
 		if (!thread) {
 			createThread(projectId).then((id) => {
 				sendMessage(id, text).catch(() => {
-					/* surfaced via thread status on next getConversations poll */
+					/* surfaced via folded turn state on next getConversations poll */
 				});
 				navigate({
 					to: "/workers/$workerId/p/$projectId/t/$threadId",
@@ -57,13 +62,11 @@ export function ThreadWorkspace({
 			return;
 		}
 		sendMessage(thread.id, text).catch(() => {
-			/* surfaced via thread status on next getConversations poll */
+			/* surfaced via folded turn state on next getConversations poll */
 		});
 	}
 
-	if (!thread) {
-		return null;
-	}
+	if (!thread) return null;
 
 	return (
 		<>
@@ -71,7 +74,7 @@ export function ThreadWorkspace({
 
 			<div className="flex min-h-0 flex-1">
 				<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-					<ChatFeed className="min-h-0" thread={thread} />
+					<ChatFeed className="min-h-0" conversation={conversation} />
 					<Composer
 						busy={Boolean(busy)}
 						onSend={handleSend}
@@ -86,7 +89,10 @@ export function ThreadWorkspace({
 				</div>
 				{diffOpen ? (
 					<div className="w-105 shrink-0">
-						<DiffPanel onClose={() => setDiffOpen(false)} thread={thread} />
+						<DiffPanel
+							conversation={conversation}
+							onClose={() => setDiffOpen(false)}
+						/>
 					</div>
 				) : null}
 			</div>

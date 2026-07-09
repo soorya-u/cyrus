@@ -1,18 +1,18 @@
-import type { Thread } from "@cyrus/hooks/types";
+import type { ThreadConversation } from "@cyrus/schemas/view";
 import { PatchDiff } from "@pierre/diffs/react";
 import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import { PATCH_DIFF_OPTIONS } from "@/components/chat/diff/patch-diff-options";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function DiffPanel({
-	thread,
+	conversation,
 	onClose,
 }: {
-	thread: Thread;
+	conversation: ThreadConversation;
 	onClose: () => void;
 }) {
-	const diffs = thread.diffs ?? [];
-	const turns = thread.turns ?? [];
+	const diffs = conversation.diffs;
+	const turns = conversation.turns;
 
 	let diffPanelContent: React.ReactNode;
 	if (diffs.length === 0) {

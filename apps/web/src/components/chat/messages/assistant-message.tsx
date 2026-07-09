@@ -1,10 +1,10 @@
-import type { Message } from "@cyrus/hooks/types";
+import type { MessageView } from "@cyrus/schemas/view";
 import { formatMessageTime } from "@cyrus/utils/time";
 import { renderMarkdown } from "@/components/chat/markdown/markdown-components";
 import { MessageCopyButton } from "@/components/chat/messages/message-copy-button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function AssistantMessage({ message }: { message: Message }) {
+export function AssistantMessage({ message }: { message: MessageView }) {
 	return (
 		<div className="group/assistant mb-2 px-0.5">
 			<div className="chat-markdown text-foreground text-sm leading-relaxed">

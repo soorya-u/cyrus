@@ -17,9 +17,9 @@ import {
 	ThoughtEventSchema,
 	TokenEventSchema,
 	ToolCallEventSchema,
-	ToolCallStatusSchema,
 	ToolCallUpdateEventSchema,
 } from "@cyrus/connections/schemas/rtc/chat";
+import { ToolCallStatusSchema } from "@cyrus/schemas/enums/tools";
 import { enrichDiffContent } from "@/utils/diff";
 
 export function mapRuntimeSessionEvent(

@@ -1,4 +1,4 @@
-import type { ToolCall } from "@cyrus/hooks/types";
+import type { ToolCallView } from "@cyrus/schemas/view";
 import {
 	CheckIcon,
 	ChevronDownIcon,
@@ -7,8 +7,23 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-export function ToolRow({ tool }: { tool: ToolCall }) {
+function formatRaw(value: unknown): string {
+	if (value === undefined) return "";
+	return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function formatRawInputSummary(rawInput: unknown): string {
+	if (rawInput && typeof rawInput === "object" && !Array.isArray(rawInput)) {
+		return Object.entries(rawInput as Record<string, unknown>)
+			.map(([key, value]) => `${key}: ${formatRaw(value)}`)
+			.join(", ");
+	}
+	return formatRaw(rawInput);
+}
+
+export function ToolRow({ tool }: { tool: ToolCallView }) {
 	const [open, setOpen] = useState(false);
+	const rawOutput = formatRaw(tool.rawOutput);
 	return (
 		<div className="overflow-hidden rounded-md border border-border/60 bg-muted/30 text-xs">
 			<button
@@ -22,31 +37,26 @@ export function ToolRow({ tool }: { tool: ToolCall }) {
 					<ChevronRightIcon className="size-3" />
 				)}
 				<TerminalIcon className="size-3 text-muted-foreground" />
-				<span className="font-mono">{tool.name}</span>
+				<span className="font-mono">{tool.title}</span>
 				<span className="truncate text-muted-foreground">
-					{Object.entries(tool.args)
-						.map(
-							([k, v]) =>
-								`${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`
-						)
-						.join(", ")}
+					{formatRawInputSummary(tool.rawInput)}
 				</span>
-				{tool.result && (
+				{rawOutput && (
 					<span className="ml-auto inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-						<CheckIcon className="size-3" /> {tool.result}
+						<CheckIcon className="size-3" /> {rawOutput}
 					</span>
 				)}
 			</button>
 			{open && (
 				<div className="border-border/60 border-t bg-background/60 px-2.5 py-2 font-mono text-[11px]">
-					<div className="text-muted-foreground">args</div>
+					<div className="text-muted-foreground">rawInput</div>
 					<pre className="mt-0.5 whitespace-pre-wrap">
-						{JSON.stringify(tool.args, null, 2)}
+						{formatRaw(tool.rawInput)}
 					</pre>
-					{tool.result && (
+					{rawOutput && (
 						<>
-							<div className="mt-1.5 text-muted-foreground">result</div>
-							<pre className="mt-0.5 whitespace-pre-wrap">{tool.result}</pre>
+							<div className="mt-1.5 text-muted-foreground">rawOutput</div>
+							<pre className="mt-0.5 whitespace-pre-wrap">{rawOutput}</pre>
 						</>
 					)}
 				</div>

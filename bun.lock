@@ -25,6 +25,7 @@
         "@commander-js/extra-typings": "^15.0.0",
         "@cyrus/connections": "workspace:*",
         "@cyrus/database": "workspace:*",
+        "@cyrus/schemas": "workspace:*",
         "@cyrus/utils": "workspace:*",
         "@orpc/server": "catalog:",
         "@t3-oss/env-core": "catalog:",
@@ -114,6 +115,7 @@
         "@better-auth-ui/react": "^1.6.27",
         "@cyrus/connections": "workspace:*",
         "@cyrus/hooks": "workspace:*",
+        "@cyrus/schemas": "workspace:*",
         "@cyrus/styles": "workspace:*",
         "@cyrus/utils": "workspace:*",
         "@dnd-kit/core": "^6.3.1",
@@ -175,6 +177,7 @@
       "name": "@cyrus/connections",
       "version": "0.0.0",
       "dependencies": {
+        "@cyrus/schemas": "workspace:*",
         "@orpc/client": "^1.14.6",
         "@orpc/contract": "^1.14.6",
         "@orpc/server": "catalog:",
@@ -208,12 +211,24 @@
     "shared/hooks": {
       "name": "@cyrus/hooks",
       "version": "0.0.0",
+      "dependencies": {
+        "@cyrus/schemas": "workspace:*",
+      },
       "devDependencies": {
-        "@cyrus/connections": "workspace:*",
         "@cyrus/typescript": "workspace:*",
         "@types/react": "^19.2.15",
         "react": "catalog:",
         "typescript": "catalog:",
+      },
+    },
+    "shared/schemas": {
+      "name": "@cyrus/schemas",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@cyrus/typescript": "workspace:*",
       },
     },
     "shared/styles": {
@@ -224,6 +239,8 @@
       "name": "@cyrus/utils",
       "version": "0.0.0",
       "dependencies": {
+        "@cyrus/connections": "workspace:*",
+        "@cyrus/schemas": "workspace:*",
         "date-fns": "^4.4.0",
         "random-word-slugs": "^0.1.7",
       },
@@ -386,6 +403,8 @@
     "@cyrus/hooks": ["@cyrus/hooks@workspace:shared/hooks"],
 
     "@cyrus/mobile": ["@cyrus/mobile@workspace:apps/mobile"],
+
+    "@cyrus/schemas": ["@cyrus/schemas@workspace:shared/schemas"],
 
     "@cyrus/server": ["@cyrus/server@workspace:apps/server"],
 

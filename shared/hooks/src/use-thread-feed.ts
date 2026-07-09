@@ -1,28 +1,44 @@
-import { useMemo } from "react";
-import type { FeedEntry, GitDiff, Thread, ToolCall } from "./types";
+import type {
+	DiffView,
+	MessageView,
+	ThreadConversation,
+	ToolCallView,
+} from "@cyrus/schemas/view";
 
-export function deriveFeed(thread: Thread | null): FeedEntry[] {
-	if (!thread) {
-		return [];
-	}
+export type FeedEntry = {
+	activities?: ToolCallView[];
+	diffs?: DiffView[];
+	expanded?: boolean;
+	id: string;
+	label?: string;
+	message?: MessageView;
+	turnId?: string;
+	type: "message" | "work" | "turn-fold";
+};
+
+export function deriveFeed(
+	conversation: ThreadConversation | null
+): FeedEntry[] {
+	if (!conversation) return [];
+
 	const entries: FeedEntry[] = [];
 	const activitiesByTurn = new Map<
 		string,
-		{ tools: ToolCall[]; diffs: GitDiff[] }
+		{ tools: ToolCallView[]; diffs: DiffView[] }
 	>();
-	for (const tc of thread.toolCalls) {
+	for (const tc of conversation.toolCalls) {
 		const group = activitiesByTurn.get(tc.turnId) ?? { tools: [], diffs: [] };
 		group.tools.push(tc);
 		activitiesByTurn.set(tc.turnId, group);
 	}
-	for (const d of thread.diffs) {
+	for (const d of conversation.diffs) {
 		const group = activitiesByTurn.get(d.turnId) ?? { tools: [], diffs: [] };
 		group.diffs.push(d);
 		activitiesByTurn.set(d.turnId, group);
 	}
 
 	const seenTurns = new Set<string>();
-	for (const msg of thread.messages) {
+	for (const msg of conversation.messages) {
 		if (!msg.turnId) {
 			entries.push({ type: "message", id: msg.id, message: msg });
 			continue;
@@ -47,6 +63,8 @@ export function deriveFeed(thread: Thread | null): FeedEntry[] {
 	return entries;
 }
 
-export function useThreadFeed(thread: Thread | null): FeedEntry[] {
-	return useMemo(() => deriveFeed(thread), [thread]);
+export function useThreadFeed(
+	conversation: ThreadConversation | null
+): FeedEntry[] {
+	return deriveFeed(conversation);
 }

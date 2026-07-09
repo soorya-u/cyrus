@@ -1,0 +1,16 @@
+{
+  "name": "@cyrus/schemas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./view": "./src/view/index.ts",
+    "./enums/*": "./src/enums/*.ts"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cyrus/typescript": "workspace:*"
+  }
+}
