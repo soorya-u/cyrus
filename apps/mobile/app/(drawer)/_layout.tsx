@@ -1,5 +1,5 @@
 import { SignalingProvider } from "@cyrus/providers/signaling/signaling-provider";
-import { Slot } from "expo-router";
+import { Redirect, Slot } from "expo-router";
 import { Text, View } from "react-native";
 import { authClient } from "@/lib/auth";
 import { dialSignaling } from "@/lib/orpc";
@@ -7,12 +7,16 @@ import { dialSignaling } from "@/lib/orpc";
 export default function DrawerLayout() {
 	const { data: session, isPending } = authClient.useSession();
 
-	if (isPending || !session?.user) {
+	if (isPending) {
 		return (
 			<View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
 				<Text>Loading…</Text>
 			</View>
 		);
+	}
+
+	if (!session?.user) {
+		return <Redirect href="/" />;
 	}
 
 	return (

@@ -1,5 +1,5 @@
 import { SignalingProvider } from "@cyrus/providers/signaling/signaling-provider";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { ConnectionError } from "@/components/connection-error";
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth";
@@ -12,12 +12,16 @@ export const Route = createFileRoute("/_workspace")({
 function WorkspaceLayout() {
 	const { data: session, isPending } = authClient.useSession();
 
-	if (isPending || !session?.user) {
+	if (isPending) {
 		return (
 			<div className="flex min-h-[50vh] items-center justify-center">
 				<Spinner />
 			</div>
 		);
+	}
+
+	if (!session?.user) {
+		return <Navigate to="/" />;
 	}
 
 	return (
