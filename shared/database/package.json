@@ -12,7 +12,7 @@
     "db:studio": "dotenvx run -- drizzle-kit studio"
   },
   "dependencies": {
-    "@cyrus/connections": "workspace:*",
+    "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
     "@tursodatabase/database-common": "^0.6.1",
     "better-result": "catalog:",

@@ -5,8 +5,8 @@ import type {
 	SessionConfigSelectOptions,
 	SessionMode,
 } from "@agentclientprotocol/sdk";
-import type { ModelOption } from "@cyrus/connections/schemas/rtc/catalog";
-import type { SelectOption } from "@cyrus/connections/schemas/rtc/common";
+import type { ModelOption } from "@cyrus/schemas/rtc/catalog";
+import type { SelectOption } from "@cyrus/schemas/rtc/common";
 
 export type AgentCatalog = {
 	modes: SessionMode[];

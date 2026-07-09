@@ -1,4 +1,4 @@
-import type { Thread } from "@cyrus/connections/schemas/rtc/threads";
+import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { relativeTime } from "@cyrus/utils/time";
 import { cn } from "cnfast";
 import { Trash2Icon } from "lucide-react";

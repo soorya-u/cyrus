@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
-import type { Project } from "@cyrus/connections/schemas/rtc/projects";
-import { ProjectSchema } from "@cyrus/connections/schemas/rtc/projects";
+import type { Project } from "@cyrus/schemas/rtc/projects";
+import { ProjectSchema } from "@cyrus/schemas/rtc/projects";
 import { randomId } from "@cyrus/utils/identity";
 import { Result } from "better-result";
 import { asc, eq } from "drizzle-orm";
@@ -9,7 +9,7 @@ import { projects } from "../models/projects";
 import type { RepositoryError } from "../utils/error";
 import { notFound, tryRepo } from "../utils/error";
 
-export type { Project } from "@cyrus/connections/schemas/rtc/projects";
+export type { Project } from "@cyrus/schemas/rtc/projects";
 
 export function listProjects(): Promise<Result<Project[], RepositoryError>> {
 	return tryRepo(async () => {

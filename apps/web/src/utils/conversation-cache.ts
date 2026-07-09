@@ -1,5 +1,5 @@
-import type { ChatChunk } from "@cyrus/connections/schemas/rtc/chat";
-import type { GetConversationsOutput } from "@cyrus/connections/schemas/rtc/threads";
+import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
+import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
 import type { QueryClient } from "@tanstack/react-query";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 

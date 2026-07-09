@@ -1,9 +1,9 @@
+import type { DeviceRole } from "@cyrus/schemas/signaling";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import { Result } from "better-result";
 import { PartySocket } from "partysocket";
 import type { SignalingClient } from "../contracts/signaling";
-import type { DeviceRole } from "../schemas/signaling";
 import { createSignalingEvents, type SignalingEvents } from "./peer";
 
 export type ConnectSignalingOptions = {

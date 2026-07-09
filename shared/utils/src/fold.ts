@@ -1,8 +1,5 @@
-import type {
-	AgentEvent,
-	ToolCallContent,
-} from "@cyrus/connections/schemas/rtc/chat";
-import type { ConversationEntry } from "@cyrus/connections/schemas/rtc/threads";
+import type { AgentEvent, ToolCallContent } from "@cyrus/schemas/rtc/chat";
+import type { ConversationEntry } from "@cyrus/schemas/rtc/threads";
 import {
 	type DiffView,
 	type MessageView,

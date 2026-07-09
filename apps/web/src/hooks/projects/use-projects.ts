@@ -96,4 +96,3 @@ export function useProjects() {
 }
 
 export type UseProjects = ReturnType<typeof useProjects>;
-export type { Project } from "@cyrus/connections/schemas/rtc/projects";

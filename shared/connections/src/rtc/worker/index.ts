@@ -1,10 +1,10 @@
+import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
+import { DeviceRoleSchema } from "@cyrus/schemas/signaling";
 import type { Router } from "@orpc/server";
 import { RPCHandler, type RPCHandlerOptions } from "@orpc/server/websocket";
 import { RTCPeerConnection as NodeRTCPeerConnection } from "node-datachannel/polyfill";
 import type { ControllerContract } from "../../contracts/controller";
 import type { WorkerContract } from "../../contracts/worker";
-import type { ChatChunk } from "../../schemas/rtc/chat";
-import { DeviceRoleSchema } from "../../schemas/signaling";
 import { createPeerBroadcaster } from "../broadcaster";
 import {
 	createIceBuffer,

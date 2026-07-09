@@ -1,4 +1,4 @@
-import type { AgentEvent } from "@cyrus/connections/schemas/rtc/chat";
+import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
 
 export function isStreamingDelta(event: AgentEvent): boolean {
 	return event.type === "token" || event.type === "thought";

@@ -42,7 +42,7 @@ The system SHALL provide a `fold()` function in `@cyrus/utils` that accepts `Con
 
 ### Requirement: No client-side wire-to-view rename layer
 
-The system SHALL NOT maintain a separate mapping layer (such as `map-controller.ts`) that renames wire fields to UI aliases. Web and React Native clients SHALL consume `ProjectSchema` and `ThreadSchema` from `@cyrus/connections`, and view schemas from `@cyrus/schemas/view`.
+The system SHALL NOT maintain a separate mapping layer (such as `map-controller.ts`) that renames wire fields to UI aliases. Web and React Native clients SHALL consume `ProjectSchema` and `ThreadSchema` from `@cyrus/schemas/rtc/*`, and view schemas from `@cyrus/schemas/view`.
 
 #### Scenario: Project list uses wire shape
 
