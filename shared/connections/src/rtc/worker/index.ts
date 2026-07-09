@@ -1,11 +1,10 @@
-import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { DeviceRoleSchema } from "@cyrus/schemas/signaling";
 import type { Router } from "@orpc/server";
 import { RPCHandler, type RPCHandlerOptions } from "@orpc/server/websocket";
 import { RTCPeerConnection as NodeRTCPeerConnection } from "node-datachannel/polyfill";
 import type { ControllerContract } from "../../contracts/controller";
 import type { WorkerContract } from "../../contracts/worker";
-import { createPeerBroadcaster } from "../broadcaster";
+import type { ThreadEventBus } from "../bus";
 import {
 	createIceBuffer,
 	type RtcContext,
@@ -26,6 +25,7 @@ export type WorkerOptions = {
 	signaling: SignalingClient;
 	events: SignalingEvents;
 	routers: WorkerRouters;
+	eventBus: ThreadEventBus;
 	config?: RTCConfiguration;
 	rpc?: RPCHandlerOptions<RtcContext>;
 };
@@ -35,9 +35,7 @@ export type WorkerConnection = {
 };
 
 export function serveWorker(options: WorkerOptions): WorkerConnection {
-	const { signaling, events, config, routers } = options;
-
-	const broadcaster = createPeerBroadcaster<ChatChunk>();
+	const { signaling, events, config, routers, eventBus } = options;
 
 	const handlers = {
 		controller: new RPCHandler(routers.controller, options.rpc),
@@ -50,7 +48,7 @@ export function serveWorker(options: WorkerOptions): WorkerConnection {
 	>();
 
 	function dispose(peerId: string): void {
-		broadcaster.close(peerId);
+		eventBus.close(peerId);
 		const session = sessions.get(peerId);
 		if (session) {
 			session.pc.close();
@@ -83,7 +81,7 @@ export function serveWorker(options: WorkerOptions): WorkerConnection {
 			whenOpen(channel)
 				.then(() => {
 					handlers[role.data].upgrade(asWebSocket(channel), {
-						context: { peerId: from, broadcaster } satisfies RtcContext,
+						context: { peerId: from, eventBus } satisfies RtcContext,
 					});
 				})
 				.catch(() => {
@@ -125,7 +123,7 @@ export function serveWorker(options: WorkerOptions): WorkerConnection {
 			for (const peerId of [...sessions.keys()]) {
 				dispose(peerId);
 			}
-			broadcaster.closeAll();
+			eventBus.closeAll();
 		},
 	};
 }

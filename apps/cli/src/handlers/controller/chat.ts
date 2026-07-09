@@ -2,7 +2,7 @@ import { appendConversation } from "@cyrus/database/repositories/conversations";
 import { ensureThread } from "@cyrus/database/repositories/threads";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
-import { env } from "@/lib/env";
+import { Result } from "better-result";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
 import {
 	isStreamingDelta,
@@ -11,9 +11,46 @@ import {
 } from "@/utils/streams";
 import type { ControllerDeps } from "./deps";
 
+type RunTurnOptions = {
+	agentName: string;
+	threadId: string;
+	projectId: string;
+	message: string;
+	turnId: string;
+	emit: (event: ChatChunk["event"]) => Promise<void>;
+	runtime: ControllerDeps["runtime"];
+};
+
+async function runTurn({
+	agentName,
+	threadId,
+	projectId,
+	message,
+	emit,
+	runtime,
+}: Omit<RunTurnOptions, "turnId">): Promise<Result<void, unknown>> {
+	await emit({ type: "user_message", content: message });
+	await emit({ type: "thread_started", threadId });
+
+	const streamed = await Result.tryPromise(async () => {
+		const gen = runtime.threadCoordinator.prompt(
+			agentName,
+			threadId,
+			projectId,
+			message
+		);
+		for await (const event of gen) await emit(event);
+		await emit({ type: "turn_completed" });
+	});
+
+	if (streamed.isErr()) await emit({ type: "turn_interrupted" });
+
+	return streamed;
+}
+
 export function chatHandlers({ os, runtime }: ControllerDeps) {
 	return {
-		chat: os.chat.handler(async function* ({ input, context }) {
+		chat: os.chat.handler(async ({ input, context }) => {
 			const { agentName, threadId = randomId(), message, projectId } = input;
 
 			const thread = await ensureThread(threadId, projectId, {
@@ -26,13 +63,15 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 			const messageBuffers = new Map<string, string>();
 			const thoughtBuffers = new Map<string, string>();
 
-			async function emit(event: ChatChunk["event"]): Promise<ChatChunk> {
+			context.eventBus.ensureWatch(context.peerId, threadId);
+
+			async function emit(event: ChatChunk["event"]): Promise<void> {
 				trackDelta(event, messageBuffers, thoughtBuffers);
 
 				if (isStreamingDelta(event)) {
 					const chunk: ChatChunk = { threadId, turnId, seq: 0, event };
-					context.broadcaster.broadcast(chunk, context.peerId);
-					return chunk;
+					context.eventBus.publish(chunk);
+					return;
 				}
 
 				const persistEvent = resolvePersistEvent(
@@ -46,34 +85,27 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 					event: persistEvent,
 				});
 				if (entry.isErr()) throwOrpcFromRepositoryError(entry.error);
-				const chunk = entry.value.chunk;
-				context.broadcaster.broadcast(chunk, context.peerId);
-				return chunk;
+				context.eventBus.publish(entry.value.chunk);
 			}
 
-			yield await emit({ type: "user_message", content: message });
-			yield await emit({ type: "thread_started", threadId });
-
-			const gen = runtime.threadCoordinator.prompt(
+			runTurn({
 				agentName,
 				threadId,
 				projectId,
-				message
-			);
-			try {
-				for await (const event of gen) {
-					yield await emit(event);
-					await Bun.sleep(env.CYRUS_STREAM_THROTTLING_MS);
-				}
-				yield await emit({ type: "turn_completed" });
-			} catch (error) {
-				yield await emit({ type: "turn_interrupted" });
-				throw error;
-			}
+				message,
+				emit,
+				runtime,
+			}).then((result) => {
+				result.tapError((error) => {
+					console.error("chat turn failed", error);
+				});
+			});
+
+			return { threadId, turnId };
 		}),
 
 		subscribe: os.subscribe.handler(async function* ({ context }) {
-			for await (const chunk of context.broadcaster.subscribe(context.peerId))
+			for await (const chunk of context.eventBus.subscribe(context.peerId))
 				yield chunk;
 		}),
 

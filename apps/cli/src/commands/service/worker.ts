@@ -8,6 +8,7 @@ import { createControllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
 import { authClient } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { createThreadEventBus } from "@/queue/bus";
 import { get, getOrCreate } from "@/store/config";
 import { initDatabase } from "@/store/database";
 import { print } from "@/utils/style";
@@ -48,9 +49,12 @@ export async function worker(): Promise<void> {
 	});
 	print.success`✓ connected — waiting for message…`;
 
+	const eventBus = createThreadEventBus();
+
 	const device = serveWorker({
 		signaling: signalingSession.signaling,
 		events: signalingSession.events,
+		eventBus,
 		routers: {
 			controller: createControllerRouter(runtime),
 			worker: workerRouter,

@@ -1,14 +1,13 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
-import { appendChunkToCache } from "@cyrus/utils/conversation-cache";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Result } from "better-result";
 import { useRtc } from "../contexts/rtc";
 import { useAgentCatalogStore } from "../stores/agent-catalog";
+import { waitForTurnEnd } from "../stores/conversation-overlay";
 import { useProjects } from "./use-projects";
 import { useThreads } from "./use-threads";
 
 export function useControllerThreads() {
-	const queryClient = useQueryClient();
 	const { connection: workerConnection, orpc: orpcController } = useRtc();
 
 	const {
@@ -59,15 +58,13 @@ export function useControllerThreads() {
 		if (!thread) return Result.err(new Error(`thread not found: ${threadId}`));
 
 		const result = await Result.tryPromise(async () => {
-			const iterator = await workerConnection.client.chat({
+			const { turnId } = await workerConnection.client.chat({
 				agentName: resolveAgentName(threadId),
 				message: text,
 				projectId: thread.projectId,
 				threadId,
 			});
-			for await (const chunk of iterator) {
-				appendChunkToCache(queryClient, chunk);
-			}
+			await waitForTurnEnd(threadId, turnId);
 		});
 		invalidateThreads(thread.projectId);
 		return result;

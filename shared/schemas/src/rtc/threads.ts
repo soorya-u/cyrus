@@ -28,6 +28,18 @@ export const ThreadQueryInputSchema = z.object({
 	afterSeq: z.number().optional(),
 });
 
+export const WatchThreadInputSchema = z.object({
+	threadId: z.string(),
+});
+
+export const WatchThreadOutputSchema = z.object({
+	snapshotHighWaterMark: z.number(),
+});
+
+export const UnwatchThreadInputSchema = z.object({
+	threadId: z.string(),
+});
+
 export const RenameThreadInputSchema = z.object({
 	threadId: z.string(),
 	name: z.string().min(1),
@@ -53,6 +65,9 @@ export type Thread = z.infer<typeof ThreadSchema>;
 export type ConversationEntry = z.infer<typeof ConversationEntrySchema>;
 export type ProjectQueryInput = z.infer<typeof ProjectQueryInputSchema>;
 export type ThreadQueryInput = z.infer<typeof ThreadQueryInputSchema>;
+export type WatchThreadInput = z.infer<typeof WatchThreadInputSchema>;
+export type WatchThreadOutput = z.infer<typeof WatchThreadOutputSchema>;
+export type UnwatchThreadInput = z.infer<typeof UnwatchThreadInputSchema>;
 export type CreateThreadInput = z.infer<typeof CreateThreadInputSchema>;
 export type CreateThreadOutput = z.infer<typeof CreateThreadOutputSchema>;
 export type ListThreadsOutput = z.infer<typeof ListThreadsOutputSchema>;

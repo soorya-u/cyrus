@@ -13,6 +13,7 @@ import {
 	CancelInputSchema,
 	ChatChunkSchema,
 	ChatInputSchema,
+	ChatOutputSchema,
 } from "@cyrus/schemas/rtc/chat";
 import {
 	AgentQueryInputSchema,
@@ -37,6 +38,9 @@ import {
 	ProjectQueryInputSchema,
 	RenameThreadInputSchema,
 	ThreadQueryInputSchema,
+	UnwatchThreadInputSchema,
+	WatchThreadInputSchema,
+	WatchThreadOutputSchema,
 } from "@cyrus/schemas/rtc/threads";
 import { eventIterator, oc } from "@orpc/contract";
 
@@ -68,8 +72,10 @@ export const controllerContract = {
 	setMode: oc.input(SetModeInputSchema).output(VoidOutputSchema),
 	setEffort: oc.input(SetEffortInputSchema).output(VoidOutputSchema),
 	setPersona: oc.input(SetPersonaInputSchema).output(VoidOutputSchema),
-	chat: oc.input(ChatInputSchema).output(eventIterator(ChatChunkSchema)),
+	chat: oc.input(ChatInputSchema).output(ChatOutputSchema),
 	subscribe: oc.output(eventIterator(ChatChunkSchema)),
+	watchThread: oc.input(WatchThreadInputSchema).output(WatchThreadOutputSchema),
+	unwatchThread: oc.input(UnwatchThreadInputSchema).output(VoidOutputSchema),
 	cancel: oc.input(CancelInputSchema).output(VoidOutputSchema),
 };
 

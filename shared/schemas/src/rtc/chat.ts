@@ -255,6 +255,13 @@ export const ChatInputSchema = z.object({
 	projectId: z.string(),
 });
 
+export const ChatOutputSchema = z.object({
+	threadId: z.string(),
+	turnId: z.string(),
+});
+
+export type ChatOutput = z.infer<typeof ChatOutputSchema>;
+
 export const ChatChunkSchema = z.object({
 	threadId: z.string(),
 	turnId: z.string(),

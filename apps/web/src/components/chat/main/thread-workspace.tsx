@@ -24,8 +24,7 @@ export function ThreadWorkspace({
 	threadId,
 }: ThreadWorkspaceProps) {
 	const navigate = useNavigate();
-	const { threads, sendMessage, stopThread, createThread } =
-		useControllerThreads();
+	const { threads, sendMessage, stopThread } = useControllerThreads();
 	const { diffOpen, setDiffOpen } = useChatUiStore();
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
@@ -49,15 +48,7 @@ export function ThreadWorkspace({
 	}, [navigate, projectId, thread, workerId]);
 
 	async function handleSend(text: string) {
-		if (!thread) {
-			const id = await createThread(projectId);
-			await sendMessage(id, text);
-			navigate({
-				to: "/workers/$workerId/p/$projectId/t/$threadId",
-				params: { workerId, projectId, threadId: id },
-			});
-			return;
-		}
+		if (!thread) return;
 		await sendMessage(thread.id, text);
 	}
 
