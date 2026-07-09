@@ -26,7 +26,7 @@ Nine schema files and ~21 external import sites need updating. Internal connecti
 
 **Decision:** Mirror the issue #19 layout under `shared/schemas/src/`:
 
-```
+```text
 enums/
   tools.ts        (existing)
   plan.ts         (new — PlanEntryPriority, PlanEntryStatus)
