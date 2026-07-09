@@ -48,22 +48,17 @@ export function ThreadWorkspace({
 		}
 	}, [navigate, projectId, thread, workerId]);
 
-	function handleSend(text: string) {
+	async function handleSend(text: string) {
 		if (!thread) {
-			createThread(projectId).then((id) => {
-				sendMessage(id, text).catch(() => {
-					/* surfaced via folded turn state on next getConversations poll */
-				});
-				navigate({
-					to: "/workers/$workerId/p/$projectId/t/$threadId",
-					params: { workerId, projectId, threadId: id },
-				});
+			const id = await createThread(projectId);
+			await sendMessage(id, text);
+			navigate({
+				to: "/workers/$workerId/p/$projectId/t/$threadId",
+				params: { workerId, projectId, threadId: id },
 			});
 			return;
 		}
-		sendMessage(thread.id, text).catch(() => {
-			/* surfaced via folded turn state on next getConversations poll */
-		});
+		await sendMessage(thread.id, text);
 	}
 
 	if (!thread) return null;
@@ -78,10 +73,8 @@ export function ThreadWorkspace({
 					<Composer
 						busy={Boolean(busy)}
 						onSend={handleSend}
-						onStop={() => {
-							stopThread(thread.id).catch(() => {
-								/* noop */
-							});
+						onStop={async () => {
+							await stopThread(thread.id);
 						}}
 						projectId={projectId}
 						threadId={thread.id}

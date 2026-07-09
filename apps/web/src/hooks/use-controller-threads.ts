@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
+import { Result } from "better-result";
 import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
 import { useProjects } from "@/hooks/projects/use-projects";
 import { useThreads } from "@/hooks/threads/use-threads";
@@ -62,28 +63,41 @@ export function useControllerThreads() {
 		);
 	}
 
-	async function sendMessage(threadId: string, text: string) {
-		if (!workerConnection) throw new Error("worker not connected");
+	async function sendMessage(
+		threadId: string,
+		text: string
+	): Promise<Result<void, unknown>> {
+		if (!workerConnection) {
+			return Result.err(new Error("worker not connected"));
+		}
 		const thread = threads.find((item) => item.id === threadId);
-		if (!thread) throw new Error(`thread not found: ${threadId}`);
+		if (!thread) {
+			return Result.err(new Error(`thread not found: ${threadId}`));
+		}
 
-		const iterator = await workerConnection.client.chat({
-			agentName: resolveAgentName(threadId),
-			message: text,
-			projectId: thread.projectId,
-			threadId,
+		const result = await Result.tryPromise(async () => {
+			const iterator = await workerConnection.client.chat({
+				agentName: resolveAgentName(threadId),
+				message: text,
+				projectId: thread.projectId,
+				threadId,
+			});
+			for await (const chunk of iterator)
+				appendChunkToCache(queryClient, chunk);
 		});
-		for await (const chunk of iterator) appendChunkToCache(queryClient, chunk);
-
 		invalidateThreads(thread.projectId);
+		return result;
 	}
 
-	async function stopThread(threadId: string) {
-		if (!workerConnection) return;
-		await workerConnection.client.cancel({
-			agentName: resolveAgentName(threadId),
-			threadId,
-		});
+	async function stopThread(threadId: string): Promise<Result<void, unknown>> {
+		if (!workerConnection) return Result.ok(undefined);
+		const result = await Result.tryPromise(() =>
+			workerConnection.client.cancel({
+				agentName: resolveAgentName(threadId),
+				threadId,
+			})
+		);
+		return result.map(() => undefined);
 	}
 
 	return {

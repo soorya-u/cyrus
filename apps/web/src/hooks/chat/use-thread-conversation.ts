@@ -35,6 +35,9 @@ export function useThreadConversation(
 
 	return useMemo(() => {
 		if (!conversationsQuery.data) return EMPTY;
-		return fold(conversationsQuery.data.conversations);
+		return fold(conversationsQuery.data.conversations).match({
+			ok: (conversation) => conversation,
+			err: () => EMPTY,
+		});
 	}, [conversationsQuery.data]);
 }

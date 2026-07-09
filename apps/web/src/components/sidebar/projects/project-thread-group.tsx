@@ -81,7 +81,7 @@ export function ProjectThreadGroup({
 					<FolderIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
 					<span className="flex min-w-0 flex-1 items-center gap-2">
 						<span className="truncate font-medium text-foreground/90 text-xs">
-							{project.name ?? project.id}
+							{project.name}
 						</span>
 						<span className="shrink-0 text-[10px] text-muted-foreground/60">
 							{threads.length}
@@ -113,7 +113,7 @@ export function ProjectThreadGroup({
 							<DropdownMenuItem
 								onSelect={async () => {
 									const name = await RenameProjectDialog.call({
-										currentName: project.name ?? project.id,
+										currentName: project.name,
 									});
 									if (name) onRenameProject(project.id, name);
 								}}
@@ -123,7 +123,7 @@ export function ProjectThreadGroup({
 							<DropdownMenuItem
 								onSelect={async () => {
 									const confirmed = await DeleteProjectDialog.call({
-										projectName: project.name ?? project.id,
+										projectName: project.name,
 										threadCount: threads.length,
 									});
 									if (confirmed) onRemoveProject(project.id);

@@ -9,6 +9,7 @@
   "dependencies": {
     "@cyrus/connections": "workspace:*",
     "@cyrus/schemas": "workspace:*",
+    "better-result": "catalog:",
     "date-fns": "^4.4.0",
     "random-word-slugs": "^0.1.7"
   },

@@ -11,6 +11,7 @@ import {
 	type ToolCallView,
 	type TurnView,
 } from "@cyrus/schemas/view";
+import { Result } from "better-result";
 
 type MutableState = {
 	messages: Map<string, MessageView>;
@@ -129,6 +130,7 @@ function applyToolCallUpdate(
 		state.toolCalls.set(event.toolCallId, {
 			createdAt: entry.createdAt,
 			kind: event.kind ?? undefined,
+			rawInput: event.rawInput,
 			rawOutput: event.rawOutput,
 			status: event.status ?? "pending",
 			title: event.title ?? event.toolCallId,
@@ -223,30 +225,35 @@ function applyEvent(state: MutableState, entry: ConversationEntry): void {
 	}
 }
 
-export function fold(entries: ConversationEntry[]): ThreadConversation {
+export function fold(
+	entries: ConversationEntry[]
+): Result<ThreadConversation, unknown> {
 	const state: MutableState = {
 		diffs: new Map(),
 		messages: new Map(),
 		toolCalls: new Map(),
 	};
 	const turns = new Map<string, TurnView>();
+	const entriesByTurn = new Map<string, ConversationEntry[]>();
 
 	for (const entry of entries) {
 		touchTurn(turns, entry.chunk.turnId, entry.threadId, entry.createdAt);
 		applyEvent(state, entry);
+
+		const turnEntries = entriesByTurn.get(entry.chunk.turnId) ?? [];
+		turnEntries.push(entry);
+		entriesByTurn.set(entry.chunk.turnId, turnEntries);
 	}
 
 	const orderedTurns = [...turns.values()];
 	const latestTurn = orderedTurns.at(-1);
 
 	for (const turn of orderedTurns) {
-		const turnEntries = entries.filter(
-			(entry) => entry.chunk.turnId === turn.id
-		);
+		const turnEntries = entriesByTurn.get(turn.id) ?? [];
 		turn.state = inferTurnState(turnEntries, turn.id === latestTurn?.id);
 	}
 
-	return ThreadConversationSchema.parse({
+	const parsed = ThreadConversationSchema.safeParse({
 		diffs: [...state.diffs.values()],
 		messages: [...state.messages.values()].map((message) => ({
 			...message,
@@ -258,4 +265,7 @@ export function fold(entries: ConversationEntry[]): ThreadConversation {
 		toolCalls: [...state.toolCalls.values()],
 		turns: orderedTurns,
 	});
+
+	if (!parsed.success) return Result.err(parsed.error);
+	return Result.ok(parsed.data);
 }
