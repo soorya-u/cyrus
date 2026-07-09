@@ -1,8 +1,10 @@
 export const SIGNALING_OPERATION_KEYS = {
+	connection: (userId: string) => ["signaling", userId] as const,
 	listPeers: ["signaling", "list-peers"],
 } as const;
 
 export const RTC_OPERATION_KEYS = {
+	connection: (workerId: string) => ["controller", workerId] as const,
 	listProjects: ["controller", "list-projects"],
 	listThreads: (projectId: string) =>
 		["controller", "list-threads", projectId] as const,

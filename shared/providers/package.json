@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",
+    "@cyrus/constants": "workspace:*",
     "@orpc/contract": "^1.14.6",
     "@orpc/tanstack-query": "^1.14.6",
     "@tanstack/react-query": "catalog:"

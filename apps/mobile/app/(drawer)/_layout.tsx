@@ -37,7 +37,7 @@ export default function DrawerLayout() {
 					<Text>Connecting…</Text>
 				</View>
 			}
-			queryKey={["signaling", session.user.id]}
+			userId={session.user.id}
 		>
 			<Slot />
 		</SignalingProvider>

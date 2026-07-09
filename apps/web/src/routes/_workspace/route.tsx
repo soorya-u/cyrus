@@ -12,17 +12,14 @@ export const Route = createFileRoute("/_workspace")({
 function WorkspaceLayout() {
 	const { data: session, isPending } = authClient.useSession();
 
-	if (isPending) {
+	if (isPending)
 		return (
 			<div className="flex min-h-[50vh] items-center justify-center">
 				<Spinner />
 			</div>
 		);
-	}
 
-	if (!session?.user) {
-		return <Navigate to="/" />;
-	}
+	if (!session?.user) return <Navigate to="/" />;
 
 	return (
 		<SignalingProvider
@@ -33,7 +30,7 @@ function WorkspaceLayout() {
 					Connecting to workspace…
 				</div>
 			}
-			queryKey={["signaling", session.user.id]}
+			userId={session.user.id}
 		>
 			<Outlet />
 		</SignalingProvider>

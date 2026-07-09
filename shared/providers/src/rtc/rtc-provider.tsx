@@ -1,3 +1,4 @@
+import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useContext, useEffect } from "react";
 import { SignalingConnectionContext } from "../signaling/signaling-context";
@@ -24,7 +25,7 @@ export function RtcProvider({
 		throw new Error("RtcProvider must be used within SignalingProvider");
 
 	const query = useQuery({
-		queryKey: ["controller", workerId],
+		queryKey: RTC_OPERATION_KEYS.connection(workerId),
 		queryFn: () => dialRtc(signaling.session, workerId),
 		staleTime: Number.POSITIVE_INFINITY,
 		gcTime: 0,
