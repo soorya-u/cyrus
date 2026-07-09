@@ -1,5 +1,5 @@
 {
-  "name": "@cyrus/hooks",
+  "name": "@cyrus/providers",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,15 +11,9 @@
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",
-    "@cyrus/constants": "workspace:*",
-    "@cyrus/providers": "workspace:*",
-    "@cyrus/schemas": "workspace:*",
-    "@cyrus/utils": "workspace:*",
+    "@orpc/contract": "^1.14.6",
     "@orpc/tanstack-query": "^1.14.6",
-    "@tanstack/react-query": "catalog:",
-    "better-result": "catalog:",
-    "evlog": "^2.19.2",
-    "zustand": "^5.0.14"
+    "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",

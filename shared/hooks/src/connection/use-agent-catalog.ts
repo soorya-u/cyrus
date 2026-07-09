@@ -1,8 +1,7 @@
+import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
-import { RTC_OPERATION_KEYS } from "@/constants/operation-keys";
-import type { OrpcController } from "@/lib/orpc";
-import { useAgentCatalogStore } from "@/stores/agent-catalog";
+import { useRtc } from "../contexts/rtc";
+import { useAgentCatalogStore } from "../stores/agent-catalog";
 
 type CatalogOption = { id: string; name: string };
 
@@ -20,9 +19,7 @@ export function useAgentCatalog({
 	threadId,
 	projectId,
 }: UseAgentCatalogOptions) {
-	const { orpcController } = useRouteContext({ strict: false }) as {
-		orpcController?: OrpcController;
-	};
+	const { orpc: orpcController } = useRtc();
 
 	const selection = useAgentCatalogStore(
 		(state) => state.selectionByThread[threadId]
@@ -33,45 +30,44 @@ export function useAgentCatalog({
 	const setPersonaSelection = useAgentCatalogStore((state) => state.setPersona);
 
 	const agentsQuery = useQuery({
-		...orpcController?.listAgents.queryOptions({
+		...orpcController.listAgents.queryOptions({
 			queryKey: RTC_OPERATION_KEYS.listAgents,
 		}),
 		queryKey: RTC_OPERATION_KEYS.listAgents,
-		enabled: Boolean(orpcController),
 	});
 	const agents = agentsQuery.data?.agents ?? [];
 	const selectedAgent = selection?.agentName ?? agents[0]?.name ?? "";
 
 	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(selectedAgent);
 	const modelsQuery = useQuery({
-		...orpcController?.getModels.queryOptions({
+		...orpcController.getModels.queryOptions({
 			queryKey: modelsQueryKey,
 			input: { agentName: selectedAgent },
 		}),
 		queryKey: modelsQueryKey,
-		enabled: Boolean(orpcController && selectedAgent),
+		enabled: Boolean(selectedAgent),
 	});
 	const models = modelsQuery.data?.models ?? [];
 
 	const effortsQueryKey = RTC_OPERATION_KEYS.getEfforts(selectedAgent);
 	const effortsQuery = useQuery({
-		...orpcController?.getEfforts.queryOptions({
+		...orpcController.getEfforts.queryOptions({
 			queryKey: effortsQueryKey,
 			input: { agentName: selectedAgent },
 		}),
 		queryKey: effortsQueryKey,
-		enabled: Boolean(orpcController && selectedAgent),
+		enabled: Boolean(selectedAgent),
 	});
 	const efforts = effortsQuery.data?.efforts ?? [];
 
 	const personaQueryKey = RTC_OPERATION_KEYS.getPersona(selectedAgent);
 	const personaQuery = useQuery({
-		...orpcController?.getPersona.queryOptions({
+		...orpcController.getPersona.queryOptions({
 			queryKey: personaQueryKey,
 			input: { agentName: selectedAgent },
 		}),
 		queryKey: personaQueryKey,
-		enabled: Boolean(orpcController && selectedAgent),
+		enabled: Boolean(selectedAgent),
 	});
 	const personas = personaQuery.data?.personas ?? [];
 
@@ -80,17 +76,17 @@ export function useAgentCatalog({
 	const selectedPersona = pickValid(selection?.personaId, personas);
 
 	const setModelMutation = useMutation({
-		...orpcController?.setModel.mutationOptions({
+		...orpcController.setModel.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.setModel,
 		}),
 	});
 	const setEffortMutation = useMutation({
-		...orpcController?.setEffort.mutationOptions({
+		...orpcController.setEffort.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.setEffort,
 		}),
 	});
 	const setPersonaMutation = useMutation({
-		...orpcController?.setPersona.mutationOptions({
+		...orpcController.setPersona.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.setPersona,
 		}),
 	});

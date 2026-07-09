@@ -1,8 +1,4 @@
-import {
-	useNavigate,
-	useParams,
-	useRouteContext,
-} from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { SettingsIcon } from "lucide-react";
 import {
 	ProjectThreadExplorer,
@@ -21,7 +17,6 @@ export function WorkersSidebar() {
 	const { isMobile, setOpenMobile } = useSidebar();
 	const navigate = useNavigate();
 	const workerId = "workerId" in params ? params.workerId : undefined;
-	const { orpcController } = useRouteContext({ strict: false });
 	const activeThreadId = useActiveThreadIdFromRoute() ?? null;
 
 	return (
@@ -43,7 +38,7 @@ export function WorkersSidebar() {
 			}
 		>
 			<WorkerSelect workerId={workerId} />
-			{workerId && orpcController && (
+			{workerId && (
 				<ProjectThreadExplorer
 					activeThreadId={activeThreadId ?? undefined}
 					workerId={workerId}

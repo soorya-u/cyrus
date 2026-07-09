@@ -2,7 +2,11 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "paths": { "@/*": ["./*"] }
+    "paths": {
+      "@/*": ["./*"],
+      "@cyrus/providers/*": ["../../shared/providers/src/*"],
+      "@cyrus/hooks/*": ["../../shared/hooks/src/*"]
+    }
   },
   "include": [
     "**/*.ts",

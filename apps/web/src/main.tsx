@@ -1,10 +1,16 @@
 import { AuthProvider } from "@better-auth-ui/react";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { QueryProvider } from "@cyrus/providers/query-provider";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+	type AnyRouter,
+	createRouter,
+	RouterProvider,
+} from "@tanstack/react-router";
 import { initLog } from "evlog/client";
 import { ThemeProvider } from "next-themes";
 import type { PropsWithChildren } from "react";
 import ReactDOM from "react-dom/client";
+import { toast } from "sonner";
 
 import "@fontsource-variable/dm-sans";
 import "@fontsource/jetbrains-mono/400.css";
@@ -13,7 +19,6 @@ import "@fontsource/jetbrains-mono/500.css";
 import { DevTools } from "./devtools";
 import { authClient } from "./lib/auth";
 import { routeTree } from "./routeTree.gen";
-import { queryClient } from "./utils/query-client";
 
 initLog({
 	service: "cyrus/web",
@@ -26,7 +31,6 @@ const router = createRouter({
 	defaultPreload: "intent",
 	scrollRestoration: true,
 	defaultViewTransition: true,
-	context: { queryClient },
 	Wrap({ children }: PropsWithChildren) {
 		return (
 			<ThemeProvider
@@ -34,20 +38,42 @@ const router = createRouter({
 				defaultTheme="dark"
 				storageKey="ui-theme"
 			>
-				<QueryClientProvider client={queryClient}>
-					<AuthProvider
-						authClient={authClient}
-						navigate={({ to, replace }) => router.navigate({ to, replace })}
-						queryClient={queryClient}
-					>
-						{children}
-					</AuthProvider>
-					<DevTools query={queryClient} router={router} />
-				</QueryClientProvider>
+				<QueryProvider
+					onError={(error, query) => {
+						toast.error(`Error: ${error.message}`, {
+							action: {
+								label: "retry",
+								onClick: () => query.invalidate(),
+							},
+						});
+					}}
+				>
+					<WebQueryShell router={router}>{children}</WebQueryShell>
+				</QueryProvider>
 			</ThemeProvider>
 		);
 	},
 });
+
+function WebQueryShell({
+	router,
+	children,
+}: PropsWithChildren<{ router: AnyRouter }>) {
+	const queryClient = useQueryClient();
+
+	return (
+		<>
+			<AuthProvider
+				authClient={authClient}
+				navigate={({ to, replace }) => router.navigate({ to, replace })}
+				queryClient={queryClient}
+			>
+				{children}
+			</AuthProvider>
+			<DevTools query={queryClient} router={router} />
+		</>
+	);
+}
 
 declare module "@tanstack/react-router" {
 	// biome-ignore lint/style/useConsistentTypeDefinitions: required for module-augmentation merge

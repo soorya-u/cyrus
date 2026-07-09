@@ -1,3 +1,5 @@
+import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
+import { useThreadConversation } from "@cyrus/hooks/connection/use-thread-conversation";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useNavigate } from "@tanstack/react-router";
@@ -6,8 +8,6 @@ import { Composer } from "@/components/chat/composer";
 import { DiffPanel } from "@/components/chat/diff/diff-panel";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
-import { useThreadConversation } from "@/hooks/chat/use-thread-conversation";
-import { useControllerThreads } from "@/hooks/use-controller-threads";
 import { useChatUiStore } from "@/stores/chat-ui";
 
 type ThreadWorkspaceProps = {

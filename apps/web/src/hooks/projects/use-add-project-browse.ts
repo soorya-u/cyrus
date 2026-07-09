@@ -1,3 +1,4 @@
+import { useListDir } from "@cyrus/hooks/connection/use-list-dir";
 import type { DirListing } from "@cyrus/schemas/rtc/dir";
 import {
 	appendBrowsePathSegment,
@@ -20,7 +21,6 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { useListDir } from "@/hooks/use-list-dir";
 import { filterBrowseEntries } from "@/utils/dir";
 
 const INITIAL_BROWSE_QUERY = "~/";

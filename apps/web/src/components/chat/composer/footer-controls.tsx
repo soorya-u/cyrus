@@ -1,3 +1,4 @@
+import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
 import {
 	Select,
 	SelectContent,
@@ -6,7 +7,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useAgentCatalog } from "@/hooks/chat/use-agent-catalog";
 
 const TRIGGER_CLASS =
 	"h-8 min-w-0 max-w-40 shrink justify-between gap-1.5 whitespace-nowrap border-none bg-transparent px-2 text-muted-foreground/70 shadow-none hover:bg-accent hover:text-foreground/80 sm:max-w-48 sm:px-3";

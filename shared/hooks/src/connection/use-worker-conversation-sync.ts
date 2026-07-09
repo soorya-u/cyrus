@@ -1,18 +1,14 @@
+import { appendChunkToCache } from "@cyrus/utils/conversation-cache";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
 import { Result } from "better-result";
 import { useEffect } from "react";
-import type { ControllerConnection } from "@/lib/orpc";
-import { appendChunkToCache } from "@/utils/conversation-cache";
+import { useRtc } from "../contexts/rtc";
 
 export function useWorkerConversationSync(): void {
 	const queryClient = useQueryClient();
-	const { workerConnection } = useRouteContext({ strict: false }) as {
-		workerConnection?: ControllerConnection;
-	};
+	const { connection: workerConnection } = useRtc();
 
 	useEffect(() => {
-		if (!workerConnection) return;
 		let stopped = false;
 		let iterator: Awaited<ReturnType<typeof workerConnection.client.subscribe>>;
 
@@ -27,8 +23,6 @@ export function useWorkerConversationSync(): void {
 				appendChunkToCache(queryClient, chunk);
 			}
 		}).then((result) => {
-			// expected when the connection is closed (navigation, unmount)
-			// while subscribe() is mid-pull — only surface genuine failures
 			if (result.isErr() && !stopped) {
 				console.error("worker conversation sync failed", result.error);
 			}

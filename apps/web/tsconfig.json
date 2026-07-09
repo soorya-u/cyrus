@@ -13,6 +13,7 @@
       "@/*": ["./src/*"],
       "@cyrus/hooks": ["../../shared/hooks/src/index.ts"],
       "@cyrus/hooks/*": ["../../shared/hooks/src/*"],
+      "@cyrus/providers/*": ["../../shared/providers/src/*"],
       "@cyrus/utils/*": ["../../shared/utils/src/*"]
     }
   }

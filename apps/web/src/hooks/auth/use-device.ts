@@ -1,8 +1,8 @@
+import { AUTH_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { useMutation } from "@tanstack/react-query";
 import { log } from "evlog";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AUTH_OPERATION_KEYS } from "@/constants/operation-keys";
 import { authClient } from "@/lib/auth";
 
 export type DeviceOutcome = "pending" | "approved" | "denied";

@@ -1,13 +1,10 @@
 import "@/global.css";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { initLogger } from "evlog";
+import { QueryProvider } from "@cyrus/providers/query-provider";
+import { initLogger, log } from "evlog";
 import { Stack } from "expo-router";
 import { HeroUINativeProvider } from "heroui-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-
-import { AppThemeProvider } from "@/contexts/app-theme-context";
-import { queryClient } from "@/utils/query-client";
 
 initLogger({ env: { service: "cyrus/mobile" } });
 
@@ -29,16 +26,16 @@ function StackLayout() {
 
 export default function Layout() {
 	return (
-		<QueryClientProvider client={queryClient}>
+		<QueryProvider
+			onError={(error) => log.error({ kind: "query_error", error })}
+		>
 			<GestureHandlerRootView style={{ flex: 1 }}>
 				<KeyboardProvider>
-					<AppThemeProvider>
-						<HeroUINativeProvider>
-							<StackLayout />
-						</HeroUINativeProvider>
-					</AppThemeProvider>
+					<HeroUINativeProvider>
+						<StackLayout />
+					</HeroUINativeProvider>
 				</KeyboardProvider>
 			</GestureHandlerRootView>
-		</QueryClientProvider>
+		</QueryProvider>
 	);
 }
