@@ -3,6 +3,7 @@ import { ensureThread } from "@cyrus/database/repositories/threads";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
 import { Result } from "better-result";
+import { log } from "evlog";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
 import {
 	isStreamingDelta,
@@ -86,10 +87,8 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 			async function emit(event: ChatChunk["event"]): Promise<void> {
 				trackDelta(event, messageBuffers, thoughtBuffers);
 
-				if (isStreamingDelta(event)) {
-					publishChunk({ threadId, turnId, seq: 0, event });
-					return;
-				}
+				if (isStreamingDelta(event))
+					return publishChunk({ threadId, turnId, seq: 0, event });
 
 				const persistEvent = resolvePersistEvent(
 					event,
@@ -129,7 +128,13 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 					return;
 				}
 
-				console.error("terminal event persist failed", entry.error);
+				log.error({
+					kind: "terminal_event_persist",
+					error: entry.error,
+					threadId,
+					turnId,
+					event: event.type,
+				});
 				publishChunk({ threadId, turnId, seq: 0, event });
 			}
 
@@ -144,11 +149,11 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 			})
 				.then((result) => {
 					result.tapError((error) => {
-						console.error("chat turn failed", error);
+						log.error({ kind: "chat_turn_failed", error, threadId, turnId });
 					});
 				})
 				.catch((error) => {
-					console.error("chat turn failed", error);
+					log.error({ kind: "chat_turn_failed", error, threadId, turnId });
 				});
 
 			return { threadId, turnId };

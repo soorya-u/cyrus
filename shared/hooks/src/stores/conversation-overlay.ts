@@ -217,20 +217,17 @@ function commitLiveChunk(setState: OverlaySetState, chunk: ChatChunk): void {
 		const byThread = new Map<string, ThreadOverlay>(state.byThread);
 		const overlay = getOrCreateOverlay(byThread, threadId);
 
-		if (shouldSkipPersistedChunk(seq, overlay)) {
-			return state;
-		}
+		if (shouldSkipPersistedChunk(seq, overlay)) return state;
 
 		applyChunkToOverlay(overlay, chunk);
 		return { byThread };
 	});
 
-	if (chunk.event.type === "turn_completed") {
+	if (chunk.event.type === "turn_completed")
 		settleTurnWaiter(threadId, turnId, "completed");
-	}
-	if (chunk.event.type === "turn_interrupted") {
+
+	if (chunk.event.type === "turn_interrupted")
 		settleTurnWaiter(threadId, turnId, "interrupted");
-	}
 }
 
 export const useConversationOverlay = create<ConversationOverlayState>(

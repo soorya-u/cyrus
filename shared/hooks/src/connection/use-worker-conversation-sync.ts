@@ -2,6 +2,7 @@ import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { useQueryClient } from "@tanstack/react-query";
 import { Result } from "better-result";
+import { log } from "evlog";
 import { useEffect, useEffectEvent } from "react";
 import { useRtc } from "../contexts/rtc";
 import { useConversationOverlay } from "../stores/conversation-overlay";
@@ -29,7 +30,7 @@ export function useWorkerConversationSync(): void {
 	});
 
 	const onSyncError = useEffectEvent((error: unknown) => {
-		console.error("worker conversation sync failed", error);
+		log.error({ kind: "worker_conversation_sync", error });
 	});
 
 	useEffect(() => {

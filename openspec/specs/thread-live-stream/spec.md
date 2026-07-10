@@ -27,7 +27,7 @@ The worker SHALL route live `ChatChunk` delivery through a `ThreadEventBus` impl
 
 ### Requirement: Active-turn replay buffer
 
-The `ThreadEventBus` in `apps/cli/src/queue/bus.ts` SHALL maintain an in-memory `activeTurnLogs` buffer per in-progress `turnId` containing all `ChatChunk`s emitted during that turn, including ephemeral deltas with `seq === 0`. The buffer SHALL be evicted when `turn_completed` or `turn_interrupted` is published for that `turnId`.
+The `ThreadEventBus` in `apps/cli/src/queue/bus.ts` SHALL maintain an in-memory `activeTurnLogs` buffer per in-progress `turnId` containing `ChatChunk`s emitted during that turn, including ephemeral deltas with `seq === 0`. Each per-turn log SHALL be bounded to `maxChunksPerTurn` (default 10,000). When a log exceeds that limit, the bus SHALL evict ephemeral deltas (`seq === 0`) first, then the oldest remaining chunks, before appending new ones. The buffer SHALL be evicted when `turn_completed` or `turn_interrupted` is published for that `turnId`. On worker shutdown, `ThreadEventBus.closeAll()` SHALL clear all `activeTurnLogs` and `turnThreads` entries. When a chat turn fails or is cancelled, the worker SHALL publish `turn_interrupted` for that turn (including when durable persistence of the terminal event fails) so the buffer is evicted. Truncated replay is best-effort: clients that need full turn state after truncation or turn completion SHALL reconcile from durable history via `getConversations` using `snapshotHighWaterMark` from `watchThread`; the overlay merge path already applies that snapshot on refresh.
 
 #### Scenario: Late watcher receives in-flight deltas
 
@@ -40,6 +40,28 @@ The `ThreadEventBus` in `apps/cli/src/queue/bus.ts` SHALL maintain an in-memory 
 - **WHEN** `turn_completed` is published for `turnId` T
 - **THEN** `activeTurnLogs` for T is removed
 - **AND** a subsequent `watchThread` does not replay chunks from turn T (durable history comes from `getConversations`)
+
+#### Scenario: Interrupted turn log is evicted
+
+- **WHEN** `turn_interrupted` is published for `turnId` T (including after a failed or cancelled turn)
+- **THEN** `activeTurnLogs` for T is removed
+
+#### Scenario: Per-turn log is bounded
+
+- **WHEN** a turn emits more than `maxChunksPerTurn` chunks
+- **THEN** the bus evicts ephemeral deltas first, then oldest chunks, keeping the log at or below the limit
+- **AND** subsequent live chunks continue to be delivered to watching peers
+
+#### Scenario: Worker shutdown clears replay buffers
+
+- **WHEN** the worker shuts down and calls `ThreadEventBus.closeAll()`
+- **THEN** all `activeTurnLogs` and `turnThreads` entries are cleared
+
+#### Scenario: Truncated replay defers to durable snapshot
+
+- **WHEN** a late watcher receives a truncated active-turn replay
+- **AND** the turn later completes or the client refreshes
+- **THEN** the client loads full persisted history from `getConversations` and merges it with any live overlay state
 
 ### Requirement: watchThread and unwatchThread RPCs
 

@@ -34,6 +34,7 @@
         "better-result": "catalog:",
         "commander": "^15.0.0",
         "diff": "^7.0.0",
+        "evlog": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {
