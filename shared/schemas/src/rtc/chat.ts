@@ -252,6 +252,7 @@ export const ChatInputSchema = z.object({
 	agentName: z.string(),
 	message: z.string(),
 	threadId: z.uuid().optional(),
+	turnId: z.uuid().optional(),
 	projectId: z.string(),
 });
 

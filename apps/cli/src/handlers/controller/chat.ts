@@ -66,7 +66,13 @@ async function runTurn({
 export function chatHandlers({ os, runtime }: ControllerDeps) {
 	return {
 		chat: os.chat.handler(async ({ input, context }) => {
-			const { agentName, threadId = randomId(), message, projectId } = input;
+			const {
+				agentName,
+				threadId = randomId(),
+				turnId = randomId(),
+				message,
+				projectId,
+			} = input;
 
 			const thread = await ensureThread(threadId, projectId, {
 				agentName,
@@ -74,7 +80,6 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 			});
 			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
 
-			const turnId = randomId();
 			const messageBuffers = new Map<string, string>();
 			const thoughtBuffers = new Map<string, string>();
 
@@ -164,8 +169,23 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				yield chunk;
 		}),
 
-		cancel: os.cancel.handler(async ({ input }) => {
+		cancel: os.cancel.handler(async ({ input, context }) => {
+			// Snapshot before awaiting — a follow-up chat() can start while cancel
+			// is in flight and must not be interrupted by this request.
+			const activeTurnIds = context.eventBus.getActiveTurnIdsForThread(
+				input.threadId
+			);
+
 			await runtime.threadCoordinator.cancel(input.agentName, input.threadId);
+
+			for (const turnId of activeTurnIds)
+				context.eventBus.publish({
+					threadId: input.threadId,
+					turnId,
+					seq: 0,
+					event: { type: "turn_interrupted" },
+				});
+
 			return {};
 		}),
 	};

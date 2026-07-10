@@ -8,12 +8,14 @@ export function Composer({
 	onSend,
 	onStop,
 	busy = false,
+	stopping = false,
 }: {
 	projectId: string;
 	threadId: string;
 	onSend: (text: string) => void;
 	onStop?: () => void;
 	busy?: boolean;
+	stopping?: boolean;
 }) {
 	const [value, setValue] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -30,7 +32,7 @@ export function Composer({
 
 	function submit() {
 		const text = value.trim();
-		if (!text || busy) return;
+		if (!text || busy || stopping) return;
 
 		onSend(text);
 		setValue("");
@@ -97,6 +99,7 @@ export function Composer({
 											busy={busy}
 											canSend={value.trim().length > 0}
 											onStop={onStop}
+											stopping={stopping}
 										/>
 									</div>
 								</div>

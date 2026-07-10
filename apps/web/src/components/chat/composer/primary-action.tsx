@@ -4,11 +4,25 @@ export function ComposerPrimaryAction({
 	busy,
 	canSend,
 	onStop,
+	stopping = false,
 }: {
 	busy: boolean;
 	canSend: boolean;
 	onStop?: () => void;
+	stopping?: boolean;
 }) {
+	if (stopping)
+		return (
+			<button
+				aria-label="Stopping generation"
+				className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/90 text-primary-foreground opacity-30 shadow-none sm:h-8 sm:w-8"
+				disabled
+				type="button"
+			>
+				<SquareIcon className="size-3 fill-current" />
+			</button>
+		);
+
 	if (busy)
 		return (
 			<button

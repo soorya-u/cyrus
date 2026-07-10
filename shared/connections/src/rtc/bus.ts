@@ -6,6 +6,7 @@ export type ThreadEventBus = {
 	unwatch(peerId: string, threadId: string): void;
 	ensureWatch(peerId: string, threadId: string): void;
 	isWatching(peerId: string, threadId: string): boolean;
+	getActiveTurnIdsForThread(threadId: string): string[];
 	subscribe(peerId: string): AsyncGenerator<ChatChunk>;
 	close(peerId: string): void;
 	closeAll(): void;

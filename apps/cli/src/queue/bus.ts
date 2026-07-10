@@ -130,6 +130,14 @@ export function createThreadEventBus(
 			return watchedThreads.get(peerId)?.has(threadId) ?? false;
 		},
 
+		getActiveTurnIdsForThread(threadId) {
+			const turnIds: string[] = [];
+			for (const turnId of activeTurnLogs.keys()) {
+				if (turnThreads.get(turnId) === threadId) turnIds.push(turnId);
+			}
+			return turnIds;
+		},
+
 		async *subscribe(peerId) {
 			closePeerDelivery(peerId);
 			const peer: PeerDelivery = {

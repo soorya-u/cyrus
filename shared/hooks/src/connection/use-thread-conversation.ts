@@ -1,18 +1,21 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
-import type { ConversationEntry } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
+import { mergeConversationEntries } from "@cyrus/utils/conversations/cache";
 import { fold } from "@cyrus/utils/fold";
-import { mergeSnapshotAndOverlay } from "@cyrus/utils/merge-conversation";
-import { useQuery } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { Result } from "better-result";
 import { log } from "evlog";
 import { useEffect, useEffectEvent, useMemo } from "react";
 import { useRtc } from "../contexts/rtc";
-import { useConversationOverlay } from "../stores/conversation-overlay";
 
 const EMPTY: ThreadConversation = {
 	diffs: [],
 	messages: [],
+	thoughts: [],
 	toolCalls: [],
 	turns: [],
 };
@@ -20,28 +23,33 @@ const EMPTY: ThreadConversation = {
 export function useThreadConversation(
 	threadId: string | undefined
 ): ThreadConversation {
+	const queryClient = useQueryClient();
 	const { orpc: orpcController, connection: workerConnection } = useRtc();
-	const applySnapshot = useConversationOverlay((state) => state.applySnapshot);
-	const applyWatermark = useConversationOverlay(
-		(state) => state.applyWatermark
-	);
-	const clearTurn = useConversationOverlay((state) => state.clearTurn);
-	const liveEntries = useConversationOverlay((state) =>
-		threadId ? state.getLiveEntries(threadId) : []
-	);
 
-	const conversationsQuery = useQuery({
-		...orpcController.getConversations.queryOptions({
-			queryKey: RTC_OPERATION_KEYS.getConversations(threadId ?? "none"),
-			input: { threadId: threadId ?? "" },
-		}),
-		enabled: Boolean(threadId),
+	const queryKey = RTC_OPERATION_KEYS.getConversations(threadId ?? "none");
+	const baseQueryOptions = orpcController.getConversations.queryOptions({
+		queryKey,
+		input: { threadId: threadId ?? "" },
 	});
 
-	const onWatchResult = useEffectEvent(
-		(tid: string, snapshotHighWaterMark: number) =>
-			applyWatermark(tid, snapshotHighWaterMark)
-	);
+	const conversationsQuery = useQuery({
+		...baseQueryOptions,
+		enabled: Boolean(threadId),
+		placeholderData: keepPreviousData,
+		staleTime: Number.POSITIVE_INFINITY,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
+		queryFn: async (context) => {
+			const fetched = await baseQueryOptions.queryFn(context);
+			const cached = queryClient.getQueryData<typeof fetched>(queryKey);
+			return {
+				conversations: mergeConversationEntries(
+					cached?.conversations ?? [],
+					fetched.conversations
+				),
+			};
+		},
+	});
 
 	const onWatchError = useEffectEvent((error: unknown, tid: string) => {
 		log.error({ kind: "watch_thread", error, threadId: tid });
@@ -50,21 +58,6 @@ export function useThreadConversation(
 	const onUnwatchError = useEffectEvent((error: unknown, tid: string) => {
 		log.error({ kind: "unwatch_thread", error, threadId: tid });
 	});
-
-	const syncSnapshot = useEffectEvent(
-		(tid: string, conversations: ConversationEntry[]) => {
-			applySnapshot(tid, conversations);
-
-			for (const entry of conversations) {
-				if (
-					entry.chunk.event.type === "turn_completed" ||
-					entry.chunk.event.type === "turn_interrupted"
-				) {
-					clearTurn(tid, entry.chunk.turnId);
-				}
-			}
-		}
-	);
 
 	useEffect(() => {
 		if (!threadId) return;
@@ -76,8 +69,7 @@ export function useThreadConversation(
 		).then((result) => {
 			if (abort.signal.aborted) return;
 			result.match({
-				ok: ({ snapshotHighWaterMark }) =>
-					onWatchResult(threadId, snapshotHighWaterMark),
+				ok: () => undefined,
 				err: (error) => onWatchError(error, threadId),
 			});
 		});
@@ -90,23 +82,15 @@ export function useThreadConversation(
 		};
 	}, [threadId, workerConnection]);
 
-	useEffect(() => {
-		if (!(threadId && conversationsQuery.data?.conversations)) return;
-		syncSnapshot(threadId, conversationsQuery.data.conversations);
-	}, [threadId, conversationsQuery.data]);
-
-	return useMemo(() => {
-		const merged = mergeSnapshotAndOverlay(
-			conversationsQuery.data?.conversations ?? [],
-			liveEntries
-		);
-
-		return fold(merged).match({
-			ok: (conversation) => conversation,
-			err: (error) => {
-				log.error({ kind: "fold_conversation", error, threadId });
-				return EMPTY;
-			},
-		});
-	}, [conversationsQuery.data?.conversations, liveEntries, threadId]);
+	return useMemo(
+		() =>
+			fold(conversationsQuery.data?.conversations ?? []).match({
+				ok: (conversation) => conversation,
+				err: (error) => {
+					log.error({ kind: "fold_conversation", error, threadId });
+					return EMPTY;
+				},
+			}),
+		[conversationsQuery.data?.conversations, threadId]
+	);
 }
