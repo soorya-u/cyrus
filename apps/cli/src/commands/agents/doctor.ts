@@ -18,9 +18,7 @@ async function checkAgent(entry: AgentEntry): Promise<HealthResult> {
 function printHealth(name: string, result: HealthResult): void {
 	const status = result.healthy ? green("healthy") : red("unhealthy");
 	print.line`${name}: ${status}`;
-	if (result.error) {
-		print.line`  ${result.error}`;
-	}
+	if (result.error) print.line`  ${result.error}`;
 }
 
 async function checkSingleAgentHealth(name: string) {

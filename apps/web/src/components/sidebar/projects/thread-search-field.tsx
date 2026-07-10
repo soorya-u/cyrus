@@ -1,5 +1,3 @@
-"use client";
-
 import { SearchIcon } from "lucide-react";
 
 type ThreadSearchFieldProps = {

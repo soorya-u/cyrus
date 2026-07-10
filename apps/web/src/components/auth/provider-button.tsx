@@ -1,5 +1,3 @@
-"use client";
-
 import { authMutationKeys, getProviderName } from "@better-auth-ui/core";
 import { providerIcons, useAuth, useSignInSocial } from "@better-auth-ui/react";
 import { useIsMutating } from "@tanstack/react-query";

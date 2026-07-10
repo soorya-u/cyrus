@@ -1,4 +1,4 @@
-import type { ThreadEventBus } from "@cyrus/connections/rtc/thread-event-bus";
+import type { ThreadEventBus } from "@cyrus/connections/rtc/bus";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 
 const DEFAULT_MAX_CHUNKS_PER_TURN = 10_000;

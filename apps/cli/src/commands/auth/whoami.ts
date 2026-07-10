@@ -24,11 +24,8 @@ export async function whoami(opts: WhoamiOptions): Promise<void> {
 	}
 
 	const name = await get("name");
+
 	print.line`${field("User")}${data.user.name}`;
-	if (name) {
-		print.line`${field("Device")}${name}`;
-	}
-	if (opts.email) {
-		print.line`${field("Email")}${data.user.email}`;
-	}
+	if (name) print.line`${field("Device")}${name}`;
+	if (opts.email) print.line`${field("Email")}${data.user.email}`;
 }

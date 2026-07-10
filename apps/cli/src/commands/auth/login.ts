@@ -4,7 +4,7 @@ import { authClient } from "@/lib/auth";
 import { getOrCreate, set } from "@/store/config";
 import { blue, bold, cyan, print, underline } from "@/utils/style";
 
-export const CLIENT_ID = "cyrus-cli";
+export const CLIENT_ID = "cyrusd";
 export const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
 export async function login(): Promise<void> {

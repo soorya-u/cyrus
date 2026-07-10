@@ -1,6 +1,7 @@
 import type { ConnectionErrorRenderProps } from "@cyrus/providers/types";
 import { Button } from "@/components/ui/button";
 
+// TODO: Just a Dummy. Change Later
 export function ConnectionError({ error, retry }: ConnectionErrorRenderProps) {
 	return (
 		<div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-6 text-center">

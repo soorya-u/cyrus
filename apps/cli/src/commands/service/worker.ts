@@ -68,6 +68,7 @@ export async function worker(): Promise<void> {
 		await connection.close();
 		process.exit(0);
 	};
+
 	process.on("SIGINT", shutdown);
 	process.on("SIGTERM", shutdown);
 	process.on("SIGBREAK", shutdown);

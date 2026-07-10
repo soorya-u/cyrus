@@ -11,9 +11,8 @@ export async function stop(): Promise<void> {
 
 	Result.try(() => process.kill(pid, "SIGTERM"));
 
-	for (let i = 0; i < 20 && isAlive(pid); i++) {
-		await Bun.sleep(50);
-	}
+	for (let i = 0; i < 20 && isAlive(pid); i++) await Bun.sleep(50);
+
 	if (isAlive(pid)) {
 		print.error`Worker (pid ${pid}) did not stop in time.`;
 		process.exit(1);
