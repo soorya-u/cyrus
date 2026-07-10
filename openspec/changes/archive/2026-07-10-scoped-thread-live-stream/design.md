@@ -36,7 +36,7 @@ Mid-stream page refresh loses all in-flight token deltas: Turso has only persist
 
 **Structure:**
 
-```
+```text
 ThreadEventBus
 ├── watchers: Map<peerId, Set<threadId>>
 ├── peers: Map<peerId, { queue, resolve, closed }>   // subscribe delivery

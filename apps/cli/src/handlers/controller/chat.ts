@@ -172,19 +172,25 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 		cancel: os.cancel.handler(async ({ input, context }) => {
 			// Snapshot before awaiting — a follow-up chat() can start while cancel
 			// is in flight and must not be interrupted by this request.
-			const activeTurnIds = context.eventBus.getActiveTurnIdsForThread(
+			const snapshottedTurnIds = context.eventBus.getActiveTurnIdsForThread(
 				input.threadId
 			);
 
 			await runtime.threadCoordinator.cancel(input.agentName, input.threadId);
 
-			for (const turnId of activeTurnIds)
+			const stillActiveTurnIds = new Set(
+				context.eventBus.getActiveTurnIdsForThread(input.threadId)
+			);
+
+			for (const turnId of snapshottedTurnIds) {
+				if (!stillActiveTurnIds.has(turnId)) continue;
 				context.eventBus.publish({
 					threadId: input.threadId,
 					turnId,
 					seq: 0,
 					event: { type: "turn_interrupted" },
 				});
+			}
 
 			return {};
 		}),

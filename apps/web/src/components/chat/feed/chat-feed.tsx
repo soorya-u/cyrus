@@ -40,7 +40,7 @@ export function ChatFeed({
 		if (feed.length === 0) return;
 		const frame = requestAnimationFrame(() => scrollToBottom());
 		return () => cancelAnimationFrame(frame);
-	}, [feed.length]);
+	}, [feed.length, conversation]);
 
 	if (feed.length === 0)
 		return (

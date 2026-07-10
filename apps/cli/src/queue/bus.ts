@@ -26,6 +26,7 @@ export function createThreadEventBus(
 	const watchedThreads = new Map<string, Set<string>>();
 	const activeTurnLogs = new Map<string, ChatChunk[]>();
 	const turnThreads = new Map<string, string>();
+	let closed = false;
 
 	function getWatchedThreads(peerId: string): Set<string> {
 		let set = watchedThreads.get(peerId);
@@ -102,6 +103,8 @@ export function createThreadEventBus(
 
 	return {
 		publish(chunk) {
+			if (closed) return;
+
 			const terminal = isTerminalEvent(chunk.event);
 			if (!terminal) {
 				appendToTurnLog(chunk);
@@ -175,6 +178,7 @@ export function createThreadEventBus(
 		},
 
 		closeAll() {
+			closed = true;
 			for (const peerId of [...peers.keys()]) {
 				closePeerDelivery(peerId);
 			}

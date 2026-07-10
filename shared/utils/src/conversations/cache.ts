@@ -267,6 +267,7 @@ export function pruneEphemeralTurnEntries(
 ): void {
 	updateCache(queryClient, threadId, (entries) => {
 		if (!canPruneEphemeralTurn(entries, turnId)) return entries;
+		completedTurnKeys.delete(turnKey(threadId, turnId));
 		return entries.filter(
 			(entry) => !(entry.chunk.turnId === turnId && entry.seq === 0)
 		);
@@ -313,8 +314,12 @@ export function applyChunkToCache(
 
 	commitChunk(queryClient, chunk);
 
-	if (isTerminalEvent(chunk.event))
+	if (isTerminalEvent(chunk.event)) {
 		pruneEphemeralTurnEntries(queryClient, chunk.threadId, chunk.turnId);
+		if (chunk.event.type === "turn_interrupted") {
+			completedTurnKeys.delete(turnKey(chunk.threadId, chunk.turnId));
+		}
+	}
 }
 
 export function appendOptimisticUserMessage(

@@ -27,7 +27,7 @@ The worker SHALL route live `ChatChunk` delivery through a `ThreadEventBus` impl
 
 ### Requirement: Active-turn replay buffer
 
-The `ThreadEventBus` in `apps/cli/src/queue/bus.ts` SHALL maintain an in-memory `activeTurnLogs` buffer per in-progress `turnId` containing `ChatChunk`s emitted during that turn, including ephemeral deltas with `seq === 0`. Each per-turn log SHALL be bounded to `maxChunksPerTurn` (default 10,000). When a log exceeds that limit, the bus SHALL evict ephemeral deltas (`seq === 0`) first, then the oldest remaining chunks, before appending new ones. The buffer SHALL be evicted when `turn_completed` or `turn_interrupted` is published for that `turnId`. On worker shutdown, `ThreadEventBus.closeAll()` SHALL clear all `activeTurnLogs` and `turnThreads` entries. When a chat turn fails or is cancelled, the worker SHALL publish `turn_interrupted` for that turn (including when durable persistence of the terminal event fails) so the buffer is evicted. Truncated replay is best-effort: clients that need full turn state after truncation or turn completion SHALL reconcile from durable history via `getConversations` using `snapshotHighWaterMark` from `watchThread`; the overlay merge path already applies that snapshot on refresh.
+The `ThreadEventBus` in `apps/cli/src/queue/bus.ts` SHALL maintain an in-memory `activeTurnLogs` buffer per in-progress `turnId` containing `ChatChunk`s emitted during that turn, including ephemeral deltas with `seq === 0`. Each per-turn log SHALL be bounded to `maxChunksPerTurn` (default 10,000). When a log exceeds that limit, the bus SHALL evict ephemeral deltas (`seq === 0`) first, then the oldest remaining chunks, before appending new ones. The buffer SHALL be evicted when `turn_completed` or `turn_interrupted` is published for that `turnId`. On worker shutdown, the worker SHALL stop accepting new publishes before calling `ThreadEventBus.closeAll()`, which sets a closed flag so `publish()` ignores subsequent chunks and clears all `activeTurnLogs` and `turnThreads` entries. When a chat turn fails or is cancelled, the worker SHALL publish `turn_interrupted` for that turn (including when durable persistence of the terminal event fails, via a non-durable `seq === 0` publish) so the buffer is evicted. Truncated replay is best-effort: clients that need full turn state after truncation or turn completion SHALL reconcile from durable history via `getConversations` using `snapshotHighWaterMark` from `watchThread`; the query-cache merge path applies that snapshot on refresh.
 
 #### Scenario: Late watcher receives in-flight deltas
 
@@ -55,13 +55,14 @@ The `ThreadEventBus` in `apps/cli/src/queue/bus.ts` SHALL maintain an in-memory 
 #### Scenario: Worker shutdown clears replay buffers
 
 - **WHEN** the worker shuts down and calls `ThreadEventBus.closeAll()`
-- **THEN** all `activeTurnLogs` and `turnThreads` entries are cleared
+- **THEN** `publish()` rejects subsequent chunks
+- **AND** all `activeTurnLogs` and `turnThreads` entries are cleared
 
 #### Scenario: Truncated replay defers to durable snapshot
 
 - **WHEN** a late watcher receives a truncated active-turn replay
 - **AND** the turn later completes or the client refreshes
-- **THEN** the client loads full persisted history from `getConversations` and merges it with any live overlay state
+- **THEN** the client loads full persisted history from `getConversations` and merges it with the query cache
 
 ### Requirement: watchThread and unwatchThread RPCs
 
@@ -96,7 +97,13 @@ The `chat` RPC SHALL accept `ChatInput` and return `{ threadId, turnId }` withou
 
 ### Requirement: emit publishes through the bus
 
-`chat.ts`'s `emit()` function SHALL call `ThreadEventBus.publish(chunk)` for all events. Persisted events SHALL still be written to Turso before publish (persist-before-broadcast from conversation-persistence). Ephemeral deltas (`seq === 0`) SHALL be published without a Turso write.
+`chat.ts`'s `emit()` function SHALL call `ThreadEventBus.publish(chunk)` for all events. Persisted events SHALL still be written to Turso before publish (persist-before-broadcast from conversation-persistence). Ephemeral deltas (`seq === 0`) SHALL be published without a Turso write. When durable persistence of a terminal event (`turn_completed` or `turn_interrupted`) fails, `emitTerminal()` SHALL still publish a non-durable `seq === 0` terminal chunk so watchers and replay buffers are updated.
+
+#### Scenario: Terminal event published when persistence fails
+
+- **WHEN** `emitTerminal()` fails to persist `turn_interrupted` or `turn_completed`
+- **THEN** a `seq === 0` terminal chunk is still published via `ThreadEventBus.publish()`
+- **AND** the active-turn replay buffer for that `turnId` is evicted
 
 #### Scenario: Persisted event carries seq on publish
 
