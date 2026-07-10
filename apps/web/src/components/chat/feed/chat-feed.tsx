@@ -24,6 +24,14 @@ export function ChatFeed({
 }) {
 	const feed = useThreadFeed(conversation, activeTurnId);
 	const rootRef = useRef<HTMLDivElement | null>(null);
+	const streamingContentKey = [
+		...conversation.messages
+			.filter((message) => message.streaming)
+			.map((message) => message.content.length),
+		...conversation.thoughts
+			.filter((thought) => thought.streaming)
+			.map((thought) => thought.content.length),
+	].join(":");
 
 	const scrollToBottom = useEffectEvent(() => {
 		scrollFeedToBottom(rootRef.current);
@@ -40,7 +48,7 @@ export function ChatFeed({
 		if (feed.length === 0) return;
 		const frame = requestAnimationFrame(() => scrollToBottom());
 		return () => cancelAnimationFrame(frame);
-	}, [feed.length, conversation]);
+	}, [feed.length, streamingContentKey]);
 
 	if (feed.length === 0)
 		return (
