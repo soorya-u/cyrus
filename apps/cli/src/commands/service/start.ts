@@ -19,9 +19,7 @@ async function runWorker(): Promise<void> {
 	process.on("exit", () => {
 		Result.try(() => {
 			const stored = Number.parseInt(readFileSync(PID_PATH, "utf8").trim(), 10);
-			if (stored === ownPid) {
-				unlinkSync(PID_PATH);
-			}
+			if (stored === ownPid) unlinkSync(PID_PATH);
 		});
 	});
 	const { worker } = await import("./worker");
@@ -29,10 +27,7 @@ async function runWorker(): Promise<void> {
 }
 
 export async function start(opts: StartOptions): Promise<void> {
-	if (env.CYRUS_DAEMON) {
-		await runWorker();
-		return;
-	}
+	if (env.CYRUS_DAEMON) return await runWorker();
 
 	const running = await runningPid();
 	if (running !== null) {
@@ -50,9 +45,7 @@ export async function start(opts: StartOptions): Promise<void> {
 		});
 		closeSync(log);
 		child.unref();
-		if (child.pid) {
-			await writePid(child.pid);
-		}
+		if (child.pid) await writePid(child.pid);
 
 		// brief wait to catch immediate startup failures (e.g. not logged in)
 		await Bun.sleep(300);

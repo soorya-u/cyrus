@@ -1,4 +1,7 @@
-import { getConversations } from "@cyrus/database/repositories/conversations";
+import {
+	getConversations,
+	getSnapshotHighWaterMark,
+} from "@cyrus/database/repositories/conversations";
 import {
 	createThread as createStoredThread,
 	deleteThread,
@@ -60,6 +63,30 @@ export function threadsHandlers(os: ControllerOs) {
 				});
 			}
 
+			return {};
+		}),
+
+		watchThread: os.watchThread.handler(async ({ input, context }) => {
+			const thread = await getThread(input.threadId);
+			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
+			if (!thread.value) {
+				throwOrpcFromRepositoryError({
+					type: "not_found",
+					entity: "thread",
+					id: input.threadId,
+				});
+			}
+
+			context.eventBus.watch(context.peerId, input.threadId);
+
+			return (await getSnapshotHighWaterMark(input.threadId)).match({
+				ok: (snapshotHighWaterMark) => ({ snapshotHighWaterMark }),
+				err: throwOrpcFromRepositoryError,
+			});
+		}),
+
+		unwatchThread: os.unwatchThread.handler(({ input, context }) => {
+			context.eventBus.unwatch(context.peerId, input.threadId);
 			return {};
 		}),
 	};

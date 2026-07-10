@@ -66,7 +66,7 @@ export function buildBrowseGroups(input: {
 }): BrowseGroup[] {
 	const items: BrowseActionItem[] = [];
 
-	if (input.canBrowseUp) {
+	if (input.canBrowseUp)
 		items.push({
 			kind: "action",
 			value: "browse:up",
@@ -75,9 +75,8 @@ export function buildBrowseGroups(input: {
 			keepOpen: true,
 			run: input.browseUp,
 		});
-	}
 
-	for (const entry of input.browseEntries) {
+	for (const entry of input.browseEntries)
 		items.push({
 			kind: "action",
 			value: `browse:${entry.fullPath}`,
@@ -88,7 +87,6 @@ export function buildBrowseGroups(input: {
 				input.browseTo(entry.name);
 			},
 		});
-	}
 
 	return [{ value: "directories", label: "Directories", items }];
 }

@@ -28,6 +28,8 @@ export const RTC_OPERATION_KEYS = {
 	setModel: ["controller", "set-model"],
 	setEffort: ["controller", "set-effort"],
 	setPersona: ["controller", "set-persona"],
+	watchThread: ["controller", "watch-thread"],
+	unwatchThread: ["controller", "unwatch-thread"],
 } as const;
 
 export const AUTH_OPERATION_KEYS = {

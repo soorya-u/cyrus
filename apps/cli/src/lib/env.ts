@@ -25,7 +25,6 @@ export const env = createEnv({
 			.int()
 			.positive()
 			.default(30 * 60 * 1000),
-		CYRUS_STREAM_THROTTLING_MS: z.coerce.number().positive().default(25),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

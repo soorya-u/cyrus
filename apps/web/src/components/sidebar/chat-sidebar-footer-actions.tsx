@@ -24,9 +24,7 @@ export function ChatSidebarFooterActions() {
 	const { resolvedTheme, setTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
 
-	useEffect(() => {
-		setMounted(true);
-	}, []);
+	useEffect(() => setMounted(true), []);
 
 	const theme = resolvedTheme === "dark" ? "dark" : "light";
 

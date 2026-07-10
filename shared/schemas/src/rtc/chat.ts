@@ -252,8 +252,16 @@ export const ChatInputSchema = z.object({
 	agentName: z.string(),
 	message: z.string(),
 	threadId: z.uuid().optional(),
+	turnId: z.uuid().optional(),
 	projectId: z.string(),
 });
+
+export const ChatOutputSchema = z.object({
+	threadId: z.string(),
+	turnId: z.string(),
+});
+
+export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
 export const ChatChunkSchema = z.object({
 	threadId: z.string(),

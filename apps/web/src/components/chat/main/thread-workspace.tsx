@@ -24,19 +24,27 @@ export function ThreadWorkspace({
 	threadId,
 }: ThreadWorkspaceProps) {
 	const navigate = useNavigate();
-	const { threads, sendMessage, stopThread, createThread } =
-		useControllerThreads();
+	const {
+		threads,
+		sendMessage,
+		stopThread,
+		isThreadStopping,
+		isThreadActive,
+		getActiveTurnId,
+	} = useControllerThreads();
 	const { diffOpen, setDiffOpen } = useChatUiStore();
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
 	const conversation = useThreadConversation(baseThread ? threadId : undefined);
+	const stopping = isThreadStopping(threadId);
+	const running = conversation.turns.some((turn) => turn.state === "running");
+	const active = isThreadActive(threadId);
 	const thread: ThreadView | null = baseThread
 		? { ...baseThread, ...conversation }
 		: null;
-	const busy = conversation.turns.at(-1)?.state === "running";
 
 	useEffect(() => {
-		if (thread && thread.projectId !== projectId) {
+		if (thread && thread.projectId !== projectId)
 			navigate({
 				to: "/workers/$workerId/p/$projectId/t/$threadId",
 				params: {
@@ -45,19 +53,10 @@ export function ThreadWorkspace({
 					threadId: thread.id,
 				},
 			});
-		}
 	}, [navigate, projectId, thread, workerId]);
 
 	async function handleSend(text: string) {
-		if (!thread) {
-			const id = await createThread(projectId);
-			await sendMessage(id, text);
-			navigate({
-				to: "/workers/$workerId/p/$projectId/t/$threadId",
-				params: { workerId, projectId, threadId: id },
-			});
-			return;
-		}
+		if (!thread) return;
 		await sendMessage(thread.id, text);
 	}
 
@@ -69,12 +68,17 @@ export function ThreadWorkspace({
 
 			<div className="flex min-h-0 flex-1">
 				<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-					<ChatFeed className="min-h-0" conversation={conversation} />
+					<ChatFeed
+						activeTurnId={getActiveTurnId(thread.id)}
+						className="min-h-0"
+						conversation={conversation}
+					/>
 					<Composer
-						busy={Boolean(busy)}
+						busy={running || active}
 						onSend={handleSend}
 						onStop={async () => await stopThread(thread.id)}
 						projectId={projectId}
+						stopping={stopping}
 						threadId={thread.id}
 					/>
 				</div>

@@ -1,14 +1,14 @@
-import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import type { ServerEvent } from "@cyrus/schemas/signaling";
 import { Result } from "better-result";
 import type { SignalingClient } from "../contracts/signaling";
-import type { PeerBroadcaster } from "./broadcaster";
+import type { ThreadEventBus } from "./bus";
 
 export type { SignalingClient } from "../contracts/signaling";
+export type { ThreadEventBus } from "./bus";
 
 export type RtcContext = {
 	peerId: string;
-	broadcaster: PeerBroadcaster<ChatChunk>;
+	eventBus: ThreadEventBus;
 };
 
 // fans one signaling event stream out to many subscribers (one socket, many peers)
@@ -25,12 +25,9 @@ export function createSignalingEvents(
 
 	Result.tryPromise(async () => {
 		for await (const event of stream) {
-			if (!active) {
-				break;
-			}
-			for (const handler of handlers) {
-				handler(event);
-			}
+			if (!active) break;
+
+			for (const handler of handlers) handler(event);
 		}
 	});
 

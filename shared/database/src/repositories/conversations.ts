@@ -2,7 +2,7 @@ import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { ConversationEntrySchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { nowISO } from "@cyrus/utils/time";
-import { and, asc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { connection } from "../connection";
 import { conversations } from "../models/conversations";
 import { threads } from "../models/threads";
@@ -64,5 +64,17 @@ export function getConversations(threadId: string, afterSeq?: number) {
 			.where(where)
 			.orderBy(asc(conversations.seq));
 		return rows.map(parseConversationEntry);
+	});
+}
+
+export function getSnapshotHighWaterMark(threadId: string) {
+	return tryRepo(async () => {
+		const [row] = await connection.db
+			.select({ seq: conversations.seq })
+			.from(conversations)
+			.where(eq(conversations.threadId, threadId))
+			.orderBy(desc(conversations.seq))
+			.limit(1);
+		return row?.seq ?? 0;
 	});
 }
