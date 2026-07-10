@@ -27,10 +27,21 @@ async function runTurn({
 	projectId,
 	message,
 	emit,
+	emitTerminal,
 	runtime,
-}: Omit<RunTurnOptions, "turnId">): Promise<Result<void, unknown>> {
-	await emit({ type: "user_message", content: message });
-	await emit({ type: "thread_started", threadId });
+}: Omit<RunTurnOptions, "turnId" | "emitTerminal"> & {
+	emitTerminal: (
+		event: Extract<
+			ChatChunk["event"],
+			{ type: "turn_completed" | "turn_interrupted" }
+		>
+	) => Promise<void>;
+}): Promise<Result<void, unknown>> {
+	const started = await Result.tryPromise(async () => {
+		await emit({ type: "user_message", content: message });
+		await emit({ type: "thread_started", threadId });
+	});
+	if (started.isErr()) return started;
 
 	const streamed = await Result.tryPromise(async () => {
 		const gen = runtime.threadCoordinator.prompt(
@@ -40,12 +51,15 @@ async function runTurn({
 			message
 		);
 		for await (const event of gen) await emit(event);
-		await emit({ type: "turn_completed" });
 	});
 
-	if (streamed.isErr()) await emit({ type: "turn_interrupted" });
+	if (streamed.isErr()) {
+		await emitTerminal({ type: "turn_interrupted" });
+		return streamed;
+	}
 
-	return streamed;
+	await emitTerminal({ type: "turn_completed" });
+	return Result.ok(undefined);
 }
 
 export function chatHandlers({ os, runtime }: ControllerDeps) {
@@ -65,12 +79,15 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 
 			context.eventBus.ensureWatch(context.peerId, threadId);
 
+			function publishChunk(chunk: ChatChunk): void {
+				context.eventBus.publish(chunk);
+			}
+
 			async function emit(event: ChatChunk["event"]): Promise<void> {
 				trackDelta(event, messageBuffers, thoughtBuffers);
 
 				if (isStreamingDelta(event)) {
-					const chunk: ChatChunk = { threadId, turnId, seq: 0, event };
-					context.eventBus.publish(chunk);
+					publishChunk({ threadId, turnId, seq: 0, event });
 					return;
 				}
 
@@ -85,7 +102,35 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 					event: persistEvent,
 				});
 				if (entry.isErr()) throwOrpcFromRepositoryError(entry.error);
-				context.eventBus.publish(entry.value.chunk);
+				publishChunk(entry.value.chunk);
+			}
+
+			async function emitTerminal(
+				event: Extract<
+					ChatChunk["event"],
+					{ type: "turn_completed" | "turn_interrupted" }
+				>
+			): Promise<void> {
+				trackDelta(event, messageBuffers, thoughtBuffers);
+
+				const persistEvent = resolvePersistEvent(
+					event,
+					messageBuffers,
+					thoughtBuffers
+				);
+				const entry = await appendConversation(threadId, {
+					threadId,
+					turnId,
+					event: persistEvent,
+				});
+
+				if (entry.isOk()) {
+					publishChunk(entry.value.chunk);
+					return;
+				}
+
+				console.error("terminal event persist failed", entry.error);
+				publishChunk({ threadId, turnId, seq: 0, event });
 			}
 
 			runTurn({
@@ -94,12 +139,17 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				projectId,
 				message,
 				emit,
+				emitTerminal,
 				runtime,
-			}).then((result) => {
-				result.tapError((error) => {
+			})
+				.then((result) => {
+					result.tapError((error) => {
+						console.error("chat turn failed", error);
+					});
+				})
+				.catch((error) => {
 					console.error("chat turn failed", error);
 				});
-			});
 
 			return { threadId, turnId };
 		}),

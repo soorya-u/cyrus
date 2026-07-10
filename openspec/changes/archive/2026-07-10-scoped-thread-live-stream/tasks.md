@@ -8,7 +8,7 @@
 
 ## 2. ThreadEventBus (`apps/cli/src/queue`)
 
-- [x] 2.1 Implement `ThreadEventBus` in `apps/cli/src/queue/index.ts` with watch sets, per-peer queues, and `publish()`
+- [x] 2.1 Implement `ThreadEventBus` in `apps/cli/src/queue/bus.ts` with watch sets, per-peer queues, and `publish()`
 - [x] 2.2 Add `activeTurnLogs: Map<turnId, ChatChunk[]>` with append on publish and eviction on `turn_completed`/`turn_interrupted`
 - [x] 2.3 Implement `watch(peerId, threadId)` — register, replay active-turn logs into peer queue (idempotent)
 - [x] 2.4 Implement `unwatch(peerId, threadId)` and `ensureWatch(peerId, threadId)` for chat auto-watch

@@ -27,7 +27,7 @@ Every connected peer currently receives every chat chunk from every thread, and 
 
 ## Impact
 
-- `apps/cli/src/queue/index.ts` — custom `ThreadEventBus` (watch sets, active-turn logs, scoped fan-out).
+- `apps/cli/src/queue/bus.ts` — custom `ThreadEventBus` (watch sets, active-turn logs, scoped fan-out).
 - `shared/connections/src/rtc/broadcaster.ts` — superseded for chat delivery once wired; may remain for other uses or be removed during integration.
 - `shared/connections/src/rtc/worker/index.ts` — instantiate `ThreadEventBus` instead of `createPeerBroadcaster`.
 - `apps/cli/src/handlers/controller/chat.ts` — `chat` becomes command; `emit` publishes to bus.

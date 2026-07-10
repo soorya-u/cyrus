@@ -2,7 +2,7 @@
 
 ### Requirement: Thread-scoped event bus replaces global broadcast
 
-The worker SHALL route live `ChatChunk` delivery through a `ThreadEventBus` implemented in `apps/cli/src/queue/index.ts` that fans out only to peers whose watched-thread set includes `chunk.threadId`. The bus SHALL deliver chunks to the initiating peer as well as all other watching peers.
+The worker SHALL route live `ChatChunk` delivery through a `ThreadEventBus` implemented in `apps/cli/src/queue/bus.ts` that fans out only to peers whose watched-thread set includes `chunk.threadId`. The bus SHALL deliver chunks to the initiating peer as well as all other watching peers.
 
 #### Scenario: Non-watching peer receives nothing
 
@@ -23,7 +23,7 @@ The worker SHALL route live `ChatChunk` delivery through a `ThreadEventBus` impl
 
 ### Requirement: Active-turn replay buffer
 
-The `ThreadEventBus` in `apps/cli/src/queue/index.ts` SHALL maintain an in-memory `activeTurnLogs` buffer per in-progress `turnId` containing all `ChatChunk`s emitted during that turn, including ephemeral deltas with `seq === 0`. The buffer SHALL be evicted when `turn_completed` or `turn_interrupted` is published for that `turnId`.
+The `ThreadEventBus` in `apps/cli/src/queue/bus.ts` SHALL maintain an in-memory `activeTurnLogs` buffer per in-progress `turnId` containing all `ChatChunk`s emitted during that turn, including ephemeral deltas with `seq === 0`. The buffer SHALL be evicted when `turn_completed` or `turn_interrupted` is published for that `turnId`.
 
 #### Scenario: Late watcher receives in-flight deltas
 

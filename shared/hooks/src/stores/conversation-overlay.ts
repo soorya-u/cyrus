@@ -122,12 +122,24 @@ function chunkToEntry(chunk: ChatChunk): ConversationEntry {
 	};
 }
 
+function cloneOverlay(overlay: ThreadOverlay): ThreadOverlay {
+	return {
+		snapshotHighWaterMark: overlay.snapshotHighWaterMark,
+		live: [...overlay.live],
+		activeTurnIds: new Set(overlay.activeTurnIds),
+	};
+}
+
 function getOrCreateOverlay(
 	byThread: Map<string, ThreadOverlay>,
 	threadId: string
 ): ThreadOverlay {
 	const existing = byThread.get(threadId);
-	if (existing) return existing;
+	if (existing) {
+		const clone = cloneOverlay(existing);
+		byThread.set(threadId, clone);
+		return clone;
+	}
 
 	const overlay: ThreadOverlay = {
 		snapshotHighWaterMark: 0,
@@ -148,7 +160,6 @@ function settleTurnWaiter(
 	if (!waiter) return;
 
 	turnWaiters.delete(key);
-	waiter.onAbort?.();
 	if (outcome === "completed") {
 		waiter.resolve();
 		return;
@@ -207,7 +218,7 @@ function commitLiveChunk(setState: OverlaySetState, chunk: ChatChunk): void {
 		const overlay = getOrCreateOverlay(byThread, threadId);
 
 		if (shouldSkipPersistedChunk(seq, overlay)) {
-			return { byThread };
+			return state;
 		}
 
 		applyChunkToOverlay(overlay, chunk);
@@ -263,9 +274,10 @@ export const useConversationOverlay = create<ConversationOverlayState>(
 			clearTurn(threadId, turnId) {
 				flushPendingDeltas(commit);
 				set((state) => {
+					if (!state.byThread.has(threadId)) return state;
+
 					const byThread = new Map(state.byThread);
-					const overlay = byThread.get(threadId);
-					if (!overlay) return { byThread };
+					const overlay = getOrCreateOverlay(byThread, threadId);
 
 					overlay.activeTurnIds.delete(turnId);
 					overlay.live = overlay.live.filter(

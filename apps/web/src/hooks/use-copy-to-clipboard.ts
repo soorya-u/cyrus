@@ -25,9 +25,11 @@ export function useCopyToClipboard(): {
 	}
 
 	async function copy(text: string) {
-		(await Result.tryPromise(() => copyPrimitive(text))).tapError(() =>
-			setCopied(false)
-		);
+		const result = await Result.tryPromise(() => copyPrimitive(text));
+		if (result.isErr()) {
+			setCopied(false);
+			throw result.error;
+		}
 	}
 	return { copied, copy };
 }

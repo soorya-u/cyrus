@@ -30,7 +30,7 @@ Mid-stream page refresh loses all in-flight token deltas: Turso has only persist
 
 ### Replace `PeerBroadcaster` with `ThreadEventBus`
 
-**Choice:** Custom `ThreadEventBus` in `apps/cli/src/queue/index.ts` owns watch sets, per-peer delivery queues, and active-turn logs. No third-party event bus library — the API is domain-specific (thread watch sets, per-peer `AsyncGenerator`, active-turn replay).
+**Choice:** Custom `ThreadEventBus` in `apps/cli/src/queue/bus.ts` owns watch sets, per-peer delivery queues, and active-turn logs. No third-party event bus library — the API is domain-specific (thread watch sets, per-peer `AsyncGenerator`, active-turn replay).
 
 **Why over patching `PeerBroadcaster`:** Watch filtering and turn replay are thread-scoped concerns, not peer-queue concerns. A clean type keeps `subscribe(peerId)` as the per-peer stream API while moving fan-out logic to `publish(chunk)`.
 
@@ -132,6 +132,6 @@ Rollback: revert both server and web; old dual-path client is incompatible with 
 
 ## Open Questions
 
-- Exact per-turn log cap (10k chunks vs byte-size limit) — **decided: 10k default, delta-first eviction** (`apps/cli/src/queue/index.ts`).
+- Exact per-turn log cap (10k chunks vs byte-size limit) — **decided: 10k default, delta-first eviction** (`apps/cli/src/queue/bus.ts`).
 - Should `waitForTurnEnd` timeout be configurable or a fixed constant (e.g. 30 min)?
 - Mobile (`apps/mobile`) — inherits shared `@cyrus/hooks` overlay once RTC is mounted; no separate overlay implementation needed.
