@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:e2e": "bun test --serial scenarios && playwright test --config web/playwright.config.ts"
+    "test:e2e": "CYRUS_E2E=1 bun test --serial scenarios && CYRUS_E2E=1 playwright test --config web/playwright.config.ts"
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",
