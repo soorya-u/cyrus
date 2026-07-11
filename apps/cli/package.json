@@ -11,7 +11,7 @@
     "check:types": "tsc --noEmit",
     "test:unit": "bun test src",
     "test:integration": "bun test __tests__/integration",
-    "build": "bun build src/cli.ts --compile --env 'CLI_PUBLIC_*' --outfile dist/cyrusd"
+    "build": "bun build src/cli.ts --compile --env 'CLI_PUBLIC_*' --external drizzle-kit --outfile dist/cyrusd"
   },
   "dependencies": {
     "@acp-kit/core": "^0.10.2",
