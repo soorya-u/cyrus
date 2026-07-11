@@ -1,9 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { Result } from "better-result";
 import {
-	type CyrusPaths,
-	type CyrusStoreOptions,
-	defaultCyrusPaths,
+	ACP_CACHE_DIR,
+	REGISTRY_CACHE_INFO_PATH,
+	REGISTRY_JSON_PATH,
 } from "@/constants/paths";
 import { REGISTRY_CACHE_TTL_MS, REGISTRY_URL } from "@/constants/registry";
 import { ensureDir } from "@/utils/dir";
@@ -15,21 +15,11 @@ type CacheInfo = {
 	version: string;
 };
 
-type RegistryStoreOptions = CyrusStoreOptions & {
-	force?: boolean;
-};
-
-function resolvePaths(options?: CyrusStoreOptions): CyrusPaths {
-	return options?.paths ?? defaultCyrusPaths();
-}
-
-async function readCacheInfo(
-	paths: CyrusPaths
-): Promise<Result<CacheInfo, string>> {
+async function readCacheInfo(): Promise<Result<CacheInfo, string>> {
 	return (
 		await Result.tryPromise(async () => {
 			const parsed = JSON.parse(
-				await readFile(paths.registryCacheInfoPath, "utf8")
+				await readFile(REGISTRY_CACHE_INFO_PATH, "utf8")
 			) as CacheInfo;
 			if (typeof parsed.timestamp !== "number") {
 				throw new Error("invalid registry cache info");
@@ -43,15 +33,14 @@ function isCacheStale(info: CacheInfo): boolean {
 	return Date.now() - info.timestamp * 1000 > REGISTRY_CACHE_TTL_MS;
 }
 
-export async function fetchRegistry(
-	options?: RegistryStoreOptions
-): Promise<Result<AcpRegistry, string>> {
-	const paths = resolvePaths(options);
+export async function fetchRegistry(options?: {
+	force?: boolean;
+}): Promise<Result<AcpRegistry, string>> {
 	return (
 		await Result.tryPromise(async () => {
-			await ensureDir(paths.acpCacheDir);
+			await ensureDir(ACP_CACHE_DIR);
 
-			const cacheInfo = await readCacheInfo(paths);
+			const cacheInfo = await readCacheInfo();
 			const shouldFetch =
 				options?.force === true ||
 				cacheInfo.isErr() ||
@@ -63,30 +52,27 @@ export async function fetchRegistry(
 					throw new Error(`failed to fetch ACP registry (${response.status})`);
 
 				const body = await response.text();
-				await writeFile(paths.registryJsonPath, body, { mode: 0o600 });
+				await writeFile(REGISTRY_JSON_PATH, body, { mode: 0o600 });
 				const info: CacheInfo = {
 					timestamp: Math.floor(Date.now() / 1000),
 					version: "1.0.0",
 				};
-				await writeFile(paths.registryCacheInfoPath, JSON.stringify(info), {
+				await writeFile(REGISTRY_CACHE_INFO_PATH, JSON.stringify(info), {
 					mode: 0o600,
 				});
 			}
 
-			const raw = JSON.parse(await readFile(paths.registryJsonPath, "utf8"));
+			const raw = JSON.parse(await readFile(REGISTRY_JSON_PATH, "utf8"));
 			return acpRegistrySchema.parse(raw);
 		})
 	).mapError(toMessage);
 }
 
-export async function readRegistryFile(
-	options?: CyrusStoreOptions
-): Promise<Result<AcpRegistry, string>> {
-	const paths = resolvePaths(options);
+export async function readRegistryFile(): Promise<Result<AcpRegistry, string>> {
 	return (
 		await Result.tryPromise(async () => {
-			await ensureDir(paths.acpCacheDir);
-			const file = Bun.file(paths.registryJsonPath);
+			await ensureDir(ACP_CACHE_DIR);
+			const file = Bun.file(REGISTRY_JSON_PATH);
 			if (!(await file.exists()))
 				throw new Error(
 					"registry cache not found — run `cyrusd agents registry sync`"
@@ -97,14 +83,13 @@ export async function readRegistryFile(
 	).mapError(toMessage);
 }
 
-export async function readCachedRegistry(
-	options?: CyrusStoreOptions
-): Promise<Result<AcpRegistry, string>> {
-	const paths = resolvePaths(options);
-	const cached = await readRegistryFile(options);
+export async function readCachedRegistry(): Promise<
+	Result<AcpRegistry, string>
+> {
+	const cached = await readRegistryFile();
 	if (cached.isOk()) {
-		const cacheInfo = await readCacheInfo(paths);
+		const cacheInfo = await readCacheInfo();
 		if (cacheInfo.isOk() && !isCacheStale(cacheInfo.value)) return cached;
 	}
-	return fetchRegistry(options);
+	return fetchRegistry();
 }
