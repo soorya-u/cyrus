@@ -17,10 +17,15 @@ async function globalSetup(_config: FullConfig): Promise<void> {
 	});
 
 	let exited = false;
-	proc.on("exit", (code) => {
-		if (code !== 0 && code !== null) {
-			exited = true;
-		}
+	let spawnError: Error | undefined;
+
+	proc.on("error", (error) => {
+		exited = true;
+		spawnError = error;
+	});
+
+	proc.on("exit", () => {
+		exited = true;
 	});
 
 	for (let attempt = 0; attempt < 120 && !exited; attempt += 1) {
@@ -31,6 +36,12 @@ async function globalSetup(_config: FullConfig): Promise<void> {
 		} catch {
 			await sleep(1000);
 		}
+	}
+
+	if (spawnError) {
+		throw new Error(
+			`Playwright stack process failed to start: ${spawnError.message}`
+		);
 	}
 
 	if (exited) {
