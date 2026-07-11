@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./tooling/github/setup
 
       - name: Lint
@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./tooling/github/setup
 
       - name: Type check
@@ -48,7 +48,7 @@ jobs:
     needs: check-types
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - uses: ./tooling/github/setup
@@ -63,7 +63,7 @@ jobs:
     needs: check-types
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - uses: ./tooling/github/setup
