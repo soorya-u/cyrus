@@ -46,3 +46,10 @@ jobs:
           OAUTH_PROXY_SECRET: ${{ secrets.OAUTH_PROXY_SECRET }}
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+
+      - name: Deploy smoke
+        run: bun tooling/test/smoke/deploy.ts
+        env:
+          SMOKE_BASE_URL: ${{ secrets.BETTER_AUTH_URL }}
+          SMOKE_BEARER_TOKEN: ${{ secrets.DEPLOY_SMOKE_TOKEN }}
+          SMOKE_ROOM_ID: ${{ secrets.DEPLOY_SMOKE_ROOM_ID }}

@@ -33,7 +33,7 @@ package boundary they exercise. Cross-app tests live at the repo root.
 | Level | Trigger | Tests |
 | --- | --- | --- |
 | 0 | pre-commit | Ultracite only |
-| 1 | pre-push | Typecheck now; unit tests once stable |
+| 1 | pre-push | Typecheck and unit tests |
 | 2 | pull request | Lint, typecheck, unit tests |
 | 3 | main or nightly | Integration and E2E |
 | 4 | deploy | Health and WebSocket smoke |
@@ -56,6 +56,35 @@ in later phases.
 - E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch`
   only). The job uses the GitHub `testing` environment and `NEON_DATABASE_URL`
   secret.
+
+## Phase 5 notes
+
+- Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`.
+  Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets enable a
+  signaling WebSocket check in addition to `GET /health`.
+- Nightly also runs build smoke (`build:web`, CLI compile), real
+  `node-datachannel` checks (`CYRUS_NIGHTLY_WEBRTC=1`), and an optional Neon
+  `neon-http` driver job when `NEON_DATABASE_URL` is configured.
+- `pre-push` now runs `test:unit` locally; integration and E2E stay in CI only.
+
+## OpenSpec coverage map
+
+| OpenSpec | Nearest automated tests |
+| --- | --- |
+| `conversation-view` | `shared/utils/src/fold.test.ts` |
+| `wire-schemas` | `shared/schemas/src/**/*.test.ts` |
+| `acp-provider-cli` | `apps/cli/src/core/acp/events.test.ts`, `run-turn.test.ts` |
+| `acp-session-router` | `apps/cli/__tests__/integration/wiring.test.ts` |
+| `connection-providers` | `shared/connections/src/rtc/session.test.ts` |
+| `conversation-persistence` | `shared/database/__tests__/integration/repositories.test.ts` |
+
+## Deferred platform tracks
+
+- `@cyrus/desktop` — thin Bun unit tests for `lib/env` and `lib/auth`; browser
+  E2E can reuse the web Playwright suite against built assets.
+- `@cyrus/mobile` — Maestro or Detox when the app matures.
+- `@cyrus/styles` — out of scope for unit tests.
+- Visual regression — deferred.
 
 ## Phase 3 notes
 

@@ -36,3 +36,60 @@ jobs:
         run: bun test:e2e
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+
+  build-smoke:
+    name: Build Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./tooling/github/setup
+
+      - name: Build web
+        run: bun build:web
+
+      - name: Build CLI binary
+        run: bun -F @cyrus/cli build
+
+  webrtc-nightly:
+    name: Real WebRTC
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      CYRUS_NIGHTLY_WEBRTC: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./tooling/github/setup
+
+      - name: node-datachannel integration
+        run: bun -F @cyrus/connections test:unit
+
+  neon-nightly:
+    name: Neon HTTP Driver
+    runs-on: ubuntu-latest
+    environment: testing
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./tooling/github/setup
+
+      - name: Neon driver smoke
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Skipping Neon nightly — NEON_DATABASE_URL is not configured."
+            exit 0
+          fi
+          bun -F @cyrus/server test:unit
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DB_DRIVER: neon-http
