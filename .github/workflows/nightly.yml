@@ -1,0 +1,39 @@
+name: Nightly
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *"
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  CYRUS_E2E: "1"
+
+jobs:
+  test-e2e:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./tooling/github/setup
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+        working-directory: tests/e2e
+
+      - name: End-to-end tests
+        run: bun test:e2e
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}

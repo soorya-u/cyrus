@@ -24,6 +24,10 @@ export const env = createEnv({
 							.filter(Boolean)
 					: []
 			),
+		ENABLE_E2E_AUTH: z
+			.enum(["0", "1"])
+			.optional()
+			.transform((val) => val === "1"),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

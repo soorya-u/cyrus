@@ -1,0 +1,16 @@
+{
+  "name": "@cyrus/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "bun test scenarios && playwright test --config web/playwright.config.ts"
+  },
+  "dependencies": {
+    "@cyrus/connections": "workspace:*"
+  },
+  "devDependencies": {
+    "@cyrus/typescript": "workspace:*",
+    "@playwright/test": "^1.58.2",
+    "@types/bun": "catalog:"
+  }
+}

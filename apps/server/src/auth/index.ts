@@ -13,6 +13,14 @@ export const auth = betterAuth({
 	appName: "Cyrus",
 	basePath: "/api/auth",
 	database: drizzleAdapter(db, { provider: "pg", schema }),
+	...(env.ENABLE_E2E_AUTH
+		? {
+				emailAndPassword: {
+					enabled: true,
+					autoSignIn: true,
+				},
+			}
+		: {}),
 	trustedOrigins: [...env.ALLOWED_ORIGINS, env.PRODUCTION_URL],
 	socialProviders: {
 		github: {
