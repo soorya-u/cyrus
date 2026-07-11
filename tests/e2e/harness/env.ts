@@ -1,4 +1,5 @@
-import { mkdtemp } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdtemp, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -58,4 +59,25 @@ export function buildCliEnv(home: string): Record<string, string> {
 		CLI_PUBLIC_SERVER_URL: E2E_SERVER_URL,
 		CYRUS_DAEMON: "1",
 	};
+}
+
+export async function writeWranglerEnvFile(
+	env: Record<string, string>
+): Promise<string> {
+	const path = join(tmpdir(), `cyrus-e2e-wrangler-${randomUUID()}.dev.vars`);
+	const contents = Object.entries(env)
+		.filter(([, value]) => value !== undefined && value !== "")
+		.map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+		.join("\n");
+	await writeFile(path, `${contents}\n`, { mode: 0o600 });
+	return path;
+}
+
+export async function removeWranglerEnvFile(
+	path: string | undefined
+): Promise<void> {
+	if (!path) {
+		return;
+	}
+	await unlink(path).catch(() => undefined);
 }

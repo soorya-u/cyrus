@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4.103/config-schema.json",
+  "name": "cyrus",
+  "main": "apps/server/src/index.ts",
+  "compatibility_date": "2025-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "HUB",
+        "class_name": "Hub"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["Room"]
+    },
+    {
+      "tag": "v2",
+      "renamed_classes": [{ "from": "Room", "to": "Hub" }]
+    }
+  ]
+}

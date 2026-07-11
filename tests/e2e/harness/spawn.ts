@@ -28,10 +28,29 @@ export function spawnManaged(
 	return { proc, name };
 }
 
-export function spawnServer(env: Record<string, string>): ManagedProcess {
+export function spawnServer(
+	env: Record<string, string>,
+	envFile: string
+): ManagedProcess {
 	return spawnManaged(
 		"server",
-		["bunx", "wrangler", "dev", "--port", "8787", "--ip", "127.0.0.1"],
+		[
+			"bunx",
+			"wrangler@4.104.0",
+			"dev",
+			"--config",
+			"wrangler.e2e.json",
+			"--env-file",
+			envFile,
+			"--port",
+			"8787",
+			"--ip",
+			"127.0.0.1",
+			"--log-level",
+			"warn",
+			"--show-interactive-dev-session",
+			"false",
+		],
 		{
 			env: { ...process.env, ...env },
 		}
@@ -74,7 +93,7 @@ export async function stopAll(processes: ManagedProcess[]): Promise<void> {
 
 export async function cleanupDevServerProcesses(): Promise<void> {
 	const commands = [
-		["pkill", "-f", "wrangler dev --port 8787"],
+		["pkill", "-f", "wrangler@4.104.0 dev --config wrangler.e2e.json"],
 		["pkill", "-f", "--host localhost --port 5173"],
 	];
 	for (const command of commands) {

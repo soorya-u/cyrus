@@ -10,6 +10,8 @@ import {
 	createTempCyrusHome,
 	E2E_SERVER_URL,
 	E2E_WEB_URL,
+	removeWranglerEnvFile,
+	writeWranglerEnvFile,
 } from "./env";
 import {
 	cleanupDevServerProcesses,
@@ -40,6 +42,7 @@ export type E2eStack = {
 	processes: ManagedProcess[];
 	cyrusHome: string;
 	auth: Awaited<ReturnType<typeof seedCliAccessToken>>;
+	wranglerEnvFile?: string;
 };
 
 async function databaseHasSchema(databaseUrl: string): Promise<boolean> {
@@ -74,7 +77,7 @@ async function pushDatabaseSchema(
 		return;
 	}
 
-	const proc = Bun.spawn(["bun", "run", "db:push"], {
+	const proc = Bun.spawn(["bunx", "drizzle-kit", "push"], {
 		cwd: join(REPO_ROOT, "apps/server"),
 		env: { ...process.env, ...serverEnv },
 		stdout: "inherit",
@@ -129,12 +132,14 @@ async function createE2eStack(
 	const webEnv = buildWebEnv();
 	const cyrusHome = await createTempCyrusHome();
 	const processes: ManagedProcess[] = [];
+	let wranglerEnvFile: string | undefined;
 
 	const stackResult = await Result.tryPromise(async () => {
 		await cleanupDevServerProcesses();
 		await pushDatabaseSchema(serverEnv);
 
-		const server = spawnServer(serverEnv);
+		wranglerEnvFile = await writeWranglerEnvFile(serverEnv);
+		const server = spawnServer(serverEnv, wranglerEnvFile);
 		processes.push(server);
 		await waitForHttpOk(`${E2E_SERVER_URL}/health`, { timeoutMs: 120_000 });
 
@@ -151,7 +156,7 @@ async function createE2eStack(
 		processes.push(cli);
 		await waitForWorkerConnected(cli);
 
-		return { processes, cyrusHome, auth };
+		return { processes, cyrusHome, auth, wranglerEnvFile };
 	});
 
 	if (stackResult.isErr()) {
@@ -163,6 +168,7 @@ async function createE2eStack(
 				// best-effort cleanup after partial stack startup
 			}
 		);
+		await removeWranglerEnvFile(wranglerEnvFile);
 	}
 
 	return stackResult.unwrap();
@@ -177,6 +183,7 @@ export function startE2eStack(
 export async function stopE2eStack(stack: E2eStack): Promise<void> {
 	await stopAll(stack.processes);
 	await cleanupDevServerProcesses();
+	await removeWranglerEnvFile(stack.wranglerEnvFile);
 }
 
 export async function runE2eScenario(
