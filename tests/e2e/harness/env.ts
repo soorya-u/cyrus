@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 export const E2E_SERVER_URL = "http://127.0.0.1:8787";
-export const E2E_WEB_URL = "http://localhost:5173";
+export const E2E_WEB_URL = "http://127.0.0.1:5173";
 
 export function isE2eEnabled(): boolean {
 	return process.env.CYRUS_E2E === "1";
@@ -40,7 +40,7 @@ export function buildServerEnv(): Record<string, string> {
 		OAUTH_GITHUB_CLIENT_ID: "e2e-github-client-id",
 		OAUTH_GITHUB_CLIENT_SECRET: "e2e-github-client-secret",
 		OAUTH_PROXY_SECRET: "e2e-oauth-proxy-secret",
-		ALLOWED_ORIGINS: `${E2E_WEB_URL},http://127.0.0.1:5173`,
+		ALLOWED_ORIGINS: `${E2E_WEB_URL},http://localhost:5173`,
 		NODE_ENV: "testing",
 		LOG_LEVEL: "warn",
 	};

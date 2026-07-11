@@ -60,7 +60,7 @@ export function spawnServer(
 export function spawnWeb(env: Record<string, string>): ManagedProcess {
 	return spawnManaged(
 		"web",
-		["bun", "run", "dev", "--", "--host", "localhost", "--port", "5173"],
+		["bun", "run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"],
 		{
 			cwd: join(REPO_ROOT, "apps/web"),
 			env: { ...process.env, ...env },
@@ -94,7 +94,7 @@ export async function stopAll(processes: ManagedProcess[]): Promise<void> {
 export async function cleanupDevServerProcesses(): Promise<void> {
 	const commands = [
 		["pkill", "-f", "wrangler@4.104.0 dev --config wrangler.e2e.json"],
-		["pkill", "-f", "--host localhost --port 5173"],
+		["pkill", "-f", "--host 127.0.0.1 --port 5173"],
 	];
 	for (const command of commands) {
 		const proc = Bun.spawn(command, { stdout: "ignore", stderr: "ignore" });
