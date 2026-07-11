@@ -9,7 +9,8 @@
   "scripts": {
     "check:types": "tsc --noEmit",
     "db:push": "dotenvx run -- drizzle-kit push",
-    "db:studio": "dotenvx run -- drizzle-kit studio"
+    "db:studio": "dotenvx run -- drizzle-kit studio",
+    "test:integration": "bun test __tests__/integration"
   },
   "dependencies": {
     "@cyrus/schemas": "workspace:*",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
+    "@tursodatabase/database": "^0.6.1",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

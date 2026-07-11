@@ -7,6 +7,9 @@
     "./*": "./src/*.ts",
     "./rtc/worker": "./src/rtc/worker/index.ts"
   },
+  "scripts": {
+    "test:unit": "bun test"
+  },
   "dependencies": {
     "@cyrus/schemas": "workspace:*",
     "@orpc/client": "^1.14.6",
@@ -19,6 +22,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cyrus/typescript": "workspace:*"
+    "@cyrus/typescript": "workspace:*",
+    "@types/bun": "catalog:"
   }
 }
