@@ -36,7 +36,7 @@ export function useAgentCatalog({
 		queryKey: RTC_OPERATION_KEYS.listAgents,
 	});
 	const agents = agentsQuery.data?.agents ?? [];
-	const selectedAgent = selection?.agentName ?? agents[0]?.name ?? "";
+	const selectedAgent = selection?.agentName ?? agents[0]?.id ?? "";
 
 	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(selectedAgent);
 	const modelsQuery = useQuery({

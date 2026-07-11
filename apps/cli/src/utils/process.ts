@@ -1,12 +1,7 @@
 import { unlink } from "node:fs/promises";
-import { join } from "node:path";
 import { Result } from "better-result";
-import { WORKER_LOG, WORKER_PID } from "@/constants/file";
-import { env } from "@/lib/env";
+import { PID_PATH } from "@/constants/paths";
 import { ensureDir } from "./dir";
-
-export const PID_PATH = join(env.CYRUS_HOME, WORKER_PID);
-export const LOG_PATH = join(env.CYRUS_HOME, WORKER_LOG);
 
 /** Whether a process with this pid is alive (signal 0 probes without killing). */
 export function isAlive(pid: number): boolean {

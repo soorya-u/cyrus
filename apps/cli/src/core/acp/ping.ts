@@ -3,7 +3,6 @@ import { nodeChildProcessTransport } from "@acp-kit/core/node";
 import { Result } from "better-result";
 import { agentEntryToProfile } from "@/core/agents/profile";
 import { env } from "@/lib/env";
-import { isCommandAvailable } from "@/utils/command";
 import { toMessage } from "@/utils/error";
 import type { AgentEntry } from "@/validators/agent";
 import { createDefaultHost } from "./host";
@@ -14,15 +13,16 @@ export type AcpPingSuccess = {
 };
 
 export async function pingAcpAgent(
+	registryId: string,
 	entry: AgentEntry
 ): Promise<Result<AcpPingSuccess, string>> {
-	if (!isCommandAvailable(entry.command))
-		return Result.err(`command not found or not executable: ${entry.command}`);
+	const profile = await agentEntryToProfile(registryId, entry);
+	if (profile.isErr()) return Result.err(profile.error);
 
 	const created = Result.try(() =>
 		createAcpRuntime({
 			agent: {
-				...agentEntryToProfile("doctor", entry),
+				...profile.value,
 				startupTimeoutMs: env.CYRUS_ACP_TIMEOUT_MS,
 			},
 			transport: nodeChildProcessTransport(),

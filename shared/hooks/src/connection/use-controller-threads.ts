@@ -89,7 +89,7 @@ export function useControllerThreads() {
 		return (
 			selectionByThread[threadId]?.agentName ??
 			thread?.agentName ??
-			agentsQuery.data?.agents[0]?.name ??
+			agentsQuery.data?.agents[0]?.id ??
 			""
 		);
 	}

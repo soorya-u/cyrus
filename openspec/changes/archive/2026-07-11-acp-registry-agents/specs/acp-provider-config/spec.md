@@ -1,10 +1,4 @@
-# ACP Provider Config
-
-## Purpose
-
-Define how the Cyrus worker discovers and loads enabled ACP agents. Users enable agents from the ACP registry; the worker reads metadata from `agents.yml` and resolves spawn commands from the cached registry.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Agent registry file
 
@@ -29,9 +23,11 @@ The CLI SHALL validate agent configuration against a Zod schema and reject inval
 - **WHEN** `agents.yml` contains an entry missing required `registryId` field
 - **THEN** the CLI rejects the entry with a validation error on read or write
 
+## MODIFIED Requirements
+
 ### Requirement: User-managed registry via CLI
 
-Users SHALL register agents with `cyrusd agents add <registry-id>`. The worker SHALL spawn agents using registry-resolved commands, not user-supplied command recipes.
+Users SHALL register agents with `cyrusd agents add <registry-id>`. The worker SHALL spawn agents via acpr using the registry id, not user-supplied command recipes.
 
 #### Scenario: Add agent from registry
 
@@ -42,3 +38,11 @@ Users SHALL register agents with `cyrusd agents add <registry-id>`. The worker S
 
 - **WHEN** user runs `cyrusd agents rm claude-acp`
 - **THEN** the agent is removed from `agents.yml`
+
+## REMOVED Requirements
+
+### Requirement: Environment variable interpolation
+
+**Reason**: agents.yml no longer stores spawn env/command configuration; acpr handles distribution env at spawn time.
+
+**Migration**: Not applicable; env interpolation was not yet implemented in agent entries.

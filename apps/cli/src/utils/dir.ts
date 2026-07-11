@@ -11,8 +11,8 @@ function expandHomeDirectory(cwd: string): string {
 	return cwd;
 }
 
-export async function ensureDir(): Promise<void> {
-	await mkdir(env.CYRUS_HOME, { recursive: true, mode: 0o700 });
+export async function ensureDir(dir = env.CYRUS_HOME): Promise<void> {
+	await mkdir(dir, { recursive: true, mode: 0o700 });
 }
 
 async function listChildDirectories(cwd: string): Promise<string[]> {

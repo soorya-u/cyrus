@@ -1,11 +1,7 @@
-import { join } from "node:path";
 import { connection } from "@cyrus/database/connection";
 import { connect } from "@tursodatabase/database";
-import { DATABASE_FILE } from "@/constants/file";
-import { env } from "@/lib/env";
+import { STORE_DB_PATH } from "@/constants/paths";
 import { ensureDir } from "@/utils/dir";
-
-const STORE_DB_PATH = join(env.CYRUS_HOME, DATABASE_FILE);
 
 export async function initDatabase() {
 	await ensureDir();

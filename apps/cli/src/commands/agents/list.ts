@@ -5,18 +5,18 @@ export async function list(): Promise<void> {
 	const agents = await listAgents();
 	agents.match({
 		ok: (registry) => {
-			const names = Object.keys(registry).sort();
+			const ids = Object.keys(registry).sort();
 
-			if (names.length === 0) {
-				print.dim`No agents registered. Add one with \`cyrusd agents add <name> --cmd <command>\`.`;
+			if (ids.length === 0) {
+				print.dim`No agents enabled. Run \`cyrusd agents registry\` to browse, then \`cyrusd agents add <id>\`.`;
 				return;
 			}
 
-			for (const name of names) {
-				const entry = registry[name];
+			for (const id of ids) {
+				const entry = registry[id];
 				if (!entry) continue;
-				const args = entry.args.length > 0 ? ` ${entry.args.join(" ")}` : "";
-				print.line`${name}: ${entry.command}${args}`;
+				print.line`${id}: ${entry.name}`;
+				print.dim`  ${entry.icon}`;
 			}
 		},
 		err: (message) => {
