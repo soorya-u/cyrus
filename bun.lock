@@ -247,6 +247,7 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
+        "@types/bun": "catalog:",
         "@types/react": "^19.2.15",
         "react": "catalog:",
         "typescript": "catalog:",

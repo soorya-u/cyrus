@@ -41,7 +41,12 @@ package boundary they exercise. Cross-app tests live at the repo root.
 Phase 1 only adds the unit test foundation. Integration and E2E are introduced
 in later phases.
 
-## Phase 2 notes
+## Phase 3 notes
+
+- ACP prompt mocking lives in `apps/cli/__tests__/helpers/acp-runtime.ts`.
+- CLI integration tests use isolated `CYRUS_HOME` directories and subprocess checks.
+- Hooks tests currently cover the optimistic conversations cache contract used by
+  `use-controller-threads`.
 
 - `@cyrus/database` integration tests use isolated in-memory Turso databases via
   `shared/database/__tests__/helpers/turso.ts`.
