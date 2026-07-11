@@ -59,9 +59,12 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: check-types
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: ./tooling/github/setup
 
       - name: Integration tests

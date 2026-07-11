@@ -30,7 +30,10 @@ export async function runTurn({
 		await emit({ type: "user_message", content: message });
 		await emit({ type: "thread_started", threadId });
 	});
-	if (started.isErr()) return started;
+	if (started.isErr()) {
+		await emitTerminal({ type: "turn_interrupted" });
+		return started;
+	}
 
 	const streamed = await Result.tryPromise(async () => {
 		const gen = runtime.threadCoordinator.prompt(

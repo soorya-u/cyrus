@@ -2,9 +2,15 @@ import { describe, expect, test } from "bun:test";
 import type { ServerEvent } from "@cyrus/schemas/signaling";
 import { createSignalingEvents } from "./peer";
 
-function* eventStream(events: ServerEvent[]) {
-	for (const event of events) yield event;
+async function* eventStream(events: ServerEvent[]) {
+	for (const event of events) {
+		await Promise.resolve();
+		yield event;
+	}
 }
+
+const flushMicrotasks = () =>
+	new Promise<void>((resolve) => setImmediate(resolve));
 
 describe("createSignalingEvents", () => {
 	test("fans out events to subscribers", async () => {
@@ -17,7 +23,7 @@ describe("createSignalingEvents", () => {
 		const received: ServerEvent[] = [];
 
 		events.subscribe((event) => received.push(event));
-		await Bun.sleep(10);
+		await flushMicrotasks();
 		events.close();
 
 		expect(received).toEqual([
@@ -26,14 +32,13 @@ describe("createSignalingEvents", () => {
 		]);
 	});
 
-	test("stops delivering after close", async () => {
+	test("stops delivering after close", () => {
 		const stream = eventStream([{ type: "peer-left", id: "peer-1" }]);
 		const events = createSignalingEvents(stream);
 		const received: ServerEvent[] = [];
 
 		events.subscribe((event) => received.push(event));
 		events.close();
-		await Bun.sleep(10);
 
 		expect(received).toHaveLength(0);
 	});

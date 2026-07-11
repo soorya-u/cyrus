@@ -40,6 +40,33 @@ describe("runTurn", () => {
 		expect(terminal).toEqual([{ type: "turn_completed" }]);
 	});
 
+	test("emits interrupted terminal event when initial emit fails", async () => {
+		const terminal: ChatChunk["event"][] = [];
+
+		const result = await runTurn({
+			agentName: "claude",
+			threadId: "thread-1",
+			projectId: "project-1",
+			message: "hello",
+			emit: () => Promise.reject(new Error("emit failed")),
+			emitTerminal: (event) => {
+				terminal.push(event);
+				return Promise.resolve();
+			},
+			runtime: {
+				threadCoordinator: {
+					prompt: () =>
+						(function* unusedPrompt() {
+							yield { type: "token" as const, text: "", messageId: "m1" };
+						})(),
+				},
+			} as never,
+		});
+
+		expect(result.isErr()).toBe(true);
+		expect(terminal).toEqual([{ type: "turn_interrupted" }]);
+	});
+
 	test("emits interrupted terminal event when prompt fails", async () => {
 		const terminal: ChatChunk["event"][] = [];
 

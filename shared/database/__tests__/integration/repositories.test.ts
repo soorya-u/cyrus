@@ -19,7 +19,7 @@ import { withTempDatabase } from "../helpers/turso";
 describe("database repositories", () => {
 	test("creates and lists projects", async () => {
 		await withTempDatabase(async () => {
-			const created = await createProject("Cyrus", "/tmp/cyrus");
+			const created = await createProject("Cyrus");
 			expect(created.isOk()).toBe(true);
 			if (!created.isOk()) return;
 
@@ -31,7 +31,7 @@ describe("database repositories", () => {
 				expect.objectContaining({
 					id: created.value.id,
 					name: "Cyrus",
-					cwd: "/tmp/cyrus",
+					cwd: "",
 				}),
 			]);
 		});
