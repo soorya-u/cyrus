@@ -16,7 +16,14 @@ async function globalSetup(_config: FullConfig): Promise<void> {
 		stdio: "inherit",
 	});
 
-	for (let attempt = 0; attempt < 120; attempt += 1) {
+	let exited = false;
+	proc.on("exit", (code) => {
+		if (code !== 0 && code !== null) {
+			exited = true;
+		}
+	});
+
+	for (let attempt = 0; attempt < 120 && !exited; attempt += 1) {
 		try {
 			await readFile(playwrightStatePath(), "utf8");
 			process.env.PLAYWRIGHT_STACK_PID = String(proc.pid ?? "");
@@ -24,6 +31,12 @@ async function globalSetup(_config: FullConfig): Promise<void> {
 		} catch {
 			await sleep(1000);
 		}
+	}
+
+	if (exited) {
+		throw new Error(
+			"Playwright stack process exited unexpectedly before becoming ready."
+		);
 	}
 
 	proc.kill();

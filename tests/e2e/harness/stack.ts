@@ -129,27 +129,33 @@ async function createE2eStack(
 	const cyrusHome = await createTempCyrusHome();
 	const processes: ManagedProcess[] = [];
 
-	await cleanupDevServerProcesses();
-	await pushDatabaseSchema(serverEnv);
+	try {
+		await cleanupDevServerProcesses();
+		await pushDatabaseSchema(serverEnv);
 
-	const server = spawnServer(serverEnv);
-	processes.push(server);
-	await waitForHttpOk(`${E2E_SERVER_URL}/health`, { timeoutMs: 120_000 });
+		const server = spawnServer(serverEnv);
+		processes.push(server);
+		await waitForHttpOk(`${E2E_SERVER_URL}/health`, { timeoutMs: 120_000 });
 
-	const auth = await seedCliAccessToken(E2E_SERVER_URL);
-	await writeCliConfig(cyrusHome, auth.token, "e2e-worker-1", "E2E Worker");
+		const auth = await seedCliAccessToken(E2E_SERVER_URL);
+		await writeCliConfig(cyrusHome, auth.token, "e2e-worker-1", "E2E Worker");
 
-	if (withWeb) {
-		const web = spawnWeb(webEnv);
-		processes.push(web);
-		await waitForHttpOk(E2E_WEB_URL, { timeoutMs: 120_000 });
+		if (withWeb) {
+			const web = spawnWeb(webEnv);
+			processes.push(web);
+			await waitForHttpOk(E2E_WEB_URL, { timeoutMs: 120_000 });
+		}
+
+		const cli = spawnCliWorker(cyrusHome, buildCliEnv(cyrusHome));
+		processes.push(cli);
+		await waitForWorkerConnected(cli);
+
+		return { processes, cyrusHome, auth };
+	} catch (error) {
+		await stopAll(processes).catch(() => undefined);
+		await cleanupDevServerProcesses().catch(() => undefined);
+		throw error;
 	}
-
-	const cli = spawnCliWorker(cyrusHome, buildCliEnv(cyrusHome));
-	processes.push(cli);
-	await waitForWorkerConnected(cli);
-
-	return { processes, cyrusHome, auth };
 }
 
 export function startE2eStack(
