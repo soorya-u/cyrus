@@ -62,9 +62,8 @@ in later phases.
 - Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`.
   Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets enable a
   signaling WebSocket check in addition to `GET /health`.
-- Nightly also runs build smoke (`build:web`, CLI compile), real
-  `node-datachannel` checks (`CYRUS_NIGHTLY_WEBRTC=1`), and an optional Neon
-  `neon-http` driver job when `NEON_DATABASE_URL` is configured.
+- Nightly also runs build smoke (`build:web`, CLI compile) and real
+  `node-datachannel` checks (`CYRUS_NIGHTLY_WEBRTC=1`).
 - `pre-push` now runs `test:unit` locally; integration and E2E stay in CI only.
 
 ## OpenSpec coverage map

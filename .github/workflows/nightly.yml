@@ -32,10 +32,20 @@ jobs:
         run: bunx playwright install --with-deps chromium
         working-directory: tests/e2e
 
+      - name: Require Neon database URL
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "NEON_DATABASE_URL is not configured in the testing environment."
+            exit 1
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+
       - name: End-to-end tests
         run: bun test:e2e
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          CYRUS_E2E: "1"
 
   build-smoke:
     name: Build Smoke
@@ -59,9 +69,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
-    env:
-      CYRUS_NIGHTLY_WEBRTC: "1"
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,26 +77,5 @@ jobs:
 
       - name: node-datachannel integration
         run: bun -F @cyrus/connections test:unit
-
-  neon-nightly:
-    name: Neon HTTP Driver
-    runs-on: ubuntu-latest
-    environment: testing
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: ./tooling/github/setup
-
-      - name: Neon driver smoke
-        run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "Skipping Neon nightly — NEON_DATABASE_URL is not configured."
-            exit 0
-          fi
-          bun -F @cyrus/server test:unit
         env:
-          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-          DB_DRIVER: neon-http
+          CYRUS_NIGHTLY_WEBRTC: "1"

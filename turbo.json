@@ -6,7 +6,9 @@
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
     "CORS_ORIGIN",
-    "CLI_PUBLIC_SERVER_URL"
+    "CLI_PUBLIC_SERVER_URL",
+    "CYRUS_E2E",
+    "CYRUS_NIGHTLY_WEBRTC"
   ],
   "tasks": {
     "build": {
@@ -30,7 +32,6 @@
       "cache": false
     },
     "test:e2e": {
-      "dependsOn": ["build"],
       "cache": false
     },
     "dev": {
