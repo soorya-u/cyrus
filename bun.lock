@@ -320,6 +320,16 @@
     "tooling/github": {
       "name": "@cyrus/github",
     },
+    "tooling/test": {
+      "name": "@cyrus/test",
+      "dependencies": {
+        "@cyrus/connections": "workspace:*",
+      },
+      "devDependencies": {
+        "@cyrus/typescript": "workspace:*",
+        "@types/bun": "catalog:",
+      },
+    },
     "tooling/typescript": {
       "name": "@cyrus/typescript",
       "version": "0.0.0",
@@ -578,6 +588,8 @@
     "@cyrus/server": ["@cyrus/server@workspace:apps/server"],
 
     "@cyrus/styles": ["@cyrus/styles@workspace:shared/styles"],
+
+    "@cyrus/test": ["@cyrus/test@workspace:tooling/test"],
 
     "@cyrus/typescript": ["@cyrus/typescript@workspace:tooling/typescript"],
 

@@ -1,0 +1,15 @@
+{
+  "name": "@cyrus/test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "smoke:deploy": "bun smoke/deploy.ts"
+  },
+  "dependencies": {
+    "@cyrus/connections": "workspace:*"
+  },
+  "devDependencies": {
+    "@cyrus/typescript": "workspace:*",
+    "@types/bun": "catalog:"
+  }
+}
