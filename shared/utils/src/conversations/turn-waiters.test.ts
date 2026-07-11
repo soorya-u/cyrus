@@ -7,14 +7,14 @@ import {
 } from "./turn-waiters";
 
 describe("turn waiters", () => {
-	test("resolves when a turn completes", () => {
+	test("resolves when a turn completes", async () => {
 		const ended = waitForTurnEnd("thread-complete", "turn-1");
 
 		settleTurnWaiter("thread-complete", "turn-1", {
 			type: "turn_completed",
 		});
 
-		expect(ended).resolves.toBeUndefined();
+		await expect(ended).resolves.toBeUndefined();
 	});
 
 	test("rejects with an interrupted error when a turn is interrupted", async () => {
@@ -24,13 +24,13 @@ describe("turn waiters", () => {
 			type: "turn_interrupted",
 		});
 
-		expect(ended).rejects.toThrow("turn interrupted");
+		await expect(ended).rejects.toThrow("turn interrupted");
 		await ended.catch((error) =>
 			expect(isTurnInterruptedError(error)).toBe(true)
 		);
 	});
 
-	test("ignores non-terminal events", () => {
+	test("ignores non-terminal events", async () => {
 		const ended = waitForTurnEnd("thread-token", "turn-1");
 
 		settleTurnWaiter("thread-token", "turn-1", {
@@ -41,10 +41,10 @@ describe("turn waiters", () => {
 			type: "turn_completed",
 		});
 
-		expect(ended).resolves.toBeUndefined();
+		await expect(ended).resolves.toBeUndefined();
 	});
 
-	test("rejects explicitly and removes the waiter", () => {
+	test("rejects explicitly and removes the waiter", async () => {
 		const ended = waitForTurnEnd("thread-error", "turn-1");
 
 		rejectTurnWaiter("thread-error", "turn-1", new Error("boom"));
@@ -52,14 +52,14 @@ describe("turn waiters", () => {
 			type: "turn_completed",
 		});
 
-		expect(ended).rejects.toThrow("boom");
+		await expect(ended).rejects.toThrow("boom");
 	});
 
-	test("rejects immediately when the abort signal is already aborted", () => {
+	test("rejects immediately when the abort signal is already aborted", async () => {
 		const controller = new AbortController();
 		controller.abort();
 
-		expect(
+		await expect(
 			waitForTurnEnd("thread-abort", "turn-1", controller.signal)
 		).rejects.toThrow("turn aborted");
 	});

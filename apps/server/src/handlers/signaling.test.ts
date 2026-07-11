@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ServerEvent } from "@cyrus/schemas/signaling";
+import { encodeHibernationRPCEvent } from "@orpc/server/hibernation";
 import { broadcastSignalingEvent, type SignalingWS } from "./signaling";
 
 function connection(
@@ -33,7 +34,10 @@ describe("broadcastSignalingEvent", () => {
 		);
 
 		expect(sent).toHaveLength(2);
-		expect(sent.every((payload) => typeof payload === "string")).toBe(true);
+		expect(sent).toEqual([
+			encodeHibernationRPCEvent("event-controller", event),
+			encodeHibernationRPCEvent("event-worker", event),
+		]);
 	});
 
 	test("skips excluded peers and peers without attachments", () => {
@@ -57,5 +61,15 @@ describe("broadcastSignalingEvent", () => {
 		);
 
 		expect(sent).toHaveLength(1);
+		expect(sent[0]).toBe(
+			encodeHibernationRPCEvent("event-worker", {
+				peer: {
+					id: "worker-2",
+					name: "Worker 2",
+					role: "worker",
+				},
+				type: "peer-joined",
+			})
+		);
 	});
 });
