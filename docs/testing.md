@@ -53,8 +53,8 @@ in later phases.
   `ENABLE_E2E_AUTH=1`.
 - Playwright specs live in `tests/e2e/web/` and reuse the same harness-managed
   stack.
-- E2E runs on `main` push and nightly via `.github/workflows/nightly.yml`, not
-  on every pull request.
+- E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch`
+  only for now; push/schedule triggers disabled until Neon CI is wired).
 
 ## Phase 3 notes
 
