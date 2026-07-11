@@ -34,11 +34,18 @@ export const auth = betterAuth({
 	secret: env.BETTER_AUTH_SECRET,
 	baseURL: env.BETTER_AUTH_URL,
 	advanced: {
-		defaultCookieAttributes: {
-			sameSite: "none",
-			secure: true,
-			httpOnly: true,
-		},
+		defaultCookieAttributes:
+			env.NODE_ENV === "production"
+				? {
+						sameSite: "none",
+						secure: true,
+						httpOnly: true,
+					}
+				: {
+						sameSite: "lax",
+						secure: false,
+						httpOnly: true,
+					},
 	},
 	logger: {
 		log: (level, message, ...args) => log[level]({ message, ...args }),

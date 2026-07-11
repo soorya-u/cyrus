@@ -16,11 +16,20 @@ e2eDescribe("web smoke", () => {
 				value: state.sessionCookie,
 				domain: "127.0.0.1",
 				path: "/",
+				httpOnly: true,
+				secure: false,
+				sameSite: "Lax",
 			},
 		]);
 
 		await page.goto("/workers");
-		await expect(page.getByText(state.workerName)).toBeVisible({
+		await expect(page.getByRole("combobox")).toBeVisible({
+			timeout: 30_000,
+		});
+		await page.getByRole("combobox").click();
+		await expect(
+			page.getByRole("option", { name: state.workerName })
+		).toBeVisible({
 			timeout: 30_000,
 		});
 	});
