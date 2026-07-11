@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { Result } from "better-result";
 import { YAML } from "bun";
 import { seedCliAccessToken } from "./auth";
 import {
@@ -129,7 +130,7 @@ async function createE2eStack(
 	const cyrusHome = await createTempCyrusHome();
 	const processes: ManagedProcess[] = [];
 
-	try {
+	const stackResult = await Result.tryPromise(async () => {
 		await cleanupDevServerProcesses();
 		await pushDatabaseSchema(serverEnv);
 
@@ -151,11 +152,20 @@ async function createE2eStack(
 		await waitForWorkerConnected(cli);
 
 		return { processes, cyrusHome, auth };
-	} catch (error) {
-		await stopAll(processes).catch(() => undefined);
-		await cleanupDevServerProcesses().catch(() => undefined);
-		throw error;
+	});
+
+	if (stackResult.isErr()) {
+		(await Result.tryPromise(() => stopAll(processes))).tapError(() => {
+			// best-effort cleanup after partial stack startup
+		});
+		(await Result.tryPromise(() => cleanupDevServerProcesses())).tapError(
+			() => {
+				// best-effort cleanup after partial stack startup
+			}
+		);
 	}
+
+	return stackResult.unwrap();
 }
 
 export function startE2eStack(
@@ -175,10 +185,8 @@ export async function runE2eScenario(
 ): Promise<void> {
 	await withIgnoredRejections(async () => {
 		const stack = await createE2eStack(options);
-		try {
-			await run(stack);
-		} finally {
-			await stopE2eStack(stack);
-		}
+		const result = await Result.tryPromise(() => run(stack));
+		await stopE2eStack(stack);
+		result.unwrap();
 	});
 }

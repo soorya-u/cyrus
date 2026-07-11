@@ -103,12 +103,9 @@ export async function connectSignaling(
 	const link = new RPCLink({ websocket: socket as unknown as WebSocket });
 	const signaling: SignalingClient = createORPCClient(link);
 
-	try {
-		await waitForPartySocketOpen(socket);
-	} catch (error) {
-		socket.close();
-		throw error;
-	}
+	(await Result.tryPromise(() => waitForPartySocketOpen(socket)))
+		.tapError(() => socket.close())
+		.unwrap();
 
 	const result = await Result.tryPromise(async () => {
 		const stream = await signaling.onSignalingEvent({

@@ -308,6 +308,7 @@
       "name": "@cyrus/e2e",
       "dependencies": {
         "@cyrus/connections": "workspace:*",
+        "better-result": "catalog:",
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",

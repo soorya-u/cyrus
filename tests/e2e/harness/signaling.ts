@@ -4,6 +4,7 @@ import {
 	type SignalingSession,
 } from "@cyrus/connections/rtc/session";
 import type { DeviceInfo } from "@cyrus/schemas/signaling";
+import { Result } from "better-result";
 
 async function closeSignalingSession(
 	session: SignalingSession | undefined
@@ -12,12 +13,7 @@ async function closeSignalingSession(
 		return;
 	}
 
-	try {
-		session.close();
-	} catch {
-		// ignore close races while the socket is still settling
-	}
-
+	Result.try(() => session.close());
 	await Bun.sleep(50);
 }
 
@@ -36,16 +32,20 @@ export async function connectE2eController(
 
 	while (Date.now() < deadline) {
 		let session: SignalingSession | undefined;
-		try {
+		const result = await Result.tryPromise(async () => {
 			session = await connectSignaling(options);
 			const peers = await session.signaling.listPeers();
 			return { session, peers };
-		} catch (error) {
-			lastError = error;
-			await closeSignalingSession(session);
-			attempt += 1;
-			await Bun.sleep(Math.min(1000, 250 * attempt));
+		});
+
+		if (result.isOk()) {
+			return result.unwrap();
 		}
+
+		lastError = result.error;
+		await closeSignalingSession(session);
+		attempt += 1;
+		await Bun.sleep(Math.min(1000, 250 * attempt));
 	}
 
 	throw (
