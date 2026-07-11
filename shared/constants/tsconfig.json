@@ -1,7 +1,7 @@
 {
   "extends": "@cyrus/typescript/tsconfig.base.json",
   "compilerOptions": {
-    "types": [],
+    "types": ["bun"],
     "strictNullChecks": true
   },
   "include": ["src/**/*.ts"],

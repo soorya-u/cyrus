@@ -39,3 +39,15 @@ jobs:
 
       - name: Type check
         run: bun check:types
+
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./tooling/github/setup
+
+      - name: Unit tests
+        run: bun test:unit

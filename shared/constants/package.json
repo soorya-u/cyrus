@@ -7,10 +7,12 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc --noEmit",
+    "test:unit": "bun test"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
+    "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
 }

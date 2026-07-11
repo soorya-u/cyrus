@@ -207,6 +207,7 @@
       "version": "0.0.0",
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
+        "@types/bun": "catalog:",
         "typescript": "catalog:",
       },
     },
@@ -274,6 +275,7 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
+        "@types/bun": "catalog:",
       },
     },
     "shared/styles": {
@@ -294,6 +296,7 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
+        "@types/bun": "catalog:",
         "react": "catalog:",
         "typescript": "catalog:",
       },
