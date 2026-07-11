@@ -1,7 +1,11 @@
 import { writeFile } from "node:fs/promises";
 import { Result } from "better-result";
 import { YAML } from "bun";
-import { AGENTS_PATH } from "@/constants/paths";
+import {
+	type CyrusPaths,
+	type CyrusStoreOptions,
+	defaultCyrusPaths,
+} from "@/constants/paths";
 import type { AgentEntry } from "@/validators/agent";
 import { agentEntrySchema } from "@/validators/agent";
 import { ensureDir } from "../utils/dir";
@@ -9,8 +13,15 @@ import { toMessage } from "../utils/error";
 
 type AgentsRegistry = Record<string, AgentEntry>;
 
-async function readRegistry(): Promise<Result<AgentsRegistry, string>> {
-	const file = Bun.file(AGENTS_PATH);
+function resolvePaths(options?: CyrusStoreOptions): CyrusPaths {
+	return options?.paths ?? defaultCyrusPaths();
+}
+
+async function readRegistry(
+	options?: CyrusStoreOptions
+): Promise<Result<AgentsRegistry, string>> {
+	const { agentsPath } = resolvePaths(options);
+	const file = Bun.file(agentsPath);
 	if (!(await file.exists())) return Result.ok({});
 
 	return (
@@ -24,14 +35,14 @@ async function readRegistry(): Promise<Result<AgentsRegistry, string>> {
 			const registry: AgentsRegistry = {};
 			for (const [id, value] of Object.entries(parsed)) {
 				const entry = agentEntrySchema.safeParse(value);
-				if (!entry.success) {
+				if (!entry.success)
 					throw new Error(`invalid entry for agent "${id}" in agents.yml`);
-				}
-				if (entry.data.registryId !== id) {
+
+				if (entry.data.registryId !== id)
 					throw new Error(
 						`agents.yml key "${id}" does not match registryId "${entry.data.registryId}"`
 					);
-				}
+
 				registry[id] = entry.data;
 			}
 			return registry;
@@ -40,32 +51,40 @@ async function readRegistry(): Promise<Result<AgentsRegistry, string>> {
 }
 
 async function writeRegistry(
-	registry: AgentsRegistry
+	registry: AgentsRegistry,
+	options?: CyrusStoreOptions
 ): Promise<Result<void, string>> {
+	const paths = resolvePaths(options);
 	return (
 		await Result.tryPromise(async () => {
-			await ensureDir();
-			await writeFile(AGENTS_PATH, YAML.stringify(registry), { mode: 0o600 });
+			await ensureDir(paths.home);
+			await writeFile(paths.agentsPath, YAML.stringify(registry), {
+				mode: 0o600,
+			});
 		})
 	).mapError(toMessage);
 }
 
-export function listAgents(): Promise<Result<AgentsRegistry, string>> {
-	return readRegistry();
+export function listAgents(
+	options?: CyrusStoreOptions
+): Promise<Result<AgentsRegistry, string>> {
+	return readRegistry(options);
 }
 
 export async function getAgent(
-	id: string
+	id: string,
+	options?: CyrusStoreOptions
 ): Promise<Result<AgentEntry | null, string>> {
-	const registry = await readRegistry();
+	const registry = await readRegistry(options);
 	return registry.map((agents) => agents[id] ?? null);
 }
 
 export async function addAgent(
 	id: string,
-	entry: AgentEntry
+	entry: AgentEntry,
+	options?: CyrusStoreOptions
 ): Promise<Result<void, string>> {
-	const registry = await readRegistry();
+	const registry = await readRegistry(options);
 	if (registry.isErr()) return Result.err(registry.error);
 
 	const agents = registry.value;
@@ -73,11 +92,14 @@ export async function addAgent(
 		return Result.err(`agent "${id}" is already enabled`);
 	}
 	agents[id] = entry;
-	return writeRegistry(agents);
+	return writeRegistry(agents, options);
 }
 
-export async function removeAgent(id: string): Promise<Result<void, string>> {
-	const registry = await readRegistry();
+export async function removeAgent(
+	id: string,
+	options?: CyrusStoreOptions
+): Promise<Result<void, string>> {
+	const registry = await readRegistry(options);
 	if (registry.isErr()) return Result.err(registry.error);
 
 	const agents = registry.value;
@@ -85,7 +107,7 @@ export async function removeAgent(id: string): Promise<Result<void, string>> {
 		return Result.err(`agent "${id}" is not enabled`);
 	}
 	delete agents[id];
-	return writeRegistry(agents);
+	return writeRegistry(agents, options);
 }
 
 export type EnabledAgent = {
@@ -95,8 +117,10 @@ export type EnabledAgent = {
 };
 
 /** All enabled agents from agents.yml for listAgents / composer. */
-export async function listEnabledAgents(): Promise<EnabledAgent[]> {
-	const registry = await readRegistry();
+export async function listEnabledAgents(
+	options?: CyrusStoreOptions
+): Promise<EnabledAgent[]> {
+	const registry = await readRegistry(options);
 	if (registry.isErr()) return [];
 
 	return Object.entries(registry.value)
@@ -108,8 +132,10 @@ export async function listEnabledAgents(): Promise<EnabledAgent[]> {
 		.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export async function listEnabledAgentIds(): Promise<Set<string>> {
-	const registry = await readRegistry();
+export async function listEnabledAgentIds(
+	options?: CyrusStoreOptions
+): Promise<Set<string>> {
+	const registry = await readRegistry(options);
 	if (registry.isErr()) return new Set();
 	return new Set(Object.keys(registry.value));
 }

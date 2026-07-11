@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { registryIdSchema } from "./registry-id";
+import { registryIdSchema } from "./registry";
 
 export const agentEntrySchema = z.object({
 	registryId: registryIdSchema,

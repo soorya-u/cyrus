@@ -1,5 +1,5 @@
 import type { Command } from "@commander-js/extra-typings";
-import { registryIdArgParser } from "@/validators/registry-id";
+import { registryIdArgParser } from "@/validators/registry";
 import { add } from "./add";
 import { doctor } from "./doctor";
 import { list } from "./list";
