@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const RegisteredAgentSchema = z.object({
+	id: z.string(),
 	name: z.string(),
-	command: z.string(),
-	args: z.array(z.string()),
+	icon: z.url(),
 });
 
 export const ListAgentsOutputSchema = z.object({

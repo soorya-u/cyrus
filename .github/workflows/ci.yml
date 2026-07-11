@@ -14,6 +14,7 @@ permissions:
 
 env:
   TURBO_TELEMETRY_DISABLED: 1
+  CLI_PUBLIC_SERVER_URL: http://localhost:8787
 
 jobs:
   lint:

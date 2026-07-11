@@ -1,5 +1,6 @@
 import { pingAcpAgent } from "@/core/acp/ping";
 import { getAgent, listAgents } from "@/store/agents";
+import { createSpinner } from "@/utils/spinner";
 import { green, print, red } from "@/utils/style";
 import type { AgentEntry } from "@/validators/agent";
 
@@ -8,31 +9,38 @@ type HealthResult = {
 	error?: string;
 };
 
-async function checkAgent(entry: AgentEntry): Promise<HealthResult> {
-	return (await pingAcpAgent(entry)).match<HealthResult>({
+async function checkAgent(
+	registryId: string,
+	entry: AgentEntry
+): Promise<HealthResult> {
+	const spinner = createSpinner(`Checking ${registryId}…`);
+	spinner.start();
+	const result = await pingAcpAgent(registryId, entry);
+	spinner.stop();
+	return result.match<HealthResult>({
 		ok: () => ({ healthy: true }),
 		err: (error) => ({ healthy: false, error }),
 	});
 }
 
-function printHealth(name: string, result: HealthResult): void {
+function printHealth(registryId: string, result: HealthResult): void {
 	const status = result.healthy ? green("healthy") : red("unhealthy");
-	print.line`${name}: ${status}`;
+	print.line`${registryId}: ${status}`;
 	if (result.error) print.line`  ${result.error}`;
 }
 
-async function checkSingleAgentHealth(name: string) {
-	const entry = await getAgent(name);
+async function checkSingleAgentHealth(registryId: string) {
+	const entry = await getAgent(registryId);
 	entry.match({
 		ok: async (agent) => {
 			if (!agent) {
-				print.error`agent "${name}" is not registered`;
-				print.dim`Add it with \`cyrusd agents add ${name} --cmd <command>\`.`;
+				print.error`agent "${registryId}" is not enabled`;
+				print.dim`Add it with \`cyrusd agents add ${registryId}\`.`;
 				process.exit(1);
 			}
 
-			const result = await checkAgent(agent);
-			printHealth(name, result);
+			const result = await checkAgent(registryId, agent);
+			printHealth(registryId, result);
 			if (!result.healthy) process.exit(1);
 		},
 		err: (message) => {
@@ -51,18 +59,20 @@ async function checkAllAgentsHealth() {
 			);
 
 			if (entries.length === 0) {
-				print.dim`No agents registered. Add one with \`cyrusd agents add <name> --cmd <command>\`.`;
+				print.dim`No agents enabled. Run \`cyrusd agents add <registry-id>\`.`;
 				process.exit(1);
 			}
 
 			const results = await Promise.all(
-				entries.map(async ([name, entry]) => ({
-					name,
-					result: await checkAgent(entry),
+				entries.map(async ([registryId, entry]) => ({
+					registryId,
+					result: await checkAgent(registryId, entry),
 				}))
 			);
 
-			for (const { name, result } of results) printHealth(name, result);
+			for (const { registryId, result } of results) {
+				printHealth(registryId, result);
+			}
 
 			if (results.some(({ result }) => !result.healthy)) process.exit(1);
 		},
@@ -73,6 +83,8 @@ async function checkAllAgentsHealth() {
 	});
 }
 
-export async function doctor(name?: string): Promise<void> {
-	name ? await checkSingleAgentHealth(name) : await checkAllAgentsHealth();
+export async function doctor(registryId?: string): Promise<void> {
+	registryId
+		? await checkSingleAgentHealth(registryId)
+		: await checkAllAgentsHealth();
 }

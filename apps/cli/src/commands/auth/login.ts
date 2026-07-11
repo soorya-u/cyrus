@@ -2,6 +2,7 @@ import { generateName } from "@cyrus/utils/identity";
 import { Result } from "better-result";
 import { authClient } from "@/lib/auth";
 import { getOrCreate, set } from "@/store/config";
+import { createSpinner } from "@/utils/spinner";
 import { blue, bold, cyan, print, underline } from "@/utils/style";
 
 export const CLIENT_ID = "cyrusd";
@@ -29,7 +30,9 @@ export async function login(): Promise<void> {
 	print.line`\nTo sign in, visit:\n`;
 	print.line`  ${underline(blue(verificationUriComplete ?? verificationUri))}\n`;
 	print.line`and enter the code:  ${bold(cyan(userCode))}\n`;
-	print.dim`Waiting for approval…`;
+
+	const spinner = createSpinner("Waiting for approval…");
+	spinner.start();
 
 	let interval = (pollInterval ?? 5) * 1000;
 	const deadline = Date.now() + (expiresIn ?? 1800) * 1000;
@@ -61,7 +64,7 @@ export async function login(): Promise<void> {
 			await Result.tryPromise(() => getOrCreate("name", generateName));
 			const session = await authClient.getSession();
 			const email = session.data?.user?.email;
-			print.success`\n✓ Logged in${email ? ` as ${bold(email)}` : ""}.`;
+			spinner.success(`Logged in${email ? ` as ${email}` : ""}.`);
 			return;
 		}
 
@@ -72,19 +75,21 @@ export async function login(): Promise<void> {
 				interval += 5000;
 				break;
 			case "access_denied":
-				print.error`\nAccess denied.`;
+				spinner.error("Access denied.");
 				process.exit(1);
 				break;
 			case "expired_token":
-				print.error`\nCode expired. Run \`cyrusd login\` again.`;
+				spinner.error("Code expired. Run `cyrusd login` again.");
 				process.exit(1);
 				break;
 			default:
-				print.error`\nLogin failed: ${tokenError?.error_description ?? "unknown error"}`;
+				spinner.error(
+					`Login failed: ${tokenError?.error_description ?? "unknown error"}`
+				);
 				process.exit(1);
 		}
 	}
 
-	print.error`\nCode expired. Run \`cyrusd login\` again.`;
+	spinner.error("Code expired. Run `cyrusd login` again.");
 	process.exit(1);
 }

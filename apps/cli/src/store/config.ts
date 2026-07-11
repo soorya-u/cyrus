@@ -1,12 +1,8 @@
 import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { Result } from "better-result";
 import { YAML } from "bun";
-import { CONFIG_FILE } from "@/constants/file";
-import { env } from "@/lib/env";
+import { CONFIG_PATH } from "@/constants/paths";
 import { ensureDir } from "@/utils/dir";
-
-const CONFIG_PATH = join(env.CYRUS_HOME, CONFIG_FILE);
 
 export type Config = {
 	token: string;

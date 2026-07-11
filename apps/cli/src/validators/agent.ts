@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { commandSchema } from "./acp";
+import { registryIdSchema } from "./registry";
 
 export const agentEntrySchema = z.object({
-	command: commandSchema,
-	args: z.array(z.string()).default([]),
+	registryId: registryIdSchema,
+	name: z.string().min(1),
+	icon: z.url(),
 });
 
 export type AgentEntry = z.infer<typeof agentEntrySchema>;

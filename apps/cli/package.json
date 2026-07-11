@@ -21,14 +21,15 @@
     "@cyrus/database": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
-    "@tursodatabase/database": "^0.6.1",
     "@orpc/server": "catalog:",
     "@t3-oss/env-core": "catalog:",
+    "@tursodatabase/database": "^0.6.1",
     "better-auth": "catalog:",
     "better-result": "catalog:",
     "commander": "^15.0.0",
     "diff": "^7.0.0",
     "evlog": "catalog:",
+    "yocto-spinner": "^1.2.1",
     "zod": "catalog:"
   },
   "devDependencies": {

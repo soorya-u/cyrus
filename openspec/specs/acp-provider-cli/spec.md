@@ -2,79 +2,95 @@
 
 ## Purpose
 
-CLI commands for managing registered ACP agents. Users install agents outside Cyrus; the CLI registers spawn recipes and verifies connectivity.
+CLI commands for managing enabled ACP registry agents. Users browse the ACP registry, enable agents by registry id, and verify connectivity via doctor.
 
 ## Requirements
 
 ### Requirement: Agent list command
 
-The CLI SHALL provide `cyrusd agents list` that displays all registered agents and their configured command and args.
+The CLI SHALL provide `cyrusd agents list` that displays all enabled agents from `agents.yml` with registry id, display name, and icon URL.
 
 #### Scenario: List all agents
 
 - **WHEN** user runs `cyrusd agents list`
-- **THEN** the CLI prints each agent's name, command, and args
+- **THEN** the CLI prints each enabled agent's registry id, name, and icon URL
 
 ### Requirement: Agent add command
 
-The CLI SHALL provide `cyrusd agents add <name> --cmd <command> [--args ...]` to register a new agent.
+The CLI SHALL provide `cyrusd agents add <registry-id...>` to enable one or more agents from the ACP registry.
 
 #### Scenario: Add agent
 
-- **WHEN** user runs `cyrusd agents add claude-code --cmd claude-code-acp`
-- **THEN** the agent is persisted to `~/.cyrus/agents.yml`
+- **WHEN** user runs `cyrusd agents add claude-acp`
+- **THEN** the agent metadata is persisted to `~/.cyrus/agents.yml`
+
+#### Scenario: Add multiple agents
+
+- **WHEN** user runs `cyrusd agents add claude-acp codex-acp`
+- **THEN** the CLI enables each registry id in order and reports per-id success or failure
+
+#### Scenario: Warn on missing runtime deps
+
+- **WHEN** user runs `cyrusd agents add` for an npx-distributed agent and `npx` is not on PATH
+- **THEN** the CLI adds the agent and prints a warning that runtime dependencies are missing
+
+#### Scenario: Fail on unsupported platform
+
+- **WHEN** user runs `cyrusd agents add` for a binary-only agent with no build for the current platform
+- **THEN** the CLI fails with an error and does not write to `agents.yml`
 
 ### Requirement: Agent remove command
 
-The CLI SHALL provide `cyrusd agents rm <name>` to remove a registered agent.
+The CLI SHALL provide `cyrusd agents rm <registry-id...>` to disable one or more enabled agents.
 
 #### Scenario: Remove agent
 
-- **WHEN** user runs `cyrusd agents rm claude-code`
+- **WHEN** user runs `cyrusd agents rm claude-acp`
 - **THEN** the agent is removed from `~/.cyrus/agents.yml`
 
-### Requirement: Agent update command
+#### Scenario: Remove multiple agents
 
-The CLI SHALL provide `cyrusd agents update <name> [--cmd <command>] [--args ...]` to update a registered agent.
-
-#### Scenario: Update agent args
-
-- **WHEN** user runs `cyrusd agents update gemini --args --experimental-acp`
-- **THEN** the agent's args are updated in `agents.yml`
+- **WHEN** user runs `cyrusd agents rm claude-acp codex-acp`
+- **THEN** the CLI disables each registry id in order and reports per-id success or failure
 
 ### Requirement: Agent doctor command
 
-The CLI SHALL provide `cyrusd agents doctor [name]` to verify agent commands and ACP connectivity.
+The CLI SHALL provide `cyrusd agents doctor [--name <registry-id>]` to verify enabled agents by spawning the resolved command and completing an ACP `initialize` handshake.
 
 #### Scenario: Doctor all agents
 
 - **WHEN** user runs `cyrusd agents doctor` with no name
-- **THEN** the CLI checks every registered agent's PATH availability and ACP `initialize` handshake
+- **THEN** the CLI checks every enabled agent sequentially and reports healthy/unhealthy status
 
 #### Scenario: Doctor specific agent
 
-- **WHEN** user runs `cyrusd agents doctor claude-code`
-- **THEN** the CLI checks only that agent and reports worker status
+- **WHEN** user runs `cyrusd agents doctor --name claude-acp`
+- **THEN** the CLI checks only that agent and reports the result
+
+#### Scenario: Long-running checks show progress
+
+- **WHEN** doctor checks an agent whose first spawn may download packages or binaries
+- **THEN** the CLI shows a spinner while the check is in progress
 
 ### Requirement: No install commands
 
-The CLI SHALL NOT provide any command that installs, downloads, or manages agent packages. Users MUST install agents outside the Cyrus ecosystem (npm, brew, manual download).
+The CLI SHALL NOT provide commands that install or manage ACP agent packages directly. Spawn-time resolution is handled by native registry resolution (npx/uvx/binary).
 
 #### Scenario: No install subcommand
 
-- **WHEN** user runs `cyrusd agents install claude-code`
+- **WHEN** user runs `cyrusd agents install claude-acp`
 - **THEN** the CLI reports that the command does not exist
 
-#### Scenario: Doctor hints at external install
+#### Scenario: Doctor reports spawn failures
 
-- **WHEN** `cyrusd agents doctor` finds an agent command not on PATH
-- **THEN** the CLI prints an external install hint but does not perform installation
+- **WHEN** `cyrusd agents doctor` finds an agent cannot spawn or initialize
+- **THEN** the CLI prints a descriptive error but does not install packages itself
 
 ### Requirement: Worker capability advertisement
 
-The worker SHALL advertise only available registered agents in `WorkerCapabilities.agents` when joining the signaling room.
+The worker SHALL advertise all enabled agents from `agents.yml` in `listAgents`, including `id`, `name`, and `icon`.
 
-#### Scenario: Only available agents advertised
+#### Scenario: All enabled agents advertised
 
-- **WHEN** the worker starts and `claude-code` is available but `codex` is not
-- **THEN** `WorkerCapabilities.agents` includes `claude-code` and excludes `codex`
+- **WHEN** the worker serves `listAgents` and `agents.yml` contains `claude-acp` and `codex-acp`
+- **THEN** the response includes both agents with their display metadata regardless of PATH or spawn health

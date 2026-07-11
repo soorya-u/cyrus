@@ -2,7 +2,6 @@ import { type AcpRuntime, createAcpRuntime } from "@acp-kit/core";
 import { Result } from "better-result";
 import { agentEntryToProfile } from "@/core/agents/profile";
 import { env } from "@/lib/env";
-import { isCommandAvailable } from "@/utils/command";
 import type { AgentEntry } from "@/validators/agent";
 import { createDefaultHost } from "./host";
 import { createTrackedTransport } from "./transport";
@@ -30,10 +29,6 @@ export class AgentPool {
 	constructor(options: AgentPoolOptions) {
 		this.getEntry = options.getEntry;
 		this.idleMs = options.idleMs ?? env.CYRUS_ACP_IDLE_SHUTDOWN_MS;
-	}
-
-	isAvailable(entry: AgentEntry): boolean {
-		return isCommandAvailable(entry.command);
 	}
 
 	getState(name: string): ProcessState {
@@ -64,6 +59,7 @@ export class AgentPool {
 
 		const booted = await Result.tryPromise(() => startPromise);
 		if (booted.isErr()) {
+			await this.stopAgent(name);
 			this.agents.delete(name);
 			throw booted.error;
 		}
@@ -90,22 +86,21 @@ export class AgentPool {
 		transport: ReturnType<typeof createTrackedTransport>["transport"]
 	): Promise<AcpRuntime> {
 		const entry = await this.getEntry(name);
-		if (!entry) throw new Error(`agent "${name}" is not registered`);
-
-		if (!this.isAvailable(entry))
-			throw new Error(`command not found or not executable: ${entry.command}`);
+		if (!entry) throw new Error(`agent "${name}" is not enabled`);
 
 		return this.bootRuntime(name, entry, transport);
 	}
 
-	private bootRuntime(
+	private async bootRuntime(
 		name: string,
 		entry: AgentEntry,
 		transport: ReturnType<typeof createTrackedTransport>["transport"]
 	): Promise<AcpRuntime> {
+		const profile = await agentEntryToProfile(name, entry);
+		if (profile.isErr()) throw new Error(profile.error);
 		const runtime = createAcpRuntime({
 			agent: {
-				...agentEntryToProfile(name, entry),
+				...profile.value,
 				startupTimeoutMs: env.CYRUS_ACP_TIMEOUT_MS,
 			},
 			transport,
@@ -119,7 +114,13 @@ export class AgentPool {
 		const managed = this.agents.get(name);
 		if (managed) managed.runtime = runtime;
 
-		return runtime.ready().then(() => runtime);
+		const ready = await Result.tryPromise(() => runtime.ready());
+		if (ready.isErr()) {
+			await Result.tryPromise(() => runtime.shutdown());
+			throw ready.error;
+		}
+
+		return runtime;
 	}
 
 	private resetIdleTimer(name: string): void {

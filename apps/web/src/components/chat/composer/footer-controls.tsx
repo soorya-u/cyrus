@@ -1,4 +1,5 @@
 import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import { useEffect, useRef, useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -11,6 +12,39 @@ import { Separator } from "@/components/ui/separator";
 const TRIGGER_CLASS =
 	"h-8 min-w-0 max-w-40 shrink justify-between gap-1.5 whitespace-nowrap border-none bg-transparent px-2 text-muted-foreground/70 shadow-none hover:bg-accent hover:text-foreground/80 sm:max-w-48 sm:px-3";
 
+type CatalogOption = {
+	id: string;
+	name: string;
+	icon?: string;
+};
+
+function CatalogOptionIcon({ src }: { src: string }) {
+	const ref = useRef<HTMLImageElement>(null);
+	const [visible, setVisible] = useState(true);
+
+	useEffect(() => {
+		const img = ref.current;
+		if (!img) return;
+
+		const handleError = () => setVisible(false);
+		img.addEventListener("error", handleError);
+		return () => img.removeEventListener("error", handleError);
+	}, []);
+
+	if (!visible) return null;
+
+	return (
+		<img
+			alt=""
+			className="size-4 shrink-0"
+			height={16}
+			ref={ref}
+			src={src}
+			width={16}
+		/>
+	);
+}
+
 function CatalogSelect({
 	label,
 	value,
@@ -20,7 +54,7 @@ function CatalogSelect({
 	label: string;
 	value: string;
 	onValueChange: (value: string) => void;
-	options: { id: string; name: string }[];
+	options: CatalogOption[];
 }) {
 	if (options.length === 0) {
 		return null;
@@ -34,7 +68,12 @@ function CatalogSelect({
 			<SelectContent>
 				{options.map((option) => (
 					<SelectItem key={option.id} value={option.id}>
-						{option.name}
+						<span className="flex items-center gap-2">
+							{option.icon ? (
+								<CatalogOptionIcon key={option.icon} src={option.icon} />
+							) : null}
+							<span>{option.name}</span>
+						</span>
 					</SelectItem>
 				))}
 			</SelectContent>
@@ -69,7 +108,11 @@ export function ComposerFooterControls({
 			<CatalogSelect
 				label="Agent"
 				onValueChange={selectAgent}
-				options={agents.map((agent) => ({ id: agent.name, name: agent.name }))}
+				options={agents.map((agent) => ({
+					id: agent.id,
+					name: agent.name,
+					icon: agent.icon,
+				}))}
 				value={selectedAgent}
 			/>
 

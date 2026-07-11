@@ -18,7 +18,7 @@ The worker SHALL NOT spawn agent subprocesses at worker startup. A subprocess SH
 #### Scenario: First use spawns subprocess
 
 - **WHEN** an agent is needed and no subprocess exists for that agent
-- **THEN** the worker spawns the agent's configured command with args and env, then calls ACP `initialize`
+- **THEN** the worker spawns the registry-resolved command (npx, uvx, or cached binary), then calls ACP `initialize` on the subprocess stdio
 
 #### Scenario: Subsequent use reuses subprocess
 
@@ -82,19 +82,19 @@ The worker SHALL terminate all agent subprocesses on worker shutdown (SIGINT/SIG
 
 ### Requirement: Agent availability check
 
-The worker SHALL verify an agent's configured command resolves to an executable before spawning or advertising it. Bare command names MAY be resolved via PATH; absolute or relative paths SHALL be checked directly.
+Doctor SHALL spawn the registry-resolved command for an enabled agent and verify ACP `initialize`. The worker SHALL NOT filter `listAgents` by PATH or spawn health. Agent startup SHALL use `CYRUS_ACP_TIMEOUT_MS` (default 120s) to accommodate cold npx/uvx installs.
 
-#### Scenario: Agent binary not found
+#### Scenario: Spawn resolution failure
 
-- **WHEN** an agent command cannot be resolved to an executable
-- **THEN** spawn or doctor checks report unavailability with an external install hint
+- **WHEN** an enabled agent's registry entry cannot be resolved for the current platform
+- **THEN** spawn or doctor checks report unavailability with a descriptive error
 
-#### Scenario: Agent binary found on PATH
+#### Scenario: Agent spawn succeeds
 
-- **WHEN** an agent command name exists on PATH
-- **THEN** availability checks pass the resolution step
+- **WHEN** the registry id is valid and the resolved command starts successfully
+- **THEN** the worker proceeds with ACP initialization
 
-#### Scenario: Agent binary found by path
+#### Scenario: listAgents does not filter by availability
 
-- **WHEN** an agent command is configured as an absolute or relative executable path
-- **THEN** availability checks pass when that path is executable, even if it is not on PATH
+- **WHEN** an enabled agent is listed in `agents.yml` but fails doctor checks
+- **THEN** `listAgents` still includes that agent with its metadata
