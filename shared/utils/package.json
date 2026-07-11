@@ -6,6 +6,9 @@
   "exports": {
     "./*": "./src/*.ts"
   },
+  "scripts": {
+    "test:unit": "bun test"
+  },
   "dependencies": {
     "@cyrus/constants": "workspace:*",
     "@cyrus/schemas": "workspace:*",
@@ -17,6 +20,7 @@
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
+    "@types/bun": "catalog:",
     "react": "catalog:",
     "typescript": "catalog:"
   }

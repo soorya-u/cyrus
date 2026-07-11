@@ -9,10 +9,14 @@
     "./rtc/*": "./src/rtc/*.ts",
     "./signaling": "./src/signaling.ts"
   },
+  "scripts": {
+    "test:unit": "bun test"
+  },
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cyrus/typescript": "workspace:*"
+    "@cyrus/typescript": "workspace:*",
+    "@types/bun": "catalog:"
   }
 }
