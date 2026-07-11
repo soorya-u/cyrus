@@ -41,6 +41,22 @@ package boundary they exercise. Cross-app tests live at the repo root.
 Phase 1 only adds the unit test foundation. Integration and E2E are introduced
 in later phases.
 
+## Phase 4 notes
+
+- Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`.
+- The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an
+  isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
+- Run `bun db:push` against the branch before the suite; nightly CI should use an
+  isolated branch per run via the `NEON_DATABASE_URL` secret.
+- Programmatic auth uses Better Auth email sign-in plus the real device-code
+  flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the
+  server runs with `NODE_ENV=testing`.
+- Playwright specs live in `tests/e2e/web/` and reuse the same harness-managed
+  stack.
+- E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch`
+  only). The job uses the GitHub `testing` environment and `NEON_DATABASE_URL`
+  secret.
+
 ## Phase 3 notes
 
 - ACP prompt mocking lives in `apps/cli/__tests__/helpers/acp-runtime.ts`.

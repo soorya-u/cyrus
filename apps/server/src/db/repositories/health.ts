@@ -1,8 +1,13 @@
+import { Result } from "better-result";
 import { sql } from "drizzle-orm";
-
+import { log } from "evlog";
 import { db } from "../index";
 
-export const checkHealth = async () => {
-	const result = await db.execute(sql`SELECT 1`);
-	return result.rows.length > 0;
-};
+export const checkHealth = async () =>
+	(await Result.tryPromise(() => db.execute(sql`SELECT 1`))).match({
+		ok: () => true,
+		err: (error) => {
+			log.error({ action: "database-health-check-failed", error });
+			return false;
+		},
+	});

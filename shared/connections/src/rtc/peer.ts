@@ -29,6 +29,10 @@ export function createSignalingEvents(
 
 			for (const handler of handlers) handler(event);
 		}
+	}).then((result) => {
+		result.tapError(() => {
+			// stream teardown can reject after the socket closes
+		});
 	});
 
 	return {

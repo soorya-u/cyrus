@@ -1,0 +1,17 @@
+{
+  "name": "@cyrus/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "bun test --serial scenarios && playwright test --config web/playwright.config.ts"
+  },
+  "dependencies": {
+    "@cyrus/connections": "workspace:*",
+    "better-result": "catalog:"
+  },
+  "devDependencies": {
+    "@cyrus/typescript": "workspace:*",
+    "@playwright/test": "^1.61.1",
+    "@types/bun": "catalog:"
+  }
+}
