@@ -40,3 +40,11 @@ package boundary they exercise. Cross-app tests live at the repo root.
 
 Phase 1 only adds the unit test foundation. Integration and E2E are introduced
 in later phases.
+
+## Phase 2 notes
+
+- `@cyrus/database` integration tests use isolated temp Turso databases via
+  `tooling/test/helpers/turso.ts`.
+- `apps/server` uses `createDb()` to switch between `neon-http` (production) and
+  `postgres-js` (integration tests against Docker Postgres).
+- `docker-compose.test.yml` provides local Postgres for server integration work.

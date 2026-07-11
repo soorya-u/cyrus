@@ -33,7 +33,7 @@ export type SignalingSession = {
 	close(): void;
 };
 
-function normalizeHost(host: string): {
+export function normalizeHost(host: string): {
 	host: string;
 	protocol: "ws" | "wss";
 } {

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "bun src/cli.ts",
     "check:types": "tsc --noEmit",
+    "test:unit": "bun test",
     "build": "bun build src/cli.ts --compile --env 'CLI_PUBLIC_*' --outfile dist/cyrusd"
   },
   "dependencies": {

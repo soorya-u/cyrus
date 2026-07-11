@@ -105,6 +105,7 @@
         "hono-party": "^2.1.0",
         "partyserver": "^0.5.8",
         "pg": "^8.17.1",
+        "postgres": "^3.4.7",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -200,6 +201,7 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
+        "@types/bun": "catalog:",
       },
     },
     "shared/constants": {
@@ -224,6 +226,7 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
+        "@tursodatabase/database": "^0.6.1",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },
@@ -2332,6 +2335,8 @@
     "pngjs": ["pngjs@6.0.0", "", {}, "sha512-TRzzuFRRmEoSW/p1KVAmiOgPco2Irlah+bGFCeNfJXxxYGwSw7YwAOAcd7X28K/m5bjBWKsC29KyoMfHbypayg=="],
 
     "postcss": ["postcss@8.5.15", "", { "dependencies": { "nanoid": "^3.3.12", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A=="],
+
+    "postgres": ["postgres@3.4.9", "", {}, "sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw=="],
 
     "postgres-array": ["postgres-array@2.0.0", "", {}, "sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA=="],
 
