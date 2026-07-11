@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
+type MockChannelState = "connecting" | "open" | "closing" | "closed";
+
 type MockChannel = {
-	readyState: RTCDataChannelState;
-	listeners: Map<string, Set<EventListener>>;
+	readyState: MockChannelState;
+	listeners: Map<string, Set<() => void>>;
 };
 
 export function createMockDataChannel(
-	initialState: RTCDataChannelState = "connecting"
+	initialState: MockChannelState = "connecting"
 ): MockChannel {
 	return {
 		readyState: initialState,
@@ -17,7 +19,7 @@ export function createMockDataChannel(
 export function openMockDataChannel(channel: MockChannel): void {
 	channel.readyState = "open";
 	for (const listener of channel.listeners.get("open") ?? []) {
-		listener(new Event("open"));
+		listener();
 	}
 }
 
@@ -32,7 +34,7 @@ export function attachMockChannelListeners(
 	const register = (type: string, handler?: () => void) => {
 		if (!handler) return;
 		const listeners = channel.listeners.get(type) ?? new Set();
-		listeners.add(handler as EventListener);
+		listeners.add(handler);
 		channel.listeners.set(type, listeners);
 	};
 

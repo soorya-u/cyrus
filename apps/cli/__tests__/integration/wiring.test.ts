@@ -47,6 +47,34 @@ describe("acp mock runtime", () => {
 			"message_completed",
 		]);
 	});
+
+	test("emits turn_interrupted when the mock stream fails", async () => {
+		const terminal: Array<{ type: string }> = [];
+
+		const result = await runTurn({
+			agentName: "mock-agent",
+			threadId: "thread-1",
+			projectId: "project-1",
+			message: "ping",
+			emit: () => Promise.resolve(),
+			emitTerminal: (event) => {
+				terminal.push({ type: event.type });
+				return Promise.resolve();
+			},
+			runtime: {
+				threadCoordinator: {
+					prompt: () =>
+						createMockPromptStream({
+							message: "pong",
+							failAfterToken: true,
+						}),
+				},
+			} as never,
+		});
+
+		expect(result.isErr()).toBe(true);
+		expect(terminal).toEqual([{ type: "turn_interrupted" }]);
+	});
 });
 
 describe("cli process integration", () => {
@@ -61,8 +89,8 @@ describe("cli process integration", () => {
 					CYRUS_HOME: home,
 					CYRUS_DAEMON: "1",
 				},
-				stdout: "pipe",
-				stderr: "pipe",
+				stdout: "ignore",
+				stderr: "ignore",
 			});
 
 			const exitCode = await proc.exited;
