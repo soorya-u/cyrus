@@ -47,14 +47,15 @@ in later phases.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an
   isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
 - Run `bun db:push` against the branch before the suite; nightly CI should use an
-  isolated branch per run via the `NEON_DATABASE_URL` secret.
+  isolated branch per run via the `DATABASE_URL` secret in the `testing`
+  environment.
 - Programmatic auth uses Better Auth email sign-in plus the real device-code
   flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the
   server runs with `NODE_ENV=testing`.
 - Playwright specs live in `tests/e2e/web/` and reuse the same harness-managed
   stack.
 - E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch`
-  only). The job uses the GitHub `testing` environment and `NEON_DATABASE_URL`
+  only). The job uses the GitHub `testing` environment and its `DATABASE_URL`
   secret.
 
 ## Phase 5 notes
