@@ -1,7 +1,13 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 
-const baseUrl = process.env.SMOKE_BASE_URL;
-if (!baseUrl) throw new Error("SMOKE_BASE_URL is required for deploy smoke.");
+function requireEnv(name: string): string {
+	const value = process.env[name];
+	if (!value) throw new Error(`${name} is required for deploy smoke.`);
+
+	return value;
+}
+
+const baseUrl = requireEnv("SMOKE_BASE_URL");
 
 async function checkHealth(): Promise<void> {
 	const response = await fetch(new URL("/health", baseUrl));

@@ -48,7 +48,8 @@ jobs:
           WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
 
       - name: Deploy smoke
-        run: bun tooling/test/smoke/deploy.ts
+        working-directory: tooling/test
+        run: bun smoke/deploy.ts
         env:
           SMOKE_BASE_URL: ${{ secrets.BETTER_AUTH_URL }}
           SMOKE_BEARER_TOKEN: ${{ secrets.DEPLOY_SMOKE_TOKEN }}
