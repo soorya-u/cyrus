@@ -44,7 +44,9 @@ in later phases.
 ## Phase 2 notes
 
 - `@cyrus/database` integration tests use isolated temp Turso databases via
-  `tooling/test/helpers/turso.ts`.
-- `apps/server` uses `createDb()` to switch between `neon-http` (production) and
-  `postgres-js` (integration tests against Docker Postgres).
-- `docker-compose.test.yml` provides local Postgres for server integration work.
+  `shared/database/__tests__/helpers/turso.ts`.
+- `@cyrus/server` integration tests use a **Neon branch** with the production
+  `neon-http` driver (`@neondatabase/serverless`). Set `DATABASE_URL` to the
+  branch connection string — no alternate driver or Docker Postgres required.
+- Create an isolated Neon branch per CI job or nightly run; point
+  `DATABASE_URL` at it and run `bun db:push` before the suite.

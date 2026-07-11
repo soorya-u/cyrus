@@ -4,13 +4,13 @@ import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
 import { log } from "evlog";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
+import { runTurn } from "@/utils/run-turn";
 import {
 	isStreamingDelta,
 	resolvePersistEvent,
 	trackDelta,
 } from "@/utils/streams";
 import type { ControllerDeps } from "./deps";
-import { runTurn } from "./run-turn";
 
 export function chatHandlers({ os, runtime }: ControllerDeps) {
 	return {

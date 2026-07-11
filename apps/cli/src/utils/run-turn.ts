@@ -1,6 +1,6 @@
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { Result } from "better-result";
-import type { ControllerDeps } from "./deps";
+import type { WorkerRuntime } from "@/core";
 
 type RunTurnOptions = {
 	agentName: string;
@@ -14,7 +14,7 @@ type RunTurnOptions = {
 			{ type: "turn_completed" | "turn_interrupted" }
 		>
 	) => Promise<void>;
-	runtime: ControllerDeps["runtime"];
+	runtime: WorkerRuntime;
 };
 
 export async function runTurn({

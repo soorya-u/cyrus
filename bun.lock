@@ -105,7 +105,6 @@
         "hono-party": "^2.1.0",
         "partyserver": "^0.5.8",
         "pg": "^8.17.1",
-        "postgres": "^3.4.7",
         "zod": "catalog:",
       },
       "devDependencies": {
