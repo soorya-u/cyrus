@@ -1,4 +1,5 @@
 import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import { useEffect, useRef, useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -16,6 +17,33 @@ type CatalogOption = {
 	name: string;
 	icon?: string;
 };
+
+function CatalogOptionIcon({ src }: { src: string }) {
+	const ref = useRef<HTMLImageElement>(null);
+	const [visible, setVisible] = useState(true);
+
+	useEffect(() => {
+		const img = ref.current;
+		if (!img) return;
+
+		const handleError = () => setVisible(false);
+		img.addEventListener("error", handleError);
+		return () => img.removeEventListener("error", handleError);
+	}, []);
+
+	if (!visible) return null;
+
+	return (
+		<img
+			alt=""
+			className="size-4 shrink-0"
+			height={16}
+			ref={ref}
+			src={src}
+			width={16}
+		/>
+	);
+}
 
 function CatalogSelect({
 	label,
@@ -42,13 +70,7 @@ function CatalogSelect({
 					<SelectItem key={option.id} value={option.id}>
 						<span className="flex items-center gap-2">
 							{option.icon ? (
-								<img
-									alt=""
-									className="size-4 shrink-0"
-									height={16}
-									src={option.icon}
-									width={16}
-								/>
+								<CatalogOptionIcon key={option.icon} src={option.icon} />
 							) : null}
 							<span>{option.name}</span>
 						</span>

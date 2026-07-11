@@ -1,41 +1,41 @@
 ## ADDED Requirements
 
-### Requirement: Shared acpr cache directory
+### Requirement: Shared registry cache directory
 
-The CLI SHALL use `~/.cyrus/acp` as the acpr `--cache-dir` for all acpr invocations (registry sync, spawn). acpr SHALL own read/write of cache files including `registry.json`, `registry_cache.json`, and downloaded binaries.
+The CLI SHALL use `~/.cyrus/acp` as the registry cache directory for `registry.json`, `registry_cache.json`, and downloaded agent binaries. Cyrus owns cache I/O in `store/registry` and `core/registry`.
 
 #### Scenario: Cache directory created on first use
 
-- **WHEN** any acpr command runs and `~/.cyrus/acp` does not exist
-- **THEN** the directory is created before acpr executes
+- **WHEN** any registry read or sync runs and `~/.cyrus/acp` does not exist
+- **THEN** the directory is created before cache access
 
 ### Requirement: Registry sync command
 
-The CLI SHALL provide `cyrusd agents registry sync` that forces acpr to refresh the registry cache from the ACP CDN.
+The CLI SHALL provide `cyrusd agents registry sync` that refreshes the registry cache from the ACP CDN.
 
 #### Scenario: Force registry refresh
 
 - **WHEN** user runs `cyrusd agents registry sync`
-- **THEN** the CLI invokes `acpr --list --force registry --cache-dir ~/.cyrus/acp` and reports success or failure
+- **THEN** the CLI fetches the registry from the CDN, writes `registry.json` and cache metadata, and reports success or failure
 
-### Requirement: Registry list command
+### Requirement: Registry browse command
 
-The CLI SHALL provide `cyrusd agents registry list` that displays all agent ids from the cached ACP registry.
+The CLI SHALL provide `cyrusd agents registry` that displays all agent ids from the cached ACP registry.
 
-#### Scenario: List registry ids with added indicator
+#### Scenario: List registry ids with enabled indicator
 
-- **WHEN** user runs `cyrusd agents registry list`
-- **THEN** the CLI prints each registry agent id, coloring ids present in `agents.yml` distinctly from ids not yet added
+- **WHEN** user runs `cyrusd agents registry`
+- **THEN** the CLI prints each registry agent id, coloring ids present in `agents.yml` green and other ids in normal terminal color
 
-#### Scenario: Implicit cache warm on list
+#### Scenario: Implicit cache warm on browse
 
-- **WHEN** user runs `cyrusd agents registry list` and the registry cache is missing or stale
-- **THEN** the CLI invokes acpr to warm the cache before reading `registry.json`
+- **WHEN** user runs `cyrusd agents registry` and the registry cache is missing or stale
+- **THEN** the CLI refreshes or warms the cache before reading `registry.json`
 
 #### Scenario: Read registry metadata from cache
 
 - **WHEN** the CLI needs registry metadata (name, icon, distribution) for add or display
-- **THEN** it reads `~/.cyrus/acp/registry.json` and does not fetch the CDN directly
+- **THEN** it reads `~/.cyrus/acp/registry.json` and does not fetch the CDN directly unless the cache is stale
 
 ### Requirement: Registry id validation on add
 

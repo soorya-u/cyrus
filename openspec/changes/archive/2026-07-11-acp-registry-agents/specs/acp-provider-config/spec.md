@@ -23,11 +23,9 @@ The CLI SHALL validate agent configuration against a Zod schema and reject inval
 - **WHEN** `agents.yml` contains an entry missing required `registryId` field
 - **THEN** the CLI rejects the entry with a validation error on read or write
 
-## MODIFIED Requirements
-
 ### Requirement: User-managed registry via CLI
 
-Users SHALL register agents with `cyrusd agents add <registry-id>`. The worker SHALL spawn agents via acpr using the registry id, not user-supplied command recipes.
+Users SHALL register agents with `cyrusd agents add <registry-id>`. The worker SHALL spawn agents via registry-resolved commands, not user-supplied command recipes.
 
 #### Scenario: Add agent from registry
 
@@ -43,6 +41,6 @@ Users SHALL register agents with `cyrusd agents add <registry-id>`. The worker S
 
 ### Requirement: Environment variable interpolation
 
-**Reason**: agents.yml no longer stores spawn env/command configuration; acpr handles distribution env at spawn time.
+**Reason**: agents.yml no longer stores spawn env/command configuration; `core/registry` handles distribution env at spawn time.
 
 **Migration**: Not applicable; env interpolation was not yet implemented in agent entries.

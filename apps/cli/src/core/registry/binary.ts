@@ -1,8 +1,12 @@
-import { chmod, mkdtemp, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Result } from "better-result";
 import { $ } from "bun";
+import {
+	BINARY_DOWNLOAD_TIMEOUT_MS,
+	MAX_BINARY_BYTES,
+} from "@/constants/registry";
 import { ensureDir } from "@/utils/dir";
 import { toMessage } from "@/utils/error";
 import type { RegistryAgent } from "@/validators/registry";
@@ -26,13 +30,31 @@ export async function ensureBinary(
 			const exists = await Bun.file(binaryPath).exists();
 
 			if (!exists || options?.force) {
-				const response = await fetch(dist.archive);
+				const response = await fetch(dist.archive, {
+					signal: AbortSignal.timeout(BINARY_DOWNLOAD_TIMEOUT_MS),
+				});
 				if (!response.ok)
 					throw new Error(
 						`failed to download binary for "${agent.id}" (${response.status})`
 					);
 
+				const contentLength = response.headers.get("content-length");
+				if (
+					contentLength &&
+					Number.parseInt(contentLength, 10) > MAX_BINARY_BYTES
+				) {
+					throw new Error(
+						`binary for "${agent.id}" exceeds ${MAX_BINARY_BYTES} bytes`
+					);
+				}
+
 				const data = Buffer.from(await response.arrayBuffer());
+				if (data.byteLength > MAX_BINARY_BYTES) {
+					throw new Error(
+						`binary for "${agent.id}" exceeds ${MAX_BINARY_BYTES} bytes`
+					);
+				}
+
 				const extracted = await extractArchive(
 					data,
 					agentCacheDir,
@@ -84,31 +106,38 @@ async function extractZip(
 	data: Buffer,
 	dest: string
 ): Promise<Result<void, string>> {
+	const tmpDir = await mkdtemp(join(tmpdir(), "cyrus-acp-"));
+	const archivePath = join(tmpDir, "archive.zip");
+
 	return (
 		await Result.tryPromise(async () => {
-			const tmpDir = await mkdtemp(join(tmpdir(), "cyrus-acp-"));
-			const archivePath = join(tmpDir, "archive.zip");
-			await writeFile(archivePath, data);
+			try {
+				await writeFile(archivePath, data);
 
-			const tar = await $`tar -xf ${archivePath} -C ${dest}`.nothrow().quiet();
-			if (tar.exitCode !== 0) {
-				if (!Bun.which("unzip"))
-					throw new Error(
-						"failed to extract zip archive — install unzip or use tar"
-					);
-
-				const unzip = await $`unzip -q ${archivePath} -d ${dest}`
+				const tar = await $`tar -xf ${archivePath} -C ${dest}`
 					.nothrow()
 					.quiet();
+				if (tar.exitCode !== 0) {
+					if (!Bun.which("unzip"))
+						throw new Error(
+							"failed to extract zip archive — install unzip or use tar"
+						);
 
-				if (unzip.exitCode !== 0)
-					throw new Error(
-						`failed to extract zip archive (exit ${unzip.exitCode})`
-					);
+					const unzip = await $`unzip -q ${archivePath} -d ${dest}`
+						.nothrow()
+						.quiet();
+
+					if (unzip.exitCode !== 0)
+						throw new Error(
+							`failed to extract zip archive (exit ${unzip.exitCode})`
+						);
+				}
+			} finally {
+				await removeQuietly(archivePath);
+				await rm(tmpDir, { recursive: true, force: true }).catch(
+					() => undefined
+				);
 			}
-
-			await removeQuietly(archivePath);
-			await removeQuietly(tmpDir);
 		})
 	).mapError(toMessage);
 }

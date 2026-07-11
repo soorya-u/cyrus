@@ -1,5 +1,7 @@
 ## Why
 
+> **Implementation note:** The shipped implementation uses native TypeScript registry cache I/O and spawn resolution in `core/registry` (acpr is not used). See `openspec/specs/acp-registry/spec.md` for the authoritative requirements.
+
 Users currently register ACP agents manually (`cyrusd agents add <name> --cmd <command>`), with no discovery, icons, or registry metadata. The [ACP Agent Registry](https://agentclientprotocol.com/get-started/registry) provides canonical agent ids, display names, icons, and spawn recipes. Cyrus should use it for discovery and delegate spawn resolution to [acpr](https://crates.io/crates/acpr), while keeping a user-curated enabled set in `agents.yml`.
 
 ## What Changes

@@ -63,13 +63,12 @@ async function checkAllAgentsHealth() {
 				process.exit(1);
 			}
 
-			const results: { registryId: string; result: HealthResult }[] = [];
-			for (const [registryId, entry] of entries) {
-				results.push({
+			const results = await Promise.all(
+				entries.map(async ([registryId, entry]) => ({
 					registryId,
 					result: await checkAgent(registryId, entry),
-				});
-			}
+				}))
+			);
 
 			for (const { registryId, result } of results) {
 				printHealth(registryId, result);

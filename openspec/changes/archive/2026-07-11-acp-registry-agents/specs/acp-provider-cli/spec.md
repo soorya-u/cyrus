@@ -30,7 +30,7 @@ The CLI SHALL provide `cyrusd agents add <registry-id>` to enable an agent from 
 
 ### Requirement: Agent doctor command
 
-The CLI SHALL provide `cyrusd agents doctor [registry-id]` to verify enabled agents via acpr spawn and ACP `initialize` handshake.
+The CLI SHALL provide `cyrusd agents doctor [registry-id]` to verify enabled agents via registry-resolved spawn and ACP `initialize` handshake.
 
 #### Scenario: Doctor all agents
 
@@ -40,7 +40,7 @@ The CLI SHALL provide `cyrusd agents doctor [registry-id]` to verify enabled age
 #### Scenario: Doctor specific agent
 
 - **WHEN** user runs `cyrusd agents doctor claude-acp`
-- **THEN** the CLI checks only that agent via acpr and reports the result
+- **THEN** the CLI checks only that agent via registry-resolved spawn and reports the result
 
 ### Requirement: Worker capability advertisement
 
@@ -51,11 +51,9 @@ The worker SHALL advertise all enabled agents from `agents.yml` in `listAgents`,
 - **WHEN** the worker serves `listAgents` and `agents.yml` contains `claude-acp` and `codex-acp`
 - **THEN** the response includes both agents with their display metadata regardless of PATH or spawn health
 
-## MODIFIED Requirements
-
 ### Requirement: No install commands
 
-The CLI SHALL NOT provide commands that install or manage ACP agent packages directly. Spawn-time resolution is delegated to acpr.
+The CLI SHALL NOT provide commands that install or manage ACP agent packages directly. Spawn-time resolution is handled by `core/registry`.
 
 #### Scenario: No install subcommand
 
@@ -64,8 +62,8 @@ The CLI SHALL NOT provide commands that install or manage ACP agent packages dir
 
 #### Scenario: Doctor reports spawn failures
 
-- **WHEN** `cyrusd agents doctor` finds an agent cannot spawn via acpr
-- **THEN** the CLI prints acpr stderr or a descriptive error but does not install packages itself
+- **WHEN** `cyrusd agents doctor` finds an agent cannot spawn via registry resolution
+- **THEN** the CLI prints spawn stderr or a descriptive error but does not install packages itself
 
 ## REMOVED Requirements
 

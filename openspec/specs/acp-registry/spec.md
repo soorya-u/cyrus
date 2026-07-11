@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Integrate the [ACP Agent Registry](https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json) for agent discovery, caching, and spawn resolution. Cyrus owns registry cache I/O; spawn resolution lives in `core/registry`.
+Integrate the [ACP Agent Registry](https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json) for agent discovery, caching, and spawn resolution. Cyrus owns registry cache I/O and native TypeScript spawn resolution in `core/registry` (acpr is not used).
 
 ## Requirements
 

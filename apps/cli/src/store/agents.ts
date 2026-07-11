@@ -9,6 +9,20 @@ import { toMessage } from "../utils/error";
 
 type AgentsRegistry = Record<string, AgentEntry>;
 
+function validateRegistry(registry: AgentsRegistry): Result<void, string> {
+	for (const [id, value] of Object.entries(registry)) {
+		const entry = agentEntrySchema.safeParse(value);
+		if (!entry.success)
+			return Result.err(`invalid entry for agent "${id}" in agents.yml`);
+
+		if (entry.data.registryId !== id)
+			return Result.err(
+				`agents.yml key "${id}" does not match registryId "${entry.data.registryId}"`
+			);
+	}
+	return Result.ok(undefined);
+}
+
 async function readRegistry(): Promise<Result<AgentsRegistry, string>> {
 	const file = Bun.file(AGENTS_PATH);
 	if (!(await file.exists())) return Result.ok({});
@@ -42,6 +56,9 @@ async function readRegistry(): Promise<Result<AgentsRegistry, string>> {
 async function writeRegistry(
 	registry: AgentsRegistry
 ): Promise<Result<void, string>> {
+	const validated = validateRegistry(registry);
+	if (validated.isErr()) return validated;
+
 	return (
 		await Result.tryPromise(async () => {
 			await ensureDir();
@@ -65,6 +82,12 @@ export async function addAgent(
 	id: string,
 	entry: AgentEntry
 ): Promise<Result<void, string>> {
+	if (entry.registryId !== id) {
+		return Result.err(
+			`registryId "${entry.registryId}" does not match agents.yml key "${id}"`
+		);
+	}
+
 	const registry = await readRegistry();
 	if (registry.isErr()) return Result.err(registry.error);
 

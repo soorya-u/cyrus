@@ -1,5 +1,7 @@
 ## Context
 
+> **Implementation note:** The shipped implementation uses native TypeScript registry cache I/O (`store/registry`) and spawn resolution (`core/registry`) instead of embedding or shelling out to acpr. The sections below describe the original design exploration; see `openspec/specs/acp-registry/spec.md` for the authoritative requirements.
+
 Cyrus CLI currently stores user-registered agents in `~/.cyrus/agents.yml` as `{ command, args }` spawn recipes. Users discover and install ACP bridge packages manually. The worker spawns agents directly via `@acp-kit/core` child-process transport and filters `listAgents` by PATH availability.
 
 The [ACP Agent Registry](https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json) provides canonical ids, display metadata, icons, and distribution recipes. [acpr](https://crates.io/crates/acpr) (v0.3.0) resolves registry entries and spawns agents via npx/uvx/binary download, caching at a configurable `--cache-dir`.

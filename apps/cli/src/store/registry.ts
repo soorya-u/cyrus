@@ -5,7 +5,11 @@ import {
 	REGISTRY_CACHE_INFO_PATH,
 	REGISTRY_JSON_PATH,
 } from "@/constants/paths";
-import { REGISTRY_CACHE_TTL_MS, REGISTRY_URL } from "@/constants/registry";
+import {
+	REGISTRY_CACHE_TTL_MS,
+	REGISTRY_FETCH_TIMEOUT_MS,
+	REGISTRY_URL,
+} from "@/constants/registry";
 import { ensureDir } from "@/utils/dir";
 import { toMessage } from "@/utils/error";
 import { type AcpRegistry, acpRegistrySchema } from "@/validators/registry";
@@ -33,6 +37,26 @@ function isCacheStale(info: CacheInfo): boolean {
 	return Date.now() - info.timestamp * 1000 > REGISTRY_CACHE_TTL_MS;
 }
 
+async function fetchAndParseRegistry(): Promise<AcpRegistry> {
+	const response = await fetch(REGISTRY_URL, {
+		signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+	});
+	if (!response.ok)
+		throw new Error(`failed to fetch ACP registry (${response.status})`);
+
+	const body = await response.text();
+	const parsed = acpRegistrySchema.parse(JSON.parse(body));
+	await writeFile(REGISTRY_JSON_PATH, body, { mode: 0o600 });
+	const info: CacheInfo = {
+		timestamp: Math.floor(Date.now() / 1000),
+		version: "1.0.0",
+	};
+	await writeFile(REGISTRY_CACHE_INFO_PATH, JSON.stringify(info), {
+		mode: 0o600,
+	});
+	return parsed;
+}
+
 export async function fetchRegistry(options?: {
 	force?: boolean;
 }): Promise<Result<AcpRegistry, string>> {
@@ -46,21 +70,7 @@ export async function fetchRegistry(options?: {
 				cacheInfo.isErr() ||
 				isCacheStale(cacheInfo.value);
 
-			if (shouldFetch) {
-				const response = await fetch(REGISTRY_URL);
-				if (!response.ok)
-					throw new Error(`failed to fetch ACP registry (${response.status})`);
-
-				const body = await response.text();
-				await writeFile(REGISTRY_JSON_PATH, body, { mode: 0o600 });
-				const info: CacheInfo = {
-					timestamp: Math.floor(Date.now() / 1000),
-					version: "1.0.0",
-				};
-				await writeFile(REGISTRY_CACHE_INFO_PATH, JSON.stringify(info), {
-					mode: 0o600,
-				});
-			}
+			if (shouldFetch) return fetchAndParseRegistry();
 
 			const raw = JSON.parse(await readFile(REGISTRY_JSON_PATH, "utf8"));
 			return acpRegistrySchema.parse(raw);
@@ -91,5 +101,10 @@ export async function readCachedRegistry(): Promise<
 		const cacheInfo = await readCacheInfo();
 		if (cacheInfo.isOk() && !isCacheStale(cacheInfo.value)) return cached;
 	}
-	return fetchRegistry();
+
+	const fetched = await fetchRegistry();
+	if (fetched.isOk()) return fetched;
+	if (cached.isOk()) return cached;
+
+	return fetched;
 }

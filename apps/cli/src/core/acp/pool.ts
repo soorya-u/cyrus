@@ -59,6 +59,7 @@ export class AgentPool {
 
 		const booted = await Result.tryPromise(() => startPromise);
 		if (booted.isErr()) {
+			await this.stopAgent(name);
 			this.agents.delete(name);
 			throw booted.error;
 		}
@@ -113,7 +114,13 @@ export class AgentPool {
 		const managed = this.agents.get(name);
 		if (managed) managed.runtime = runtime;
 
-		return runtime.ready().then(() => runtime);
+		const ready = await Result.tryPromise(() => runtime.ready());
+		if (ready.isErr()) {
+			await Result.tryPromise(() => runtime.shutdown());
+			throw ready.error;
+		}
+
+		return runtime;
 	}
 
 	private resetIdleTimer(name: string): void {

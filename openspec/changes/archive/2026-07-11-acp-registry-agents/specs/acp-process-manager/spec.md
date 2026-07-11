@@ -12,28 +12,26 @@ The worker SHALL NOT spawn agent subprocesses at worker startup. A subprocess SH
 #### Scenario: First use spawns subprocess
 
 - **WHEN** an agent is needed and no subprocess exists for that agent
-- **THEN** the worker spawns acpr with the agent's registry id and `--cache-dir ~/.cyrus/acp`, then calls ACP `initialize` on acpr's stdio
+- **THEN** the worker spawns the registry-resolved command (npx, uvx, or cached binary), then calls ACP `initialize` on the subprocess stdio
 
 #### Scenario: Subsequent use reuses subprocess
 
 - **WHEN** an agent subprocess is already running and a new prompt arrives for that agent
 - **THEN** the worker reuses the existing subprocess without spawning a new one
 
-## MODIFIED Requirements
-
 ### Requirement: Agent availability check
 
-The worker SHALL resolve the acpr binary path before spawning. Availability checks in doctor SHALL spawn acpr for the registry id and verify ACP `initialize`. The worker SHALL NOT filter `listAgents` by PATH or spawn health.
+The worker SHALL resolve registry distribution recipes before spawning. Availability checks in doctor SHALL spawn the resolved command and verify ACP `initialize`. The worker SHALL NOT filter `listAgents` by PATH or spawn health.
 
-#### Scenario: acpr binary not found
+#### Scenario: Spawn resolution failure
 
-- **WHEN** acpr cannot be resolved (not extracted, not on PATH in dev mode)
+- **WHEN** an enabled agent's registry entry cannot be resolved for the current platform
 - **THEN** spawn or doctor checks report unavailability with a descriptive error
 
-#### Scenario: Agent spawn via acpr succeeds
+#### Scenario: Agent spawn succeeds
 
-- **WHEN** acpr is available and the registry id is valid
-- **THEN** the worker spawns `acpr <registryId> --cache-dir ~/.cyrus/acp` and proceeds with ACP initialization
+- **WHEN** the registry id is valid and the resolved command starts successfully
+- **THEN** the worker spawns the resolved command and proceeds with ACP initialization
 
 #### Scenario: listAgents does not filter by availability
 

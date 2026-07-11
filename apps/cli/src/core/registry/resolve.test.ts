@@ -56,6 +56,24 @@ describe("resolveAgentSpawn", () => {
 		}
 	});
 
+	test("preserves unscoped version pins", async () => {
+		const result = await resolveAgentSpawn(
+			agent({
+				distribution: {
+					binary: {},
+					npx: { package: "some-agent@1.0.0", args: [] },
+				},
+			})
+		);
+
+		expect(result.isOk()).toBe(true);
+		if (result.isOk())
+			expect(result.value).toEqual({
+				command: "npx",
+				args: ["-y", "some-agent@1.0.0"],
+			});
+	});
+
 	test("resolves uvx distribution", async () => {
 		const result = await resolveAgentSpawn(
 			agent({

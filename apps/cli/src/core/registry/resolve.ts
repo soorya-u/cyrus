@@ -11,10 +11,13 @@ export type ResolvedSpawn = {
 };
 
 function npxPackageArg(packageName: string): string {
-	const atCount = (packageName.match(/@/g) ?? []).length;
-	if (packageName.includes("@") && atCount > 1) return packageName;
+	if (!packageName.includes("@")) return `${packageName}@latest`;
 
-	return `${packageName}@latest`;
+	const atCount = (packageName.match(/@/g) ?? []).length;
+	if (packageName.startsWith("@"))
+		return atCount > 1 ? packageName : `${packageName}@latest`;
+
+	return packageName;
 }
 
 export async function resolveAgentSpawn(
