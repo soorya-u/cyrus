@@ -12,6 +12,8 @@ pre-push:
   jobs:
     - name: check-types
       run: bun check:types
+    - name: test-unit
+      run: bun test:unit
 
 post-checkout:
   jobs:
