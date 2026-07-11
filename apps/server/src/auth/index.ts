@@ -9,18 +9,21 @@ import { db } from "../db";
 // biome-ignore lint/performance/noNamespaceImport: drizzle adapter requires schema as namespace
 import * as schema from "../db/models";
 
-export const auth = betterAuth({
-	appName: "Cyrus",
-	basePath: "/api/auth",
-	database: drizzleAdapter(db, { provider: "pg", schema }),
-	...(env.ENABLE_E2E_AUTH
-		? {
+const emailAndPassword =
+	env.NODE_ENV === "production"
+		? {}
+		: {
 				emailAndPassword: {
 					enabled: true,
 					autoSignIn: true,
 				},
-			}
-		: {}),
+			};
+
+export const auth = betterAuth({
+	appName: "Cyrus",
+	basePath: "/api/auth",
+	database: drizzleAdapter(db, { provider: "pg", schema }),
+	...emailAndPassword,
 	trustedOrigins: [...env.ALLOWED_ORIGINS, env.PRODUCTION_URL],
 	socialProviders: {
 		github: {
@@ -35,10 +38,6 @@ export const auth = betterAuth({
 			sameSite: "none",
 			secure: true,
 			httpOnly: true,
-		},
-		oauthConfig: {
-			storeStateStrategy: "database",
-			skipStateCookieCheck: true,
 		},
 	},
 	logger: {

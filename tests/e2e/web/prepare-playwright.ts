@@ -1,18 +1,18 @@
 import { writeFile } from "node:fs/promises";
-import { requireE2e } from "../harness/env";
+import { E2E_SERVER_URL, E2E_WEB_URL, requireE2e } from "../harness/env";
 import { startE2eStack, stopE2eStack } from "../harness/stack";
 import { type PlaywrightState, playwrightStatePath } from "./state";
 
 if (import.meta.main) {
 	requireE2e();
-	const stack = await startE2eStack();
+	const stack = await startE2eStack({ withWeb: true });
 	const sessionValue = stack.auth.sessionCookie.split("=")[1] ?? "";
 
 	await writeFile(
 		playwrightStatePath(),
 		JSON.stringify({
-			webUrl: "http://127.0.0.1:5173",
-			serverUrl: "http://127.0.0.1:8787",
+			webUrl: E2E_WEB_URL,
+			serverUrl: E2E_SERVER_URL,
 			sessionCookie: sessionValue,
 			workerName: "E2E Worker",
 		} satisfies PlaywrightState),

@@ -1,18 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { connectSignaling } from "@cyrus/connections/rtc/session";
-import { isE2eEnabled, requireE2e } from "../harness/env";
-import { startE2eStack, stopE2eStack } from "../harness/stack";
+import { E2E_SERVER_URL, isE2eEnabled, requireE2e } from "../harness/env";
+import { connectE2eController } from "../harness/signaling";
+import { runE2eScenario } from "../harness/stack";
 
 const e2eDescribe = isE2eEnabled() ? describe : describe.skip;
 
 e2eDescribe("thread metadata sync", () => {
 	test("controller sees worker metadata after hub join", async () => {
 		requireE2e();
-		const stack = await startE2eStack();
-
-		try {
-			const controller = await connectSignaling({
-				host: "http://127.0.0.1:8787",
+		await runE2eScenario(async (stack) => {
+			const { peers } = await connectE2eController({
+				host: E2E_SERVER_URL,
 				room: stack.auth.userId,
 				role: "controller",
 				id: "e2e-controller-sync",
@@ -20,7 +18,6 @@ e2eDescribe("thread metadata sync", () => {
 				token: stack.auth.token,
 			});
 
-			const peers = await controller.signaling.listPeers();
 			expect(peers).toEqual(
 				expect.arrayContaining([
 					expect.objectContaining({
@@ -30,10 +27,6 @@ e2eDescribe("thread metadata sync", () => {
 					}),
 				])
 			);
-
-			controller.close();
-		} finally {
-			await stopE2eStack(stack);
-		}
-	}, 120_000);
+		});
+	}, 180_000);
 });

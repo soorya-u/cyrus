@@ -1,3 +1,5 @@
+import { E2E_WEB_URL } from "./env";
+
 const CLIENT_ID = "cyrusd";
 const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
@@ -7,6 +9,16 @@ type AuthSession = {
 };
 
 const SESSION_COOKIE_PATTERN = /better-auth\.session_token=([^;]+)/;
+
+function authHeaders(
+	extra: Record<string, string> = {}
+): Record<string, string> {
+	return {
+		origin: E2E_WEB_URL,
+		referer: `${E2E_WEB_URL}/`,
+		...extra,
+	};
+}
 
 function parseSessionCookie(setCookie: string | null): string {
 	if (!setCookie) {
@@ -28,7 +40,7 @@ async function signUpAndSignIn(
 ): Promise<AuthSession> {
 	const signUp = await fetch(`${serverUrl}/api/auth/sign-up/email`, {
 		method: "POST",
-		headers: { "content-type": "application/json" },
+		headers: authHeaders({ "content-type": "application/json" }),
 		body: JSON.stringify({ email, name: "E2E User", password }),
 	});
 	if (!signUp.ok && signUp.status !== 422) {
@@ -37,7 +49,7 @@ async function signUpAndSignIn(
 
 	const signIn = await fetch(`${serverUrl}/api/auth/sign-in/email`, {
 		method: "POST",
-		headers: { "content-type": "application/json" },
+		headers: authHeaders({ "content-type": "application/json" }),
 		body: JSON.stringify({ email, password }),
 	});
 	if (!signIn.ok) {
@@ -70,7 +82,7 @@ export async function seedCliAccessToken(
 
 	const codeResponse = await fetch(`${serverUrl}/api/auth/device/code`, {
 		method: "POST",
-		headers: { "content-type": "application/json" },
+		headers: authHeaders({ "content-type": "application/json" }),
 		body: JSON.stringify({
 			client_id: CLIENT_ID,
 			scope: "openid profile email",
@@ -91,7 +103,7 @@ export async function seedCliAccessToken(
 	const claim = await fetch(
 		`${serverUrl}/api/auth/device?user_code=${encodeURIComponent(formattedUserCode)}`,
 		{
-			headers: { cookie: session.sessionCookie },
+			headers: authHeaders({ cookie: session.sessionCookie }),
 		}
 	);
 	if (!claim.ok) {
@@ -102,10 +114,10 @@ export async function seedCliAccessToken(
 
 	const approve = await fetch(`${serverUrl}/api/auth/device/approve`, {
 		method: "POST",
-		headers: {
+		headers: authHeaders({
 			"content-type": "application/json",
 			cookie: session.sessionCookie,
-		},
+		}),
 		body: JSON.stringify({ userCode: formattedUserCode }),
 	});
 	if (!approve.ok) {
@@ -116,7 +128,7 @@ export async function seedCliAccessToken(
 
 	const tokenResponse = await fetch(`${serverUrl}/api/auth/device/token`, {
 		method: "POST",
-		headers: { "content-type": "application/json" },
+		headers: authHeaders({ "content-type": "application/json" }),
 		body: JSON.stringify({
 			grant_type: GRANT_TYPE,
 			device_code: codeBody.device_code,

@@ -48,6 +48,37 @@ export function normalizeHost(host: string): {
 	return { host, protocol: "ws" };
 }
 
+async function waitForPartySocketOpen(
+	socket: PartySocket,
+	timeoutMs = 30_000
+): Promise<void> {
+	if (socket.readyState === WebSocket.OPEN) return;
+
+	await new Promise<void>((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error("WebSocket open timeout"));
+		}, timeoutMs);
+
+		const onOpen = () => {
+			cleanup();
+			resolve();
+		};
+		const onClose = () => {
+			cleanup();
+			reject(new Error("WebSocket closed before open"));
+		};
+		const cleanup = () => {
+			clearTimeout(timeout);
+			socket.removeEventListener("open", onOpen);
+			socket.removeEventListener("close", onClose);
+		};
+
+		socket.addEventListener("open", onOpen);
+		socket.addEventListener("close", onClose);
+	});
+}
+
 export async function connectSignaling(
 	options: ConnectSignalingOptions
 ): Promise<SignalingSession> {
@@ -71,6 +102,8 @@ export async function connectSignaling(
 
 	const link = new RPCLink({ websocket: socket as unknown as WebSocket });
 	const signaling: SignalingClient = createORPCClient(link);
+
+	await waitForPartySocketOpen(socket);
 
 	const result = await Result.tryPromise(async () => {
 		const stream = await signaling.onSignalingEvent({

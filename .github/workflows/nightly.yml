@@ -1,6 +1,6 @@
 name: Nightly
 
-# Disabled for now — re-enable push/schedule once NEON_DATABASE_URL is wired.
+# Disabled for now — manual runs only via workflow_dispatch.
 on:
   workflow_dispatch:
 
@@ -19,6 +19,7 @@ jobs:
   test-e2e:
     name: End-to-End Tests
     runs-on: ubuntu-latest
+    environment: testing
     timeout-minutes: 30
 
     steps:
