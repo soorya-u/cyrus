@@ -13,7 +13,10 @@ import {
 
 type EmptyProjectProps = {
 	className?: string;
-	onCreateProject: (input: { name: string; path: string }) => void;
+	onCreateProject: (input: {
+		name: string;
+		path: string;
+	}) => void | Promise<void>;
 };
 
 export function EmptyProject({
@@ -36,7 +39,7 @@ export function EmptyProject({
 				<Button
 					onClick={async () => {
 						const result = await NewProjectDialog.call();
-						if (result) onCreateProject(result);
+						if (result) await onCreateProject(result);
 					}}
 					size="sm"
 					type="button"

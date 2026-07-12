@@ -18,8 +18,12 @@ export function WorkingMarker({ startedAt }: { startedAt: string }) {
 
 	return (
 		<Marker className="py-0.5 pl-1.5" role="status">
+			<span className="sr-only">Agent is working</span>
 			<MarkerContent className="shimmer text-[11px] text-muted-foreground/70 tabular-nums">
-				Working for <span ref={textRef}>{initialText}</span>
+				Working for{" "}
+				<span aria-hidden="true" ref={textRef}>
+					{initialText}
+				</span>
 			</MarkerContent>
 		</Marker>
 	);

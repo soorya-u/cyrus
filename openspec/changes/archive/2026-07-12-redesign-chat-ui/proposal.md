@@ -9,7 +9,7 @@ GitHub issue #14 flagged the chat UI as a functional first pass — tool rows sh
 - **Composer**: t3-style combined Agent+Model picker with icons; compact overflow menu for Effort/Persona on narrow screens
 - **Chrome**: `Breadcrumb` in thread header (project name / thread name); remove UUID context label
 - **Empty states**: Three `Empty` variants (workspace, project, thread) with install snippet on workspace; route redirects for incomplete paths
-- **Dependencies**: `@shadcn/react`, shadcn chat UI components, `shadcn/tailwind.css` (shimmer/scroll-fade)
+- **Dependencies**: shadcn CLI (chat UI components), `shadcn/tailwind.css` (shimmer/scroll-fade)
 
 ## Capabilities
 

@@ -15,6 +15,13 @@ export type ToolPresentation = {
 	icon: LucideIcon;
 };
 
+const fileChangePresentation = (fields: ToolFields): ToolPresentation => ({
+	heading: "Changed files",
+	preview: fields.path,
+	detail: fields.path,
+	icon: SquarePenIcon,
+});
+
 export const KIND_PRESENTATIONS: Record<
 	string,
 	(fields: ToolFields) => ToolPresentation
@@ -31,24 +38,9 @@ export const KIND_PRESENTATIONS: Record<
 		detail: fields.path,
 		icon: EyeIcon,
 	}),
-	edit: (fields) => ({
-		heading: "Changed files",
-		preview: fields.path,
-		detail: fields.path,
-		icon: SquarePenIcon,
-	}),
-	delete: (fields) => ({
-		heading: "Changed files",
-		preview: fields.path,
-		detail: fields.path,
-		icon: SquarePenIcon,
-	}),
-	move: (fields) => ({
-		heading: "Changed files",
-		preview: fields.path,
-		detail: fields.path,
-		icon: SquarePenIcon,
-	}),
+	edit: fileChangePresentation,
+	delete: fileChangePresentation,
+	move: fileChangePresentation,
 	search: (fields) => ({
 		heading: "Searched files",
 		preview: fields.query,

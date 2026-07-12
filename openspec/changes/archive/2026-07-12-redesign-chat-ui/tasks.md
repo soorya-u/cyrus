@@ -38,5 +38,5 @@
 ## 6. Verification
 
 - [x] 6.1 Run `bun check:types` in `apps/web`
-- [x] 6.2 Smoke test: `/workers/` → worker → project → thread navigation and empty states
-- [x] 6.3 Smoke test: active turn shows working marker with shimmer; thinking is separate
+- [ ] 6.2 Smoke test: `/workers/` → worker → project → thread navigation and empty states
+- [ ] 6.3 Smoke test: active turn shows working marker with shimmer; thinking is separate

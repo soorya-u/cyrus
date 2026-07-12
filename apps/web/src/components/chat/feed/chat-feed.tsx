@@ -5,6 +5,7 @@ import {
 	getTurnStartedAt,
 } from "@cyrus/utils/conversations/thread-feed";
 import { cn } from "cnfast";
+import { useMemo } from "react";
 import { FeedEntryView } from "@/components/chat/feed/feed-entry-view";
 import { WorkingMarker } from "@/components/chat/messages/working-marker";
 import {
@@ -18,15 +19,16 @@ import {
 
 export function ChatFeed({
 	conversation,
-	activeTurnId,
 	className,
 }: {
 	conversation: ThreadConversation;
-	activeTurnId?: string;
 	className?: string;
 }) {
-	const feed = deriveFeed(conversation, activeTurnId);
-	const runningTurn = getRunningTurn(conversation);
+	const feed = useMemo(() => deriveFeed(conversation), [conversation]);
+	const runningTurn = useMemo(
+		() => getRunningTurn(conversation),
+		[conversation]
+	);
 	const workingStartedAt =
 		runningTurn && getTurnStartedAt(conversation, runningTurn.id);
 

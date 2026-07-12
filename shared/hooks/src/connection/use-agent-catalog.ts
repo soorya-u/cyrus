@@ -129,6 +129,7 @@ export function useAgentCatalog({
 		agents,
 		efforts,
 		models,
+		modelsLoading: modelsQuery.isFetching,
 		personas,
 		selectAgent,
 		selectedAgent,

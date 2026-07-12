@@ -90,9 +90,14 @@ function buildTurnTimeline(
 		});
 	}
 
-	const turnTools = toolCalls.filter((toolCall) => toolCall.turnId === turnId);
 	const diffSortAnchor =
-		turnTools.at(-1)?.createdAt ??
+		toolCalls
+			.filter((toolCall) => toolCall.turnId === turnId)
+			.reduce<string | undefined>(
+				(latest, toolCall) =>
+					!latest || toolCall.createdAt > latest ? toolCall.createdAt : latest,
+				undefined
+			) ??
 		messages.find(
 			(message) => message.role === "user" && message.turnId === turnId
 		)?.createdAt ??
@@ -127,8 +132,7 @@ function buildTurnTimeline(
 }
 
 export function deriveFeed(
-	conversation: ThreadConversation | null,
-	_activeTurnId?: string
+	conversation: ThreadConversation | null
 ): FeedEntry[] {
 	if (!conversation) return [];
 

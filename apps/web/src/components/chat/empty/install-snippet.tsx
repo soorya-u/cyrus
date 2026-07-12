@@ -25,6 +25,7 @@ export function InstallSnippet({ className }: { className?: string }) {
 				<div className="flex items-center gap-1">
 					{INSTALL_METHODS.map((option) => (
 						<button
+							aria-pressed={method === option}
 							className={cn(
 								"rounded-md px-2 py-1 font-medium text-xs transition-colors",
 								method === option

@@ -1,5 +1,6 @@
-import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
+import { useProjects } from "@cyrus/hooks/connection/use-projects";
 import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { EmptyProject } from "@/components/chat/empty/empty-project";
 
 export const Route = createFileRoute("/_workspace/workers/$workerId/")({
@@ -7,11 +8,17 @@ export const Route = createFileRoute("/_workspace/workers/$workerId/")({
 });
 
 function WorkerIndexPage() {
-	const { createProject } = useControllerThreads();
+	const { createProject } = useProjects();
 
 	return (
 		<EmptyProject
-			onCreateProject={({ name, path }) => createProject(name, path)}
+			onCreateProject={async ({ name, path }) => {
+				try {
+					await createProject(name, path);
+				} catch {
+					toast.error("Failed to create project");
+				}
+			}}
 		/>
 	);
 }

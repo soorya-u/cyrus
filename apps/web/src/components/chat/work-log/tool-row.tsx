@@ -45,7 +45,7 @@ function ToolStatusIcon({
 	return null;
 }
 
-// TODO(soorya): decide fallback UX for tools with no parsable fields
+// Unparseable tools render title and status only, without an expand affordance.
 export function ToolRow({ tool }: { tool: ToolCallView }) {
 	const [open, setOpen] = useState(false);
 	const presentation = deriveToolPresentation(tool);

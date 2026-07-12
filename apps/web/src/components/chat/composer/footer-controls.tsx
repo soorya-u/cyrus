@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-media-query";
 
 const TRIGGER_CLASS =
-	"h-8 min-w-0 max-w-40 shrink justify-between gap-1.5 whitespace-nowrap border-none bg-transparent px-2 text-muted-foreground/70 shadow-none hover:bg-accent hover:text-foreground/80 sm:max-w-48 sm:px-3";
+	"h-8 min-w-0 max-w-40 shrink justify-between gap-1.5 whitespace-nowrap border-none bg-transparent px-2 text-muted-foreground/70 shadow-none hover:bg-accent hover:text-foreground/80 dark:bg-transparent dark:hover:bg-accent sm:max-w-48 sm:px-3";
 
 function CatalogSelect({
 	label,
@@ -68,26 +68,34 @@ export function ComposerFooterControls({
 				<CompactComposerControls projectId={projectId} threadId={threadId} />
 			) : (
 				<>
-					<Separator
-						className="mx-0.5 hidden h-4 sm:block"
-						orientation="vertical"
-					/>
-					<CatalogSelect
-						label="Effort"
-						onValueChange={selectEffort}
-						options={efforts}
-						value={selectedEffort}
-					/>
-					<Separator
-						className="mx-0.5 hidden h-4 sm:block"
-						orientation="vertical"
-					/>
-					<CatalogSelect
-						label="Persona"
-						onValueChange={selectPersona}
-						options={personas}
-						value={selectedPersona}
-					/>
+					{efforts.length > 0 && (
+						<>
+							<Separator
+								className="mx-0.5 hidden h-4 sm:block"
+								orientation="vertical"
+							/>
+							<CatalogSelect
+								label="Effort"
+								onValueChange={selectEffort}
+								options={efforts}
+								value={selectedEffort}
+							/>
+						</>
+					)}
+					{personas.length > 0 && (
+						<>
+							<Separator
+								className="mx-0.5 hidden h-4 sm:block"
+								orientation="vertical"
+							/>
+							<CatalogSelect
+								label="Persona"
+								onValueChange={selectPersona}
+								options={personas}
+								value={selectedPersona}
+							/>
+						</>
+					)}
 				</>
 			)}
 		</div>
