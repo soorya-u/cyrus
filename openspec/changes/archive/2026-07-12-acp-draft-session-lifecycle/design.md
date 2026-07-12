@@ -32,7 +32,7 @@ Zed's external-agent model: subprocess `initialize` once per agent type; `newSes
 
 **Flow:**
 
-```
+```text
 bindAgent → pool.getRuntime(agentName)  // initialize once
          → closeSession if thread had different agent/session
          → newSession({ cwd: project.cwd })

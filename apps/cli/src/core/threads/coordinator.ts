@@ -19,6 +19,7 @@ import {
 	coordinatorAgentNotBound,
 	coordinatorNotFound,
 	coordinatorRepositoryError,
+	coordinatorRuntimeError,
 } from "@/errors/coordinator";
 
 type BoundThread = {
@@ -46,6 +47,16 @@ export class ThreadCoordinator {
 		return runtime;
 	}
 
+	private async withRuntime<T>(
+		fn: () => Promise<T>
+	): Promise<Result<T, CoordinatorError>> {
+		return (await Result.tryPromise(fn)).mapError((error) =>
+			coordinatorRuntimeError(
+				error instanceof Error ? error.message : String(error)
+			)
+		);
+	}
+
 	async bindAgent(
 		threadId: string,
 		projectId: string,
@@ -68,67 +79,92 @@ export class ThreadCoordinator {
 		const runtime = this.getAgent(agentName);
 
 		if (thread.value.agentName === agentName && thread.value.sessionId) {
-			return Result.ok({
-				sessionId: thread.value.sessionId,
-				agentName,
-				agentLocked: thread.value.agentLocked,
+			const sessionId = thread.value.sessionId;
+			const catalog = await this.withRuntime(async () => ({
+				capabilities: await runtime.getAgentCapabilities(),
 				models: await runtime.getModels(
 					threadId,
 					projectId,
 					cwd.value,
-					thread.value.sessionId
+					sessionId
 				),
 				modes: await runtime.getModes(
 					threadId,
 					projectId,
 					cwd.value,
-					thread.value.sessionId
+					sessionId
 				),
 				efforts: await runtime.getEfforts(
 					threadId,
 					projectId,
 					cwd.value,
-					thread.value.sessionId
+					sessionId
 				),
 				personas: await runtime.getPersonas(
 					threadId,
 					projectId,
 					cwd.value,
-					thread.value.sessionId
+					sessionId
 				),
+			}));
+			if (catalog.isErr()) return Result.err(catalog.error);
+
+			return Result.ok({
+				sessionId,
+				agentName,
+				agentLocked: thread.value.agentLocked,
+				...catalog.value,
 			});
 		}
 
+		const previousAgentName = thread.value.agentName;
+		const previousSessionId = thread.value.sessionId;
 		if (
-			thread.value.sessionId &&
-			thread.value.agentName &&
-			thread.value.agentName !== agentName
+			previousSessionId &&
+			previousAgentName &&
+			previousAgentName !== agentName
 		) {
-			await this.getAgent(thread.value.agentName).closeSession(
-				thread.value.sessionId,
-				threadId
+			const closed = await this.withRuntime(() =>
+				this.getAgent(previousAgentName).closeSession(
+					previousSessionId,
+					threadId
+				)
 			);
+			if (closed.isErr()) return Result.err(closed.error);
 		}
 
-		const session = await runtime.createBoundSession(
-			threadId,
-			projectId,
-			cwd.value
-		);
+		const bound = await this.withRuntime(async () => {
+			const session = await runtime.createBoundSession(
+				threadId,
+				projectId,
+				cwd.value
+			);
+			return {
+				session,
+				capabilities: await runtime.getAgentCapabilities(),
+				...catalogSnapshotFromSession(session),
+			};
+		});
+		if (bound.isErr()) return Result.err(bound.error);
+
 		const persisted = await bindThreadAgent(threadId, projectId, {
 			agentName,
-			sessionId: session.sessionId,
+			sessionId: bound.value.session.sessionId,
 		});
 		if (persisted.isErr()) {
-			await runtime.closeSession(session.sessionId, threadId);
+			await runtime.closeSession(bound.value.session.sessionId, threadId);
 			return Result.err(coordinatorRepositoryError(persisted.error));
 		}
 
 		return Result.ok({
-			sessionId: session.sessionId,
+			sessionId: bound.value.session.sessionId,
 			agentName,
 			agentLocked: persisted.value.agentLocked,
-			...catalogSnapshotFromSession(session),
+			capabilities: bound.value.capabilities,
+			models: bound.value.models,
+			modes: bound.value.modes,
+			efforts: bound.value.efforts,
+			personas: bound.value.personas,
 		});
 	}
 
@@ -137,8 +173,8 @@ export class ThreadCoordinator {
 	): Promise<Result<ModelOption[], CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId);
 		if (bound.isErr()) return Result.err(bound.error);
-		return Result.ok(
-			await this.getAgent(bound.value.agentName).getModels(
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).getModels(
 				bound.value.threadId,
 				bound.value.projectId,
 				bound.value.cwd,
@@ -152,8 +188,8 @@ export class ThreadCoordinator {
 	): Promise<Result<SelectOption[], CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId);
 		if (bound.isErr()) return Result.err(bound.error);
-		return Result.ok(
-			await this.getAgent(bound.value.agentName).getModes(
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).getModes(
 				bound.value.threadId,
 				bound.value.projectId,
 				bound.value.cwd,
@@ -167,8 +203,8 @@ export class ThreadCoordinator {
 	): Promise<Result<SelectOption[], CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId);
 		if (bound.isErr()) return Result.err(bound.error);
-		return Result.ok(
-			await this.getAgent(bound.value.agentName).getEfforts(
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).getEfforts(
 				bound.value.threadId,
 				bound.value.projectId,
 				bound.value.cwd,
@@ -182,8 +218,8 @@ export class ThreadCoordinator {
 	): Promise<Result<SelectOption[], CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId);
 		if (bound.isErr()) return Result.err(bound.error);
-		return Result.ok(
-			await this.getAgent(bound.value.agentName).getPersonas(
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).getPersonas(
 				bound.value.threadId,
 				bound.value.projectId,
 				bound.value.cwd,
@@ -199,14 +235,15 @@ export class ThreadCoordinator {
 	): Promise<Result<void, CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId, projectId);
 		if (bound.isErr()) return Result.err(bound.error);
-		await this.getAgent(bound.value.agentName).setModel(
-			bound.value.threadId,
-			bound.value.projectId,
-			bound.value.cwd,
-			bound.value.sessionId,
-			modelId
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).setModel(
+				bound.value.threadId,
+				bound.value.projectId,
+				bound.value.cwd,
+				bound.value.sessionId,
+				modelId
+			)
 		);
-		return Result.ok(undefined);
 	}
 
 	async setMode(
@@ -216,14 +253,15 @@ export class ThreadCoordinator {
 	): Promise<Result<void, CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId, projectId);
 		if (bound.isErr()) return Result.err(bound.error);
-		await this.getAgent(bound.value.agentName).setMode(
-			bound.value.threadId,
-			bound.value.projectId,
-			bound.value.cwd,
-			bound.value.sessionId,
-			modeId
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).setMode(
+				bound.value.threadId,
+				bound.value.projectId,
+				bound.value.cwd,
+				bound.value.sessionId,
+				modeId
+			)
 		);
-		return Result.ok(undefined);
 	}
 
 	async setEffort(
@@ -233,14 +271,15 @@ export class ThreadCoordinator {
 	): Promise<Result<void, CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId, projectId);
 		if (bound.isErr()) return Result.err(bound.error);
-		await this.getAgent(bound.value.agentName).setEffort(
-			bound.value.threadId,
-			bound.value.projectId,
-			bound.value.cwd,
-			bound.value.sessionId,
-			effortId
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).setEffort(
+				bound.value.threadId,
+				bound.value.projectId,
+				bound.value.cwd,
+				bound.value.sessionId,
+				effortId
+			)
 		);
-		return Result.ok(undefined);
 	}
 
 	async setPersona(
@@ -250,14 +289,15 @@ export class ThreadCoordinator {
 	): Promise<Result<void, CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId, projectId);
 		if (bound.isErr()) return Result.err(bound.error);
-		await this.getAgent(bound.value.agentName).setPersona(
-			bound.value.threadId,
-			bound.value.projectId,
-			bound.value.cwd,
-			bound.value.sessionId,
-			personaId
+		return this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).setPersona(
+				bound.value.threadId,
+				bound.value.projectId,
+				bound.value.cwd,
+				bound.value.sessionId,
+				personaId
+			)
 		);
-		return Result.ok(undefined);
 	}
 
 	async prompt(

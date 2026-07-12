@@ -4,12 +4,15 @@ import {
 	listProjects,
 	renameProject,
 } from "@cyrus/database/repositories/projects";
-import { deleteThreadsForProject } from "@cyrus/database/repositories/threads";
+import {
+	deleteThreadsForProject,
+	listThreads,
+} from "@cyrus/database/repositories/threads";
 import { notFound } from "@cyrus/database/utils/error";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
-import type { ControllerOs } from "./deps";
+import type { ControllerDeps } from "./deps";
 
-export function projectsHandlers(os: ControllerOs) {
+export function projectsHandlers({ os, runtime }: ControllerDeps) {
 	return {
 		listProjects: os.listProjects.handler(async () =>
 			(await listProjects()).match({
@@ -33,6 +36,19 @@ export function projectsHandlers(os: ControllerOs) {
 		),
 
 		deleteProject: os.deleteProject.handler(async ({ input }) => {
+			const listed = await listThreads(input.projectId);
+			if (listed.isErr()) throwOrpcFromRepositoryError(listed.error);
+
+			for (const thread of listed.value) {
+				if (thread.sessionId && thread.agentName) {
+					await runtime.threadCoordinator.closeThreadSession(
+						thread.id,
+						thread.sessionId,
+						thread.agentName
+					);
+				}
+			}
+
 			const deleted = await deleteStoredProject(input.projectId);
 			if (deleted.isErr()) throwOrpcFromRepositoryError(deleted.error);
 			if (!deleted.value) {

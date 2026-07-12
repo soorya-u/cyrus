@@ -92,6 +92,7 @@ describe("draft session lifecycle", () => {
 		expect(bound.isOk()).toBe(true);
 		if (bound.isErr()) throw new Error("expected bind to succeed");
 		expect(bound.value.sessionId).toBe("session-1");
+		expect(bound.value.capabilities).toEqual({ loadSession: true });
 
 		const models = await coordinator.getModels("thread-1");
 		expect(models.isOk()).toBe(true);

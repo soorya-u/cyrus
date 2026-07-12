@@ -16,7 +16,7 @@ export function createControllerRouter(runtime: WorkerRuntime) {
 
 	return {
 		...agentsHandlers(deps),
-		...projectsHandlers(os),
+		...projectsHandlers(deps),
 		...threadsHandlers(deps),
 		...dirHandlers(os),
 		...modelHandlers(deps),

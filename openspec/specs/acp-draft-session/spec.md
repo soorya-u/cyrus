@@ -68,7 +68,7 @@ The worker SHALL call ACP `closeSession` for a thread's persisted `sessionId` wh
 
 Catalog operations (`getModels`, `getModes`, `getEfforts`, `getPersonas`) SHALL require a `threadId` and SHALL read catalog data from that thread's bound ACP session. The worker SHALL NOT use a shared probe session in a unrelated working directory.
 
-#### Scenario: Catalog requires bound session
+#### Scenario: Catalog requires a bound session
 
 - **WHEN** `getModels` is called for a thread with no bound session
 - **THEN** the worker returns an error instructing the client to call `bindAgent` first

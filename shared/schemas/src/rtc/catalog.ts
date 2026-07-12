@@ -15,10 +15,13 @@ export const ModelOptionSchema = SelectOptionSchema.extend({
 	context: z.record(z.string(), z.unknown()).nullish(),
 });
 
+export const AgentCapabilitiesSchema = z.record(z.string(), z.unknown());
+
 export const BindAgentOutputSchema = z.object({
 	sessionId: z.string(),
 	agentName: z.string(),
 	agentLocked: optionalBoolean,
+	capabilities: AgentCapabilitiesSchema,
 	models: z.array(ModelOptionSchema),
 	modes: z.array(SelectOptionSchema),
 	efforts: z.array(SelectOptionSchema),

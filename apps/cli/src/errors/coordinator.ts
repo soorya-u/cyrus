@@ -29,12 +29,17 @@ export class CoordinatorRepositoryError extends TaggedError("repository")<{
 	error: RepositoryError;
 }>() {}
 
+export class CoordinatorRuntimeError extends TaggedError("runtime")<{
+	message: string;
+}>() {}
+
 export type CoordinatorError =
 	| CoordinatorNotFoundError
 	| CoordinatorAgentLockedError
 	| CoordinatorAgentNotBoundError
 	| CoordinatorAgentMismatchError
-	| CoordinatorRepositoryError;
+	| CoordinatorRepositoryError
+	| CoordinatorRuntimeError;
 
 export function coordinatorNotFound(
 	entity: string,
@@ -64,6 +69,12 @@ export function coordinatorRepositoryError(
 	return new CoordinatorRepositoryError({ error });
 }
 
+export function coordinatorRuntimeError(
+	message: string
+): CoordinatorRuntimeError {
+	return new CoordinatorRuntimeError({ message });
+}
+
 export function coordinatorErrorMessage(error: CoordinatorError): string {
 	return matchError(error, {
 		not_found: (value) => `${value.entity} not found: ${value.id}`,
@@ -73,6 +84,7 @@ export function coordinatorErrorMessage(error: CoordinatorError): string {
 		agent_mismatch: (value) =>
 			`agent ${value.actual} does not match bound agent ${value.expected}`,
 		repository: (value) => repositoryErrorMessage(value.error),
+		runtime: (value) => value.message,
 	});
 }
 
@@ -85,5 +97,6 @@ export function coordinatorOrpcCode(
 		agent_not_bound: () => "BAD_REQUEST",
 		agent_mismatch: () => "BAD_REQUEST",
 		repository: (value) => repositoryOrpcCode(value.error),
+		runtime: () => "INTERNAL_SERVER_ERROR",
 	});
 }

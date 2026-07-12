@@ -35,6 +35,7 @@ export class AgentRuntime {
 	private readonly agentName: string;
 	private readonly pool: AgentPool;
 	private readonly sessions = new Map<string, ThreadSession>();
+	private readonly pendingSessions = new Map<string, Promise<RuntimeSession>>();
 
 	constructor(agentName: string, pool: AgentPool) {
 		this.agentName = agentName;
@@ -103,6 +104,12 @@ export class AgentRuntime {
 			sessionId
 		);
 		return personasFromSession(session);
+	}
+
+	async getAgentCapabilities(): Promise<Record<string, unknown>> {
+		await this.ensureHealthyPool();
+		const runtime = await this.pool.getRuntime(this.agentName);
+		return runtime.agentCapabilities ?? {};
 	}
 
 	async createBoundSession(
@@ -343,6 +350,29 @@ export class AgentRuntime {
 		const existing = this.sessions.get(threadId);
 		if (existing) return existing.session;
 
+		let pending = this.pendingSessions.get(threadId);
+		if (!pending) {
+			pending = this.openSessionFromPersisted(
+				threadId,
+				projectId,
+				cwd,
+				persistedSessionId
+			);
+			this.pendingSessions.set(threadId, pending);
+			pending.finally(() => {
+				this.pendingSessions.delete(threadId);
+			});
+		}
+
+		return pending;
+	}
+
+	private async openSessionFromPersisted(
+		threadId: string,
+		projectId: string,
+		cwd: string,
+		persistedSessionId: string
+	): Promise<RuntimeSession> {
 		const runtime = await this.pool.getRuntime(this.agentName);
 		const recovered = await Result.tryPromise(() =>
 			openOrCreateRuntimeSession({

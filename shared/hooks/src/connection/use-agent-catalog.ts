@@ -97,12 +97,8 @@ export function useAgentCatalog({
 		}),
 		onSuccess: (data) => {
 			queryClient.setQueryData(modelsQueryKey, { models: data.models });
-			queryClient.setQueryData(RTC_OPERATION_KEYS.getEfforts(threadId), {
-				efforts: data.efforts,
-			});
-			queryClient.setQueryData(RTC_OPERATION_KEYS.getPersona(threadId), {
-				personas: data.personas,
-			});
+			queryClient.setQueryData(effortsQueryKey, { efforts: data.efforts });
+			queryClient.setQueryData(personaQueryKey, { personas: data.personas });
 			queryClient.invalidateQueries({
 				queryKey: RTC_OPERATION_KEYS.listThreads(projectId),
 			});
@@ -129,6 +125,7 @@ export function useAgentCatalog({
 
 	useEffect(() => {
 		if (!thread?.agentName || boundSessionId || agentLocked) return;
+		if (bindAgentMutation.isError) return;
 		if (bindAgentPending) return;
 		bindAgent({
 			threadId,
@@ -138,6 +135,7 @@ export function useAgentCatalog({
 	}, [
 		agentLocked,
 		bindAgent,
+		bindAgentMutation.isError,
 		bindAgentPending,
 		boundSessionId,
 		projectId,
@@ -188,7 +186,10 @@ export function useAgentCatalog({
 		modelsLoading:
 			modelsQuery.isFetching ||
 			bindAgentMutation.isPending ||
-			(Boolean(thread?.agentName) && !boundSessionId && !agentLocked),
+			(Boolean(thread?.agentName) &&
+				!boundSessionId &&
+				!agentLocked &&
+				!bindAgentMutation.isError),
 		personas,
 		selectAgent,
 		selectedAgent,
