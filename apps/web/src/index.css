@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@cyrus/styles/globals.css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark, .dark *));
 

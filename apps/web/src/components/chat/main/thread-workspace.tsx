@@ -24,14 +24,8 @@ export function ThreadWorkspace({
 	threadId,
 }: ThreadWorkspaceProps) {
 	const navigate = useNavigate();
-	const {
-		threads,
-		sendMessage,
-		stopThread,
-		isThreadStopping,
-		isThreadActive,
-		getActiveTurnId,
-	} = useControllerThreads();
+	const { threads, sendMessage, stopThread, isThreadStopping, isThreadActive } =
+		useControllerThreads();
 	const { diffOpen, setDiffOpen } = useChatUiStore();
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
@@ -68,11 +62,7 @@ export function ThreadWorkspace({
 
 			<div className="flex min-h-0 flex-1">
 				<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-					<ChatFeed
-						activeTurnId={getActiveTurnId(thread.id)}
-						className="min-h-0"
-						conversation={conversation}
-					/>
+					<ChatFeed className="min-h-0" conversation={conversation} />
 					<Composer
 						busy={running || active}
 						onSend={handleSend}

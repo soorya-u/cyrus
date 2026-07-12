@@ -1,5 +1,15 @@
+import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
+import { Link } from "@tanstack/react-router";
 import { cn } from "cnfast";
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { useChatUiStore } from "@/stores/chat-ui";
 
 type ThreadHeaderProps = {
@@ -14,18 +24,33 @@ export function ThreadHeader({
 	projectId,
 }: ThreadHeaderProps) {
 	const { diffOpen, toggleDiffOpen } = useChatUiStore();
-	const contextLabel = `${workerId.slice(0, 8)}… / ${projectId.slice(0, 8)}…`;
+	const { projects } = useControllerThreads();
+	const project = projects.find((item) => item.id === projectId);
 
 	return (
 		<div
 			className={cn(
-				"surface-subheader collapsed-sidebar-titlebar-inset px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none"
+				"surface-subheader collapsed-sidebar-titlebar-inset flex items-center gap-2 px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none"
 			)}
 		>
-			<span className="truncate font-medium text-sm">{thread.name}</span>
-			<span className="ml-2 truncate font-mono text-[10px] text-muted-foreground/70">
-				{contextLabel}
-			</span>
+			<Breadcrumb>
+				<BreadcrumbList>
+					<BreadcrumbItem>
+						<BreadcrumbLink asChild>
+							<Link
+								params={{ projectId, workerId }}
+								to="/workers/$workerId/p/$projectId"
+							>
+								{project?.name ?? "Project"}
+							</Link>
+						</BreadcrumbLink>
+					</BreadcrumbItem>
+					<BreadcrumbSeparator />
+					<BreadcrumbItem>
+						<BreadcrumbPage>{thread.name}</BreadcrumbPage>
+					</BreadcrumbItem>
+				</BreadcrumbList>
+			</Breadcrumb>
 			<div className="ml-auto flex items-center gap-1">
 				<button
 					className={

@@ -6,7 +6,6 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Spinner } from "@/components/ui/spinner";
 
 export function AssistantThinking({ thought }: { thought: ThoughtView }) {
 	const [open, setOpen] = useState(Boolean(thought.streaming));
@@ -27,9 +26,6 @@ export function AssistantThinking({ thought }: { thought: ThoughtView }) {
 						<ChevronRightIcon className="size-3.5" />
 					)}
 					<span>Thinking</span>
-					{thought.streaming ? (
-						<Spinner className="size-3 text-muted-foreground" />
-					) : null}
 				</CollapsibleTrigger>
 			</div>
 			<CollapsibleContent>
