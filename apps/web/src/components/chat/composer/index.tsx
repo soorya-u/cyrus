@@ -18,7 +18,12 @@ export function Composer({
 	stopping?: boolean;
 }) {
 	const [value, setValue] = useState("");
+	const [sending, setSending] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+	useEffect(() => {
+		if (busy) setSending(false);
+	}, [busy]);
 
 	useEffect(() => {
 		const textarea = textareaRef.current;
@@ -32,8 +37,9 @@ export function Composer({
 
 	function submit() {
 		const text = value.trim();
-		if (!text || busy || stopping) return;
+		if (!text || busy || stopping || sending) return;
 
+		setSending(true);
 		onSend(text);
 		setValue("");
 	}
@@ -99,6 +105,7 @@ export function Composer({
 											busy={busy}
 											canSend={value.trim().length > 0}
 											onStop={onStop}
+											sending={sending}
 											stopping={stopping}
 										/>
 									</div>

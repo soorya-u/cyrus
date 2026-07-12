@@ -1,10 +1,17 @@
+import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
 import { createFileRoute } from "@tanstack/react-router";
-import { ThreadEmptyState } from "@/components/chat/main/thread-empty-state";
+import { EmptyProject } from "@/components/chat/empty/empty-project";
 
 export const Route = createFileRoute("/_workspace/workers/$workerId/")({
 	component: WorkerIndexPage,
 });
 
 function WorkerIndexPage() {
-	return <ThreadEmptyState />;
+	const { createProject } = useControllerThreads();
+
+	return (
+		<EmptyProject
+			onCreateProject={({ name, path }) => createProject(name, path)}
+		/>
+	);
 }

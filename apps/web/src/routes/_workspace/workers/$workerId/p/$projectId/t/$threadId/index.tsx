@@ -1,10 +1,8 @@
-// biome-ignore lint/style/useFilenamingConvention: TanStack Router requires $threadId param syntax.
-
 import { createFileRoute } from "@tanstack/react-router";
 import { ThreadWorkspace } from "@/components/chat/main/thread-workspace";
 
 export const Route = createFileRoute(
-	"/_workspace/workers/$workerId/p/$projectId/t/$threadId"
+	"/_workspace/workers/$workerId/p/$projectId/t/$threadId/"
 )({
 	component: ThreadPage,
 });

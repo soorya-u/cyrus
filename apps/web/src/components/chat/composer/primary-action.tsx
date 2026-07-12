@@ -1,14 +1,17 @@
 import { ArrowUpIcon, SquareIcon } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export function ComposerPrimaryAction({
 	busy,
 	canSend,
 	onStop,
+	sending = false,
 	stopping = false,
 }: {
 	busy: boolean;
 	canSend: boolean;
 	onStop?: () => void;
+	sending?: boolean;
 	stopping?: boolean;
 }) {
 	if (stopping)
@@ -37,12 +40,16 @@ export function ComposerPrimaryAction({
 
 	return (
 		<button
-			aria-label="Send message"
+			aria-label={sending ? "Sending message" : "Send message"}
 			className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-xs transition-all duration-150 hover:scale-105 hover:bg-primary active:inset-shadow-[0_1px_--theme(--color-black/8%)] active:shadow-none enabled:inset-shadow-[0_1px_--theme(--color-white/16%)] enabled:cursor-pointer enabled:shadow-primary/24 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:hover:scale-100 sm:h-8 sm:w-8"
-			disabled={!canSend}
+			disabled={!canSend || sending}
 			type="submit"
 		>
-			<ArrowUpIcon className="size-3.5" strokeWidth={1.8} />
+			{sending ? (
+				<Spinner className="size-3.5" />
+			) : (
+				<ArrowUpIcon className="size-3.5" strokeWidth={1.8} />
+			)}
 		</button>
 	);
 }

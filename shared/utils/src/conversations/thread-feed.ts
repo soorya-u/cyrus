@@ -6,17 +6,37 @@ import type {
 	ToolCallView,
 } from "@cyrus/schemas/view";
 
-export type FeedEntry = {
-	activities?: ToolCallView[];
-	diffs?: DiffView[];
-	expanded?: boolean;
+type FeedEntryBase = {
 	id: string;
-	label?: string;
-	message?: MessageView;
-	thought?: ThoughtView;
-	turnId?: string;
-	type: "message" | "work" | "turn-fold" | "loading" | "thought";
 };
+
+export type MessageFeedEntry = FeedEntryBase & {
+	type: "message";
+	message: MessageView;
+};
+
+export type ThoughtFeedEntry = FeedEntryBase & {
+	type: "thought";
+	thought: ThoughtView;
+};
+
+export type ToolFeedEntry = FeedEntryBase & {
+	type: "tool";
+	tool: ToolCallView;
+	turnId: string;
+};
+
+export type DiffFeedEntry = FeedEntryBase & {
+	type: "diff";
+	diff: DiffView;
+	turnId: string;
+};
+
+export type FeedEntry =
+	| MessageFeedEntry
+	| ThoughtFeedEntry
+	| ToolFeedEntry
+	| DiffFeedEntry;
 
 type TimelineItem = {
 	createdAt: string;
@@ -56,24 +76,38 @@ function buildTurnTimeline(
 		});
 	}
 
-	const diffsClaimed = new Set<string>();
-
 	for (const toolCall of toolCalls) {
 		if (toolCall.turnId !== turnId) continue;
-		const turnDiffs = diffs.filter(
-			(diff) => diff.turnId === turnId && !diffsClaimed.has(diff.id)
-		);
-		for (const diff of turnDiffs) diffsClaimed.add(diff.id);
-
 		timeline.push({
 			createdAt: toolCall.createdAt,
 			kind: 3,
 			entry: {
-				type: "work",
-				id: `work-${toolCall.toolCallId}`,
+				type: "tool",
+				id: `tool-${toolCall.toolCallId}`,
+				tool: toolCall,
 				turnId,
-				activities: [toolCall],
-				diffs: turnDiffs,
+			},
+		});
+	}
+
+	const turnTools = toolCalls.filter((toolCall) => toolCall.turnId === turnId);
+	const diffSortAnchor =
+		turnTools.at(-1)?.createdAt ??
+		messages.find(
+			(message) => message.role === "user" && message.turnId === turnId
+		)?.createdAt ??
+		turnId;
+
+	for (const diff of diffs) {
+		if (diff.turnId !== turnId) continue;
+		timeline.push({
+			createdAt: diffSortAnchor,
+			kind: 4,
+			entry: {
+				type: "diff",
+				id: diff.id,
+				diff,
+				turnId,
 			},
 		});
 	}
@@ -94,16 +128,12 @@ function buildTurnTimeline(
 
 export function deriveFeed(
 	conversation: ThreadConversation | null,
-	activeTurnId?: string
+	_activeTurnId?: string
 ): FeedEntry[] {
 	if (!conversation) return [];
 
 	const entries: FeedEntry[] = [];
 	const knownTurnIds = new Set(conversation.turns.map((turn) => turn.id));
-	const runningTurn = conversation.turns.find(
-		(turn) => turn.state === "running"
-	);
-	const loadingTurnId = runningTurn?.id ?? activeTurnId;
 
 	for (const turn of conversation.turns) {
 		entries.push(
@@ -115,22 +145,6 @@ export function deriveFeed(
 				conversation.diffs
 			)
 		);
-
-		if (turn.id !== loadingTurnId) continue;
-
-		const assistant = conversation.messages.find(
-			(msg) => msg.role === "assistant" && msg.turnId === turn.id
-		);
-		const thought = conversation.thoughts.find(
-			(item) => item.turnId === turn.id
-		);
-		if (!(assistant?.content.trim() || thought?.content.trim())) {
-			entries.push({
-				type: "loading",
-				id: `loading-${turn.id}`,
-				turnId: turn.id,
-			});
-		}
 	}
 
 	for (const message of conversation.messages) {
@@ -138,24 +152,32 @@ export function deriveFeed(
 		entries.push({ type: "message", id: message.id, message });
 	}
 
-	if (
-		activeTurnId &&
-		!knownTurnIds.has(activeTurnId) &&
-		loadingTurnId === activeTurnId
-	) {
-		entries.push({
-			type: "loading",
-			id: `loading-${activeTurnId}`,
-			turnId: activeTurnId,
-		});
-	}
-
 	return entries;
 }
 
-export function useThreadFeed(
-	conversation: ThreadConversation | null,
-	activeTurnId?: string
-): FeedEntry[] {
-	return deriveFeed(conversation, activeTurnId);
+export function getRunningTurn(
+	conversation: ThreadConversation | null
+): ThreadConversation["turns"][number] | null {
+	if (!conversation) return null;
+	return conversation.turns.find((turn) => turn.state === "running") ?? null;
+}
+
+export function getTurnStartedAt(
+	conversation: ThreadConversation,
+	turnId: string
+): string | null {
+	const userMessage = conversation.messages.find(
+		(message) => message.role === "user" && message.turnId === turnId
+	);
+	if (userMessage) return userMessage.createdAt;
+
+	const firstActivity = [
+		...conversation.thoughts.filter((thought) => thought.turnId === turnId),
+		...conversation.toolCalls.filter((tool) => tool.turnId === turnId),
+		...conversation.messages.filter(
+			(message) => message.role === "assistant" && message.turnId === turnId
+		),
+	].sort((left, right) => left.createdAt.localeCompare(right.createdAt))[0];
+
+	return firstActivity?.createdAt ?? null;
 }

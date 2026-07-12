@@ -1,17 +1,20 @@
-import { useThreadFeed } from "@cyrus/hooks/use-thread-feed";
 import type { ThreadConversation } from "@cyrus/schemas/view";
+import {
+	deriveFeed,
+	getRunningTurn,
+	getTurnStartedAt,
+} from "@cyrus/utils/conversations/thread-feed";
 import { cn } from "cnfast";
-import { useEffect, useEffectEvent, useRef } from "react";
 import { FeedEntryView } from "@/components/chat/feed/feed-entry-view";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-function scrollFeedToBottom(root: HTMLElement | null): void {
-	const viewport = root?.querySelector<HTMLElement>(
-		'[data-slot="scroll-area-viewport"]'
-	);
-	if (!viewport) return;
-	viewport.scrollTop = viewport.scrollHeight;
-}
+import { WorkingMarker } from "@/components/chat/messages/working-marker";
+import {
+	MessageScroller,
+	MessageScrollerButton,
+	MessageScrollerContent,
+	MessageScrollerItem,
+	MessageScrollerProvider,
+	MessageScrollerViewport,
+} from "@/components/ui/message-scroller";
 
 export function ChatFeed({
 	conversation,
@@ -22,35 +25,12 @@ export function ChatFeed({
 	activeTurnId?: string;
 	className?: string;
 }) {
-	const feed = useThreadFeed(conversation, activeTurnId);
-	const rootRef = useRef<HTMLDivElement | null>(null);
-	const streamingContentKey = [
-		...conversation.messages
-			.filter((message) => message.streaming)
-			.map((message) => message.content.length),
-		...conversation.thoughts
-			.filter((thought) => thought.streaming)
-			.map((thought) => thought.content.length),
-	].join(":");
+	const feed = deriveFeed(conversation, activeTurnId);
+	const runningTurn = getRunningTurn(conversation);
+	const workingStartedAt =
+		runningTurn && getTurnStartedAt(conversation, runningTurn.id);
 
-	const scrollToBottom = useEffectEvent(() => {
-		scrollFeedToBottom(rootRef.current);
-	});
-
-	useEffect(() => {
-		const frame = requestAnimationFrame(() => {
-			requestAnimationFrame(() => scrollToBottom());
-		});
-		return () => cancelAnimationFrame(frame);
-	}, []);
-
-	useEffect(() => {
-		if (feed.length === 0) return;
-		const frame = requestAnimationFrame(() => scrollToBottom());
-		return () => cancelAnimationFrame(frame);
-	}, [feed.length, streamingContentKey]);
-
-	if (feed.length === 0)
+	if (feed.length === 0 && !runningTurn) {
 		return (
 			<div
 				className={cn(
@@ -67,19 +47,29 @@ export function ChatFeed({
 				</div>
 			</div>
 		);
+	}
 
 	return (
-		<div
-			className={cn("flex min-h-0 flex-1 flex-col", className)}
-			ref={rootRef}
-		>
-			<ScrollArea className="flex-1">
-				<div className="mx-auto flex max-w-3xl flex-col px-4 pt-4 pb-56">
-					{feed.map((entry) => (
-						<FeedEntryView entry={entry} key={entry.id} />
-					))}
-				</div>
-			</ScrollArea>
+		<div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+			<MessageScrollerProvider>
+				<MessageScroller className="flex-1">
+					<MessageScrollerViewport>
+						<MessageScrollerContent className="mx-auto max-w-3xl gap-4 px-4 pt-4 pb-56">
+							{feed.map((entry) => (
+								<MessageScrollerItem key={entry.id} messageId={entry.id}>
+									<FeedEntryView entry={entry} />
+								</MessageScrollerItem>
+							))}
+							{runningTurn && workingStartedAt && (
+								<MessageScrollerItem messageId={`working-${runningTurn.id}`}>
+									<WorkingMarker startedAt={workingStartedAt} />
+								</MessageScrollerItem>
+							)}
+						</MessageScrollerContent>
+					</MessageScrollerViewport>
+					<MessageScrollerButton direction="end" />
+				</MessageScroller>
+			</MessageScrollerProvider>
 		</div>
 	);
 }
