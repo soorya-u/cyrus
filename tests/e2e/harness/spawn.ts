@@ -94,7 +94,9 @@ export async function stopAll(processes: ManagedProcess[]): Promise<void> {
 export async function cleanupDevServerProcesses(): Promise<void> {
 	const commands = [
 		["pkill", "-f", "wrangler@4.104.0 dev --config wrangler.e2e.json"],
+		["pkill", "-f", "wrangler dev"],
 		["pkill", "-f", "--host 127.0.0.1 --port 5173"],
+		["pkill", "-f", "--host localhost --port 5173"],
 	];
 	for (const command of commands) {
 		const proc = Bun.spawn(command, { stdout: "ignore", stderr: "ignore" });

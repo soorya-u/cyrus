@@ -7,7 +7,8 @@
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",
-    "better-result": "catalog:"
+    "better-result": "catalog:",
+    "node-datachannel": "^0.32.3"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",

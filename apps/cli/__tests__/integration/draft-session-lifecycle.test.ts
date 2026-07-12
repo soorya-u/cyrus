@@ -133,4 +133,23 @@ describe("draft session lifecycle", () => {
 		if (result.isOk()) throw new Error("expected bind to fail");
 		expect(CoordinatorAgentLockedError.is(result.error)).toBe(true);
 	});
+
+	test("closeThreadSession closes the bound runtime session", async () => {
+		const coordinator = createCoordinator();
+		const bound = await coordinator.bindAgent(
+			"thread-1",
+			"project-1",
+			"mock-agent"
+		);
+		expect(bound.isOk()).toBe(true);
+		if (bound.isErr()) throw new Error("expected bind to succeed");
+
+		await coordinator.closeThreadSession(
+			"thread-1",
+			bound.value.sessionId,
+			"mock-agent"
+		);
+
+		expect(sessions[0]?.close).toHaveBeenCalled();
+	});
 });

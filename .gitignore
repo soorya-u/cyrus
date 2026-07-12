@@ -45,12 +45,15 @@ lerna-debug.log*
 coverage
 .nyc_output
 test-results
+.playwright-cli
 
 # Misc
 *.tgz
 .cache
 tmp
 temp
+*.db
+*.db-wal
 
 # Deployments
 .wrangler
