@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
+import { Result } from "better-result";
 import { runTurn } from "./run-turn";
 
 describe("runTurn", () => {
@@ -26,7 +27,7 @@ describe("runTurn", () => {
 			},
 			runtime: {
 				threadCoordinator: {
-					prompt: () => prompt(),
+					prompt: async () => Result.ok(prompt()),
 				},
 			} as never,
 		});
@@ -55,10 +56,12 @@ describe("runTurn", () => {
 			},
 			runtime: {
 				threadCoordinator: {
-					prompt: () =>
-						(function* unusedPrompt() {
-							yield { type: "token" as const, text: "", messageId: "m1" };
-						})(),
+					prompt: async () =>
+						Result.ok(
+							(function* unusedPrompt() {
+								yield { type: "token" as const, text: "", messageId: "m1" };
+							})()
+						),
 				},
 			} as never,
 		});
@@ -82,12 +85,14 @@ describe("runTurn", () => {
 			},
 			runtime: {
 				threadCoordinator: {
-					prompt: () =>
-						(async function* failingPrompt() {
-							await Promise.resolve();
-							yield { type: "token" as const, text: "boom", messageId: "m1" };
-							throw new Error("agent failed");
-						})(),
+					prompt: async () =>
+						Result.ok(
+							(async function* failingPrompt() {
+								await Promise.resolve();
+								yield { type: "token" as const, text: "boom", messageId: "m1" };
+								throw new Error("agent failed");
+							})()
+						),
 				},
 			} as never,
 		});

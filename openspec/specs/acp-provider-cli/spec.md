@@ -88,9 +88,19 @@ The CLI SHALL NOT provide commands that install or manage ACP agent packages dir
 
 ### Requirement: Worker capability advertisement
 
-The worker SHALL advertise all enabled agents from `agents.yml` in `listAgents`, including `id`, `name`, and `icon`.
+The worker SHALL advertise enabled agents from `agents.yml` in `listAgents` only when the agent passes a health check (spawn + ACP `initialize` succeeds). The response SHALL include `id`, `name`, and `icon` for each healthy agent.
 
-#### Scenario: All enabled agents advertised
+#### Scenario: Unhealthy agent omitted
 
-- **WHEN** the worker serves `listAgents` and `agents.yml` contains `claude-acp` and `codex-acp`
-- **THEN** the response includes both agents with their display metadata regardless of PATH or spawn health
+- **WHEN** the worker serves `listAgents` and an enabled agent fails doctor/initialize
+- **THEN** that agent is omitted from the response
+
+#### Scenario: Healthy agents advertised
+
+- **WHEN** the worker serves `listAgents` and `agents.yml` contains healthy `claude-acp` and unhealthy `codex-acp`
+- **THEN** the response includes only `claude-acp` with its display metadata
+
+#### Scenario: Health check cached
+
+- **WHEN** `listAgents` is called multiple times within the configured health cache TTL
+- **THEN** the worker reuses recent health results without re-spawning each agent on every request

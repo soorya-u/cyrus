@@ -6,8 +6,7 @@ import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { connection } from "../connection";
 import { conversations } from "../models/conversations";
 import { threads } from "../models/threads";
-import type { RepositoryError } from "../utils/error";
-import { tryRepo } from "../utils/error";
+import { persistFailed, tryRepo } from "../utils/error";
 
 function parseConversationEntry(row: typeof conversations.$inferSelect) {
 	const { chunk, ...rest } = row;
@@ -33,12 +32,10 @@ export function appendConversation(
 				createdAt,
 			})
 			.returning();
-		if (!row) {
-			throw {
-				type: "persist_failed",
-				message: `failed to persist conversation entry for thread ${threadId}`,
-			} satisfies RepositoryError;
-		}
+		if (!row)
+			throw persistFailed(
+				`failed to persist conversation entry for thread ${threadId}`
+			);
 
 		await connection.db
 			.update(threads)

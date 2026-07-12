@@ -19,12 +19,15 @@ export const RTC_OPERATION_KEYS = {
 	getConversations: (threadId: string) =>
 		["controller", "get-conversations", threadId] as const,
 	listAgents: ["controller", "list-agents"],
-	getModels: (agentName: string) =>
-		["controller", "get-models", agentName] as const,
-	getEfforts: (agentName: string) =>
-		["controller", "get-efforts", agentName] as const,
-	getPersona: (agentName: string) =>
-		["controller", "get-persona", agentName] as const,
+	bindAgent: ["controller", "bind-agent"],
+	getModels: (threadId: string) =>
+		["controller", "get-models", threadId] as const,
+	getModes: (threadId: string) =>
+		["controller", "get-modes", threadId] as const,
+	getEfforts: (threadId: string) =>
+		["controller", "get-efforts", threadId] as const,
+	getPersona: (threadId: string) =>
+		["controller", "get-persona", threadId] as const,
 	setModel: ["controller", "set-model"],
 	setEffort: ["controller", "set-effort"],
 	setPersona: ["controller", "set-persona"],

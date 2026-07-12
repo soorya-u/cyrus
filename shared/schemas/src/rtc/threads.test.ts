@@ -54,6 +54,30 @@ describe("thread schemas", () => {
 		});
 	});
 
+	test("parses optional session bind fields", () => {
+		expect(
+			ThreadSchema.parse({
+				id: "thread-1",
+				projectId: "project-1",
+				name: "Main",
+				agentName: "claude-acp",
+				sessionId: "session-1",
+				agentLocked: 1,
+				createdAt: "2026-07-11T00:00:00.000Z",
+				updatedAt: "2026-07-11T00:00:00.000Z",
+			})
+		).toEqual({
+			id: "thread-1",
+			projectId: "project-1",
+			name: "Main",
+			agentName: "claude-acp",
+			sessionId: "session-1",
+			agentLocked: true,
+			createdAt: "2026-07-11T00:00:00.000Z",
+			updatedAt: "2026-07-11T00:00:00.000Z",
+		});
+	});
+
 	test("parses watch output high water marks", () => {
 		expect(
 			WatchThreadOutputSchema.parse({ snapshotHighWaterMark: 42 })

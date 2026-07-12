@@ -1,4 +1,4 @@
-import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { projects } from "./projects";
 
 export const threads = sqliteTable("threads", {
@@ -8,6 +8,8 @@ export const threads = sqliteTable("threads", {
 		.references(() => projects.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
 	agentName: text("agent_name"),
+	sessionId: text("session_id"),
+	agentLocked: integer("agent_locked").notNull().default(0),
 	createdAt: text("created_at").notNull(),
 	updatedAt: text("updated_at").notNull(),
 });

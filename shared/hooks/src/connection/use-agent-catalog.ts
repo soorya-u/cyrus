@@ -1,5 +1,6 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useRtc } from "../contexts/rtc";
 import { useAgentCatalogStore } from "../stores/agent-catalog";
 
@@ -19,15 +20,28 @@ export function useAgentCatalog({
 	threadId,
 	projectId,
 }: UseAgentCatalogOptions) {
+	const queryClient = useQueryClient();
 	const { orpc: orpcController } = useRtc();
 
 	const selection = useAgentCatalogStore(
 		(state) => state.selectionByThread[threadId]
 	);
-	const setAgentSelection = useAgentCatalogStore((state) => state.setAgent);
 	const setModelSelection = useAgentCatalogStore((state) => state.setModel);
 	const setEffortSelection = useAgentCatalogStore((state) => state.setEffort);
 	const setPersonaSelection = useAgentCatalogStore((state) => state.setPersona);
+
+	const threadsQuery = useQuery({
+		...orpcController.listThreads.queryOptions({
+			queryKey: RTC_OPERATION_KEYS.listThreads(projectId),
+			input: { projectId },
+		}),
+		queryKey: RTC_OPERATION_KEYS.listThreads(projectId),
+	});
+	const thread = threadsQuery.data?.threads.find(
+		(item) => item.id === threadId
+	);
+	const agentLocked = Boolean(thread?.agentLocked);
+	const boundSessionId = thread?.sessionId;
 
 	const agentsQuery = useQuery({
 		...orpcController.listAgents.queryOptions({
@@ -36,44 +50,64 @@ export function useAgentCatalog({
 		queryKey: RTC_OPERATION_KEYS.listAgents,
 	});
 	const agents = agentsQuery.data?.agents ?? [];
-	const selectedAgent = pickValid(selection?.agentName, agents);
+	const selectedAgent = pickValid(thread?.agentName, agents);
 
-	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(selectedAgent);
+	const catalogEnabled = Boolean(boundSessionId);
+
+	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(threadId);
 	const modelsQuery = useQuery({
 		...orpcController.getModels.queryOptions({
 			queryKey: modelsQueryKey,
-			input: { agentName: selectedAgent },
+			input: { threadId },
 		}),
 		queryKey: modelsQueryKey,
-		enabled: Boolean(selectedAgent),
+		enabled: catalogEnabled,
 	});
 	const models = modelsQuery.data?.models ?? [];
 
-	const effortsQueryKey = RTC_OPERATION_KEYS.getEfforts(selectedAgent);
+	const effortsQueryKey = RTC_OPERATION_KEYS.getEfforts(threadId);
 	const effortsQuery = useQuery({
 		...orpcController.getEfforts.queryOptions({
 			queryKey: effortsQueryKey,
-			input: { agentName: selectedAgent },
+			input: { threadId },
 		}),
 		queryKey: effortsQueryKey,
-		enabled: Boolean(selectedAgent),
+		enabled: catalogEnabled,
 	});
 	const efforts = effortsQuery.data?.efforts ?? [];
 
-	const personaQueryKey = RTC_OPERATION_KEYS.getPersona(selectedAgent);
+	const personaQueryKey = RTC_OPERATION_KEYS.getPersona(threadId);
 	const personaQuery = useQuery({
 		...orpcController.getPersona.queryOptions({
 			queryKey: personaQueryKey,
-			input: { agentName: selectedAgent },
+			input: { threadId },
 		}),
 		queryKey: personaQueryKey,
-		enabled: Boolean(selectedAgent),
+		enabled: catalogEnabled,
 	});
 	const personas = personaQuery.data?.personas ?? [];
 
 	const selectedModel = pickValid(selection?.modelId, models);
 	const selectedEffort = pickValid(selection?.effortId, efforts);
 	const selectedPersona = pickValid(selection?.personaId, personas);
+
+	const bindAgentMutation = useMutation({
+		...orpcController.bindAgent.mutationOptions({
+			mutationKey: RTC_OPERATION_KEYS.bindAgent,
+		}),
+		onSuccess: (data) => {
+			queryClient.setQueryData(modelsQueryKey, { models: data.models });
+			queryClient.setQueryData(RTC_OPERATION_KEYS.getEfforts(threadId), {
+				efforts: data.efforts,
+			});
+			queryClient.setQueryData(RTC_OPERATION_KEYS.getPersona(threadId), {
+				personas: data.personas,
+			});
+			queryClient.invalidateQueries({
+				queryKey: RTC_OPERATION_KEYS.listThreads(projectId),
+			});
+		},
+	});
 
 	const setModelMutation = useMutation({
 		...orpcController.setModel.mutationOptions({
@@ -91,8 +125,29 @@ export function useAgentCatalog({
 		}),
 	});
 
+	const { mutate: bindAgent, isPending: bindAgentPending } = bindAgentMutation;
+
+	useEffect(() => {
+		if (!thread?.agentName || boundSessionId || agentLocked) return;
+		if (bindAgentPending) return;
+		bindAgent({
+			threadId,
+			projectId,
+			agentName: thread.agentName,
+		});
+	}, [
+		agentLocked,
+		bindAgent,
+		bindAgentPending,
+		boundSessionId,
+		projectId,
+		thread?.agentName,
+		threadId,
+	]);
+
 	function selectAgent(agentName: string) {
-		setAgentSelection(threadId, agentName);
+		if (agentLocked || agentName === selectedAgent) return;
+		bindAgentMutation.mutate({ threadId, projectId, agentName });
 	}
 
 	function selectModel(modelId: string) {
@@ -126,10 +181,14 @@ export function useAgentCatalog({
 	}
 
 	return {
+		agentLocked,
 		agents,
 		efforts,
 		models,
-		modelsLoading: modelsQuery.isFetching,
+		modelsLoading:
+			modelsQuery.isFetching ||
+			bindAgentMutation.isPending ||
+			(Boolean(thread?.agentName) && !boundSessionId && !agentLocked),
 		personas,
 		selectAgent,
 		selectedAgent,

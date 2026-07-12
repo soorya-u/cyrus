@@ -5,6 +5,7 @@ import {
 	renameProject,
 } from "@cyrus/database/repositories/projects";
 import { deleteThreadsForProject } from "@cyrus/database/repositories/threads";
+import { notFound } from "@cyrus/database/utils/error";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
 import type { ControllerOs } from "./deps";
 
@@ -35,11 +36,7 @@ export function projectsHandlers(os: ControllerOs) {
 			const deleted = await deleteStoredProject(input.projectId);
 			if (deleted.isErr()) throwOrpcFromRepositoryError(deleted.error);
 			if (!deleted.value) {
-				throwOrpcFromRepositoryError({
-					type: "not_found",
-					entity: "project",
-					id: input.projectId,
-				});
+				throwOrpcFromRepositoryError(notFound("project", input.projectId));
 			}
 
 			const threads = await deleteThreadsForProject(input.projectId);

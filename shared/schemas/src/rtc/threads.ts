@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { ChatChunkSchema } from "./chat";
-import { optionalString } from "./common";
+import { optionalBoolean, optionalString } from "./common";
 
 export const ThreadSchema = z.object({
 	id: z.string(),
 	projectId: z.string(),
 	name: z.string(),
 	agentName: optionalString,
+	sessionId: optionalString,
+	agentLocked: optionalBoolean,
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });
