@@ -102,6 +102,20 @@ async function writeCliConfig(
 	);
 }
 
+async function writeCliAgents(home: string): Promise<void> {
+	await writeFile(
+		join(home, "agents.yml"),
+		YAML.stringify({
+			"claude-acp": {
+				registryId: "claude-acp",
+				name: "Claude Agent",
+				icon: "https://cdn.agentclientprotocol.com/registry/v1/latest/claude-acp.svg",
+			},
+		}),
+		{ mode: 0o600 }
+	);
+}
+
 async function waitForWorkerConnected(
 	cli: ManagedProcess,
 	timeoutMs = 120_000
@@ -145,6 +159,7 @@ async function createE2eStack(
 
 		const auth = await seedCliAccessToken(E2E_SERVER_URL);
 		await writeCliConfig(cyrusHome, auth.token, "e2e-worker-1", "E2E Worker");
+		await writeCliAgents(cyrusHome);
 
 		if (withWeb) {
 			const web = spawnWeb(webEnv);

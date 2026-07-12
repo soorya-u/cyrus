@@ -50,11 +50,9 @@ export async function ensureThread(
 				})
 				.where(and(eq(threads.id, id), eq(threads.projectId, projectId)));
 			return ThreadSchema.parse({
-				id,
-				projectId: existing.projectId,
+				...existing,
 				name,
 				agentName,
-				createdAt: existing.createdAt,
 				updatedAt,
 			});
 		}
@@ -75,6 +73,8 @@ export async function ensureThread(
 			projectId: thread.projectId,
 			name: thread.name,
 			agentName: thread.agentName ?? null,
+			sessionId: null,
+			agentLocked: 0,
 			createdAt: thread.createdAt,
 			updatedAt: thread.updatedAt,
 		});
@@ -151,5 +151,79 @@ export function getThread(
 			.where(eq(threads.id, threadId))
 			.limit(1);
 		return row ? ThreadSchema.parse(row) : undefined;
+	});
+}
+
+export function getThreadSession(
+	threadId: string
+): Promise<
+	Result<{ sessionId: string; agentName: string } | undefined, RepositoryError>
+> {
+	return tryRepo(async () => {
+		const [row] = await connection.db
+			.select({
+				sessionId: threads.sessionId,
+				agentName: threads.agentName,
+			})
+			.from(threads)
+			.where(eq(threads.id, threadId))
+			.limit(1);
+		if (!(row?.sessionId && row.agentName)) return;
+		return { sessionId: row.sessionId, agentName: row.agentName };
+	});
+}
+
+export async function bindThreadAgent(
+	threadId: string,
+	projectId: string,
+	data: { agentName: string; sessionId: string }
+): Promise<Result<Thread, RepositoryError>> {
+	const thread = await getThread(threadId);
+	if (thread.isErr()) return Result.err(thread.error);
+	if (!thread.value) return Result.err(notFound("thread", threadId));
+	if (thread.value.projectId !== projectId) {
+		return Result.err(notFound("thread", threadId));
+	}
+
+	return tryRepo(async () => {
+		const updatedAt = nowISO();
+		await connection.db
+			.update(threads)
+			.set({
+				agentName: data.agentName,
+				sessionId: data.sessionId,
+				updatedAt,
+			})
+			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
+
+		return ThreadSchema.parse({
+			...thread.value,
+			agentName: data.agentName,
+			sessionId: data.sessionId,
+			updatedAt,
+		});
+	});
+}
+
+export async function setAgentLocked(
+	threadId: string
+): Promise<Result<Thread, RepositoryError>> {
+	const thread = await getThread(threadId);
+	if (thread.isErr()) return Result.err(thread.error);
+	if (!thread.value) return Result.err(notFound("thread", threadId));
+	if (thread.value.agentLocked) return Result.ok(thread.value);
+
+	return tryRepo(async () => {
+		const updatedAt = nowISO();
+		await connection.db
+			.update(threads)
+			.set({ agentLocked: 1, updatedAt })
+			.where(eq(threads.id, threadId));
+
+		return ThreadSchema.parse({
+			...thread.value,
+			agentLocked: true,
+			updatedAt,
+		});
 	});
 }

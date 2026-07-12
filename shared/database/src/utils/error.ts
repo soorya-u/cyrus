@@ -1,44 +1,60 @@
-import { Result } from "better-result";
+import { matchError, Result, TaggedError } from "better-result";
+
+export class RepositoryNotFoundError extends TaggedError("not_found")<{
+	entity: string;
+	id: string;
+}>() {}
+
+export class RepositoryDatabaseError extends TaggedError("database")<{
+	message: string;
+}>() {}
+
+export class RepositoryPersistFailedError extends TaggedError(
+	"persist_failed"
+)<{
+	message: string;
+}>() {}
 
 export type RepositoryError =
-	| { type: "not_found"; entity: string; id: string }
-	| { type: "database"; message: string }
-	| { type: "persist_failed"; message: string };
+	| RepositoryNotFoundError
+	| RepositoryDatabaseError
+	| RepositoryPersistFailedError;
 
-export function notFound(entity: string, id: string): RepositoryError {
-	return { type: "not_found", entity, id };
+export function notFound(entity: string, id: string): RepositoryNotFoundError {
+	return new RepositoryNotFoundError({ entity, id });
+}
+
+export function databaseError(message: string): RepositoryDatabaseError {
+	return new RepositoryDatabaseError({ message });
+}
+
+export function persistFailed(message: string): RepositoryPersistFailedError {
+	return new RepositoryPersistFailedError({ message });
 }
 
 export function repositoryErrorMessage(error: RepositoryError): string {
-	switch (error.type) {
-		case "not_found":
-			return `${error.entity} not found: ${error.id}`;
-		case "database":
-		case "persist_failed":
-			return error.message;
-		default: {
-			const _exhaustive: never = error;
-			return _exhaustive;
-		}
-	}
+	return matchError(error, {
+		not_found: (value) => `${value.entity} not found: ${value.id}`,
+		database: (value) => value.message,
+		persist_failed: (value) => value.message,
+	});
 }
 
-function isRepositoryError(error: unknown): error is RepositoryError {
-	if (typeof error !== "object" || error === null || !("type" in error))
-		return false;
-
-	const type = (error as { type: unknown }).type;
-	return (
-		type === "not_found" || type === "database" || type === "persist_failed"
-	);
+export function repositoryOrpcCode(
+	error: RepositoryError
+): "NOT_FOUND" | "INTERNAL_SERVER_ERROR" {
+	return matchError(error, {
+		not_found: () => "NOT_FOUND",
+		database: () => "INTERNAL_SERVER_ERROR",
+		persist_failed: () => "INTERNAL_SERVER_ERROR",
+	});
 }
 
 function fromUnknown(error: unknown): RepositoryError {
-	if (isRepositoryError(error)) return error;
-	return {
-		type: "database",
-		message: error instanceof Error ? error.message : String(error),
-	};
+	if (RepositoryNotFoundError.is(error)) return error;
+	if (RepositoryDatabaseError.is(error)) return error;
+	if (RepositoryPersistFailedError.is(error)) return error;
+	return databaseError(error instanceof Error ? error.message : String(error));
 }
 
 export async function tryRepo<T>(

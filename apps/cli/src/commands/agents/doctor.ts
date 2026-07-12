@@ -1,29 +1,21 @@
-import { pingAcpAgent } from "@/core/acp/ping";
+import { checkAgentHealth } from "@/core/agents/health";
 import { getAgent, listAgents } from "@/store/agents";
 import { createSpinner } from "@/utils/spinner";
 import { green, print, red } from "@/utils/style";
 import type { AgentEntry } from "@/validators/agent";
 
-type HealthResult = {
-	healthy: boolean;
-	error?: string;
-};
-
-async function checkAgent(
-	registryId: string,
-	entry: AgentEntry
-): Promise<HealthResult> {
+async function checkAgent(registryId: string, entry: AgentEntry) {
 	const spinner = createSpinner(`Checking ${registryId}…`);
 	spinner.start();
-	const result = await pingAcpAgent(registryId, entry);
+	const result = await checkAgentHealth(registryId, entry);
 	spinner.stop();
-	return result.match<HealthResult>({
-		ok: () => ({ healthy: true }),
-		err: (error) => ({ healthy: false, error }),
-	});
+	return result;
 }
 
-function printHealth(registryId: string, result: HealthResult): void {
+function printHealth(
+	registryId: string,
+	result: Awaited<ReturnType<typeof checkAgentHealth>>
+): void {
 	const status = result.healthy ? green("healthy") : red("unhealthy");
 	print.line`${registryId}: ${status}`;
 	if (result.error) print.line`  ${result.error}`;

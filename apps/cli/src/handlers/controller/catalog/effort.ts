@@ -1,18 +1,24 @@
+import { throwOrpcFromCoordinatorError } from "@/utils/error";
 import type { ControllerDeps } from "../deps";
 
 export function effortHandlers({ os, runtime }: ControllerDeps) {
 	return {
-		getEfforts: os.getEfforts.handler(async ({ input }) => ({
-			efforts: await runtime.threadCoordinator.getEfforts(input.agentName),
-		})),
+		getEfforts: os.getEfforts.handler(async ({ input }) =>
+			(await runtime.threadCoordinator.getEfforts(input.threadId)).match({
+				ok: (efforts) => ({ efforts }),
+				err: throwOrpcFromCoordinatorError,
+			})
+		),
 		setEffort: os.setEffort.handler(async ({ input }) => {
-			await runtime.threadCoordinator.setEffort(
-				input.agentName,
+			const result = await runtime.threadCoordinator.setEffort(
 				input.threadId,
 				input.projectId,
 				input.effortId
 			);
-			return {};
+			return result.match({
+				ok: () => ({}),
+				err: throwOrpcFromCoordinatorError,
+			});
 		}),
 	};
 }

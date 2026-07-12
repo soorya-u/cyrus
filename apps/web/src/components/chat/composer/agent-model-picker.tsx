@@ -45,6 +45,7 @@ export function AgentModelPicker({
 }) {
 	const [open, setOpen] = useState(false);
 	const {
+		agentLocked,
 		agents,
 		models,
 		modelsLoading,
@@ -79,26 +80,28 @@ export function AgentModelPicker({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="start"
-				className="w-80 p-0"
+				className={cn("p-0", agentLocked ? "w-48" : "w-80")}
 				onCloseAutoFocus={(event) => event.preventDefault()}
 			>
 				<div className="flex max-h-72 items-stretch">
-					<div className="flex w-32 shrink-0 flex-col justify-end gap-0.5 border-border/60 border-r p-1">
-						{agents.map((agent) => (
-							<button
-								className={cn(
-									"flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent",
-									agent.id === selectedAgent && "bg-accent text-foreground"
-								)}
-								key={agent.id}
-								onClick={() => selectAgent(agent.id)}
-								type="button"
-							>
-								{agent.icon && <CatalogOptionIcon src={agent.icon} />}
-								<span className="truncate">{agent.name}</span>
-							</button>
-						))}
-					</div>
+					{!agentLocked && (
+						<div className="flex w-32 shrink-0 flex-col justify-end gap-0.5 border-border/60 border-r p-1">
+							{agents.map((agent) => (
+								<button
+									className={cn(
+										"flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent",
+										agent.id === selectedAgent && "bg-accent text-foreground"
+									)}
+									key={agent.id}
+									onClick={() => selectAgent(agent.id)}
+									type="button"
+								>
+									{agent.icon && <CatalogOptionIcon src={agent.icon} />}
+									<span className="truncate">{agent.name}</span>
+								</button>
+							))}
+						</div>
+					)}
 					<div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-y-auto p-1">
 						{modelsLoading ? (
 							<div className="flex flex-1 items-center justify-center py-8">

@@ -6,13 +6,15 @@ import {
 	createThread as createStoredThread,
 	deleteThread,
 	getThread,
+	getThreadSession,
 	listThreads,
 	renameThread,
 } from "@cyrus/database/repositories/threads";
+import { notFound } from "@cyrus/database/utils/error";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
-import type { ControllerOs } from "./deps";
+import type { ControllerDeps } from "./deps";
 
-export function threadsHandlers(os: ControllerOs) {
+export function threadsHandlers({ os, runtime }: ControllerDeps) {
 	return {
 		listThreads: os.listThreads.handler(async ({ input }) =>
 			(await listThreads(input.projectId)).match({
@@ -32,11 +34,7 @@ export function threadsHandlers(os: ControllerOs) {
 			const thread = await getThread(input.threadId);
 			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
 			if (!thread.value) {
-				throwOrpcFromRepositoryError({
-					type: "not_found",
-					entity: "thread",
-					id: input.threadId,
-				});
+				throwOrpcFromRepositoryError(notFound("thread", input.threadId));
 			}
 
 			return (await getConversations(input.threadId, input.afterSeq)).match({
@@ -53,14 +51,20 @@ export function threadsHandlers(os: ControllerOs) {
 		),
 
 		deleteThread: os.deleteThread.handler(async ({ input }) => {
+			const session = await getThreadSession(input.threadId);
+			if (session.isErr()) throwOrpcFromRepositoryError(session.error);
+			if (session.value) {
+				await runtime.threadCoordinator.closeThreadSession(
+					input.threadId,
+					session.value.sessionId,
+					session.value.agentName
+				);
+			}
+
 			const deleted = await deleteThread(input.threadId);
 			if (deleted.isErr()) throwOrpcFromRepositoryError(deleted.error);
 			if (!deleted.value) {
-				throwOrpcFromRepositoryError({
-					type: "not_found",
-					entity: "thread",
-					id: input.threadId,
-				});
+				throwOrpcFromRepositoryError(notFound("thread", input.threadId));
 			}
 
 			return {};
@@ -70,11 +74,7 @@ export function threadsHandlers(os: ControllerOs) {
 			const thread = await getThread(input.threadId);
 			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
 			if (!thread.value) {
-				throwOrpcFromRepositoryError({
-					type: "not_found",
-					entity: "thread",
-					id: input.threadId,
-				});
+				throwOrpcFromRepositoryError(notFound("thread", input.threadId));
 			}
 
 			context.eventBus.watch(context.peerId, input.threadId);

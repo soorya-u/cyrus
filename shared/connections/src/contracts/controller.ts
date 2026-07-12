@@ -1,5 +1,7 @@
 import { ListAgentsOutputSchema } from "@cyrus/schemas/rtc/agents";
 import {
+	BindAgentInputSchema,
+	BindAgentOutputSchema,
 	ListEffortsOutputSchema,
 	ListModelsOutputSchema,
 	ListModesOutputSchema,
@@ -16,7 +18,7 @@ import {
 	ChatOutputSchema,
 } from "@cyrus/schemas/rtc/chat";
 import {
-	AgentQueryInputSchema,
+	ThreadCatalogQueryInputSchema,
 	VoidOutputSchema,
 } from "@cyrus/schemas/rtc/common";
 import {
@@ -46,6 +48,7 @@ import { eventIterator, oc } from "@orpc/contract";
 
 export const controllerContract = {
 	listAgents: oc.output(ListAgentsOutputSchema),
+	bindAgent: oc.input(BindAgentInputSchema).output(BindAgentOutputSchema),
 	listProjects: oc.output(ListProjectsOutputSchema),
 	createProject: oc
 		.input(CreateProjectInputSchema)
@@ -64,10 +67,18 @@ export const controllerContract = {
 		.output(GetConversationsOutputSchema),
 	deleteThread: oc.input(ThreadQueryInputSchema).output(VoidOutputSchema),
 	renameThread: oc.input(RenameThreadInputSchema).output(VoidOutputSchema),
-	getModels: oc.input(AgentQueryInputSchema).output(ListModelsOutputSchema),
-	getModes: oc.input(AgentQueryInputSchema).output(ListModesOutputSchema),
-	getEfforts: oc.input(AgentQueryInputSchema).output(ListEffortsOutputSchema),
-	getPersona: oc.input(AgentQueryInputSchema).output(ListPersonasOutputSchema),
+	getModels: oc
+		.input(ThreadCatalogQueryInputSchema)
+		.output(ListModelsOutputSchema),
+	getModes: oc
+		.input(ThreadCatalogQueryInputSchema)
+		.output(ListModesOutputSchema),
+	getEfforts: oc
+		.input(ThreadCatalogQueryInputSchema)
+		.output(ListEffortsOutputSchema),
+	getPersona: oc
+		.input(ThreadCatalogQueryInputSchema)
+		.output(ListPersonasOutputSchema),
 	setModel: oc.input(SetModelInputSchema).output(VoidOutputSchema),
 	setMode: oc.input(SetModeInputSchema).output(VoidOutputSchema),
 	setEffort: oc.input(SetEffortInputSchema).output(VoidOutputSchema),

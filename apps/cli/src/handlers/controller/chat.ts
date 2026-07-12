@@ -1,7 +1,12 @@
 import { appendConversation } from "@cyrus/database/repositories/conversations";
-import { ensureThread } from "@cyrus/database/repositories/threads";
+import {
+	ensureThread,
+	getThread,
+	setAgentLocked,
+} from "@cyrus/database/repositories/threads";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
+import { ORPCError } from "@orpc/server";
 import { log } from "evlog";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
 import { runTurn } from "@/utils/run-turn";
@@ -23,8 +28,19 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				projectId,
 			} = input;
 
+			const existing = await getThread(threadId);
+			if (existing.isErr()) throwOrpcFromRepositoryError(existing.error);
+			if (!(existing.value?.sessionId && existing.value.agentName))
+				throw new ORPCError("BAD_REQUEST", {
+					message: "agent must be bound before chat; call bindAgent first",
+				});
+
+			if (existing.value.agentName !== agentName)
+				throw new ORPCError("BAD_REQUEST", {
+					message: "agentName does not match the bound thread agent",
+				});
+
 			const thread = await ensureThread(threadId, projectId, {
-				agentName,
 				firstMessage: message,
 			});
 			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
@@ -55,6 +71,10 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 					event: persistEvent,
 				});
 				if (entry.isErr()) throwOrpcFromRepositoryError(entry.error);
+				if (persistEvent.type === "user_message") {
+					const locked = await setAgentLocked(threadId);
+					if (locked.isErr()) throwOrpcFromRepositoryError(locked.error);
+				}
 				publishChunk(entry.value.chunk);
 			}
 
@@ -119,8 +139,6 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 		}),
 
 		cancel: os.cancel.handler(async ({ input, context }) => {
-			// Snapshot before awaiting — a follow-up chat() can start while cancel
-			// is in flight and must not be interrupted by this request.
 			const snapshottedTurnIds = context.eventBus.getActiveTurnIdsForThread(
 				input.threadId
 			);

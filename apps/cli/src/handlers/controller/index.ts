@@ -15,9 +15,9 @@ export function createControllerRouter(runtime: WorkerRuntime) {
 	const deps = { os, runtime };
 
 	return {
-		...agentsHandlers(os),
-		...projectsHandlers(os),
-		...threadsHandlers(os),
+		...agentsHandlers(deps),
+		...projectsHandlers(deps),
+		...threadsHandlers(deps),
 		...dirHandlers(os),
 		...modelHandlers(deps),
 		...modeHandlers(deps),

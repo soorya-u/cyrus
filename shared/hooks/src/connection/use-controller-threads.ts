@@ -15,7 +15,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Result } from "better-result";
 import { useCallback, useState } from "react";
 import { useRtc } from "../contexts/rtc";
-import { useAgentCatalogStore } from "../stores/agent-catalog";
 import { useProjects } from "./use-projects";
 import { useThreads } from "./use-threads";
 
@@ -52,10 +51,6 @@ export function useControllerThreads() {
 		queryKey: RTC_OPERATION_KEYS.listAgents,
 	});
 
-	const selectionByThread = useAgentCatalogStore(
-		(state) => state.selectionByThread
-	);
-
 	const isThreadStopping = useCallback(
 		(threadId: string) => stoppingThreadIds.has(threadId),
 		[stoppingThreadIds]
@@ -86,12 +81,7 @@ export function useControllerThreads() {
 
 	function resolveAgentName(threadId: string): string {
 		const thread = threads.find((item) => item.id === threadId);
-		return (
-			selectionByThread[threadId]?.agentName ??
-			thread?.agentName ??
-			agentsQuery.data?.agents[0]?.id ??
-			""
-		);
+		return thread?.agentName ?? agentsQuery.data?.agents[0]?.id ?? "";
 	}
 
 	async function sendMessage(

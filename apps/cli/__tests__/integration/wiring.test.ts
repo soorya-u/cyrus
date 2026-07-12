@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
+import { Result } from "better-result";
 import { runTurn } from "../../src/utils/run-turn";
 import { createMockPromptStream } from "../helpers/acp-runtime";
 
@@ -34,7 +35,8 @@ describe("acp mock runtime", () => {
 			emitTerminal: () => Promise.resolve(),
 			runtime: {
 				threadCoordinator: {
-					prompt: () => createMockPromptStream({ message: "pong" }),
+					prompt: async () =>
+						Result.ok(createMockPromptStream({ message: "pong" })),
 				},
 			} as never,
 		});
@@ -63,11 +65,13 @@ describe("acp mock runtime", () => {
 			},
 			runtime: {
 				threadCoordinator: {
-					prompt: () =>
-						createMockPromptStream({
-							message: "pong",
-							failAfterToken: true,
-						}),
+					prompt: async () =>
+						Result.ok(
+							createMockPromptStream({
+								message: "pong",
+								failAfterToken: true,
+							})
+						),
 				},
 			} as never,
 		});

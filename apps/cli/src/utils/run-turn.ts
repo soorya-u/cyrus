@@ -35,14 +35,19 @@ export async function runTurn({
 		return started;
 	}
 
+	const promptResult = await runtime.threadCoordinator.prompt(
+		agentName,
+		threadId,
+		projectId,
+		message
+	);
+	if (promptResult.isErr()) {
+		await emitTerminal({ type: "turn_interrupted" });
+		return Result.err(promptResult.error);
+	}
+
 	const streamed = await Result.tryPromise(async () => {
-		const gen = runtime.threadCoordinator.prompt(
-			agentName,
-			threadId,
-			projectId,
-			message
-		);
-		for await (const event of gen) await emit(event);
+		for await (const event of promptResult.value) await emit(event);
 	});
 
 	if (streamed.isErr()) {

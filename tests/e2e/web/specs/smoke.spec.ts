@@ -14,7 +14,7 @@ e2eDescribe("web smoke", () => {
 			{
 				name: "better-auth.session_token",
 				value: state.sessionCookie,
-				domain: "127.0.0.1",
+				domain: "localhost",
 				path: "/",
 				httpOnly: true,
 				secure: false,
