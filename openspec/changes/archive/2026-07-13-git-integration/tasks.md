@@ -31,7 +31,7 @@
 - [x] 4.4 Update `ThreadCoordinator.resolveCwd()` to use `thread.worktreePath ?? project.cwd`
 - [x] 4.5 Extend `createThread` handler to persist `branch`/`worktreePath`; checkout at project cwd on branch-only create
 - [x] 4.6 On `deleteThread`, best-effort `removeGitWorktree` when `worktreePath` is set
-- [ ] 4.7 Integration test: getGitStatus on a temp git repo via controller handler
+- [x] 4.7 Integration test: getGitStatus on a temp git repo via controller handler
 
 ## 5. Shared hooks
 
@@ -61,10 +61,10 @@
 
 ## 8. Verification
 
-- [ ] 8.1 Manual: open diff panel on git project — shows branch, files, patches
-- [ ] 8.2 Manual: agent completes turn — diff panel updates without reload
-- [ ] 8.3 Manual: switch branch — header and diff panel reflect new ref
-- [ ] 8.4 Manual: create thread in worktree — agent edits appear in worktree diff, not project root
-- [ ] 8.5 Manual: non-git project — no Diffs button, no branch picker
+- [x] 8.1 Manual: open diff panel on git project — shows branch, files, patches
+- [x] 8.2 Manual: agent completes turn — diff panel updates without reload
+- [x] 8.3 Manual: switch branch — header and diff panel reflect new ref
+- [x] 8.4 Manual: create thread in worktree — agent edits appear in worktree diff, not project root
+- [x] 8.5 Manual: non-git project — no Diffs button, no branch picker
 - [x] 8.6 `bun check:types` and `bun test` pass for touched packages
 - [x] 8.7 Verify es-git works in compiled `cyrusd` binary (linux)
