@@ -118,6 +118,9 @@ export const controllerContract = {
 	listProjectGitRefs: oc
 		.input(ProjectGitRefsQueryInputSchema)
 		.output(GitRefsOutputSchema),
+	initGitRepository: oc
+		.input(ThreadGitQueryInputSchema)
+		.output(VoidOutputSchema),
 };
 
 export type ControllerContract = typeof controllerContract;

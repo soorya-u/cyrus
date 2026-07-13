@@ -42,18 +42,20 @@ export async function resolveProjectCwd(
 	return Result.ok(cwd);
 }
 
-export const createProject = repoArgs(async (name: string, cwd = "") => {
-	const id = randomId();
-	const resolvedCwd = cwd.trim();
-	if (resolvedCwd) await mkdir(resolvedCwd, { recursive: true });
+export const createProject = repoArgs<[name: string, cwd?: string], Project>(
+	async (name, cwd = "") => {
+		const id = randomId();
+		const resolvedCwd = cwd.trim();
+		if (resolvedCwd) await mkdir(resolvedCwd, { recursive: true });
 
-	await connection.db.insert(projects).values({
-		id,
-		cwd: resolvedCwd,
-		name,
-	});
-	return ProjectSchema.parse({ id, cwd: resolvedCwd, name });
-});
+		await connection.db.insert(projects).values({
+			id,
+			cwd: resolvedCwd,
+			name,
+		});
+		return ProjectSchema.parse({ id, cwd: resolvedCwd, name });
+	}
+);
 
 const writeProjectName = repoArgs(
 	async (projectId: string, name: string, current: Project) => {

@@ -12,7 +12,7 @@ type DevToolsProps = {
 export function DevTools({ query, router }: DevToolsProps) {
 	return (
 		<TanStackDevtools
-			config={{ position: "middle-right" }}
+			config={{ position: "bottom-right" }}
 			plugins={[
 				{
 					name: "TanStack Query",

@@ -107,14 +107,15 @@ export class ThreadCoordinator {
 					sessionId
 				),
 			}));
-			if (catalog.isErr()) return Result.err(catalog.error);
+			if (catalog.isOk())
+				return Result.ok({
+					sessionId,
+					agentName,
+					agentLocked: thread.value.agentLocked,
+					...catalog.value,
+				});
 
-			return Result.ok({
-				sessionId,
-				agentName,
-				agentLocked: thread.value.agentLocked,
-				...catalog.value,
-			});
+			if (thread.value.agentLocked) return Result.err(catalog.error);
 		}
 
 		const previousAgentName = thread.value.agentName;
@@ -131,7 +132,10 @@ export class ThreadCoordinator {
 				)
 			);
 			if (closed.isErr()) return Result.err(closed.error);
-		}
+		} else if (previousSessionId && previousAgentName === agentName)
+			await this.withRuntime(() =>
+				runtime.closeSession(previousSessionId, threadId)
+			);
 
 		const bound = await this.withRuntime(async () => {
 			const session = await runtime.createBoundSession(

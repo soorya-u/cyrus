@@ -1,5 +1,4 @@
 import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
-import { useCreateWorktree } from "@cyrus/hooks/connection/use-git";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import {
 	type CollisionDetection,
@@ -22,8 +21,8 @@ import {
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { FolderPlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { NewProjectDialog } from "@/components/portals/new-project-dialog";
-import { NewThreadGitMenu } from "@/components/sidebar/projects/new-thread-git-menu";
 import { ProjectThreadGroup } from "@/components/sidebar/projects/project-thread-group";
 import { SortableProjectItem } from "@/components/sidebar/projects/sortable-project-item";
 import { ThreadSearchField } from "@/components/sidebar/projects/thread-search-field";
@@ -50,7 +49,6 @@ export function ProjectThreadExplorer({
 	activeThreadId = null,
 }: ProjectThreadExplorerProps) {
 	const navigate = useNavigate();
-	const createWorktree = useCreateWorktree();
 	const {
 		projects,
 		threads,
@@ -58,6 +56,7 @@ export function ProjectThreadExplorer({
 		renameProject,
 		removeProject,
 		createThread,
+		isCreatingThread,
 		renameThread,
 		deleteThread,
 	} = useControllerThreads();
@@ -72,11 +71,6 @@ export function ProjectThreadExplorer({
 	const attachProjectListAutoAnimateRef = useAutoAnimateRef();
 	const attachThreadListAutoAnimateRef = useAutoAnimateRef();
 	const suppressProjectClickAfterDragRef = useRef(false);
-	const [gitMenu, setGitMenu] = useState<{
-		projectId: string;
-		x: number;
-		y: number;
-	} | null>(null);
 
 	useEffect(() => {
 		setProjectOrder((current) => {
@@ -152,36 +146,18 @@ export function ProjectThreadExplorer({
 	}
 
 	function handleNewThread(projectId: string) {
-		createThread(projectId).then((threadId) => {
-			navigate({
-				to: "/workers/$workerId/p/$projectId/t/$threadId",
-				params: { workerId, projectId, threadId },
-			});
+		if (isCreatingThread) return;
+		createThread(projectId, {
+			onSuccess: (threadId) => {
+				navigate({
+					to: "/workers/$workerId/p/$projectId/t/$threadId",
+					params: { workerId, projectId, threadId },
+				});
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
 		});
-	}
-
-	async function handleNewThreadOnBranch(projectId: string, branch: string) {
-		const threadId = await createThread(projectId, { branch });
-		navigate({
-			to: "/workers/$workerId/p/$projectId/t/$threadId",
-			params: { workerId, projectId, threadId },
-		});
-	}
-
-	async function handleNewThreadInWorktree(projectId: string, branch: string) {
-		const threadId = await createThread(projectId, { branch });
-		await createWorktree.mutateAsync({ threadId, refName: branch });
-		navigate({
-			to: "/workers/$workerId/p/$projectId/t/$threadId",
-			params: { workerId, projectId, threadId },
-		});
-	}
-
-	function handleOpenGitMenu(
-		projectId: string,
-		event: React.MouseEvent<HTMLButtonElement>
-	) {
-		setGitMenu({ projectId, x: event.clientX, y: event.clientY });
 	}
 
 	function handleDelete(threadId: string) {
@@ -254,7 +230,6 @@ export function ProjectThreadExplorer({
 											expanded={expandedProjects[project.id] ?? true}
 											onDelete={handleDelete}
 											onNew={() => handleNewThread(project.id)}
-											onNewGitMenu={handleOpenGitMenu}
 											onRemoveProject={removeProject}
 											onRename={renameThread}
 											onRenameProject={renameProject}
@@ -285,16 +260,6 @@ export function ProjectThreadExplorer({
 					</div>
 				)}
 			</SidebarGroup>
-			{gitMenu ? (
-				<NewThreadGitMenu
-					onClose={() => setGitMenu(null)}
-					onCreateBranch={handleNewThreadOnBranch}
-					onCreateWorktree={handleNewThreadInWorktree}
-					projectId={gitMenu.projectId}
-					x={gitMenu.x}
-					y={gitMenu.y}
-				/>
-			) : null}
 		</>
 	);
 }

@@ -48,15 +48,23 @@ export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
 		onSuccess: () => invalidateThreads(),
 	});
 
-	async function createThread(
+	function createThread(
 		projectId: string,
-		options?: { branch?: string; worktreePath?: string }
-	): Promise<string> {
-		const { thread } = await createThreadMutation.mutateAsync({
-			projectId,
-			...options,
-		});
-		return thread.id;
+		options?: {
+			branch?: string;
+			worktreePath?: string;
+			onSuccess?: (threadId: string) => void;
+			onError?: (error: Error) => void;
+		}
+	) {
+		const { onSuccess, onError, branch, worktreePath } = options ?? {};
+		createThreadMutation.mutate(
+			{ projectId, branch, worktreePath },
+			{
+				onSuccess: (data) => onSuccess?.(data.thread.id),
+				onError,
+			}
+		);
 	}
 
 	function renameThread(id: string, name: string) {
@@ -70,6 +78,7 @@ export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
 	return {
 		baseThreads,
 		createThread,
+		isCreatingThread: createThreadMutation.isPending,
 		renameThread,
 		deleteThread,
 	};

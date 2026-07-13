@@ -37,6 +37,7 @@ export function useControllerThreads() {
 	const {
 		baseThreads: threads,
 		createThread,
+		isCreatingThread,
 		renameThread,
 		deleteThread,
 	} = useThreads({
@@ -191,6 +192,7 @@ export function useControllerThreads() {
 		renameProject,
 		removeProject,
 		createThread,
+		isCreatingThread,
 		renameThread,
 		deleteThread,
 		sendMessage,

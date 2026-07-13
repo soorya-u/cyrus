@@ -10,6 +10,7 @@ import {
 import { throwOrpc } from "@cyrus/errors/orpc";
 import { notFound } from "@cyrus/errors/repository";
 import { checkoutGitRef } from "@/git/checkout";
+import { initGitRepository } from "@/git/init";
 import { getGitPatch } from "@/git/patch";
 import { listGitRefs } from "@/git/refs";
 import { getGitStatus } from "@/git/status";
@@ -106,6 +107,14 @@ export function gitHandlers(os: ControllerOs) {
 		listProjectGitRefs: os.listProjectGitRefs.handler(async ({ input }) => {
 			const cwd = await requireProjectCwd(input.projectId);
 			return listGitRefs(cwd, input.query);
+		}),
+
+		initGitRepository: os.initGitRepository.handler(async ({ input }) => {
+			const cwd = await requireThreadCwd(input.threadId);
+			return (await initGitRepository(cwd)).match({
+				ok: () => ({}),
+				err: throwOrpc,
+			});
 		}),
 	};
 }

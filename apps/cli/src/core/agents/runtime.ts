@@ -364,7 +364,7 @@ export class AgentRuntime {
 			});
 		}
 
-		return pending;
+		return await pending;
 	}
 
 	private async openSessionFromPersisted(

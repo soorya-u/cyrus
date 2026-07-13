@@ -11,11 +11,7 @@ export function SettingsSectionPanel({ section }: SettingsSectionPanelProps) {
 
 	return (
 		<>
-			<div
-				className={cn(
-					"surface-subheader collapsed-sidebar-titlebar-inset px-3 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none"
-				)}
-			>
+			<div className={cn("surface-subheader")}>
 				<span className="font-medium text-sm">Settings</span>
 			</div>
 

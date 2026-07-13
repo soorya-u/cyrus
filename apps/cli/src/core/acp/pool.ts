@@ -130,7 +130,7 @@ export class AgentPool {
 		if (record.idleTimer) clearTimeout(record.idleTimer);
 
 		record.idleTimer = setTimeout(() => {
-			Result.tryPromise(() => this.stopAgent(name));
+			Result.tryPromise(() => this.stopAgent(name)).catch(() => undefined);
 		}, this.idleMs);
 	}
 

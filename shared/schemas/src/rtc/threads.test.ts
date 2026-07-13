@@ -78,6 +78,30 @@ describe("thread schemas", () => {
 		});
 	});
 
+	test("normalizes sqlite string booleans for agentLocked", () => {
+		expect(
+			ThreadSchema.parse({
+				id: "thread-1",
+				projectId: "project-1",
+				name: "Main",
+				agentLocked: "0",
+				createdAt: "2026-07-11T00:00:00.000Z",
+				updatedAt: "2026-07-11T00:00:00.000Z",
+			}).agentLocked
+		).toBeUndefined();
+
+		expect(
+			ThreadSchema.parse({
+				id: "thread-1",
+				projectId: "project-1",
+				name: "Main",
+				agentLocked: "1",
+				createdAt: "2026-07-11T00:00:00.000Z",
+				updatedAt: "2026-07-11T00:00:00.000Z",
+			}).agentLocked
+		).toBe(true);
+	});
+
 	test("parses watch output high water marks", () => {
 		expect(
 			WatchThreadOutputSchema.parse({ snapshotHighWaterMark: 42 })

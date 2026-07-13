@@ -1,4 +1,5 @@
 import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { EllipsisIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,20 +13,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function CompactComposerControls({
+	agents,
 	projectId,
 	threadId,
 }: {
+	agents: RegisteredAgent[];
 	projectId: string;
 	threadId: string;
 }) {
 	const {
+		displayEffort,
+		displayPersona,
 		efforts,
 		personas,
-		selectedEffort,
-		selectedPersona,
 		selectEffort,
 		selectPersona,
-	} = useAgentCatalog({ projectId, threadId });
+	} = useAgentCatalog({ agents, projectId, threadId });
 
 	if (efforts.length === 0 && personas.length === 0) return null;
 
@@ -48,7 +51,7 @@ export function CompactComposerControls({
 						<DropdownMenuLabel>Effort</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
 							onValueChange={selectEffort}
-							value={selectedEffort}
+							value={displayEffort}
 						>
 							{efforts.map((effort) => (
 								<DropdownMenuRadioItem key={effort.id} value={effort.id}>
@@ -64,7 +67,7 @@ export function CompactComposerControls({
 						<DropdownMenuLabel>Persona</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
 							onValueChange={selectPersona}
-							value={selectedPersona}
+							value={displayPersona}
 						>
 							{personas.map((persona) => (
 								<DropdownMenuRadioItem key={persona.id} value={persona.id}>

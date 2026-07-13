@@ -120,6 +120,20 @@ export function useCheckoutRef() {
 	});
 }
 
+export function useInitGitRepository() {
+	const queryClient = useQueryClient();
+	const { orpc: orpcController } = useRtc();
+
+	return useMutation({
+		...orpcController.initGitRepository.mutationOptions({
+			mutationKey: RTC_OPERATION_KEYS.initGitRepository,
+		}),
+		onSuccess: (_data, variables) => {
+			invalidateGitQueries(queryClient, variables.threadId);
+		},
+	});
+}
+
 export function useCreateWorktree() {
 	const queryClient = useQueryClient();
 	const { orpc: orpcController } = useRtc();

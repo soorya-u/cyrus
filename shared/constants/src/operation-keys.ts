@@ -46,6 +46,7 @@ export const RTC_OPERATION_KEYS = {
 	checkoutGitRef: ["controller", "checkout-git-ref"],
 	createGitWorktree: ["controller", "create-git-worktree"],
 	removeGitWorktree: ["controller", "remove-git-worktree"],
+	initGitRepository: ["controller", "init-git-repository"],
 } as const;
 
 export const AUTH_OPERATION_KEYS = {

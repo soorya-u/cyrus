@@ -91,6 +91,7 @@ export function ThreadWorkspace({
 						onStop={async () => await stopThread(thread.id)}
 						projectId={projectId}
 						stopping={stopping}
+						thread={thread}
 						threadId={thread.id}
 					/>
 				</div>

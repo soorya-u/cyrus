@@ -124,16 +124,12 @@
 	.surface-subheader {
 		height: var(--workspace-topbar-height);
 		min-height: var(--workspace-topbar-height);
-		@apply flex shrink-0 items-center border-b border-border/60 bg-background;
+		@apply flex shrink-0 items-center border-b border-border/60 bg-background px-3 in-data-[sidebar-state=collapsed]:pl-12 transition-[padding-left] duration-200 ease-linear motion-reduce:transition-none;
 	}
 
 	.sidebar-icon-action-button {
 		padding-inline: calc(--spacing(1) - 1px);
 		@apply inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring;
-	}
-
-	.collapsed-sidebar-titlebar-inset {
-		@apply in-data-[sidebar-state=collapsed]:pl-(--workspace-titlebar-content-left);
 	}
 
 	.chat-composer-horizontal-inset {
