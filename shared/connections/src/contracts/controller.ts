@@ -26,6 +26,18 @@ import {
 	ListDirOutputSchema,
 } from "@cyrus/schemas/rtc/dir";
 import {
+	GitCheckoutInputSchema,
+	GitCreateWorktreeInputSchema,
+	GitCreateWorktreeOutputSchema,
+	GitPatchInputSchema,
+	GitPatchOutputSchema,
+	GitRefsOutputSchema,
+	GitRefsQueryInputSchema,
+	GitStatusOutputSchema,
+	ProjectGitRefsQueryInputSchema,
+	ThreadGitQueryInputSchema,
+} from "@cyrus/schemas/rtc/git";
+import {
 	CreateProjectInputSchema,
 	CreateProjectOutputSchema,
 	DeleteProjectInputSchema,
@@ -88,6 +100,27 @@ export const controllerContract = {
 	watchThread: oc.input(WatchThreadInputSchema).output(WatchThreadOutputSchema),
 	unwatchThread: oc.input(UnwatchThreadInputSchema).output(VoidOutputSchema),
 	cancel: oc.input(CancelInputSchema).output(VoidOutputSchema),
+	getGitStatus: oc
+		.input(ThreadGitQueryInputSchema)
+		.output(GitStatusOutputSchema),
+	getGitPatch: oc.input(GitPatchInputSchema).output(GitPatchOutputSchema),
+	listGitRefs: oc.input(GitRefsQueryInputSchema).output(GitRefsOutputSchema),
+	checkoutGitRef: oc.input(GitCheckoutInputSchema).output(VoidOutputSchema),
+	createGitWorktree: oc
+		.input(GitCreateWorktreeInputSchema)
+		.output(GitCreateWorktreeOutputSchema),
+	removeGitWorktree: oc
+		.input(ThreadGitQueryInputSchema)
+		.output(VoidOutputSchema),
+	getProjectGitStatus: oc
+		.input(ProjectQueryInputSchema)
+		.output(GitStatusOutputSchema),
+	listProjectGitRefs: oc
+		.input(ProjectGitRefsQueryInputSchema)
+		.output(GitRefsOutputSchema),
+	initGitRepository: oc
+		.input(ThreadGitQueryInputSchema)
+		.output(VoidOutputSchema),
 };
 
 export type ControllerContract = typeof controllerContract;

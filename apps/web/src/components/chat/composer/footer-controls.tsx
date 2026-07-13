@@ -1,4 +1,5 @@
 import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { AgentModelPicker } from "@/components/chat/composer/agent-model-picker";
 import { CompactComposerControls } from "@/components/chat/composer/compact-composer-controls";
 import {
@@ -44,28 +45,38 @@ function CatalogSelect({
 }
 
 export function ComposerFooterControls({
+	agents,
 	projectId,
 	threadId,
 }: {
+	agents: RegisteredAgent[];
 	projectId: string;
 	threadId: string;
 }) {
 	const isCompact = useIsMobile();
 	const {
+		displayEffort,
+		displayPersona,
 		efforts,
 		personas,
-		selectedEffort,
-		selectedPersona,
 		selectEffort,
 		selectPersona,
-	} = useAgentCatalog({ projectId, threadId });
+	} = useAgentCatalog({ agents, projectId, threadId });
 
 	return (
 		<div className="scrollbar-none -m-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto p-1 [&::-webkit-scrollbar]:hidden">
-			<AgentModelPicker projectId={projectId} threadId={threadId} />
+			<AgentModelPicker
+				agents={agents}
+				projectId={projectId}
+				threadId={threadId}
+			/>
 
 			{isCompact ? (
-				<CompactComposerControls projectId={projectId} threadId={threadId} />
+				<CompactComposerControls
+					agents={agents}
+					projectId={projectId}
+					threadId={threadId}
+				/>
 			) : (
 				<>
 					{efforts.length > 0 && (
@@ -78,7 +89,7 @@ export function ComposerFooterControls({
 								label="Effort"
 								onValueChange={selectEffort}
 								options={efforts}
-								value={selectedEffort}
+								value={displayEffort}
 							/>
 						</>
 					)}
@@ -92,7 +103,7 @@ export function ComposerFooterControls({
 								label="Persona"
 								onValueChange={selectPersona}
 								options={personas}
-								value={selectedPersona}
+								value={displayPersona}
 							/>
 						</>
 					)}

@@ -1,4 +1,4 @@
-import { throwOrpcFromCoordinatorError } from "@/utils/error";
+import { throwOrpc } from "@cyrus/errors/orpc";
 import type { ControllerDeps } from "../deps";
 
 export function modelHandlers({ os, runtime }: ControllerDeps) {
@@ -6,7 +6,7 @@ export function modelHandlers({ os, runtime }: ControllerDeps) {
 		getModels: os.getModels.handler(async ({ input }) =>
 			(await runtime.threadCoordinator.getModels(input.threadId)).match({
 				ok: (models) => ({ models }),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			})
 		),
 		setModel: os.setModel.handler(async ({ input }) => {
@@ -17,7 +17,7 @@ export function modelHandlers({ os, runtime }: ControllerDeps) {
 			);
 			return result.match({
 				ok: () => ({}),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			});
 		}),
 	};

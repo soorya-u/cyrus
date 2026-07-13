@@ -2,6 +2,11 @@ import { z } from "zod";
 import { ChatChunkSchema } from "./chat";
 import { optionalBoolean, optionalString } from "./common";
 
+const nullableString = z
+	.string()
+	.nullish()
+	.transform((value) => value ?? null);
+
 export const ThreadSchema = z.object({
 	id: z.string(),
 	projectId: z.string(),
@@ -9,6 +14,8 @@ export const ThreadSchema = z.object({
 	agentName: optionalString,
 	sessionId: optionalString,
 	agentLocked: optionalBoolean,
+	branch: nullableString.optional(),
+	worktreePath: nullableString.optional(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });
@@ -49,6 +56,8 @@ export const RenameThreadInputSchema = z.object({
 
 export const CreateThreadInputSchema = z.object({
 	projectId: z.string(),
+	branch: z.string().min(1).optional(),
+	worktreePath: z.string().min(1).optional(),
 });
 
 export const CreateThreadOutputSchema = z.object({

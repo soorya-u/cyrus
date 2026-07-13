@@ -19,14 +19,11 @@ export function useAuthErrorListener() {
 		queryCache.config.onError = (error, query) => {
 			previousQueryOnError?.(error, query);
 
-			if (!matchQuery({ queryKey: authQueryKeys.all }, query)) {
-				return;
-			}
+			if (!matchQuery({ queryKey: authQueryKeys.all }, query)) return;
 
 			const err = error as BetterFetchError;
-			if (err?.error?.code === "EMAIL_NOT_VERIFIED") {
-				return;
-			}
+			if (err?.error?.code === "EMAIL_NOT_VERIFIED") return;
+
 			if (err?.error) {
 				log.error({ kind: "auth_query_error", error: err.error });
 				toast.error(err.error.message);
@@ -51,14 +48,12 @@ export function useAuthErrorListener() {
 				context
 			);
 
-			if (!matchMutation({ mutationKey: authMutationKeys.all }, mutation)) {
+			if (!matchMutation({ mutationKey: authMutationKeys.all }, mutation))
 				return;
-			}
 
 			const err = error as BetterFetchError;
-			if (err.error?.code === "EMAIL_NOT_VERIFIED") {
-				return;
-			}
+			if (err.error?.code === "EMAIL_NOT_VERIFIED") return;
+
 			log.error({ kind: "auth_mutation_error", error: err.error ?? err });
 			toast.error(err.error?.message ?? err.message);
 		};

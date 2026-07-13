@@ -1,4 +1,6 @@
 import { mkdir } from "node:fs/promises";
+import type { RepositoryError } from "@cyrus/errors/repository";
+import { notFound } from "@cyrus/errors/repository";
 import type { Project } from "@cyrus/schemas/rtc/projects";
 import { ProjectSchema } from "@cyrus/schemas/rtc/projects";
 import { randomId } from "@cyrus/utils/identity";
@@ -6,33 +8,26 @@ import { Result } from "better-result";
 import { asc, eq } from "drizzle-orm";
 import { connection } from "../connection";
 import { projects } from "../models/projects";
-import type { RepositoryError } from "../utils/error";
-import { notFound, tryRepo } from "../utils/error";
+import { repo, repoArgs } from "../utils/repo";
 
 export type { Project } from "@cyrus/schemas/rtc/projects";
 
-export function listProjects(): Promise<Result<Project[], RepositoryError>> {
-	return tryRepo(async () => {
-		const rows = await connection.db
-			.select()
-			.from(projects)
-			.orderBy(asc(projects.id));
-		return rows.map((row) => ProjectSchema.parse(row));
-	});
-}
+export const listProjects = repo(async () => {
+	const rows = await connection.db
+		.select()
+		.from(projects)
+		.orderBy(asc(projects.id));
+	return rows.map((row) => ProjectSchema.parse(row));
+});
 
-export function getProject(
-	projectId: string
-): Promise<Result<Project | undefined, RepositoryError>> {
-	return tryRepo(async () => {
-		const [row] = await connection.db
-			.select()
-			.from(projects)
-			.where(eq(projects.id, projectId))
-			.limit(1);
-		return row ? ProjectSchema.parse(row) : undefined;
-	});
-}
+export const getProject = repoArgs(async (projectId: string) => {
+	const [row] = await connection.db
+		.select()
+		.from(projects)
+		.where(eq(projects.id, projectId))
+		.limit(1);
+	return row ? ProjectSchema.parse(row) : undefined;
+});
 
 export async function resolveProjectCwd(
 	projectId: string
@@ -47,23 +42,28 @@ export async function resolveProjectCwd(
 	return Result.ok(cwd);
 }
 
-export function createProject(
-	name: string,
-	cwd = ""
-): Promise<Result<Project, RepositoryError>> {
-	return tryRepo(async () => {
+export const createProject = repoArgs<[name: string, cwd?: string], Project>(
+	async (name, cwd = "") => {
 		const id = randomId();
 		const resolvedCwd = cwd.trim();
 		if (resolvedCwd) await mkdir(resolvedCwd, { recursive: true });
 
-		await connection.db.insert(projects).values({
-			id,
-			cwd: resolvedCwd,
-			name,
-		});
-		return ProjectSchema.parse({ id, cwd: resolvedCwd, name });
-	});
-}
+		const project = ProjectSchema.parse({ id, cwd: resolvedCwd, name });
+		await connection.db.insert(projects).values(project);
+		return project;
+	}
+);
+
+const writeProjectName = repoArgs(
+	async (projectId: string, name: string, current: Project) => {
+		const updated = ProjectSchema.parse({ ...current, name });
+		await connection.db
+			.update(projects)
+			.set({ name })
+			.where(eq(projects.id, projectId));
+		return updated;
+	}
+);
 
 export async function renameProject(
 	projectId: string,
@@ -74,25 +74,14 @@ export async function renameProject(
 	if (!existing.value) {
 		return Result.err(notFound("project", projectId));
 	}
-	const current = existing.value;
 
-	return tryRepo(async () => {
-		await connection.db
-			.update(projects)
-			.set({ name })
-			.where(eq(projects.id, projectId));
-		return ProjectSchema.parse({ ...current, name });
-	});
+	return writeProjectName(projectId, name, existing.value);
 }
 
-export function deleteProject(
-	projectId: string
-): Promise<Result<boolean, RepositoryError>> {
-	return tryRepo(async () => {
-		const deleted = await connection.db
-			.delete(projects)
-			.where(eq(projects.id, projectId))
-			.returning({ id: projects.id });
-		return deleted.length > 0;
-	});
-}
+export const deleteProject = repoArgs(async (projectId: string) => {
+	const deleted = await connection.db
+		.delete(projects)
+		.where(eq(projects.id, projectId))
+		.returning({ id: projects.id });
+	return deleted.length > 0;
+});

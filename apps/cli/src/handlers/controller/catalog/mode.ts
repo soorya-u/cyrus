@@ -1,4 +1,4 @@
-import { throwOrpcFromCoordinatorError } from "@/utils/error";
+import { throwOrpc } from "@cyrus/errors/orpc";
 import type { ControllerDeps } from "../deps";
 
 export function modeHandlers({ os, runtime }: ControllerDeps) {
@@ -6,7 +6,7 @@ export function modeHandlers({ os, runtime }: ControllerDeps) {
 		getModes: os.getModes.handler(async ({ input }) =>
 			(await runtime.threadCoordinator.getModes(input.threadId)).match({
 				ok: (modes) => ({ modes }),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			})
 		),
 		setMode: os.setMode.handler(async ({ input }) => {
@@ -17,7 +17,7 @@ export function modeHandlers({ os, runtime }: ControllerDeps) {
 			);
 			return result.match({
 				ok: () => ({}),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			});
 		}),
 	};

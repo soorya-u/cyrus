@@ -1,5 +1,5 @@
+import { throwOrpc } from "@cyrus/errors/orpc";
 import { listHealthyAgents } from "@/core/agents/health";
-import { throwOrpcFromCoordinatorError } from "@/utils/error";
 import type { ControllerDeps } from "./deps";
 
 export function agentsHandlers({ os, runtime }: ControllerDeps) {
@@ -17,7 +17,7 @@ export function agentsHandlers({ os, runtime }: ControllerDeps) {
 				)
 			).match({
 				ok: (output) => output,
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			})
 		),
 	};

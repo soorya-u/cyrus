@@ -6,9 +6,14 @@ export const optionalString = z
 	.transform((value) => value ?? undefined);
 
 export const optionalBoolean = z
-	.union([z.boolean(), z.number()])
+	.union([z.boolean(), z.number(), z.string()])
 	.nullish()
-	.transform((value) => (value ? true : undefined));
+	.transform((value) => {
+		if (value == null) return;
+		if (value === false || value === 0 || value === "0") return;
+
+		return true;
+	});
 
 export const VoidOutputSchema = z.object({});
 

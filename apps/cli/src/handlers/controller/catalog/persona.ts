@@ -1,4 +1,4 @@
-import { throwOrpcFromCoordinatorError } from "@/utils/error";
+import { throwOrpc } from "@cyrus/errors/orpc";
 import type { ControllerDeps } from "../deps";
 
 export function personaHandlers({ os, runtime }: ControllerDeps) {
@@ -6,7 +6,7 @@ export function personaHandlers({ os, runtime }: ControllerDeps) {
 		getPersona: os.getPersona.handler(async ({ input }) =>
 			(await runtime.threadCoordinator.getPersonas(input.threadId)).match({
 				ok: (personas) => ({ personas }),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			})
 		),
 		setPersona: os.setPersona.handler(async ({ input }) => {
@@ -17,7 +17,7 @@ export function personaHandlers({ os, runtime }: ControllerDeps) {
 			);
 			return result.match({
 				ok: () => ({}),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			});
 		}),
 	};

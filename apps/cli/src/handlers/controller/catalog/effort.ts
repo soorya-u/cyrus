@@ -1,4 +1,4 @@
-import { throwOrpcFromCoordinatorError } from "@/utils/error";
+import { throwOrpc } from "@cyrus/errors/orpc";
 import type { ControllerDeps } from "../deps";
 
 export function effortHandlers({ os, runtime }: ControllerDeps) {
@@ -6,7 +6,7 @@ export function effortHandlers({ os, runtime }: ControllerDeps) {
 		getEfforts: os.getEfforts.handler(async ({ input }) =>
 			(await runtime.threadCoordinator.getEfforts(input.threadId)).match({
 				ok: (efforts) => ({ efforts }),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			})
 		),
 		setEffort: os.setEffort.handler(async ({ input }) => {
@@ -17,7 +17,7 @@ export function effortHandlers({ os, runtime }: ControllerDeps) {
 			);
 			return result.match({
 				ok: () => ({}),
-				err: throwOrpcFromCoordinatorError,
+				err: throwOrpc,
 			});
 		}),
 	};

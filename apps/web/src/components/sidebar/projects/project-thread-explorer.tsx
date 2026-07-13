@@ -21,6 +21,7 @@ import {
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { FolderPlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { NewProjectDialog } from "@/components/portals/new-project-dialog";
 import { ProjectThreadGroup } from "@/components/sidebar/projects/project-thread-group";
 import { SortableProjectItem } from "@/components/sidebar/projects/sortable-project-item";
@@ -55,6 +56,7 @@ export function ProjectThreadExplorer({
 		renameProject,
 		removeProject,
 		createThread,
+		isCreatingThread,
 		renameThread,
 		deleteThread,
 	} = useControllerThreads();
@@ -144,11 +146,17 @@ export function ProjectThreadExplorer({
 	}
 
 	function handleNewThread(projectId: string) {
-		createThread(projectId).then((threadId) => {
-			navigate({
-				to: "/workers/$workerId/p/$projectId/t/$threadId",
-				params: { workerId, projectId, threadId },
-			});
+		if (isCreatingThread) return;
+		createThread(projectId, {
+			onSuccess: (threadId) => {
+				navigate({
+					to: "/workers/$workerId/p/$projectId/t/$threadId",
+					params: { workerId, projectId, threadId },
+				});
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
 		});
 	}
 

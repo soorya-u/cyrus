@@ -1,4 +1,5 @@
 import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { cn } from "cnfast";
 import { BotIcon, ChevronDownIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -37,28 +38,27 @@ function CatalogOptionIcon({ src }: { src: string }) {
 }
 
 export function AgentModelPicker({
+	agents,
 	projectId,
 	threadId,
 }: {
+	agents: RegisteredAgent[];
 	projectId: string;
 	threadId: string;
 }) {
 	const [open, setOpen] = useState(false);
 	const {
 		agentLocked,
-		agents,
+		displayAgent,
+		displayModel,
 		models,
 		modelsLoading,
 		selectAgent,
-		selectedAgent,
-		selectedModel,
 		selectModel,
-	} = useAgentCatalog({ projectId, threadId });
+	} = useAgentCatalog({ agents, projectId, threadId });
 
-	const activeAgent = agents.find((agent) => agent.id === selectedAgent);
-	const activeModel = models.find((model) => model.id === selectedModel);
-
-	if (agents.length === 0) return null;
+	const activeAgent = agents.find((agent) => agent.id === displayAgent);
+	const activeModel = models.find((model) => model.id === displayModel);
 
 	return (
 		<DropdownMenu onOpenChange={setOpen} open={open}>
@@ -90,7 +90,7 @@ export function AgentModelPicker({
 								<button
 									className={cn(
 										"flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent",
-										agent.id === selectedAgent && "bg-accent text-foreground"
+										agent.id === displayAgent && "bg-accent text-foreground"
 									)}
 									key={agent.id}
 									onClick={() => selectAgent(agent.id)}
@@ -112,7 +112,7 @@ export function AgentModelPicker({
 								<button
 									className={cn(
 										"rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent",
-										model.id === selectedModel && "bg-accent text-foreground"
+										model.id === displayModel && "bg-accent text-foreground"
 									)}
 									key={model.id}
 									onClick={() => {

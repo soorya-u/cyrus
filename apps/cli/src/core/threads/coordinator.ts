@@ -1,8 +1,17 @@
-import { resolveProjectCwd } from "@cyrus/database/repositories/projects";
+import { resolveThreadGitCwd } from "@cyrus/database/repositories/git";
 import {
 	bindThreadAgent,
 	getThread,
 } from "@cyrus/database/repositories/threads";
+import {
+	type CoordinatorError,
+	coordinatorAgentLocked,
+	coordinatorAgentMismatch,
+	coordinatorAgentNotBound,
+	coordinatorNotFound,
+	coordinatorRepositoryError,
+	coordinatorRuntimeError,
+} from "@cyrus/errors/coordinator";
 import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
@@ -12,15 +21,6 @@ import {
 	AgentRuntime,
 	catalogSnapshotFromSession,
 } from "@/core/agents/runtime";
-import {
-	type CoordinatorError,
-	coordinatorAgentLocked,
-	coordinatorAgentMismatch,
-	coordinatorAgentNotBound,
-	coordinatorNotFound,
-	coordinatorRepositoryError,
-	coordinatorRuntimeError,
-} from "@/errors/coordinator";
 
 type BoundThread = {
 	threadId: string;
@@ -65,15 +65,15 @@ export class ThreadCoordinator {
 		const thread = await getThread(threadId);
 		if (thread.isErr())
 			return Result.err(coordinatorRepositoryError(thread.error));
-		if (!thread.value || thread.value.projectId !== projectId) {
+
+		if (!thread.value || thread.value.projectId !== projectId)
 			return Result.err(coordinatorNotFound("thread", threadId));
-		}
 
 		if (thread.value.agentLocked && thread.value.agentName !== agentName) {
 			return Result.err(coordinatorAgentLocked());
 		}
 
-		const cwd = await this.resolveCwd(projectId);
+		const cwd = await this.resolveCwd(threadId);
 		if (cwd.isErr()) return Result.err(cwd.error);
 
 		const runtime = this.getAgent(agentName);
@@ -107,28 +107,27 @@ export class ThreadCoordinator {
 					sessionId
 				),
 			}));
-			if (catalog.isErr()) return Result.err(catalog.error);
+			if (catalog.isOk())
+				return Result.ok({
+					sessionId,
+					agentName,
+					agentLocked: thread.value.agentLocked,
+					...catalog.value,
+				});
 
-			return Result.ok({
-				sessionId,
-				agentName,
-				agentLocked: thread.value.agentLocked,
-				...catalog.value,
-			});
+			if (thread.value.agentLocked) return Result.err(catalog.error);
 		}
 
 		const previousAgentName = thread.value.agentName;
 		const previousSessionId = thread.value.sessionId;
-		if (
-			previousSessionId &&
-			previousAgentName &&
-			previousAgentName !== agentName
-		) {
+		if (previousSessionId && previousAgentName) {
 			const closed = await this.withRuntime(() =>
-				this.getAgent(previousAgentName).closeSession(
-					previousSessionId,
-					threadId
-				)
+				previousAgentName === agentName
+					? runtime.closeSession(previousSessionId, threadId)
+					: this.getAgent(previousAgentName).closeSession(
+							previousSessionId,
+							threadId
+						)
 			);
 			if (closed.isErr()) return Result.err(closed.error);
 		}
@@ -337,9 +336,9 @@ export class ThreadCoordinator {
 	}
 
 	private async resolveCwd(
-		projectId: string
+		threadId: string
 	): Promise<Result<string, CoordinatorError>> {
-		const result = await resolveProjectCwd(projectId);
+		const result = await resolveThreadGitCwd(threadId);
 		if (result.isErr())
 			return Result.err(coordinatorRepositoryError(result.error));
 		return Result.ok(result.value);
@@ -362,7 +361,7 @@ export class ThreadCoordinator {
 			return Result.err(coordinatorAgentNotBound());
 		}
 
-		const cwd = await this.resolveCwd(thread.value.projectId);
+		const cwd = await this.resolveCwd(threadId);
 		if (cwd.isErr()) return Result.err(cwd.error);
 
 		return Result.ok({
