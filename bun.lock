@@ -25,6 +25,7 @@
         "@commander-js/extra-typings": "^15.0.0",
         "@cyrus/connections": "workspace:*",
         "@cyrus/database": "workspace:*",
+        "@cyrus/errors": "workspace:*",
         "@cyrus/schemas": "workspace:*",
         "@cyrus/utils": "workspace:*",
         "@orpc/server": "catalog:",
@@ -220,16 +221,32 @@
       "name": "@cyrus/database",
       "version": "0.0.0",
       "dependencies": {
+        "@cyrus/errors": "workspace:*",
         "@cyrus/schemas": "workspace:*",
         "@cyrus/utils": "workspace:*",
         "@tursodatabase/database-common": "^0.6.1",
         "better-result": "catalog:",
         "drizzle-kit": "catalog:",
         "drizzle-orm": "catalog:",
+        "evlog": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
         "@tursodatabase/database": "^0.6.1",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "shared/errors": {
+      "name": "@cyrus/errors",
+      "version": "0.0.0",
+      "dependencies": {
+        "@orpc/server": "catalog:",
+        "better-result": "catalog:",
+      },
+      "devDependencies": {
+        "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },
@@ -578,6 +595,8 @@
     "@cyrus/desktop": ["@cyrus/desktop@workspace:apps/desktop"],
 
     "@cyrus/e2e": ["@cyrus/e2e@workspace:tests/e2e"],
+
+    "@cyrus/errors": ["@cyrus/errors@workspace:shared/errors"],
 
     "@cyrus/github": ["@cyrus/github@workspace:tooling/github"],
 

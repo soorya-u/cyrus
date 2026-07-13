@@ -3,8 +3,8 @@ import {
 	resolveProjectCwd,
 } from "@cyrus/database/repositories/projects";
 import { getThread } from "@cyrus/database/repositories/threads";
-import type { RepositoryError } from "@cyrus/database/utils/error";
-import { notFound } from "@cyrus/database/utils/error";
+import type { RepositoryError } from "@cyrus/errors/repository";
+import { notFound } from "@cyrus/errors/repository";
 import { Result } from "better-result";
 
 export async function resolveThreadGitCwd(

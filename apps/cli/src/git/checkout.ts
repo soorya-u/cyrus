@@ -1,5 +1,5 @@
+import { type GitError, GitNotRepositoryError } from "@cyrus/errors/git";
 import { Result } from "better-result";
-import { type GitError, GitNotRepositoryError } from "../errors/git";
 import { openGitRepository, operationFailedFromUnknown } from "./open";
 
 export async function checkoutGitRef(

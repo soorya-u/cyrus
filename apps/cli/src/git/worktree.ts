@@ -1,8 +1,8 @@
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
+import type { GitError } from "@cyrus/errors/git";
+import { operationFailedError } from "@cyrus/errors/git";
 import { Result } from "better-result";
-import type { GitError } from "../errors/git";
-import { operationFailedError } from "../errors/git";
 import {
 	openGitRepository,
 	operationFailedFromUnknown,

@@ -3,6 +3,15 @@ import {
 	bindThreadAgent,
 	getThread,
 } from "@cyrus/database/repositories/threads";
+import {
+	type CoordinatorError,
+	coordinatorAgentLocked,
+	coordinatorAgentMismatch,
+	coordinatorAgentNotBound,
+	coordinatorNotFound,
+	coordinatorRepositoryError,
+	coordinatorRuntimeError,
+} from "@cyrus/errors/coordinator";
 import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
@@ -12,15 +21,6 @@ import {
 	AgentRuntime,
 	catalogSnapshotFromSession,
 } from "@/core/agents/runtime";
-import {
-	type CoordinatorError,
-	coordinatorAgentLocked,
-	coordinatorAgentMismatch,
-	coordinatorAgentNotBound,
-	coordinatorNotFound,
-	coordinatorRepositoryError,
-	coordinatorRuntimeError,
-} from "@/errors/coordinator";
 
 type BoundThread = {
 	threadId: string;
@@ -65,9 +65,9 @@ export class ThreadCoordinator {
 		const thread = await getThread(threadId);
 		if (thread.isErr())
 			return Result.err(coordinatorRepositoryError(thread.error));
-		if (!thread.value || thread.value.projectId !== projectId) {
+
+		if (!thread.value || thread.value.projectId !== projectId)
 			return Result.err(coordinatorNotFound("thread", threadId));
-		}
 
 		if (thread.value.agentLocked && thread.value.agentName !== agentName) {
 			return Result.err(coordinatorAgentLocked());

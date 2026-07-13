@@ -1,7 +1,7 @@
+import type { GitError } from "@cyrus/errors/git";
+import { notRepositoryError, operationFailedError } from "@cyrus/errors/git";
 import { Result } from "better-result";
 import { openRepository, type Repository } from "es-git";
-import type { GitError } from "../errors/git";
-import { notRepositoryError, operationFailedError } from "../errors/git";
 
 function mapOpenError(error: unknown): GitError {
 	const message = error instanceof Error ? error.message : String(error);

@@ -1,3 +1,4 @@
+import { persistFailed } from "@cyrus/errors/repository";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { ConversationEntrySchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
@@ -6,7 +7,7 @@ import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { connection } from "../connection";
 import { conversations } from "../models/conversations";
 import { threads } from "../models/threads";
-import { persistFailed, tryRepo } from "../utils/error";
+import { repoArgs } from "../utils/repo";
 
 function parseConversationEntry(row: typeof conversations.$inferSelect) {
 	const { chunk, ...rest } = row;
@@ -16,11 +17,8 @@ function parseConversationEntry(row: typeof conversations.$inferSelect) {
 	});
 }
 
-export function appendConversation(
-	threadId: string,
-	chunk: Omit<ChatChunk, "seq">
-) {
-	return tryRepo(async () => {
+export const appendConversation = repoArgs(
+	async (threadId: string, chunk: Omit<ChatChunk, "seq">) => {
 		const id = randomId();
 		const createdAt = nowISO();
 		const [row] = await connection.db
@@ -43,11 +41,11 @@ export function appendConversation(
 			.where(eq(threads.id, threadId));
 
 		return parseConversationEntry(row);
-	});
-}
+	}
+);
 
-export function getConversations(threadId: string, afterSeq?: number) {
-	return tryRepo(async () => {
+export const getConversations = repoArgs(
+	async (threadId: string, afterSeq?: number) => {
 		const where =
 			afterSeq === undefined
 				? eq(conversations.threadId, threadId)
@@ -61,17 +59,15 @@ export function getConversations(threadId: string, afterSeq?: number) {
 			.where(where)
 			.orderBy(asc(conversations.seq));
 		return rows.map(parseConversationEntry);
-	});
-}
+	}
+);
 
-export function getSnapshotHighWaterMark(threadId: string) {
-	return tryRepo(async () => {
-		const [row] = await connection.db
-			.select({ seq: conversations.seq })
-			.from(conversations)
-			.where(eq(conversations.threadId, threadId))
-			.orderBy(desc(conversations.seq))
-			.limit(1);
-		return row?.seq ?? 0;
-	});
-}
+export const getSnapshotHighWaterMark = repoArgs(async (threadId: string) => {
+	const [row] = await connection.db
+		.select({ seq: conversations.seq })
+		.from(conversations)
+		.where(eq(conversations.threadId, threadId))
+		.orderBy(desc(conversations.seq))
+		.limit(1);
+	return row?.seq ?? 0;
+});

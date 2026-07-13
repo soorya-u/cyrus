@@ -4,11 +4,11 @@ import {
 	getThread,
 	setAgentLocked,
 } from "@cyrus/database/repositories/threads";
+import { throwOrpc } from "@cyrus/errors/orpc";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
 import { ORPCError } from "@orpc/server";
 import { log } from "evlog";
-import { throwOrpcFromRepositoryError } from "@/utils/error";
 import { runTurn } from "@/utils/run-turn";
 import {
 	isStreamingDelta,
@@ -29,7 +29,7 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 			} = input;
 
 			const existing = await getThread(threadId);
-			if (existing.isErr()) throwOrpcFromRepositoryError(existing.error);
+			if (existing.isErr()) throwOrpc(existing.error);
 			if (!(existing.value?.sessionId && existing.value.agentName))
 				throw new ORPCError("BAD_REQUEST", {
 					message: "agent must be bound before chat; call bindAgent first",
@@ -43,7 +43,7 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 			const thread = await ensureThread(threadId, projectId, {
 				firstMessage: message,
 			});
-			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
+			if (thread.isErr()) throwOrpc(thread.error);
 
 			const messageBuffers = new Map<string, string>();
 			const thoughtBuffers = new Map<string, string>();
@@ -70,10 +70,10 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 					turnId,
 					event: persistEvent,
 				});
-				if (entry.isErr()) throwOrpcFromRepositoryError(entry.error);
+				if (entry.isErr()) throwOrpc(entry.error);
 				if (persistEvent.type === "user_message") {
 					const locked = await setAgentLocked(threadId);
-					if (locked.isErr()) throwOrpcFromRepositoryError(locked.error);
+					if (locked.isErr()) throwOrpc(locked.error);
 				}
 				publishChunk(entry.value.chunk);
 			}

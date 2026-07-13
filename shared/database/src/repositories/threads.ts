@@ -1,3 +1,5 @@
+import type { RepositoryError } from "@cyrus/errors/repository";
+import { notFound } from "@cyrus/errors/repository";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { ThreadSchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
@@ -6,8 +8,7 @@ import { Result } from "better-result";
 import { and, desc, eq } from "drizzle-orm";
 import { connection } from "../connection";
 import { threads } from "../models/threads";
-import type { RepositoryError } from "../utils/error";
-import { notFound, tryRepo } from "../utils/error";
+import { repoArgs } from "../utils/repo";
 import { getProject } from "./projects";
 
 export function threadNameFromPrompt(message: string): string {
@@ -27,18 +28,12 @@ function parseThreadRow(row: typeof threads.$inferSelect): Thread {
 	return ThreadSchema.parse(row);
 }
 
-export async function ensureThread(
-	id: string,
-	projectId: string,
-	options?: ThreadCreateOptions
-): Promise<Result<Thread, RepositoryError>> {
-	const project = await getProject(projectId);
-	if (project.isErr()) return Result.err(project.error);
-	if (!project.value) {
-		return Result.err(notFound("project", projectId));
-	}
-
-	return tryRepo(async () => {
+const upsertThread = repoArgs(
+	async (
+		id: string,
+		projectId: string,
+		options?: ThreadCreateOptions
+	): Promise<Thread> => {
 		const [existing] = await connection.db
 			.select()
 			.from(threads)
@@ -94,48 +89,81 @@ export async function ensureThread(
 			updatedAt: thread.updatedAt,
 		});
 		return thread;
-	});
+	}
+);
+
+export async function ensureThread(
+	id: string,
+	projectId: string,
+	options?: ThreadCreateOptions
+): Promise<Result<Thread, RepositoryError>> {
+	const project = await getProject(projectId);
+	if (project.isErr()) return Result.err(project.error);
+	if (!project.value) {
+		return Result.err(notFound("project", projectId));
+	}
+
+	return upsertThread(id, projectId, options);
 }
 
-export function createThread(
+export const createThread = (
 	projectId: string,
 	options?: Pick<ThreadCreateOptions, "branch" | "worktreePath">
-): Promise<Result<Thread, RepositoryError>> {
-	return ensureThread(randomId(), projectId, options);
-}
+) => ensureThread(randomId(), projectId, options);
 
-export function listThreads(
-	projectId: string
-): Promise<Result<Thread[], RepositoryError>> {
-	return tryRepo(async () => {
-		const rows = await connection.db
-			.select()
-			.from(threads)
-			.where(eq(threads.projectId, projectId))
-			.orderBy(desc(threads.updatedAt));
-		return rows.map((row) => parseThreadRow(row));
-	});
-}
+export const listThreads = repoArgs(async (projectId: string) => {
+	const rows = await connection.db
+		.select()
+		.from(threads)
+		.where(eq(threads.projectId, projectId))
+		.orderBy(desc(threads.updatedAt));
+	return rows.map((row) => parseThreadRow(row));
+});
 
-export function deleteThread(
-	threadId: string
-): Promise<Result<boolean, RepositoryError>> {
-	return tryRepo(async () => {
-		const deleted = await connection.db
-			.delete(threads)
-			.where(eq(threads.id, threadId))
-			.returning({ id: threads.id });
-		return deleted.length > 0;
-	});
-}
+export const deleteThread = repoArgs(async (threadId: string) => {
+	const deleted = await connection.db
+		.delete(threads)
+		.where(eq(threads.id, threadId))
+		.returning({ id: threads.id });
+	return deleted.length > 0;
+});
 
-export function deleteThreadsForProject(
-	projectId: string
-): Promise<Result<void, RepositoryError>> {
-	return tryRepo(async () => {
-		await connection.db.delete(threads).where(eq(threads.projectId, projectId));
-	});
-}
+export const deleteThreadsForProject = repoArgs(async (projectId: string) => {
+	await connection.db.delete(threads).where(eq(threads.projectId, projectId));
+});
+
+export const getThread = repoArgs(async (threadId: string) => {
+	const [row] = await connection.db
+		.select()
+		.from(threads)
+		.where(eq(threads.id, threadId))
+		.limit(1);
+	return row ? parseThreadRow(row) : undefined;
+});
+
+export const getThreadSession = repoArgs(async (threadId: string) => {
+	const [row] = await connection.db
+		.select({
+			sessionId: threads.sessionId,
+			agentName: threads.agentName,
+		})
+		.from(threads)
+		.where(eq(threads.id, threadId))
+		.limit(1);
+	if (!(row?.sessionId && row.agentName)) return;
+	return { sessionId: row.sessionId, agentName: row.agentName };
+});
+
+const writeThreadName = repoArgs(
+	async (threadId: string, name: string, current: Thread) => {
+		const updatedAt = nowISO();
+		await connection.db
+			.update(threads)
+			.set({ name, updatedAt })
+			.where(eq(threads.id, threadId));
+		return ThreadSchema.parse({ ...current, name, updatedAt });
+	}
+);
 
 export async function renameThread(
 	threadId: string,
@@ -145,17 +173,19 @@ export async function renameThread(
 	if (thread.isErr()) return Result.err(thread.error);
 	if (!thread.value) return Result.err(notFound("thread", threadId));
 
-	const current = thread.value;
+	return writeThreadName(threadId, name, thread.value);
+}
 
-	return tryRepo(async () => {
+const writeThreadWorktreePath = repoArgs(
+	async (threadId: string, worktreePath: string | null, current: Thread) => {
 		const updatedAt = nowISO();
 		await connection.db
 			.update(threads)
-			.set({ name, updatedAt })
+			.set({ worktreePath, updatedAt })
 			.where(eq(threads.id, threadId));
-		return ThreadSchema.parse({ ...current, name, updatedAt });
-	});
-}
+		return ThreadSchema.parse({ ...current, worktreePath, updatedAt });
+	}
+);
 
 export async function updateThreadWorktreePath(
 	threadId: string,
@@ -165,47 +195,34 @@ export async function updateThreadWorktreePath(
 	if (thread.isErr()) return Result.err(thread.error);
 	if (!thread.value) return Result.err(notFound("thread", threadId));
 
-	return tryRepo(async () => {
+	return writeThreadWorktreePath(threadId, worktreePath, thread.value);
+}
+
+const writeThreadAgent = repoArgs(
+	async (
+		threadId: string,
+		projectId: string,
+		current: Thread,
+		data: { agentName: string; sessionId: string }
+	) => {
 		const updatedAt = nowISO();
 		await connection.db
 			.update(threads)
-			.set({ worktreePath, updatedAt })
-			.where(eq(threads.id, threadId));
-		return ThreadSchema.parse({ ...thread.value, worktreePath, updatedAt });
-	});
-}
-
-export function getThread(
-	threadId: string
-): Promise<Result<Thread | undefined, RepositoryError>> {
-	return tryRepo(async () => {
-		const [row] = await connection.db
-			.select()
-			.from(threads)
-			.where(eq(threads.id, threadId))
-			.limit(1);
-		return row ? parseThreadRow(row) : undefined;
-	});
-}
-
-export function getThreadSession(
-	threadId: string
-): Promise<
-	Result<{ sessionId: string; agentName: string } | undefined, RepositoryError>
-> {
-	return tryRepo(async () => {
-		const [row] = await connection.db
-			.select({
-				sessionId: threads.sessionId,
-				agentName: threads.agentName,
+			.set({
+				agentName: data.agentName,
+				sessionId: data.sessionId,
+				updatedAt,
 			})
-			.from(threads)
-			.where(eq(threads.id, threadId))
-			.limit(1);
-		if (!(row?.sessionId && row.agentName)) return;
-		return { sessionId: row.sessionId, agentName: row.agentName };
-	});
-}
+			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
+
+		return ThreadSchema.parse({
+			...current,
+			agentName: data.agentName,
+			sessionId: data.sessionId,
+			updatedAt,
+		});
+	}
+);
 
 export async function bindThreadAgent(
 	threadId: string,
@@ -219,25 +236,22 @@ export async function bindThreadAgent(
 		return Result.err(notFound("thread", threadId));
 	}
 
-	return tryRepo(async () => {
-		const updatedAt = nowISO();
-		await connection.db
-			.update(threads)
-			.set({
-				agentName: data.agentName,
-				sessionId: data.sessionId,
-				updatedAt,
-			})
-			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
-
-		return ThreadSchema.parse({
-			...thread.value,
-			agentName: data.agentName,
-			sessionId: data.sessionId,
-			updatedAt,
-		});
-	});
+	return writeThreadAgent(threadId, projectId, thread.value, data);
 }
+
+const lockThreadAgent = repoArgs(async (threadId: string, current: Thread) => {
+	const updatedAt = nowISO();
+	await connection.db
+		.update(threads)
+		.set({ agentLocked: 1, updatedAt })
+		.where(eq(threads.id, threadId));
+
+	return ThreadSchema.parse({
+		...current,
+		agentLocked: true,
+		updatedAt,
+	});
+});
 
 export async function setAgentLocked(
 	threadId: string
@@ -247,17 +261,5 @@ export async function setAgentLocked(
 	if (!thread.value) return Result.err(notFound("thread", threadId));
 	if (thread.value.agentLocked) return Result.ok(thread.value);
 
-	return tryRepo(async () => {
-		const updatedAt = nowISO();
-		await connection.db
-			.update(threads)
-			.set({ agentLocked: 1, updatedAt })
-			.where(eq(threads.id, threadId));
-
-		return ThreadSchema.parse({
-			...thread.value,
-			agentLocked: true,
-			updatedAt,
-		});
-	});
+	return lockThreadAgent(threadId, thread.value);
 }

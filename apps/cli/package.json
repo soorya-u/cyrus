@@ -19,6 +19,7 @@
     "@commander-js/extra-typings": "^15.0.0",
     "@cyrus/connections": "workspace:*",
     "@cyrus/database": "workspace:*",
+    "@cyrus/errors": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
     "@orpc/server": "catalog:",

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import type { RuntimeSession } from "@acp-kit/core";
+import { CoordinatorAgentLockedError } from "@cyrus/errors/coordinator";
 import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
 import { ThreadCoordinator } from "@/core/threads/coordinator";
-import { CoordinatorAgentLockedError } from "@/errors/coordinator";
 
 const threadState = {
 	id: "thread-1",
