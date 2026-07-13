@@ -32,13 +32,15 @@ Cyrus auto-allows all ACP permission requests via `createDefaultHost()`, so tool
 
 ## Prerequisites
 
-Merged in [#49](https://github.com/soorya-u/cyrus/pull/49): flat chat feed via `deriveFeed` and `FeedEntryView` with per-entry `ToolRow` and `DiffRow` (no collapsible `WorkLog`). Approval UI and diff accept/reject wire into `diff-row.tsx` / `tool-row.tsx` as flat feed entries.
+- Merged [#51](https://github.com/soorya-u/cyrus/pull/51): thread-bound sessions and `@cyrus/errors` coordinator tags.
+- Merged [#49](https://github.com/soorya-u/cyrus/pull/49): flat `FeedEntryView` with agent `DiffRow` in `work-log/diff-row.tsx` (tool output diffs).
+- Merged [#52](https://github.com/soorya-u/cyrus/pull/52): git `diff-panel.tsx` for worktree diffs — **not** the target for agent permission accept/reject (that is feed `DiffRow`).
 
 ## Impact
 
 - `apps/cli`: `host.ts`, `runTurn`, approval pending map, `respondApproval` handler
-- `apps/web`, `apps/mobile`: `feed-entry-view.tsx`, `diff-row.tsx`, `tool-row.tsx`, new `ApprovalCard` (or inline approval entry)
+- `apps/web`, `apps/mobile`: `feed-entry-view.tsx`, `work-log/diff-row.tsx`, `work-log/tool-row.tsx`, new `ApprovalCard` (or inline approval entry)
 - `shared/schemas`, `shared/hooks`: approval state, respond mutation
 - `shared/utils`: extend `deriveFeed` / `FeedEntry` for approval entries
 - Modified specs: `conversation-view`, `chat-timeline-ui` (approval feed entries)
-- Depends on: `acp-draft-session-lifecycle`, PR #49 chat timeline UI
+- Depends on: Phase 1 (#51), PR #49 feed UI; recommended after Phase 2

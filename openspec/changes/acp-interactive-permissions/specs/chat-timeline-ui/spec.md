@@ -13,5 +13,6 @@ The web chat timeline SHALL support flat approval feed entries produced by `deri
 #### Scenario: Diff approval actions on DiffRow
 
 - **WHEN** a pending approval references a diff-producing tool call
-- **THEN** `diff-row.tsx` shows accept/reject controls wired to `respondApproval`
+- **THEN** `work-log/diff-row.tsx` shows accept/reject controls wired to `respondApproval`
 - **AND** the diff row remains a flat feed entry (not nested in a collapsible group)
+- **AND** is not confused with git worktree diffs in `diff-panel.tsx`

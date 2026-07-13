@@ -34,13 +34,14 @@ Once draft sessions exist, the conversation UI still lacks external-agent behavi
 
 ## Prerequisites
 
-Merged in [#49](https://github.com/soorya-u/cyrus/pull/49): flat chat feed via `deriveFeed` (`shared/utils/src/conversations/thread-feed.ts`), `FeedEntryView` rendering `ToolRow`/`DiffRow` per entry (no collapsible `WorkLog`), breadcrumb `thread-header.tsx`, and turn-level `WorkingMarker`. Error/approval/elicitation entries should follow this flat feed pattern.
+- Merged [#51](https://github.com/soorya-u/cyrus/pull/51): thread-bound sessions; bind/resume errors surface via RPC but are not persisted as thread events.
+- Merged [#49](https://github.com/soorya-u/cyrus/pull/49) + [#52](https://github.com/soorya-u/cyrus/pull/52): flat `FeedEntryView` timeline, breadcrumb `thread-header.tsx` (now includes git Diffs action), composer agent-load error states (`ComposerUnavailable`), and optimistic bind/resume in `use-agent-catalog.ts`. Persisted `thread_error` feed entries and draft composer persist are still missing.
 
 ## Impact
 
-- `apps/web`, `apps/mobile`: `feed-entry-view.tsx`, `thread-header.tsx`, `composer/index.tsx` (draft persist)
-- `shared/hooks`: catalog invalidation on model change; composer persist store
+- `apps/web`, `apps/mobile`: `feed-entry-view.tsx`, `thread-header.tsx` breadcrumb title, `composer/index.tsx` (draft persist + bind/session warning)
+- `shared/hooks`: catalog invalidation on model change in `use-agent-catalog.ts`
 - `shared/utils`: extend `deriveFeed` / `FeedEntry` union for error entries
-- `apps/cli`: title update handler; error event emission
+- `apps/cli`: title update handler; error event emission; use `@cyrus/errors` coordinator tags
 - Modified specs: `conversation-view`, `chat-timeline-ui` (error feed entries)
-- **Depends on** `acp-draft-session-lifecycle`, PR #49 chat timeline UI
+- **Depends on** Phase 1 (#51), PR #49/#52 chat timeline + composer UI

@@ -1,6 +1,8 @@
 ## Context
 
-After PR #49, the web composer uses `AgentModelPicker` (agent+model), `CompactComposerControls` (effort/persona on narrow viewports), and `composer/index.tsx` with a textarea placeholder referencing `@files` and `/commands` — aspirational only. Mode selector, capabilities cache, token usage, slash autocomplete, prompt queue, and real attachments are still unimplemented. `getModes`/`setMode` exist server-side. Prompt is plain string in `chat` RPC.
+Phase 1 (#51) ships thread-bound sessions and returns `capabilities` from `bindAgent`. PR #52 moved agent loading to `composer/index.tsx` via `useListAgents`; `useAgentCatalog` now receives `agents` from the parent and handles optimistic bind + resume rebind. Git worktrees add `ComposerBranchToolbar` below the composer — mode/effort/persona stay in the footer row.
+
+Mode selector, capability-gated controls, token usage, slash autocomplete, prompt queue, and real @file/@URL attachments are still unimplemented. `getModes`/`setMode` exist server-side. Prompt is plain string in `chat` RPC. @file paths MUST resolve relative to thread cwd (`resolveThreadGitCwd`), not project root, when a worktree exists.
 
 ## Goals / Non-Goals
 
@@ -12,7 +14,7 @@ After PR #49, the web composer uses `AgentModelPicker` (agent+model), `CompactCo
 
 ### 1. Capabilities from bindAgent
 
-Extend `BindAgentOutput` with `capabilities` object (prompt, session, auth flags from ACP initialize + session). Client stores per thread; controls visibility of attachment button, token meter, etc.
+`BindAgentOutput.capabilities` already exists (Phase 1). Client should persist per thread in catalog hook/store and gate attachment button, token meter, etc. Do not re-fetch on every catalog read.
 
 ### 2. Mode selector
 
@@ -42,7 +44,7 @@ Extend chat input to structured blocks:
 { type: 'text', text } | { type: 'resource', uri, name? }
 ```
 
-Worker maps to ACP `PromptRequest` content blocks. File paths resolved relative to project cwd on worker when agent expects path strings; URI fetch for URLs delegated to agent or worker readTextFile if needed.
+Worker maps to ACP `PromptRequest` content blocks. File paths resolved relative to thread cwd (`resolveThreadGitCwd`) on worker when agent expects path strings; URI fetch for URLs delegated to agent or worker readTextFile if needed.
 
 Images: omitted — capability gate hides image attach when unsupported.
 

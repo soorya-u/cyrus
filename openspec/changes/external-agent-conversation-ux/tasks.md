@@ -16,13 +16,13 @@
 - [ ] 3.1 After `setModel`, refresh session config options before returning
 - [ ] 3.2 Reset invalid effort/persona selection server-side when options change
 
-## 4. Web UI (PR #49 feed + composer)
+## 4. Web UI (PR #49/#52 feed + composer)
 
 - [ ] 4.1 Add `ErrorRow` (or inline error entry) in `feed-entry-view.tsx`
-- [ ] 4.2 Add composer warning/disabled state in `composer/index.tsx` on bind/resume error
-- [ ] 4.3 Invalidate effort/persona queries after model change in `useAgentCatalog` / `compact-composer-controls.tsx`
+- [ ] 4.2 Add composer warning/disabled state in `composer/index.tsx` on bind/resume/chat error (beyond agent-list load errors)
+- [ ] 4.3 Invalidate effort/persona queries after model change in `use-agent-catalog.ts` / `compact-composer-controls.tsx`
 - [ ] 4.4 Add `useComposerDraftStore` with zustand persist; replace composer `useState` draft
-- [ ] 4.5 Reflect auto-generated titles in `thread-header.tsx` breadcrumb
+- [ ] 4.5 Reflect auto-generated titles in `thread-header.tsx` breadcrumb (alongside git actions)
 
 ## 5. Mobile UI
 

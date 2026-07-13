@@ -31,12 +31,13 @@ After draft session binding, the composer still lacks external-agent features Ze
 
 ## Prerequisites
 
-Merged in [#49](https://github.com/soorya-u/cyrus/pull/49): `composer-ui` spec defines combined `AgentModelPicker` + compact effort/persona overflow. Composer placeholder already hints at `@files` and `/commands` but does not implement them. Extend PR #49 components — do not restore pre-PR inline footer layout.
+- Merged [#51](https://github.com/soorya-u/cyrus/pull/51) (`acp-draft-session-lifecycle`): thread-bound `bindAgent`, thread-scoped catalog RPCs, `capabilities` in bind output.
+- Merged [#49](https://github.com/soorya-u/cyrus/pull/49) + [#52](https://github.com/soorya-u/cyrus/pull/52): `composer-ui` with `AgentModelPicker`, compact effort/persona overflow, `useListAgents` at composer level, `ComposerSkeleton`/`ComposerUnavailable`, and `ComposerBranchToolbar` for git worktrees. Extend these components — do not restore pre-PR inline footer layout.
 
 ## Impact
 
-- `apps/web`, `apps/mobile`: extend `agent-model-picker.tsx`, `compact-composer-controls.tsx`, `composer/index.tsx` (mode, caps, tokens, slash, queue, attachments)
-- `apps/cli`: availableCommands subscription, structured `prompt` payload
-- `shared/hooks`: capability store from bind snapshot
+- `apps/web`, `apps/mobile`: extend `agent-model-picker.tsx`, `compact-composer-controls.tsx`, `footer-controls.tsx`, `composer/index.tsx` (mode, caps, tokens, slash, queue, attachments)
+- `apps/cli`: availableCommands subscription, structured `prompt` payload; thread cwd via `resolveThreadGitCwd` for @file paths
+- `shared/hooks`: consume bind `capabilities` from existing catalog hook/store; optional `use-list-agents.ts` stays composer-level
 - Modified spec: `composer-ui` (add mode, capability gating, token display requirements)
-- Depends on: `acp-draft-session-lifecycle`, PR #49 composer UI
+- Depends on: Phase 1 (#51), PR #49/#52 composer UI

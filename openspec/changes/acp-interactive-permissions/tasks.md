@@ -20,8 +20,8 @@
 ## 4. Web and mobile UI (PR #49 feed)
 
 - [ ] 4.1 Build `ApprovalCard` (or `ApprovalRow`) rendered in `feed-entry-view.tsx`
-- [ ] 4.2 Wire `diff-row.tsx` accept/reject to `respondApproval` when diff is gated
-- [ ] 4.3 Wire `tool-row.tsx` permission actions for non-diff tool approvals
+- [ ] 4.2 Wire `work-log/diff-row.tsx` accept/reject to `respondApproval` when diff is gated
+- [ ] 4.3 Wire `work-log/tool-row.tsx` permission actions for non-diff tool approvals
 - [ ] 4.4 Show pending approval for observers via conversation snapshot
 
 ## 5. Specs

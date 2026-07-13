@@ -2,7 +2,9 @@
 
 `createDefaultHost()` in `apps/cli/src/core/acp/host.ts` auto-selects first allow option. `mapApprovalRequest` exists in `events.ts` but is never called from `AgentRuntime.prompt()`. Architecture doc and plan 09 describe P2P approval — any observing device responds, owner worker resolves ACP host promise.
 
-**PR #49 context (merged):** Web timeline uses flat `FeedEntryView` with `ToolRow` and `DiffRow` per entry (`apps/web/src/components/chat/feed/`). Diffs are read-only today. Approval actions belong on `diff-row.tsx` and gated `tool-row.tsx` entries — not a separate `WorkLog` or diff panel modal.
+**PR #49 context (merged):** Web timeline uses flat `FeedEntryView` with agent `DiffRow` (`apps/web/src/components/chat/work-log/diff-row.tsx`) and `ToolRow` per entry.
+
+**PR #52 context (merged):** Git worktree diffs live in `diff-panel.tsx` / `thread-header` Diffs toggle — separate from agent permission diffs in the feed. Do not wire `respondApproval` to the git diff panel.
 
 ## Goals / Non-Goals
 
@@ -32,7 +34,7 @@ Persist approval_request so observers joining mid-turn see pending state.
 
 ### 4. Diff review
 
-Diff accept/reject in `diff-row.tsx` uses same `respondApproval` — add action buttons when a pending `approval_request` references the diff's tool call. Tool permissions render inline on `tool-row.tsx` or as a sibling `approval` feed entry.
+Diff accept/reject in `work-log/diff-row.tsx` uses same `respondApproval` — add action buttons when a pending `approval_request` references the diff's tool call. Tool permissions render inline on `work-log/tool-row.tsx` or as a sibling `approval` feed entry.
 
 ### 5. Turn blocking
 

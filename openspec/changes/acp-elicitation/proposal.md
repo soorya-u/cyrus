@@ -30,7 +30,7 @@ ACP agents (especially Claude-based bridges) use elicitation for MCP form/url pr
 
 ## Prerequisites
 
-Merged in [#49](https://github.com/soorya-u/cyrus/pull/49): flat chat feed via `deriveFeed` and `FeedEntryView` (no collapsible `WorkLog`). Elicitation cards follow the same flat feed-entry pattern as tools, diffs, and errors.
+Merged [#51](https://github.com/soorya-u/cyrus/pull/51) + [#49](https://github.com/soorya-u/cyrus/pull/49): flat `FeedEntryView` timeline (no collapsible `WorkLog`). Elicitation cards follow the same flat feed-entry pattern as tools, diffs, and errors.
 
 ## Impact
 
@@ -38,4 +38,4 @@ Merged in [#49](https://github.com/soorya-u/cyrus/pull/49): flat chat feed via `
 - `apps/web`, `apps/mobile`: `feed-entry-view.tsx`, new elicitation card component
 - `shared/utils`: extend `deriveFeed` / `FeedEntry` for elicitation entries
 - Modified specs: `conversation-view`, `chat-timeline-ui` (elicitation feed entries)
-- Depends on: `acp-draft-session-lifecycle`, PR #49 chat timeline UI; recommended after `acp-interactive-permissions` (similar blocking pattern)
+- Depends on: Phase 1 (#51), PR #49 feed UI; recommended after `acp-interactive-permissions`

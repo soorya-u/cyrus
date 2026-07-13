@@ -1,6 +1,6 @@
 ## Context
 
-Depends on `acp-draft-session-lifecycle` (thread-bound sessions, persisted `sessionId`). PR #49 redesigned the web timeline: flat `ToolRow`/`DiffRow` feed entries via `FeedEntryView`, turn-level `WorkingMarker`, breadcrumb header, and local-only composer state in `composer/index.tsx`. Errors are still not surfaced; thread titles still use first-message slice only.
+Phase 1 (#51) delivers thread-bound sessions with persisted `sessionId`. PR #52 added optimistic bind, resume rebind on stale sessions, and composer-level agent loading/error UI — but bind/resume/prompt failures are still not persisted as `thread_error` events or shown in the feed. Thread titles still use first-message slice; composer draft is local `useState` only. `thread-header.tsx` now includes git Diffs/init actions alongside the title breadcrumb.
 
 ## Goals / Non-Goals
 
@@ -9,15 +9,15 @@ Depends on `acp-draft-session-lifecycle` (thread-bound sessions, persisted `sess
 - Persisted + streamed error events visible in thread UI
 - Catalog invalidates dependent options when model changes
 - Client-only draft composer persistence (Zustand persist)
-- Auto thread titles after first turn; accept agent Pushed titles when ACP sends them
-- Diff review accept/reject for edit tool permission prompts (scoped — not full permission system)
+- Auto thread titles after first turn; accept agent-pushed titles when ACP sends them
 
 **Non-Goals:**
 
-- Full interactive permissions for all tool types (future change)
+- Full interactive permissions for all tool types (`acp-interactive-permissions`)
 - Edit/resubmit messages, notifications, token usage display
 - Server-side composer storage
 - `listSessions`
+- Git worktree diff panel (`git-diff-panel` spec) — separate from agent tool diffs in feed
 
 ## Decisions
 
@@ -27,13 +27,13 @@ Depends on `acp-draft-session-lifecycle` (thread-bound sessions, persisted `sess
 
 Emit on: bindAgent failure, resume failure, prompt exception, agent subprocess crash mid-turn.
 
-UI: new `error` `FeedEntry` type rendered in `feed-entry-view.tsx` (same pattern as `tool`/`diff`) + composer disabled/warning state in `composer/index.tsx` when thread cannot accept input.
+UI: new `error` `FeedEntry` type rendered in `feed-entry-view.tsx` (same pattern as `tool`/`diff`) + composer disabled/warning state in `composer/index.tsx` when thread cannot accept input. Complements (does not replace) PR #52 agent-load and bind optimistic error handling in `use-agent-catalog.ts`.
 
 **Not** a global agent health panel — unhealthy agents never appear in `listAgents`.
 
 ### 2. Catalog refresh on model change (item 6)
 
-After `setModel` succeeds, client invalidates `getEfforts` / `getPersonas` query keys for that thread. Worker re-reads config options from bound session (session may emit updated options after model change).
+After `setModel` succeeds, invalidate `getEfforts` / `getPersona` query keys for that thread in `use-agent-catalog.ts`. Worker re-reads config options from bound session.
 
 If effort selection becomes invalid, reset to first valid option or session default.
 
