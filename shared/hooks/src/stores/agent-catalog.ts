@@ -16,6 +16,7 @@ type AgentCatalogState = {
 	setPendingAgent: (threadId: string, agentName: string) => void;
 	clearPendingAgent: (threadId: string) => void;
 	markResumeBindRequested: (threadId: string) => void;
+	clearResumeBindRequested: (threadId: string) => void;
 };
 
 function patchSelection(
@@ -61,4 +62,10 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 				[threadId]: true,
 			},
 		})),
+	clearResumeBindRequested: (threadId) =>
+		set((state) => {
+			const { [threadId]: _removed, ...resumeBindRequestedByThread } =
+				state.resumeBindRequestedByThread;
+			return { resumeBindRequestedByThread };
+		}),
 }));

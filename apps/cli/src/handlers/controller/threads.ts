@@ -12,6 +12,7 @@ import {
 } from "@cyrus/database/repositories/threads";
 import { throwOrpc } from "@cyrus/errors/orpc";
 import { notFound } from "@cyrus/errors/repository";
+import { log } from "evlog";
 import { tryCheckoutGitRef } from "@/git/checkout";
 import { removeGitWorktree } from "@/git/worktree";
 import type { ControllerDeps } from "./deps";
@@ -34,8 +35,13 @@ export function threadsHandlers({ os, runtime }: ControllerDeps) {
 
 			if (input.branch && !input.worktreePath) {
 				const projectCwd = await resolveProjectCwd(input.projectId);
-				if (projectCwd.isOk())
-					await tryCheckoutGitRef(projectCwd.value, input.branch);
+				if (projectCwd.isOk()) {
+					const checkedOut = await tryCheckoutGitRef(
+						projectCwd.value,
+						input.branch
+					);
+					if (checkedOut.isErr()) throwOrpc(checkedOut.error);
+				}
 			}
 
 			return { thread: created.value };
@@ -74,8 +80,19 @@ export function threadsHandlers({ os, runtime }: ControllerDeps) {
 
 			if (thread.value.worktreePath) {
 				const projectCwd = await resolveProjectCwd(thread.value.projectId);
-				if (projectCwd.isOk())
-					await removeGitWorktree(projectCwd.value, thread.value.worktreePath);
+				if (projectCwd.isOk()) {
+					const removed = await removeGitWorktree(
+						projectCwd.value,
+						thread.value.worktreePath
+					);
+					if (removed.isErr())
+						log.warn({
+							kind: "worktree_cleanup_failed",
+							threadId: input.threadId,
+							worktreePath: thread.value.worktreePath,
+							error: removed.error,
+						});
+				}
 			}
 
 			const deleted = await deleteThread(input.threadId);

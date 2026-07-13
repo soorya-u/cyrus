@@ -41,6 +41,7 @@ export function ThreadHeader({
 		if (isRepo)
 			return (
 				<button
+					aria-pressed={diffOpen}
 					className={
 						diffOpen
 							? "inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 font-medium text-primary-foreground text-xs"

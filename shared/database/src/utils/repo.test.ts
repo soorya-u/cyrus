@@ -32,7 +32,7 @@ describe("fromRepoFailure", () => {
 	});
 
 	test("maps zod failures", () => {
-		const cause = z.object({ id: z.string().uuid() }).safeParse({ id: "bad" });
+		const cause = z.object({ id: z.uuid() }).safeParse({ id: "bad" });
 		if (cause.success) throw new Error("expected zod failure");
 		const mapped = fromRepoFailure(cause.error);
 		expect(RepositoryDatabaseError.is(mapped)).toBe(true);
@@ -56,7 +56,7 @@ describe("fromDrizzleFailure", () => {
 
 describe("fromZodFailure", () => {
 	test("keeps validation detail separate from user message", () => {
-		const cause = z.object({ id: z.string().uuid() }).safeParse({ id: "bad" });
+		const cause = z.object({ id: z.uuid() }).safeParse({ id: "bad" });
 		if (cause.success) throw new Error("expected zod failure");
 		const mapped = fromZodFailure(cause.error);
 		expect(RepositoryDatabaseError.is(mapped)).toBe(true);
@@ -100,7 +100,7 @@ describe("repo", () => {
 	test("maps zod validation errors", async () => {
 		const result = await repo(() =>
 			Promise.resolve().then(() => {
-				z.object({ id: z.string().uuid() }).parse({ id: "not-a-uuid" });
+				z.object({ id: z.uuid() }).parse({ id: "not-a-uuid" });
 			})
 		)();
 		expect(result.isErr()).toBe(true);

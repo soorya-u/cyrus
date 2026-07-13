@@ -21,26 +21,29 @@ export const appendConversation = repoArgs(
 	async (threadId: string, chunk: Omit<ChatChunk, "seq">) => {
 		const id = randomId();
 		const createdAt = nowISO();
-		const [row] = await connection.db
-			.insert(conversations)
-			.values({
-				id,
-				threadId,
-				chunk: JSON.stringify(chunk),
-				createdAt,
-			})
-			.returning();
-		if (!row)
-			throw persistFailed(
-				`failed to persist conversation entry for thread ${threadId}`
-			);
 
-		await connection.db
-			.update(threads)
-			.set({ updatedAt: createdAt })
-			.where(eq(threads.id, threadId));
+		return await connection.db.transaction(async (tx) => {
+			const [row] = await tx
+				.insert(conversations)
+				.values({
+					id,
+					threadId,
+					chunk: JSON.stringify(chunk),
+					createdAt,
+				})
+				.returning();
+			if (!row)
+				throw persistFailed(
+					`failed to persist conversation entry for thread ${threadId}`
+				);
 
-		return parseConversationEntry(row);
+			await tx
+				.update(threads)
+				.set({ updatedAt: createdAt })
+				.where(eq(threads.id, threadId));
+
+			return parseConversationEntry(row);
+		});
 	}
 );
 

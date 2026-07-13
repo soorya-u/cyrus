@@ -58,7 +58,9 @@ describe("git status", () => {
 			expect(status.refName).toBe("main");
 			expect(status.files.some((file) => file.path === "README.md")).toBe(true);
 			const patch = await getGitPatch(dir, "README.md");
-			expect(patch).toContain("README.md");
+			expect(patch.isOk()).toBe(true);
+			if (!patch.isOk()) return;
+			expect(patch.value).toContain("README.md");
 		} finally {
 			await rm(dir, { recursive: true, force: true });
 		}

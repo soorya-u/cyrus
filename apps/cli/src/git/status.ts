@@ -4,6 +4,7 @@ import type {
 	GitStatusOutput,
 } from "@cyrus/schemas/rtc/git";
 import { Result } from "better-result";
+import { log } from "evlog";
 import { WORKING_TREE_DIFF_OPTIONS } from "./diff-options";
 import { openGitRepository } from "./open";
 
@@ -33,11 +34,21 @@ export async function getGitStatus(cwd: string): Promise<GitStatusOutput> {
 	const opened = await openGitRepository(cwd);
 	if (opened.isErr()) return { isRepo: false };
 
+	const repo = opened.value;
+	const headTree = Result.try(() => repo.head().peelToTree());
+	if (headTree.isErr()) {
+		return {
+			isRepo: true,
+			refName: null,
+			files: [],
+			insertions: 0,
+			deletions: 0,
+		};
+	}
+
 	const status = Result.try(() => {
-		const repo = opened.value;
-		const headTree = repo.head().peelToTree();
 		const diff = repo.diffTreeToWorkdirWithIndex(
-			headTree,
+			headTree.value,
 			WORKING_TREE_DIFF_OPTIONS
 		);
 		diff.findSimilar({ renames: true });
@@ -46,16 +57,11 @@ export async function getGitStatus(cwd: string): Promise<GitStatusOutput> {
 		for (const delta of diff.deltas()) {
 			const path = filePath(delta);
 			if (!path) continue;
-			const fileDiff = repo.diffTreeToWorkdirWithIndex(headTree, {
-				...WORKING_TREE_DIFF_OPTIONS,
-				pathspecs: [path],
-			});
-			const stats = fileDiff.stats();
 			files.push({
 				path,
 				status: mapFileStatus(delta.status()),
-				insertions: Number(stats.insertions),
-				deletions: Number(stats.deletions),
+				insertions: 0,
+				deletions: 0,
 			});
 		}
 
@@ -74,14 +80,10 @@ export async function getGitStatus(cwd: string): Promise<GitStatusOutput> {
 		};
 	});
 
-	return status.match({
-		ok: (value) => value,
-		err: () => ({
-			isRepo: true,
-			refName: null,
-			files: [],
-			insertions: 0,
-			deletions: 0,
-		}),
-	});
+	if (status.isErr()) {
+		log.error({ kind: "git_status_error", error: status.error });
+		return { isRepo: false };
+	}
+
+	return status.value;
 }

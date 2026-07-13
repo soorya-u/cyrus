@@ -60,6 +60,9 @@ export function useAgentCatalog({
 	const markResumeBindRequested = useAgentCatalogStore(
 		(state) => state.markResumeBindRequested
 	);
+	const clearResumeBindRequested = useAgentCatalogStore(
+		(state) => state.clearResumeBindRequested
+	);
 	const resumeBindRequested = useAgentCatalogStore(
 		(state) => state.resumeBindRequestedByThread[threadId]
 	);
@@ -135,6 +138,7 @@ export function useAgentCatalog({
 		},
 		onSettled: () => {
 			clearPendingAgent(threadId);
+			clearResumeBindRequested(threadId);
 		},
 	});
 

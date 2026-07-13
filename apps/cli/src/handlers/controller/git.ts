@@ -9,6 +9,7 @@ import {
 } from "@cyrus/database/repositories/threads";
 import { throwOrpc } from "@cyrus/errors/orpc";
 import { notFound } from "@cyrus/errors/repository";
+import { Result } from "better-result";
 import { checkoutGitRef } from "@/git/checkout";
 import { initGitRepository } from "@/git/init";
 import { getGitPatch } from "@/git/patch";
@@ -38,7 +39,10 @@ export function gitHandlers(os: ControllerOs) {
 
 		getGitPatch: os.getGitPatch.handler(async ({ input }) => {
 			const cwd = await requireThreadCwd(input.threadId);
-			return { patch: await getGitPatch(cwd, input.path) };
+			return (await getGitPatch(cwd, input.path)).match({
+				ok: (patch) => ({ patch }),
+				err: throwOrpc,
+			});
 		}),
 
 		listGitRefs: os.listGitRefs.handler(async ({ input }) => {
@@ -75,7 +79,12 @@ export function gitHandlers(os: ControllerOs) {
 				input.threadId,
 				worktree.value
 			);
-			if (updated.isErr()) throwOrpc(updated.error);
+			if (updated.isErr()) {
+				await Result.tryPromise(() =>
+					removeGitWorktree(projectCwd.value, worktree.value)
+				);
+				throwOrpc(updated.error);
+			}
 
 			return { worktreePath: worktree.value };
 		}),
@@ -83,7 +92,9 @@ export function gitHandlers(os: ControllerOs) {
 		removeGitWorktree: os.removeGitWorktree.handler(async ({ input }) => {
 			const thread = await getThread(input.threadId);
 			if (thread.isErr()) throwOrpc(thread.error);
-			if (!thread.value?.worktreePath) return {};
+			if (!thread.value) throwOrpc(notFound("thread", input.threadId));
+
+			if (!thread.value.worktreePath) return {};
 
 			const projectCwd = await resolveProjectCwd(thread.value.projectId);
 			if (projectCwd.isErr()) throwOrpc(projectCwd.error);

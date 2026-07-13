@@ -72,7 +72,7 @@ export function AgentModelPicker({
 					<span className="flex min-w-0 flex-1 items-center gap-2">
 						{activeAgent?.icon && <CatalogOptionIcon src={activeAgent.icon} />}
 						<span className="truncate">
-							{activeModel?.name ?? activeAgent?.name}
+							{activeModel?.name ?? activeAgent?.name ?? "Agent"}
 						</span>
 					</span>
 					<ChevronDownIcon className="size-3 shrink-0 opacity-60" />

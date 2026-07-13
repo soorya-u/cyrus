@@ -48,22 +48,20 @@ export const createProject = repoArgs<[name: string, cwd?: string], Project>(
 		const resolvedCwd = cwd.trim();
 		if (resolvedCwd) await mkdir(resolvedCwd, { recursive: true });
 
-		await connection.db.insert(projects).values({
-			id,
-			cwd: resolvedCwd,
-			name,
-		});
-		return ProjectSchema.parse({ id, cwd: resolvedCwd, name });
+		const project = ProjectSchema.parse({ id, cwd: resolvedCwd, name });
+		await connection.db.insert(projects).values(project);
+		return project;
 	}
 );
 
 const writeProjectName = repoArgs(
 	async (projectId: string, name: string, current: Project) => {
+		const updated = ProjectSchema.parse({ ...current, name });
 		await connection.db
 			.update(projects)
 			.set({ name })
 			.where(eq(projects.id, projectId));
-		return ProjectSchema.parse({ ...current, name });
+		return updated;
 	}
 );
 

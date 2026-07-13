@@ -50,7 +50,7 @@ export const GitRefsOutputSchema = z.object({
 });
 
 export const ThreadGitQueryInputSchema = z.object({
-	threadId: z.string(),
+	threadId: z.string().min(1),
 });
 
 export const GitPatchInputSchema = ThreadGitQueryInputSchema.extend({

@@ -120,22 +120,17 @@ export class ThreadCoordinator {
 
 		const previousAgentName = thread.value.agentName;
 		const previousSessionId = thread.value.sessionId;
-		if (
-			previousSessionId &&
-			previousAgentName &&
-			previousAgentName !== agentName
-		) {
+		if (previousSessionId && previousAgentName) {
 			const closed = await this.withRuntime(() =>
-				this.getAgent(previousAgentName).closeSession(
-					previousSessionId,
-					threadId
-				)
+				previousAgentName === agentName
+					? runtime.closeSession(previousSessionId, threadId)
+					: this.getAgent(previousAgentName).closeSession(
+							previousSessionId,
+							threadId
+						)
 			);
 			if (closed.isErr()) return Result.err(closed.error);
-		} else if (previousSessionId && previousAgentName === agentName)
-			await this.withRuntime(() =>
-				runtime.closeSession(previousSessionId, threadId)
-			);
+		}
 
 		const bound = await this.withRuntime(async () => {
 			const session = await runtime.createBoundSession(
