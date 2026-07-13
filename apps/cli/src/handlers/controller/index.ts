@@ -7,6 +7,7 @@ import { personaHandlers } from "./catalog/persona";
 import { chatHandlers } from "./chat";
 import { defineControllerOs } from "./deps";
 import { dirHandlers } from "./dir";
+import { gitHandlers } from "./git";
 import { projectsHandlers } from "./projects";
 import { threadsHandlers } from "./threads";
 
@@ -19,6 +20,7 @@ export function createControllerRouter(runtime: WorkerRuntime) {
 		...projectsHandlers(deps),
 		...threadsHandlers(deps),
 		...dirHandlers(os),
+		...gitHandlers(os),
 		...modelHandlers(deps),
 		...modeHandlers(deps),
 		...effortHandlers(deps),

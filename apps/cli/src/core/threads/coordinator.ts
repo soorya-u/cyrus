@@ -1,4 +1,4 @@
-import { resolveProjectCwd } from "@cyrus/database/repositories/projects";
+import { resolveThreadGitCwd } from "@cyrus/database/repositories/git";
 import {
 	bindThreadAgent,
 	getThread,
@@ -73,7 +73,7 @@ export class ThreadCoordinator {
 			return Result.err(coordinatorAgentLocked());
 		}
 
-		const cwd = await this.resolveCwd(projectId);
+		const cwd = await this.resolveCwd(threadId);
 		if (cwd.isErr()) return Result.err(cwd.error);
 
 		const runtime = this.getAgent(agentName);
@@ -337,9 +337,9 @@ export class ThreadCoordinator {
 	}
 
 	private async resolveCwd(
-		projectId: string
+		threadId: string
 	): Promise<Result<string, CoordinatorError>> {
-		const result = await resolveProjectCwd(projectId);
+		const result = await resolveThreadGitCwd(threadId);
 		if (result.isErr())
 			return Result.err(coordinatorRepositoryError(result.error));
 		return Result.ok(result.value);
@@ -362,7 +362,7 @@ export class ThreadCoordinator {
 			return Result.err(coordinatorAgentNotBound());
 		}
 
-		const cwd = await this.resolveCwd(thread.value.projectId);
+		const cwd = await this.resolveCwd(threadId);
 		if (cwd.isErr()) return Result.err(cwd.error);
 
 		return Result.ok({

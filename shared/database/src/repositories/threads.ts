@@ -16,10 +16,21 @@ export function threadNameFromPrompt(message: string): string {
 	return trimmed.slice(0, 50);
 }
 
+type ThreadCreateOptions = {
+	agentName?: string;
+	firstMessage?: string;
+	branch?: string;
+	worktreePath?: string;
+};
+
+function parseThreadRow(row: typeof threads.$inferSelect): Thread {
+	return ThreadSchema.parse(row);
+}
+
 export async function ensureThread(
 	id: string,
 	projectId: string,
-	options?: { agentName?: string; firstMessage?: string }
+	options?: ThreadCreateOptions
 ): Promise<Result<Thread, RepositoryError>> {
 	const project = await getProject(projectId);
 	if (project.isErr()) return Result.err(project.error);
@@ -49,10 +60,10 @@ export async function ensureThread(
 					updatedAt,
 				})
 				.where(and(eq(threads.id, id), eq(threads.projectId, projectId)));
-			return ThreadSchema.parse({
+			return parseThreadRow({
 				...existing,
 				name,
-				agentName,
+				agentName: agentName ?? null,
 				updatedAt,
 			});
 		}
@@ -63,8 +74,10 @@ export async function ensureThread(
 			projectId,
 			name: options?.firstMessage
 				? threadNameFromPrompt(options.firstMessage)
-				: "New thread",
+				: (options?.branch ?? "New thread"),
 			agentName: options?.agentName,
+			branch: options?.branch ?? null,
+			worktreePath: options?.worktreePath ?? null,
 			createdAt,
 			updatedAt: createdAt,
 		});
@@ -75,6 +88,8 @@ export async function ensureThread(
 			agentName: thread.agentName ?? null,
 			sessionId: null,
 			agentLocked: 0,
+			branch: thread.branch ?? null,
+			worktreePath: thread.worktreePath ?? null,
 			createdAt: thread.createdAt,
 			updatedAt: thread.updatedAt,
 		});
@@ -83,9 +98,10 @@ export async function ensureThread(
 }
 
 export function createThread(
-	projectId: string
+	projectId: string,
+	options?: Pick<ThreadCreateOptions, "branch" | "worktreePath">
 ): Promise<Result<Thread, RepositoryError>> {
-	return ensureThread(randomId(), projectId);
+	return ensureThread(randomId(), projectId, options);
 }
 
 export function listThreads(
@@ -97,7 +113,7 @@ export function listThreads(
 			.from(threads)
 			.where(eq(threads.projectId, projectId))
 			.orderBy(desc(threads.updatedAt));
-		return rows.map((row) => ThreadSchema.parse(row));
+		return rows.map((row) => parseThreadRow(row));
 	});
 }
 
@@ -141,6 +157,24 @@ export async function renameThread(
 	});
 }
 
+export async function updateThreadWorktreePath(
+	threadId: string,
+	worktreePath: string | null
+): Promise<Result<Thread, RepositoryError>> {
+	const thread = await getThread(threadId);
+	if (thread.isErr()) return Result.err(thread.error);
+	if (!thread.value) return Result.err(notFound("thread", threadId));
+
+	return tryRepo(async () => {
+		const updatedAt = nowISO();
+		await connection.db
+			.update(threads)
+			.set({ worktreePath, updatedAt })
+			.where(eq(threads.id, threadId));
+		return ThreadSchema.parse({ ...thread.value, worktreePath, updatedAt });
+	});
+}
+
 export function getThread(
 	threadId: string
 ): Promise<Result<Thread | undefined, RepositoryError>> {
@@ -150,7 +184,7 @@ export function getThread(
 			.from(threads)
 			.where(eq(threads.id, threadId))
 			.limit(1);
-		return row ? ThreadSchema.parse(row) : undefined;
+		return row ? parseThreadRow(row) : undefined;
 	});
 }
 

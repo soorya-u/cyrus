@@ -33,6 +33,19 @@ export const RTC_OPERATION_KEYS = {
 	setPersona: ["controller", "set-persona"],
 	watchThread: ["controller", "watch-thread"],
 	unwatchThread: ["controller", "unwatch-thread"],
+	getGitStatus: (threadId: string) =>
+		["controller", "get-git-status", threadId] as const,
+	getGitPatch: (threadId: string, path?: string) =>
+		["controller", "get-git-patch", threadId, path ?? "all"] as const,
+	listGitRefs: (threadId: string) =>
+		["controller", "list-git-refs", threadId] as const,
+	getProjectGitStatus: (projectId: string) =>
+		["controller", "get-project-git-status", projectId] as const,
+	listProjectGitRefs: (projectId: string) =>
+		["controller", "list-project-git-refs", projectId] as const,
+	checkoutGitRef: ["controller", "checkout-git-ref"],
+	createGitWorktree: ["controller", "create-git-worktree"],
+	removeGitWorktree: ["controller", "remove-git-worktree"],
 } as const;
 
 export const AUTH_OPERATION_KEYS = {

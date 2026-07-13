@@ -2,15 +2,17 @@ import {
 	getConversations,
 	getSnapshotHighWaterMark,
 } from "@cyrus/database/repositories/conversations";
+import { resolveProjectCwd } from "@cyrus/database/repositories/projects";
 import {
 	createThread as createStoredThread,
 	deleteThread,
 	getThread,
-	getThreadSession,
 	listThreads,
 	renameThread,
 } from "@cyrus/database/repositories/threads";
 import { notFound } from "@cyrus/database/utils/error";
+import { tryCheckoutGitRef } from "@/git/checkout";
+import { removeGitWorktree } from "@/git/worktree";
 import { throwOrpcFromRepositoryError } from "@/utils/error";
 import type { ControllerDeps } from "./deps";
 
@@ -23,12 +25,22 @@ export function threadsHandlers({ os, runtime }: ControllerDeps) {
 			})
 		),
 
-		createThread: os.createThread.handler(async ({ input }) =>
-			(await createStoredThread(input.projectId)).match({
-				ok: (thread) => ({ thread }),
-				err: throwOrpcFromRepositoryError,
-			})
-		),
+		createThread: os.createThread.handler(async ({ input }) => {
+			const created = await createStoredThread(input.projectId, {
+				branch: input.branch,
+				worktreePath: input.worktreePath,
+			});
+			if (created.isErr()) throwOrpcFromRepositoryError(created.error);
+
+			if (input.branch && !input.worktreePath) {
+				const projectCwd = await resolveProjectCwd(input.projectId);
+				if (projectCwd.isOk()) {
+					await tryCheckoutGitRef(projectCwd.value, input.branch);
+				}
+			}
+
+			return { thread: created.value };
+		}),
 
 		getConversations: os.getConversations.handler(async ({ input }) => {
 			const thread = await getThread(input.threadId);
@@ -51,14 +63,25 @@ export function threadsHandlers({ os, runtime }: ControllerDeps) {
 		),
 
 		deleteThread: os.deleteThread.handler(async ({ input }) => {
-			const session = await getThreadSession(input.threadId);
-			if (session.isErr()) throwOrpcFromRepositoryError(session.error);
-			if (session.value) {
+			const thread = await getThread(input.threadId);
+			if (thread.isErr()) throwOrpcFromRepositoryError(thread.error);
+			if (!thread.value) {
+				throwOrpcFromRepositoryError(notFound("thread", input.threadId));
+			}
+
+			if (thread.value.sessionId && thread.value.agentName) {
 				await runtime.threadCoordinator.closeThreadSession(
 					input.threadId,
-					session.value.sessionId,
-					session.value.agentName
+					thread.value.sessionId,
+					thread.value.agentName
 				);
+			}
+
+			if (thread.value.worktreePath) {
+				const projectCwd = await resolveProjectCwd(thread.value.projectId);
+				if (projectCwd.isOk()) {
+					await removeGitWorktree(projectCwd.value, thread.value.worktreePath);
+				}
 			}
 
 			const deleted = await deleteThread(input.threadId);

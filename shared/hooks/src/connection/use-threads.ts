@@ -48,8 +48,14 @@ export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
 		onSuccess: () => invalidateThreads(),
 	});
 
-	async function createThread(projectId: string): Promise<string> {
-		const { thread } = await createThreadMutation.mutateAsync({ projectId });
+	async function createThread(
+		projectId: string,
+		options?: { branch?: string; worktreePath?: string }
+	): Promise<string> {
+		const { thread } = await createThreadMutation.mutateAsync({
+			projectId,
+			...options,
+		});
 		return thread.id;
 	}
 

@@ -30,6 +30,10 @@ type ProjectThreadGroupProps = {
 	expanded: boolean;
 	onToggle: () => void;
 	onNew: () => void;
+	onNewGitMenu?: (
+		projectId: string,
+		event: React.MouseEvent<HTMLButtonElement>
+	) => void;
 	onSelect: (thread: Thread) => void;
 	onDelete: (id: string) => void;
 	onRename: (id: string, name: string) => void;
@@ -50,6 +54,7 @@ export function ProjectThreadGroup({
 	expanded,
 	onToggle,
 	onNew,
+	onNewGitMenu,
 	onSelect,
 	onDelete,
 	onRename,
@@ -95,6 +100,11 @@ export function ProjectThreadGroup({
 						onClick={(event) => {
 							event.stopPropagation();
 							onNew();
+						}}
+						onContextMenu={(event) => {
+							event.preventDefault();
+							event.stopPropagation();
+							onNewGitMenu?.(project.id, event);
 						}}
 						type="button"
 					>

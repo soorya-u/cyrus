@@ -10,6 +10,8 @@ export const threads = sqliteTable("threads", {
 	agentName: text("agent_name"),
 	sessionId: text("session_id"),
 	agentLocked: integer("agent_locked").notNull().default(0),
+	branch: text("branch"),
+	worktreePath: text("worktree_path"),
 	createdAt: text("created_at").notNull(),
 	updatedAt: text("updated_at").notNull(),
 });
