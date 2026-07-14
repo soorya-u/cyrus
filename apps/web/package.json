@@ -33,6 +33,7 @@
     "@pierre/trees": "^1.0.0-beta.5",
     "@shadcn/react": "^0.2.1",
     "@soorya-u/better-auth-desktop": "catalog:",
+    "@soorya-u/better-auth-ws-ticket": "catalog:",
     "@t3-oss/env-core": "catalog:",
     "@tanstack/react-pacer": "^0.22.1",
     "@tanstack/react-query": "^5.101.1",

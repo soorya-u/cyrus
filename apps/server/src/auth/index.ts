@@ -1,5 +1,6 @@
 import { expo } from "@better-auth/expo";
 import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
+import { wsTicketPlugin } from "@soorya-u/better-auth-ws-ticket/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
@@ -56,6 +57,7 @@ export const auth = betterAuth({
 		}),
 		deviceAuthorization({ verificationUri: `${env.WEB_APP_URL}/auth/device` }),
 		bearer(),
+		wsTicketPlugin(),
 	],
 });
 

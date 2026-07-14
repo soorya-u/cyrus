@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { E2E_SERVER_URL, isE2eEnabled, requireE2e } from "../harness/env";
 import { connectE2eController } from "../harness/signaling";
 import { runE2eScenario } from "../harness/stack";
+import { wsTicketProtocols } from "../harness/ws-ticket";
 
 const e2eDescribe = isE2eEnabled() ? describe : describe.skip;
 
@@ -15,7 +16,7 @@ e2eDescribe("worker connects", () => {
 				role: "controller",
 				id: "e2e-controller",
 				name: "E2E Controller",
-				token: stack.auth.token,
+				protocols: wsTicketProtocols(stack.auth.token),
 			});
 
 			expect(peers).toEqual(

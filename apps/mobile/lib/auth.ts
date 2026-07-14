@@ -1,4 +1,5 @@
 import { expoClient } from "@better-auth/expo/client";
+import { wsTicketClientPlugin } from "@soorya-u/better-auth-ws-ticket/client";
 import { createAuthClient } from "better-auth/react";
 import Constants from "expo-constants";
 import { getItem, setItem } from "expo-secure-store";
@@ -11,5 +12,6 @@ export const authClient = createAuthClient({
 			scheme: (Constants.expoConfig?.scheme as string) || "cyrus",
 			storage: { getItem, setItem },
 		}),
+		wsTicketClientPlugin(),
 	],
 });

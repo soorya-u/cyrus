@@ -16,6 +16,7 @@
     "@orpc/tanstack-query": "^1.14.6",
     "@t3-oss/env-core": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@soorya-u/better-auth-ws-ticket": "catalog:",
     "better-auth": "catalog:",
     "evlog": "^2.19.2",
     "expo-secure-store": "~15.0.7",

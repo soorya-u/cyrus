@@ -16,6 +16,7 @@
   "dependencies": {
     "@better-auth/expo": "catalog:",
     "@soorya-u/better-auth-desktop": "catalog:",
+    "@soorya-u/better-auth-ws-ticket": "catalog:",
     "@cyrus/connections": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",

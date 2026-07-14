@@ -29,6 +29,7 @@
         "@cyrus/schemas": "workspace:*",
         "@cyrus/utils": "workspace:*",
         "@orpc/server": "catalog:",
+        "@soorya-u/better-auth-ws-ticket": "catalog:",
         "@t3-oss/env-core": "catalog:",
         "@tursodatabase/database": "^0.6.1",
         "better-auth": "catalog:",
@@ -76,6 +77,7 @@
         "@cyrus/providers": "workspace:*",
         "@cyrus/utils": "workspace:*",
         "@orpc/tanstack-query": "^1.14.6",
+        "@soorya-u/better-auth-ws-ticket": "catalog:",
         "@t3-oss/env-core": "catalog:",
         "@tanstack/react-query": "catalog:",
         "better-auth": "catalog:",
@@ -99,6 +101,7 @@
         "@neondatabase/serverless": "^1.1.0",
         "@orpc/server": "^1.14.6",
         "@soorya-u/better-auth-desktop": "catalog:",
+        "@soorya-u/better-auth-ws-ticket": "catalog:",
         "@t3-oss/env-core": "catalog:",
         "better-auth": "catalog:",
         "better-result": "catalog:",
@@ -144,6 +147,7 @@
         "@pierre/trees": "^1.0.0-beta.5",
         "@shadcn/react": "^0.2.1",
         "@soorya-u/better-auth-desktop": "catalog:",
+        "@soorya-u/better-auth-ws-ticket": "catalog:",
         "@t3-oss/env-core": "catalog:",
         "@tanstack/react-pacer": "^0.22.1",
         "@tanstack/react-query": "^5.101.1",
@@ -364,6 +368,7 @@
     "@dotenvx/dotenvx": "^1.71.3",
     "@orpc/server": "^1.14.6",
     "@soorya-u/better-auth-desktop": "^0.1.1",
+    "@soorya-u/better-auth-ws-ticket": "v0.1.0",
     "@t3-oss/env-core": "^0.13.1",
     "@tanstack/react-form": "^1.28.0",
     "@tanstack/react-query": "^5.90.12",
@@ -1239,6 +1244,8 @@
     "@solid-primitives/utils": ["@solid-primitives/utils@6.4.0", "", { "peerDependencies": { "solid-js": "^1.6.12" } }, "sha512-AeGTBg8Wtkh/0s+evyLtP8piQoS4wyqqQaAFs2HJcFMMjYAtUgo+ZPduRXLjPlqKVc2ejeR544oeqpbn8Egn8A=="],
 
     "@soorya-u/better-auth-desktop": ["@soorya-u/better-auth-desktop@0.1.1", "", { "dependencies": { "zod": "^4.3.6" }, "peerDependencies": { "@better-auth/core": "^1.6.21", "@better-auth/utils": "^0.4.2", "@better-fetch/fetch": "^1.3.1", "better-auth": "^1.6.21", "better-call": "^1.3.7", "electrobun": ">=1.18.1", "electron": ">=28.0.0", "electron-store": ">=8.2.0", "react": ">=18.0.0" }, "optionalPeers": ["electrobun", "electron", "electron-store", "react"] }, "sha512-jOM9vDPJjYI+6J2PdmOYJLQH2sqplTdhVGOibQNtiL5YPPYQ2Kq9idXyczZ8NmrZiN+yA0z1W/vZ0KqSNCkqww=="],
+
+    "@soorya-u/better-auth-ws-ticket": ["@soorya-u/better-auth-ws-ticket@0.1.0", "", { "peerDependencies": { "@better-auth/core": "^1.6.21", "@better-auth/utils": "^0.4.2", "@better-fetch/fetch": "^1.3.1", "better-auth": "^1.6.21", "better-call": "^1.3.7" } }, "sha512-qp7cblbhgmj5F8MXiGM1lF+dgywk31HpDpZpKGg3MVupSW8VjMkc9YHfq6liuMi9Ac35zvOuwVpxaascuhSIpw=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
