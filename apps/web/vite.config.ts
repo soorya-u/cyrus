@@ -14,6 +14,14 @@ export default defineConfig({
 			"@soorya-u/better-auth-desktop/web",
 		],
 	},
+	server: {
+		proxy: {
+			"/api/auth": {
+				target: "http://127.0.0.1:8787",
+				changeOrigin: true,
+			},
+		},
+	},
 	plugins: [
 		devtools(),
 		tsconfigPaths({ ignoreConfigErrors: true }),

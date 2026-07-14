@@ -34,8 +34,7 @@ export function buildServerEnv(): Record<string, string> {
 	return {
 		DATABASE_URL: resolveDatabaseUrl(),
 		BETTER_AUTH_SECRET: "e2e-test-secret-minimum-32-characters",
-		BETTER_AUTH_URL: E2E_SERVER_URL,
-		PRODUCTION_URL: E2E_SERVER_URL,
+		PRODUCTION_URL: E2E_WEB_URL,
 		WEB_APP_URL: E2E_WEB_URL,
 		OAUTH_GITHUB_CLIENT_ID: "e2e-github-client-id",
 		OAUTH_GITHUB_CLIENT_SECRET: "e2e-github-client-secret",

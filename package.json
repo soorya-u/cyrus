@@ -13,6 +13,7 @@
       "@dotenvx/dotenvx": "^1.71.3",
       "@orpc/server": "^1.14.6",
       "@soorya-u/better-auth-desktop": "^0.1.1",
+      "@soorya-u/better-auth-ws-ticket": "v0.1.0",
       "@t3-oss/env-core": "^0.13.1",
       "@tanstack/react-query": "^5.90.12",
       "@tanstack/react-form": "^1.28.0",

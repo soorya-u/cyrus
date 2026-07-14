@@ -1,6 +1,7 @@
 import { expo } from "@better-auth/expo";
 import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
-import { betterAuth, type CookieOptions } from "better-auth";
+import { wsTicketPlugin } from "@soorya-u/better-auth-ws-ticket/server";
+import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
 import { log } from "evlog";
@@ -19,19 +20,6 @@ const emailAndPassword =
 				},
 			};
 
-const defaultCookieAttributes: CookieOptions =
-	env.NODE_ENV === "production"
-		? {
-				sameSite: "none",
-				secure: true,
-				httpOnly: true,
-			}
-		: {
-				sameSite: "lax",
-				secure: false,
-				httpOnly: true,
-			};
-
 export const auth = betterAuth({
 	appName: "Cyrus",
 	basePath: "/api/auth",
@@ -45,8 +33,14 @@ export const auth = betterAuth({
 		},
 	},
 	secret: env.BETTER_AUTH_SECRET,
-	baseURL: env.BETTER_AUTH_URL,
-	advanced: { defaultCookieAttributes },
+	baseURL: env.WEB_APP_URL,
+	advanced: {
+		defaultCookieAttributes: {
+			sameSite: "lax",
+			httpOnly: true,
+			secure: env.NODE_ENV === "production",
+		},
+	},
 	logger: {
 		log: (level, message, ...args) => log[level]({ message, ...args }),
 		level: env.LOG_LEVEL,
@@ -63,6 +57,7 @@ export const auth = betterAuth({
 		}),
 		deviceAuthorization({ verificationUri: `${env.WEB_APP_URL}/auth/device` }),
 		bearer(),
+		wsTicketPlugin(),
 	],
 });
 

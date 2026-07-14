@@ -6,6 +6,7 @@ import { connectE2eControllerRtc } from "../harness/controller";
 import { E2E_SERVER_URL } from "../harness/env";
 import { connectE2eController } from "../harness/signaling";
 import { spawnCliWorker, stopAll } from "../harness/spawn";
+import { wsTicketProtocols } from "../harness/ws-ticket";
 
 const REPO_ROOT = join(import.meta.dir, "../../..");
 const home = join("/tmp", `cyrus-manual-${crypto.randomUUID()}`);
@@ -61,7 +62,7 @@ try {
 		role: "controller",
 		id: "manual-controller",
 		name: "Manual Controller",
-		token: auth.token,
+		protocols: wsTicketProtocols(auth.token),
 	});
 	session = connected;
 

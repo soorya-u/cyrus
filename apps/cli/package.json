@@ -25,6 +25,7 @@
     "@orpc/server": "catalog:",
     "@t3-oss/env-core": "catalog:",
     "@tursodatabase/database": "^0.6.1",
+    "@soorya-u/better-auth-ws-ticket": "catalog:",
     "better-auth": "catalog:",
     "better-result": "catalog:",
     "commander": "^15.0.0",

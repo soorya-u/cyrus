@@ -21,11 +21,5 @@
       "tag": "v2",
       "renamed_classes": [{ "from": "Room", "to": "Hub" }]
     }
-  ],
-  "build": {
-    "command": "bun db:migrate"
-  },
-  "vars": {
-    "NODE_ENV": "production"
-  }
+  ]
 }

@@ -16,6 +16,7 @@ export const dialSignaling: SignalingDialer = async () => {
 		role: "controller",
 		id: await getControllerId(),
 		name: await getControllerName(),
+		protocols: authClient.wsTicket.protocols,
 	});
 
 	return { session, orpc: createTanstackQueryUtils(session.signaling) };

@@ -29,7 +29,26 @@ async function checkSignalingHub(): Promise<void> {
 		role: "controller",
 		id: "deploy-smoke",
 		name: "Deploy Smoke",
-		token,
+		protocols: async () => {
+			const response = await fetch(new URL("/api/auth/ws-ticket", baseUrl), {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"content-type": "application/json",
+				},
+				body: "{}",
+			});
+			if (!response.ok) {
+				throw new Error(
+					`ws-ticket mint failed with status ${response.status}.`
+				);
+			}
+			const body = (await response.json()) as { protocols?: string[] };
+			if (!body.protocols?.length) {
+				throw new Error("ws-ticket response missing protocols.");
+			}
+			return body.protocols;
+		},
 	});
 
 	try {

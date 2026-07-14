@@ -5,7 +5,6 @@ interface __BaseEnv_Env {
 	PORT: "8787";
 	DATABASE_URL: string;
 	BETTER_AUTH_SECRET: string;
-	BETTER_AUTH_URL: string;
 	NODE_ENV: string;
 	PRODUCTION_URL: string;
 	WEB_APP_URL: string;
@@ -27,7 +26,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PORT" | "DATABASE_URL" | "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "NODE_ENV" | "PRODUCTION_URL" | "WEB_APP_URL" | "OAUTH_GITHUB_CLIENT_ID" | "OAUTH_GITHUB_CLIENT_SECRET" | "OAUTH_PROXY_SECRET" | "ALLOWED_ORIGINS">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PORT" | "DATABASE_URL" | "BETTER_AUTH_SECRET" | "NODE_ENV" | "PRODUCTION_URL" | "WEB_APP_URL" | "OAUTH_GITHUB_CLIENT_ID" | "OAUTH_GITHUB_CLIENT_SECRET" | "OAUTH_PROXY_SECRET" | "ALLOWED_ORIGINS">> {}
 }
 
 // Begin runtime types

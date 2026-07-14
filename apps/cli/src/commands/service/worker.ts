@@ -45,7 +45,7 @@ export async function worker(): Promise<void> {
 		role: "worker",
 		id,
 		name,
-		token,
+		protocols: authClient.wsTicket.protocols,
 	});
 	print.success`✓ connected — waiting for message…`;
 
