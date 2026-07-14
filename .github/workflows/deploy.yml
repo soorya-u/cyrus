@@ -20,12 +20,19 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./tooling/github/setup
 
+      - name: Migrate database
+        run: bun db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           wranglerVersion: "4.104.0"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          vars: |
+            NODE_ENV
           secrets: |
             DATABASE_URL
             BETTER_AUTH_SECRET
@@ -37,6 +44,7 @@ jobs:
             ALLOWED_ORIGINS
             WEB_APP_URL
         env:
+          NODE_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
@@ -51,6 +59,6 @@ jobs:
         working-directory: tooling/test
         run: bun smoke/deploy.ts
         env:
-          SMOKE_BASE_URL: ${{ secrets.BETTER_AUTH_URL }}
+          SMOKE_BASE_URL: ${{ secrets.WORKERS_URL }}
           SMOKE_BEARER_TOKEN: ${{ secrets.DEPLOY_SMOKE_TOKEN }}
           SMOKE_ROOM_ID: ${{ secrets.DEPLOY_SMOKE_ROOM_ID }}
