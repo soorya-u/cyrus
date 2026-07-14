@@ -8,7 +8,7 @@ import { env } from "./env";
 const isDesktop = env.VITE_IS_DESKTOP;
 
 const base = createAuthClient({
-	baseURL: env.VITE_SERVER_URL,
+	baseURL: env.VITE_APP_URL,
 	plugins: [webDesktop(), deviceAuthorizationClient()],
 });
 
