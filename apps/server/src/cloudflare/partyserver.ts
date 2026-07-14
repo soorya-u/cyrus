@@ -8,30 +8,17 @@ import {
 
 const WS_PROTOCOL_HEADER = "Sec-WebSocket-Protocol";
 
-function negotiateBaseProtocol(request: Request): string | null {
-	const header = request.headers.get(WS_PROTOCOL_HEADER);
-	if (!header) return null;
-
-	for (const part of header.split(",").map((p) => p.trim()))
-		if (part === WS_BASE_PROTOCOL) return part;
-
-	return null;
-}
-
 export class Hub extends Server {
 	override async fetch(request: Request): Promise<Response> {
 		const response = await super.fetch(request);
 		if (response.status !== 101 || !response.webSocket) return response;
 
-		const base = negotiateBaseProtocol(request);
-		if (!base) return response;
-
-		const headers = new Headers(response.headers);
-		headers.set(WS_PROTOCOL_HEADER, base);
 		return new Response(null, {
 			status: 101,
 			webSocket: response.webSocket,
-			headers,
+			headers: {
+				[WS_PROTOCOL_HEADER]: WS_BASE_PROTOCOL,
+			},
 		});
 	}
 

@@ -46,6 +46,7 @@ coverage
 .nyc_output
 test-results
 .playwright-cli
+.playwright-mcp
 
 # Misc
 *.tgz
@@ -58,6 +59,7 @@ temp
 # Deployments
 .wrangler
 .vercel
+
 #region dotagents
 .agents/
 .claude/

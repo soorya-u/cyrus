@@ -108,7 +108,6 @@
         "drizzle-orm": "catalog:",
         "evlog": "catalog:",
         "hono": "^4.12.27",
-        "hono-party": "^2.1.0",
         "partyserver": "^0.5.8",
         "pg": "^8.17.1",
         "zod": "catalog:",
@@ -2002,8 +2001,6 @@
     "hermes-parser": ["hermes-parser@0.36.0", "", { "dependencies": { "hermes-estree": "0.36.0" } }, "sha512-GdpwMmH5x6IpC1cijvcvYnlPB60Mh6kTSF/NFdYV/j56gYdi+0RIakYs+eqOV+bbO0SW7mgVVGSsTJxyPQfo3w=="],
 
     "hono": ["hono@4.12.27", "", {}, "sha512-1yrb/+w6HWQJrUCLkJ2IF5jNIPvvFkblV5RNOYl6bV+OA6p9GLcMpHFFGTosSvHvcAUibuUukRqhlYI4z32C7Q=="],
-
-    "hono-party": ["hono-party@2.1.0", "", { "peerDependencies": { "@cloudflare/workers-types": "^4.20260424.1", "hono": "^4.6.17", "partyserver": ">=0.2.0 <1.0.0" } }, "sha512-kMeOhQRm8kSRD7shVP4Rru4rZgfzGuB2g0sOWBM4Un6J/0Yd6LqWto9PjnbBl9Zg0g+TVFsgxnJqZ7D72oA/0A=="],
 
     "hosted-git-info": ["hosted-git-info@7.0.2", "", { "dependencies": { "lru-cache": "^10.0.1" } }, "sha512-puUZAUKT5m8Zzvs72XWy3HtvVbTWljRE66cP60bxJzAqf2DgICo7lYTY2IHUmLnNpjYvw5bvmoHvPc0QO2a62w=="],
 
