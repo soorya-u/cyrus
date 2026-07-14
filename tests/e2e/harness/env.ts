@@ -48,7 +48,6 @@ export function buildServerEnv(): Record<string, string> {
 export function buildWebEnv(): Record<string, string> {
 	return {
 		VITE_SERVER_URL: E2E_SERVER_URL,
-		VITE_APP_URL: E2E_WEB_URL,
 	};
 }
 
