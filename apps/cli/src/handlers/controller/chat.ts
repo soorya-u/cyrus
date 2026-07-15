@@ -41,7 +41,8 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 
 			const persisted = await runtime.threadCoordinator.persistBoundSession(
 				threadId,
-				projectId
+				projectId,
+				agentName
 			);
 			if (persisted.isErr()) {
 				if (CoordinatorAgentNotBoundError.is(persisted.error)) {
@@ -51,11 +52,6 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				}
 				throwOrpc(persisted.error);
 			}
-
-			if (persisted.value.agentName !== agentName)
-				throw new ORPCError("BAD_REQUEST", {
-					message: "agentName does not match the bound thread agent",
-				});
 
 			const thread = await ensureThread(threadId, projectId, {
 				firstMessage: formatPromptBlocks(message),

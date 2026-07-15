@@ -180,9 +180,11 @@ export function deriveFeed(
 		entries.push({ type: "message", id: message.id, message });
 	}
 
-	for (const error of conversation.errors) {
-		if (knownTurnIds.has(error.turnId)) continue;
-		entries.push({
+	const orphanedErrors = conversation.errors.filter(
+		(error) => !knownTurnIds.has(error.turnId)
+	);
+	for (const error of orphanedErrors) {
+		insertFeedEntryByCreatedAt(entries, {
 			type: "error",
 			id: error.id,
 			error,
@@ -191,6 +193,39 @@ export function deriveFeed(
 	}
 
 	return entries;
+}
+
+function feedEntryCreatedAt(entry: FeedEntry): string | null {
+	switch (entry.type) {
+		case "message":
+			return entry.message.createdAt;
+		case "thought":
+			return entry.thought.createdAt;
+		case "tool":
+			return entry.tool.createdAt;
+		case "diff":
+			return null;
+		case "error":
+			return entry.error.createdAt;
+		default: {
+			const _exhaustive: never = entry;
+			return _exhaustive;
+		}
+	}
+}
+
+function insertFeedEntryByCreatedAt(
+	entries: FeedEntry[],
+	entry: ErrorFeedEntry
+): void {
+	const createdAt = entry.error.createdAt;
+	let index = 0;
+	for (const existing of entries) {
+		const existingAt = feedEntryCreatedAt(existing);
+		if (existingAt !== null && existingAt > createdAt) break;
+		index += 1;
+	}
+	entries.splice(index, 0, entry);
 }
 
 export function getRunningTurn(

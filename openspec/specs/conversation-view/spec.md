@@ -130,14 +130,14 @@ When the user changes model for a bound thread, the client SHALL invalidate and 
 
 ### Requirement: Draft composer client persistence
 
-The web and mobile clients SHALL persist unsent composer text per thread using client-side storage (Zustand persist). Draft text SHALL survive navigation and app reload on the same device.
+The web and mobile clients SHALL persist the unsent structured composer `ChatMessage` per thread (text and resource/attachment blocks) using client-side storage (Zustand persist). Drafts SHALL survive navigation and app reload on the same device.
 
 #### Scenario: Draft restored on return
 
-- **WHEN** the user navigates away from a thread with unsent composer text and returns
-- **THEN** the composer is pre-filled with the saved draft
+- **WHEN** the user navigates away from a thread with an unsent structured composer message and returns
+- **THEN** the composer is restored to that exact `ChatMessage` (including resource blocks)
 
 #### Scenario: Draft cleared on send
 
 - **WHEN** the user successfully sends a message
-- **THEN** the persisted draft for that thread is cleared
+- **THEN** the persisted structured draft for that thread is cleared

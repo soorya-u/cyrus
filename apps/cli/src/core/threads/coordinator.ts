@@ -34,9 +34,32 @@ type BoundThread = {
 export class ThreadCoordinator {
 	private readonly agents = new Map<string, AgentRuntime>();
 	private readonly pool: AgentPool;
+	private readonly threadLocks = new Map<string, Promise<unknown>>();
 
 	constructor(pool: AgentPool) {
 		this.pool = pool;
+	}
+
+	private async withThreadLock<T>(
+		threadId: string,
+		fn: () => Promise<T>
+	): Promise<T> {
+		const previous = this.threadLocks.get(threadId) ?? Promise.resolve();
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const held = previous.catch(() => undefined).then(() => gate);
+		this.threadLocks.set(threadId, held);
+		await previous.catch(() => undefined);
+		try {
+			return await fn();
+		} finally {
+			release();
+			if (this.threadLocks.get(threadId) === held) {
+				this.threadLocks.delete(threadId);
+			}
+		}
 	}
 
 	private getAgent(agentName: string): AgentRuntime {
@@ -96,6 +119,16 @@ export class ThreadCoordinator {
 	}
 
 	async bindAgent(
+		threadId: string,
+		projectId: string,
+		agentName: string
+	): Promise<Result<BindAgentOutput, CoordinatorError>> {
+		return await this.withThreadLock(threadId, () =>
+			this.bindAgentLocked(threadId, projectId, agentName)
+		);
+	}
+
+	private async bindAgentLocked(
 		threadId: string,
 		projectId: string,
 		agentName: string
@@ -259,10 +292,27 @@ export class ThreadCoordinator {
 	/** Persist live draft binding on first user message. No-op if already stored. */
 	async persistBoundSession(
 		threadId: string,
-		projectId: string
+		projectId: string,
+		expectedAgentName?: string
+	): Promise<Result<BoundThread, CoordinatorError>> {
+		return await this.withThreadLock(threadId, () =>
+			this.persistBoundSessionLocked(threadId, projectId, expectedAgentName)
+		);
+	}
+
+	private async persistBoundSessionLocked(
+		threadId: string,
+		projectId: string,
+		expectedAgentName?: string
 	): Promise<Result<BoundThread, CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId, projectId);
 		if (bound.isErr()) return Result.err(bound.error);
+
+		if (expectedAgentName && bound.value.agentName !== expectedAgentName) {
+			return Result.err(
+				coordinatorAgentMismatch(bound.value.agentName, expectedAgentName)
+			);
+		}
 
 		const thread = await getThread(threadId);
 		if (thread.isErr())
@@ -466,26 +516,30 @@ export class ThreadCoordinator {
 		sessionId: string,
 		agentName: string
 	): Promise<void> {
-		await this.getAgent(agentName).closeSession(sessionId, threadId);
+		await this.withThreadLock(threadId, () =>
+			this.getAgent(agentName).closeSession(sessionId, threadId)
+		);
 	}
 
 	async closeAnyThreadSession(threadId: string): Promise<void> {
-		const live = this.findLiveBinding(threadId);
-		if (live) {
-			await this.getAgent(live.agentName).closeSession(
-				live.sessionId,
+		await this.withThreadLock(threadId, async () => {
+			const live = this.findLiveBinding(threadId);
+			if (live) {
+				await this.getAgent(live.agentName).closeSession(
+					live.sessionId,
+					threadId
+				);
+				return;
+			}
+
+			const thread = await getThread(threadId);
+			if (thread.isErr() || !thread.value) return;
+			if (!(thread.value.sessionId && thread.value.agentName)) return;
+			await this.getAgent(thread.value.agentName).closeSession(
+				thread.value.sessionId,
 				threadId
 			);
-			return;
-		}
-
-		const thread = await getThread(threadId);
-		if (thread.isErr() || !thread.value) return;
-		if (!(thread.value.sessionId && thread.value.agentName)) return;
-		await this.getAgent(thread.value.agentName).closeSession(
-			thread.value.sessionId,
-			threadId
-		);
+		});
 	}
 
 	private async resolveCwd(

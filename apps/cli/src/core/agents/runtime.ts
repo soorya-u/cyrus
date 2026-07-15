@@ -179,12 +179,16 @@ export class AgentRuntime {
 			sessionId
 		);
 		await session.setModel(modelId);
-		await this.reconcileDependentConfigOptions(
-			threadId,
-			projectId,
-			cwd,
-			sessionId,
-			session
+		// Model is already applied — reconcile is best-effort so a dependent
+		// reset failure does not report setModel as failed (client refreshes on ok).
+		await Result.tryPromise(() =>
+			this.reconcileDependentConfigOptions(
+				threadId,
+				projectId,
+				cwd,
+				sessionId,
+				session
+			)
 		);
 	}
 

@@ -331,6 +331,12 @@ export function useAgentCatalog({
 	});
 
 	useEffect(() => {
+		bindAgentMutation.reset();
+		// Reset scoped to thread switches only — mutation identity changes each render.
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- threadId is the intentional dependency
+	}, [threadId]);
+
+	useEffect(() => {
 		const store = useAgentCatalogStore.getState();
 		if (
 			bindAgentPending ||

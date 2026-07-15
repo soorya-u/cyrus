@@ -45,4 +45,43 @@ describe("deriveFeed", () => {
 			},
 		});
 	});
+
+	test("interleaves orphaned errors by createdAt", () => {
+		const feed = deriveFeed({
+			diffs: [],
+			errors: [
+				{
+					createdAt: "2026-07-11T00:00:01.500Z",
+					id: "error-orphan",
+					message: "Early bind failed",
+					turnId: "orphan-turn",
+				},
+			],
+			messages: [
+				{
+					content: "Later",
+					createdAt: "2026-07-11T00:00:02.000Z",
+					id: "user-turn-2",
+					role: "user",
+					turnId: "turn-2",
+				},
+			],
+			thoughts: [],
+			toolCalls: [],
+			turns: [
+				{
+					completedAt: "2026-07-11T00:00:03.000Z",
+					id: "turn-2",
+					index: 0,
+					state: "complete",
+					threadId: "thread-1",
+				},
+			],
+		});
+
+		expect(feed.map((entry) => entry.id)).toEqual([
+			"error-orphan",
+			"user-turn-2",
+		]);
+	});
 });

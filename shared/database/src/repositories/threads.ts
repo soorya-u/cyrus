@@ -5,7 +5,7 @@ import { ThreadSchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { nowISO } from "@cyrus/utils/time";
 import { Result } from "better-result";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { connection } from "../connection";
 import { threads } from "../models/threads";
 import { repoArgs } from "../utils/repo";
@@ -16,7 +16,7 @@ export const DEFAULT_THREAD_NAME = "New thread";
 export function threadNameFromPrompt(message: string): string {
 	const trimmed = message.trim();
 	if (!trimmed) return DEFAULT_THREAD_NAME;
-	return trimmed.slice(0, 50);
+	return Array.from(trimmed).slice(0, 50).join("");
 }
 
 export function generateThreadTitle(
@@ -170,13 +170,32 @@ const writeThreadName = repoArgs(
 		threadId: string,
 		name: string,
 		current: Thread,
-		titleSource: TitleSource
+		titleSource: TitleSource,
+		options?: { preserveUserTitle?: boolean }
 	) => {
 		const updatedAt = nowISO();
-		await connection.db
+		const conditions = [eq(threads.id, threadId)];
+		if (options?.preserveUserTitle) {
+			const titleGuard = or(
+				isNull(threads.titleSource),
+				ne(threads.titleSource, "user")
+			);
+			if (titleGuard) conditions.push(titleGuard);
+		}
+
+		const updated = await connection.db
 			.update(threads)
 			.set({ name, titleSource, updatedAt })
-			.where(eq(threads.id, threadId));
+			.where(and(...conditions))
+			.returning();
+
+		if (updated.length === 0) {
+			const latest = await getThread(threadId);
+			if (latest.isErr()) throw latest.error;
+			if (!latest.value) throw notFound("thread", threadId);
+			return latest.value;
+		}
+
 		return ThreadSchema.parse({ ...current, name, titleSource, updatedAt });
 	}
 );
@@ -203,7 +222,9 @@ export async function applyAutoThreadTitle(
 	if (!canApplyAutoTitle(thread.value)) return Result.ok(undefined);
 
 	const title = generateThreadTitle(userMessage, assistantMessage);
-	return writeThreadName(threadId, title, thread.value, "auto");
+	return writeThreadName(threadId, title, thread.value, "auto", {
+		preserveUserTitle: true,
+	});
 }
 
 export async function applyAgentThreadTitle(
@@ -218,7 +239,13 @@ export async function applyAgentThreadTitle(
 	if (!thread.value) return Result.err(notFound("thread", threadId));
 	if (!canApplyAgentTitle(thread.value)) return Result.ok(undefined);
 
-	return writeThreadName(threadId, trimmed.slice(0, 50), thread.value, "agent");
+	return writeThreadName(
+		threadId,
+		Array.from(trimmed).slice(0, 50).join(""),
+		thread.value,
+		"agent",
+		{ preserveUserTitle: true }
+	);
 }
 
 const writeThreadWorktreePath = repoArgs(
@@ -290,14 +317,28 @@ const clearThreadAgentBinding = repoArgs(
 			return current;
 		}
 		const updatedAt = nowISO();
-		await connection.db
+		const updated = await connection.db
 			.update(threads)
 			.set({
 				agentName: null,
 				sessionId: null,
 				updatedAt,
 			})
-			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
+			.where(
+				and(
+					eq(threads.id, threadId),
+					eq(threads.projectId, projectId),
+					eq(threads.agentLocked, 0)
+				)
+			)
+			.returning();
+
+		if (updated.length === 0) {
+			const latest = await getThread(threadId);
+			if (latest.isErr()) throw latest.error;
+			if (!latest.value) throw notFound("thread", threadId);
+			return latest.value;
+		}
 
 		return ThreadSchema.parse({
 			...current,
