@@ -326,14 +326,15 @@ export function appendOptimisticUserMessage(
 	queryClient: QueryClient,
 	threadId: string,
 	turnId: string,
-	message: string
+	message: string,
+	blocks?: import("@cyrus/schemas/rtc/chat").ChatMessage
 ): void {
 	flushPendingDeltas(queryClient);
 	commitChunk(queryClient, {
 		threadId,
 		turnId,
 		seq: 0,
-		event: { type: "user_message", content: message },
+		event: { type: "user_message", content: message, blocks },
 	});
 }
 

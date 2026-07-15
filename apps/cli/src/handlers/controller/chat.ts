@@ -6,6 +6,7 @@ import {
 } from "@cyrus/database/repositories/threads";
 import { throwOrpc } from "@cyrus/errors/orpc";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
+import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
 import { ORPCError } from "@orpc/server";
 import { log } from "evlog";
@@ -41,7 +42,7 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				});
 
 			const thread = await ensureThread(threadId, projectId, {
-				firstMessage: message,
+				firstMessage: formatPromptBlocks(message),
 			});
 			if (thread.isErr()) throwOrpc(thread.error);
 

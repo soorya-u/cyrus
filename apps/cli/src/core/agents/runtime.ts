@@ -1,6 +1,7 @@
 import { openOrCreateRuntimeSession, type RuntimeSession } from "@acp-kit/core";
+import type { AvailableCommand } from "@agentclientprotocol/sdk";
 import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
-import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
+import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Result } from "better-result";
 import { setSessionConfigOption } from "@/core/acp/config";
@@ -13,11 +14,20 @@ import {
 	modesFromSession,
 	personasFromSession,
 } from "./catalog";
+import { mapPromptBlocksToAcp } from "./prompt";
 
 type ThreadSession = {
 	session: RuntimeSession;
 	projectId: string;
 	cwd: string;
+};
+
+type ThreadSessionMetadata = {
+	commands: AvailableCommand[];
+	usage: {
+		used?: number;
+		limit?: number;
+	};
 };
 
 export function catalogSnapshotFromSession(
@@ -36,6 +46,8 @@ export class AgentRuntime {
 	private readonly pool: AgentPool;
 	private readonly sessions = new Map<string, ThreadSession>();
 	private readonly pendingSessions = new Map<string, Promise<RuntimeSession>>();
+	private readonly metadataByThread = new Map<string, ThreadSessionMetadata>();
+	private readonly sessionUnsubs = new Map<string, () => void>();
 
 	constructor(agentName: string, pool: AgentPool) {
 		this.agentName = agentName;
@@ -112,6 +124,30 @@ export class AgentRuntime {
 		return runtime.agentCapabilities ?? {};
 	}
 
+	getAvailableCommands(threadId: string): AvailableCommand[] {
+		return this.metadataByThread.get(threadId)?.commands ?? [];
+	}
+
+	getContextUsage(threadId: string): { used?: number; limit?: number } | null {
+		const usage = this.metadataByThread.get(threadId)?.usage;
+		if (!usage || (usage.used === undefined && usage.limit === undefined))
+			return null;
+
+		return usage;
+	}
+
+	commandsFromSession(session: RuntimeSession): AvailableCommand[] {
+		return session.transcript.session.commands ?? [];
+	}
+
+	usageFromSession(session: RuntimeSession): ThreadSessionMetadata["usage"] {
+		const usage = session.transcript.session.usage ?? {};
+		return {
+			used: usage.used ?? usage.totalTokens,
+			limit: usage.size,
+		};
+	}
+
 	async createBoundSession(
 		threadId: string,
 		projectId: string,
@@ -123,6 +159,7 @@ export class AgentRuntime {
 		const runtime = await this.pool.getRuntime(this.agentName);
 		const session = await runtime.newSession({ cwd });
 		this.sessions.set(threadId, { session, projectId, cwd });
+		this.attachSessionMetadata(threadId, session);
 		return session;
 	}
 
@@ -222,7 +259,7 @@ export class AgentRuntime {
 		projectId: string,
 		cwd: string,
 		sessionId: string,
-		content: string
+		content: ChatMessage
 	): AsyncGenerator<AgentEvent> {
 		await this.ensureHealthyPool();
 
@@ -232,16 +269,18 @@ export class AgentRuntime {
 			cwd,
 			sessionId
 		);
+		const blocks = content;
 		const queue: AgentEvent[] = [];
 		let wake: (() => void) | undefined;
 
 		const unsub = session.on("event", (event) => {
+			this.syncMetadataFromEvent(threadId, event);
 			queue.push(...mapRuntimeSessionEvent(event));
 			wake?.();
 		});
 
 		try {
-			const turn = session.prompt(content);
+			const turn = this.runPrompt(session, blocks, cwd);
 
 			while (true) {
 				while (queue.length > 0) yield queue.shift() as AgentEvent;
@@ -263,6 +302,30 @@ export class AgentRuntime {
 		}
 	}
 
+	private runPrompt(session: RuntimeSession, blocks: ChatMessage, cwd: string) {
+		if (blocks.length === 1 && blocks[0]?.type === "text") {
+			return session.prompt(blocks[0].text);
+		}
+
+		const connection = this.pool.getSdkConnection(this.agentName) as
+			| {
+					prompt: (params: {
+						sessionId: string;
+						prompt: ReturnType<typeof mapPromptBlocksToAcp>;
+					}) => Promise<unknown>;
+			  }
+			| undefined;
+		if (!connection?.prompt)
+			throw new Error(
+				`agent ${this.agentName} does not support structured prompts`
+			);
+
+		return connection.prompt({
+			sessionId: session.sessionId,
+			prompt: mapPromptBlocksToAcp(blocks, cwd),
+		});
+	}
+
 	async cancel(threadId: string): Promise<void> {
 		const session = this.sessions.get(threadId)?.session;
 		if (!session) return;
@@ -273,6 +336,7 @@ export class AgentRuntime {
 		const session = this.sessions.get(threadId)?.session;
 		if (!session) return;
 		await session.close();
+		this.detachSessionMetadata(threadId);
 		this.sessions.delete(threadId);
 	}
 
@@ -281,6 +345,7 @@ export class AgentRuntime {
 			const entry = this.sessions.get(threadId);
 			if (entry?.session.sessionId === sessionId) {
 				await entry.session.close();
+				this.detachSessionMetadata(threadId);
 				this.sessions.delete(threadId);
 				return;
 			}
@@ -289,6 +354,7 @@ export class AgentRuntime {
 		for (const [id, entry] of this.sessions) {
 			if (entry.session.sessionId !== sessionId) continue;
 			await entry.session.close();
+			this.detachSessionMetadata(id);
 			this.sessions.delete(id);
 			return;
 		}
@@ -307,6 +373,9 @@ export class AgentRuntime {
 
 		const runtime = await this.pool.getRuntime(this.agentName);
 		if (!runtime.agentCapabilities?.loadSession) {
+			for (const threadId of this.sessions.keys()) {
+				this.detachSessionMetadata(threadId);
+			}
 			this.sessions.clear();
 			return;
 		}
@@ -327,8 +396,10 @@ export class AgentRuntime {
 						projectId: thread.projectId,
 						cwd: thread.cwd,
 					});
+					this.attachSessionMetadata(threadId, session.session);
 				},
 				err: () => {
+					this.detachSessionMetadata(threadId);
 					this.sessions.delete(threadId);
 				},
 			});
@@ -389,7 +460,77 @@ export class AgentRuntime {
 
 		const session = recovered.value.session;
 		this.sessions.set(threadId, { session, projectId, cwd });
+		this.attachSessionMetadata(threadId, session);
 		return session;
+	}
+
+	private attachSessionMetadata(
+		threadId: string,
+		session: RuntimeSession
+	): void {
+		this.detachSessionMetadata(threadId);
+		this.metadataByThread.set(threadId, {
+			commands: this.commandsFromSession(session),
+			usage: this.usageFromSession(session),
+		});
+
+		const unsub = session.on({
+			sessionCommandsUpdated: (event) => {
+				const current = this.metadataByThread.get(threadId);
+				this.metadataByThread.set(threadId, {
+					commands: event.commands,
+					usage: current?.usage ?? {},
+				});
+			},
+			sessionUsageUpdated: (event) => {
+				const current = this.metadataByThread.get(threadId);
+				this.metadataByThread.set(threadId, {
+					commands: current?.commands ?? [],
+					usage: {
+						used: event.used ?? event.totalTokens,
+						limit: event.size,
+					},
+				});
+			},
+		});
+		this.sessionUnsubs.set(threadId, unsub);
+	}
+
+	private detachSessionMetadata(threadId: string): void {
+		this.sessionUnsubs.get(threadId)?.();
+		this.sessionUnsubs.delete(threadId);
+		this.metadataByThread.delete(threadId);
+	}
+
+	private syncMetadataFromEvent(
+		threadId: string,
+		event: {
+			type: string;
+			commands?: AvailableCommand[];
+			used?: number;
+			size?: number;
+			totalTokens?: number;
+		}
+	): void {
+		if (event.type === "session.commands.updated") {
+			const current = this.metadataByThread.get(threadId);
+			this.metadataByThread.set(threadId, {
+				commands: event.commands ?? [],
+				usage: current?.usage ?? {},
+			});
+			return;
+		}
+
+		if (event.type === "session.usage.updated") {
+			const current = this.metadataByThread.get(threadId);
+			this.metadataByThread.set(threadId, {
+				commands: current?.commands ?? [],
+				usage: {
+					used: event.used ?? event.totalTokens,
+					limit: event.size,
+				},
+			});
+		}
 	}
 
 	private async setConfigOptionByCategory(

@@ -1,7 +1,7 @@
 import { connection } from "@cyrus/database/connection";
 import { connect } from "@tursodatabase/database";
 import { STORE_DB_PATH } from "@/constants/paths";
-import { ensureDir } from "@/utils/dir";
+import { ensureDir } from "@/utils/fs";
 
 export async function initDatabase() {
 	await ensureDir();

@@ -7,6 +7,7 @@ import { Result } from "better-result";
 import { log } from "evlog";
 import { useEffect, useEffectEvent } from "react";
 import { useRtc } from "../contexts/rtc";
+import { useAgentCatalogStore } from "../stores/agent-catalog";
 
 function isTerminalChunk(chunk: ChatChunk): boolean {
 	return (
@@ -15,11 +16,45 @@ function isTerminalChunk(chunk: ChatChunk): boolean {
 	);
 }
 
+function syncCatalogFromChunk(chunk: ChatChunk): void {
+	if (chunk.event.type !== "session_update") return;
+
+	const raw = chunk.event.raw;
+	if (!raw || typeof raw !== "object") return;
+
+	const event = raw as {
+		type?: string;
+		commands?: Array<{ name: string; description: string }>;
+		used?: number;
+		size?: number;
+		totalTokens?: number;
+	};
+
+	if (
+		event.type === "session.commands.updated" &&
+		Array.isArray(event.commands)
+	) {
+		useAgentCatalogStore.getState().setCommands(chunk.threadId, event.commands);
+		return;
+	}
+
+	if (event.type === "session.usage.updated") {
+		const used = event.used ?? event.totalTokens;
+		const limit = event.size;
+		if (used === undefined && limit === undefined) return;
+		useAgentCatalogStore.getState().setContextUsage(chunk.threadId, {
+			used,
+			limit,
+		});
+	}
+}
+
 export function useWorkerConversationSync(): void {
 	const queryClient = useQueryClient();
 	const { connection: workerConnection } = useRtc();
 
 	const onChunk = useEffectEvent((chunk: ChatChunk) => {
+		syncCatalogFromChunk(chunk);
 		applyChunkToCache(queryClient, chunk);
 
 		if (!isTerminalChunk(chunk)) return;

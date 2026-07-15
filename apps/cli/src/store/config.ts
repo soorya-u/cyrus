@@ -2,7 +2,7 @@ import { writeFile } from "node:fs/promises";
 import { Result } from "better-result";
 import { YAML } from "bun";
 import { CONFIG_PATH } from "@/constants/paths";
-import { ensureDir } from "@/utils/dir";
+import { ensureDir } from "@/utils/fs";
 
 export type Config = {
 	token: string;

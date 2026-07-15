@@ -1,12 +1,13 @@
 import type { WorkerRuntime } from "@/core";
 import { agentsHandlers } from "./agents";
+import { contextHandlers } from "./catalog/context";
 import { effortHandlers } from "./catalog/effort";
 import { modeHandlers } from "./catalog/mode";
 import { modelHandlers } from "./catalog/model";
 import { personaHandlers } from "./catalog/persona";
 import { chatHandlers } from "./chat";
 import { defineControllerOs } from "./deps";
-import { dirHandlers } from "./dir";
+import { fsHandlers } from "./fs";
 import { gitHandlers } from "./git";
 import { projectsHandlers } from "./projects";
 import { threadsHandlers } from "./threads";
@@ -19,12 +20,13 @@ export function createControllerRouter(runtime: WorkerRuntime) {
 		...agentsHandlers(deps),
 		...projectsHandlers(deps),
 		...threadsHandlers(deps),
-		...dirHandlers(os),
+		...fsHandlers(os),
 		...gitHandlers(os),
 		...modelHandlers(deps),
 		...modeHandlers(deps),
 		...effortHandlers(deps),
 		...personaHandlers(deps),
+		...contextHandlers(deps),
 		...chatHandlers(deps),
 	};
 }

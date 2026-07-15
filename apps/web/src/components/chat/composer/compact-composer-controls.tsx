@@ -1,6 +1,7 @@
 import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
 import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { EllipsisIcon } from "lucide-react";
+import { shouldShowModeSelector } from "@/components/chat/composer/composer-mode";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -23,14 +24,22 @@ export function CompactComposerControls({
 }) {
 	const {
 		displayEffort,
+		displayMode,
 		displayPersona,
 		efforts,
+		modes,
 		personas,
 		selectEffort,
+		selectMode,
 		selectPersona,
 	} = useAgentCatalog({ agents, projectId, threadId });
 
-	if (efforts.length === 0 && personas.length === 0) return null;
+	if (
+		!shouldShowModeSelector(modes) &&
+		efforts.length === 0 &&
+		personas.length === 0
+	)
+		return null;
 
 	return (
 		<DropdownMenu>
@@ -46,6 +55,24 @@ export function CompactComposerControls({
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-48">
+				{shouldShowModeSelector(modes) && (
+					<>
+						<DropdownMenuLabel>Mode</DropdownMenuLabel>
+						<DropdownMenuRadioGroup
+							onValueChange={selectMode}
+							value={displayMode}
+						>
+							{modes.map((mode) => (
+								<DropdownMenuRadioItem key={mode.id} value={mode.id}>
+									{mode.name}
+								</DropdownMenuRadioItem>
+							))}
+						</DropdownMenuRadioGroup>
+					</>
+				)}
+				{shouldShowModeSelector(modes) && efforts.length > 0 && (
+					<DropdownMenuSeparator />
+				)}
 				{efforts.length > 0 && (
 					<>
 						<DropdownMenuLabel>Effort</DropdownMenuLabel>

@@ -13,7 +13,7 @@ import {
 	coordinatorRuntimeError,
 } from "@cyrus/errors/coordinator";
 import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
-import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
+import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
@@ -113,6 +113,7 @@ export class ThreadCoordinator {
 					agentName,
 					agentLocked: thread.value.agentLocked,
 					...catalog.value,
+					commands: runtime.getAvailableCommands(threadId),
 				});
 
 			if (thread.value.agentLocked) return Result.err(catalog.error);
@@ -164,6 +165,7 @@ export class ThreadCoordinator {
 			modes: bound.value.modes,
 			efforts: bound.value.efforts,
 			personas: bound.value.personas,
+			commands: runtime.commandsFromSession(bound.value.session),
 		});
 	}
 
@@ -299,11 +301,23 @@ export class ThreadCoordinator {
 		);
 	}
 
+	async getContextUsage(
+		threadId: string
+	): Promise<
+		Result<{ used?: number; limit?: number } | null, CoordinatorError>
+	> {
+		const bound = await this.resolveBoundThread(threadId);
+		if (bound.isErr()) return Result.err(bound.error);
+		return Result.ok(
+			this.getAgent(bound.value.agentName).getContextUsage(threadId)
+		);
+	}
+
 	async prompt(
 		agentName: string,
 		threadId: string,
 		projectId: string,
-		content: string
+		content: ChatMessage
 	): Promise<Result<AsyncGenerator<AgentEvent>, CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId, projectId);
 		if (bound.isErr()) return Result.err(bound.error);

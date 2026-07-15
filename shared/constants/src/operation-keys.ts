@@ -8,8 +8,10 @@ export const RTC_OPERATION_KEYS = {
 	listProjects: ["controller", "list-projects"],
 	listThreads: (projectId: string) =>
 		["controller", "list-threads", projectId] as const,
-	listDir: (cwd: string, depth = 1) =>
-		["controller", "list-dir", cwd, depth] as const,
+	listEntries: (cwd: string, depth = 1) =>
+		["controller", "list-entries", cwd, depth] as const,
+	searchEntries: (cwd: string, query: string, limit = 80) =>
+		["controller", "search-entries", cwd, query, limit] as const,
 	createProject: ["controller", "create-project"],
 	createThread: ["controller", "create-thread"],
 	renameProject: ["controller", "rename-project"],
@@ -28,7 +30,10 @@ export const RTC_OPERATION_KEYS = {
 		["controller", "get-efforts", threadId] as const,
 	getPersona: (threadId: string) =>
 		["controller", "get-persona", threadId] as const,
+	getContextUsage: (threadId: string) =>
+		["controller", "get-context-usage", threadId] as const,
 	setModel: ["controller", "set-model"],
+	setMode: ["controller", "set-mode"],
 	setEffort: ["controller", "set-effort"],
 	setPersona: ["controller", "set-persona"],
 	watchThread: ["controller", "watch-thread"],

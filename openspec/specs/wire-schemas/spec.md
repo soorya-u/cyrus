@@ -154,3 +154,26 @@ The system SHALL define git RPC input/output schemas in `@cyrus/schemas/rtc/git.
 - **WHEN** `ThreadSchema` is parsed for a thread with git context
 - **THEN** `branch` and `worktreePath` are accepted as optional nullable strings
 - **AND** threads without these fields parse successfully with defaults of null
+
+### Requirement: Structured prompt input
+
+`ChatInputSchema` SHALL accept `message` as a non-empty array of prompt content blocks (text and resource), not a plain string.
+
+#### Scenario: Text and resource blocks
+
+- **WHEN** the client sends a message with text and resource blocks
+- **THEN** the schema accepts the array and the worker maps blocks to ACP prompt content
+
+#### Scenario: Plain string rejected
+
+- **WHEN** the client sends a plain string message
+- **THEN** schema validation fails
+
+### Requirement: Context usage query
+
+The controller SHALL provide optional `getContextUsage({ threadId })` returning usage numbers when the session exposes them.
+
+#### Scenario: Usage returned
+
+- **WHEN** the agent session reports token usage metadata
+- **THEN** `getContextUsage` returns used and limit values

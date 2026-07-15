@@ -1,4 +1,6 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
+import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
 import {
 	appendOptimisticUserMessage,
@@ -13,10 +15,32 @@ import {
 import { randomId } from "@cyrus/utils/identity";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Result } from "better-result";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRtc } from "../contexts/rtc";
+import { usePromptQueueStore } from "../stores/prompt-queue";
 import { useProjects } from "./use-projects";
 import { useThreads } from "./use-threads";
+
+function listOpenConversationTurnIds(
+	queryClient: ReturnType<typeof useQueryClient>,
+	threadId: string
+): string[] {
+	const data = queryClient.getQueryData<GetConversationsOutput>(
+		RTC_OPERATION_KEYS.getConversations(threadId)
+	);
+	const conversations = data?.conversations ?? [];
+	const turnIds = new Set(conversations.map((entry) => entry.chunk.turnId));
+	const terminalTurnIds = new Set(
+		conversations
+			.filter(
+				(entry) =>
+					entry.chunk.event.type === "turn_completed" ||
+					entry.chunk.event.type === "turn_interrupted"
+			)
+			.map((entry) => entry.chunk.turnId)
+	);
+	return [...turnIds].filter((id) => !terminalTurnIds.has(id));
+}
 
 export function useControllerThreads() {
 	const queryClient = useQueryClient();
@@ -60,10 +84,13 @@ export function useControllerThreads() {
 	const [activeTurnByThread, setActiveTurnByThread] = useState(
 		() => new Map<string, string>()
 	);
+	const activeTurnByThreadRef = useRef(activeTurnByThread);
+	activeTurnByThreadRef.current = activeTurnByThread;
+	const drainingQueueRef = useRef(new Set<string>());
 
 	const isThreadActive = useCallback(
-		(threadId: string) => activeTurnByThread.has(threadId),
-		[activeTurnByThread]
+		(threadId: string) => activeTurnByThreadRef.current.has(threadId),
+		[]
 	);
 
 	const getActiveTurnId = useCallback(
@@ -85,80 +112,144 @@ export function useControllerThreads() {
 		return thread?.agentName ?? agentsQuery.data?.agents[0]?.id ?? "";
 	}
 
-	async function sendMessage(
-		threadId: string,
-		text: string
-	): Promise<Result<void, unknown>> {
-		if (stoppingThreadIds.has(threadId)) {
-			return Result.err(new Error("thread is stopping"));
-		}
-
-		const thread = threads.find((item) => item.id === threadId);
-		if (!thread) return Result.err(new Error(`thread not found: ${threadId}`));
-
-		const turnId = randomId();
-		appendOptimisticUserMessage(queryClient, threadId, turnId, text);
-
-		setActiveTurnByThread((current) => new Map(current).set(threadId, turnId));
-
-		try {
-			const chatResult = await Result.tryPromise(() =>
-				workerConnection.client.chat({
-					agentName: resolveAgentName(threadId),
-					message: text,
-					projectId: thread.projectId,
-					threadId,
-					turnId,
-				})
-			);
-
-			if (chatResult.isErr()) {
-				removeTurnFromCache(queryClient, threadId, turnId);
-				return chatResult.map(() => undefined);
+	const sendMessageNow = useCallback(
+		async (
+			threadId: string,
+			message: ChatMessage
+		): Promise<Result<void, unknown>> => {
+			if (stoppingThreadIds.has(threadId)) {
+				return Result.err(new Error("thread is stopping"));
 			}
 
-			const endResult = await Result.tryPromise(() =>
-				waitForTurnEnd(threadId, turnId)
+			const thread = threads.find((item) => item.id === threadId);
+			if (!thread)
+				return Result.err(new Error(`thread not found: ${threadId}`));
+
+			const agentName =
+				thread.agentName ?? agentsQuery.data?.agents[0]?.id ?? "";
+			const turnId = randomId();
+			appendOptimisticUserMessage(
+				queryClient,
+				threadId,
+				turnId,
+				formatPromptBlocks(message),
+				message
 			);
 
-			invalidateThreads(thread.projectId);
-
-			if (endResult.isErr() && isTurnInterruptedError(endResult.error)) {
-				return Result.ok(undefined);
-			}
-
-			return endResult.map(() => undefined);
-		} finally {
 			setActiveTurnByThread((current) => {
-				const next = new Map(current);
-				next.delete(threadId);
+				const next = new Map(current).set(threadId, turnId);
+				activeTurnByThreadRef.current = next;
 				return next;
 			});
+
+			try {
+				const chatResult = await Result.tryPromise(() =>
+					workerConnection.client.chat({
+						agentName,
+						message,
+						projectId: thread.projectId,
+						threadId,
+						turnId,
+					})
+				);
+
+				if (chatResult.isErr()) {
+					removeTurnFromCache(queryClient, threadId, turnId);
+					return chatResult.map(() => undefined);
+				}
+
+				const endResult = await Result.tryPromise(() =>
+					waitForTurnEnd(threadId, turnId)
+				);
+
+				invalidateThreads(thread.projectId);
+
+				if (endResult.isErr() && isTurnInterruptedError(endResult.error)) {
+					return Result.ok(undefined);
+				}
+
+				return endResult.map(() => undefined);
+			} finally {
+				setActiveTurnByThread((current) => {
+					const next = new Map(current);
+					next.delete(threadId);
+					activeTurnByThreadRef.current = next;
+					return next;
+				});
+			}
+		},
+		[
+			agentsQuery.data?.agents,
+			invalidateThreads,
+			queryClient,
+			stoppingThreadIds,
+			threads,
+			workerConnection.client,
+		]
+	);
+
+	const drainPromptQueue = useCallback(
+		async (threadId: string) => {
+			if (drainingQueueRef.current.has(threadId)) return;
+			drainingQueueRef.current.add(threadId);
+			try {
+				while (true) {
+					if (
+						usePromptQueueStore.getState().queueByThread[threadId]?.length === 0
+					) {
+						return;
+					}
+					if (activeTurnByThreadRef.current.has(threadId)) return;
+					if (listOpenConversationTurnIds(queryClient, threadId).length > 0) {
+						return;
+					}
+
+					const next = usePromptQueueStore.getState().peek(threadId);
+					if (!next) return;
+
+					const result = await sendMessageNow(threadId, next.message);
+					if (result.isErr()) return;
+
+					usePromptQueueStore.getState().remove(threadId, next.id);
+				}
+			} finally {
+				drainingQueueRef.current.delete(threadId);
+			}
+		},
+		[queryClient, sendMessageNow]
+	);
+
+	useEffect(() => {
+		for (const thread of threads) {
+			if (activeTurnByThread.has(thread.id)) continue;
+			drainPromptQueue(thread.id).catch(() => undefined);
 		}
+	}, [activeTurnByThread, drainPromptQueue, threads]);
+
+	async function sendMessage(
+		threadId: string,
+		message: ChatMessage
+	): Promise<Result<void, unknown>> {
+		if (
+			isThreadActive(threadId) ||
+			listOpenConversationTurnIds(queryClient, threadId).length > 0
+		) {
+			usePromptQueueStore.getState().enqueue(threadId, message);
+			return Result.ok(undefined);
+		}
+
+		const result = await sendMessageNow(threadId, message);
+		if (result.isOk()) {
+			await drainPromptQueue(threadId);
+		}
+		return result;
 	}
 
 	async function stopThread(threadId: string): Promise<Result<void, unknown>> {
 		setThreadStopping(threadId, true);
 
 		try {
-			const data = queryClient.getQueryData<GetConversationsOutput>(
-				RTC_OPERATION_KEYS.getConversations(threadId)
-			);
-			const conversations = data?.conversations ?? [];
-
-			const turnIds = new Set(conversations.map((entry) => entry.chunk.turnId));
-			const terminalTurnIds = new Set(
-				conversations
-					.filter(
-						(entry) =>
-							entry.chunk.event.type === "turn_completed" ||
-							entry.chunk.event.type === "turn_interrupted"
-					)
-					.map((entry) => entry.chunk.turnId)
-			);
-			const activeTurnIds = [...turnIds].filter(
-				(id) => !terminalTurnIds.has(id)
-			);
+			const activeTurnIds = listOpenConversationTurnIds(queryClient, threadId);
 
 			for (const turnId of activeTurnIds) {
 				appendTurnTerminal(queryClient, threadId, turnId, "turn_interrupted");

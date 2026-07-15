@@ -1,4 +1,5 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import type { AvailableCommand } from "@cyrus/schemas/rtc/catalog";
 import type { ListThreadsOutput } from "@cyrus/schemas/rtc/threads";
 import {
 	keepPreviousData,
@@ -8,7 +9,12 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useRtc } from "../contexts/rtc";
-import { useAgentCatalogStore } from "../stores/agent-catalog";
+import {
+	readPromptCapabilities,
+	useAgentCatalogStore,
+} from "../stores/agent-catalog";
+
+const EMPTY_COMMANDS: AvailableCommand[] = [];
 
 type CatalogOption = { id: string; name: string };
 
@@ -45,12 +51,29 @@ export function useAgentCatalog({
 	const selection = useAgentCatalogStore(
 		(state) => state.selectionByThread[threadId]
 	);
+	const capabilities = useAgentCatalogStore(
+		(state) => state.capabilitiesByThread[threadId]
+	);
+	const commands = useAgentCatalogStore(
+		(state) => state.commandsByThread[threadId] ?? EMPTY_COMMANDS
+	);
+	const contextUsage = useAgentCatalogStore(
+		(state) => state.contextUsageByThread[threadId]
+	);
 	const pendingAgent = useAgentCatalogStore(
 		(state) => state.pendingAgentByThread[threadId]
 	);
 	const setModelSelection = useAgentCatalogStore((state) => state.setModel);
+	const setModeSelection = useAgentCatalogStore((state) => state.setMode);
 	const setEffortSelection = useAgentCatalogStore((state) => state.setEffort);
 	const setPersonaSelection = useAgentCatalogStore((state) => state.setPersona);
+	const setCapabilities = useAgentCatalogStore(
+		(state) => state.setCapabilities
+	);
+	const setCommands = useAgentCatalogStore((state) => state.setCommands);
+	const setContextUsage = useAgentCatalogStore(
+		(state) => state.setContextUsage
+	);
 	const setPendingAgent = useAgentCatalogStore(
 		(state) => state.setPendingAgent
 	);
@@ -91,8 +114,10 @@ export function useAgentCatalog({
 	);
 
 	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(threadId);
+	const modesQueryKey = RTC_OPERATION_KEYS.getModes(threadId);
 	const effortsQueryKey = RTC_OPERATION_KEYS.getEfforts(threadId);
 	const personaQueryKey = RTC_OPERATION_KEYS.getPersona(threadId);
+	const contextUsageQueryKey = RTC_OPERATION_KEYS.getContextUsage(threadId);
 
 	const bindAgentMutation = useMutation({
 		...orpcController.bindAgent.mutationOptions({
@@ -117,16 +142,41 @@ export function useAgentCatalog({
 				});
 			}
 			const previousModels = queryClient.getQueryData(modelsQueryKey);
+			const previousModes = queryClient.getQueryData(modesQueryKey);
+			const previousEfforts = queryClient.getQueryData(effortsQueryKey);
+			const previousPersonas = queryClient.getQueryData(personaQueryKey);
+			const previousCapabilities = capabilities;
+			const previousCommands = commands;
+			const previousUsage = contextUsage;
 			if (previousAgent && previousAgent !== variables.agentName) {
 				queryClient.setQueryData(modelsQueryKey, { models: [] });
+				queryClient.setQueryData(modesQueryKey, { modes: [] });
+				queryClient.setQueryData(effortsQueryKey, { efforts: [] });
+				queryClient.setQueryData(personaQueryKey, { personas: [] });
+				setCapabilities(threadId, {});
+				setCommands(threadId, []);
+				setContextUsage(threadId, null);
 			}
-			return { previousThreads, previousModels };
+			return {
+				previousThreads,
+				previousModels,
+				previousModes,
+				previousEfforts,
+				previousPersonas,
+				previousCapabilities,
+				previousCommands,
+				previousUsage,
+			};
 		},
 		onSuccess: (data) => {
 			queryClient.setQueryData(modelsQueryKey, { models: data.models });
+			queryClient.setQueryData(modesQueryKey, { modes: data.modes });
 			queryClient.setQueryData(effortsQueryKey, { efforts: data.efforts });
 			queryClient.setQueryData(personaQueryKey, { personas: data.personas });
+			setCapabilities(threadId, data.capabilities);
+			setCommands(threadId, data.commands ?? []);
 			queryClient.invalidateQueries({ queryKey: threadsQueryKey });
+			queryClient.invalidateQueries({ queryKey: contextUsageQueryKey });
 		},
 		onError: (_error, _variables, context) => {
 			if (context?.previousThreads) {
@@ -134,6 +184,24 @@ export function useAgentCatalog({
 			}
 			if (context?.previousModels) {
 				queryClient.setQueryData(modelsQueryKey, context.previousModels);
+			}
+			if (context?.previousModes) {
+				queryClient.setQueryData(modesQueryKey, context.previousModes);
+			}
+			if (context?.previousEfforts) {
+				queryClient.setQueryData(effortsQueryKey, context.previousEfforts);
+			}
+			if (context?.previousPersonas) {
+				queryClient.setQueryData(personaQueryKey, context.previousPersonas);
+			}
+			if (context?.previousCapabilities) {
+				setCapabilities(threadId, context.previousCapabilities);
+			}
+			if (context?.previousCommands) {
+				setCommands(threadId, context.previousCommands);
+			}
+			if (context && "previousUsage" in context) {
+				setContextUsage(threadId, context.previousUsage ?? null);
 			}
 		},
 		onSettled: () => {
@@ -157,6 +225,17 @@ export function useAgentCatalog({
 	});
 	const models = modelsQuery.data?.models ?? [];
 
+	const modesQuery = useQuery({
+		...orpcController.getModes.queryOptions({
+			queryKey: modesQueryKey,
+			input: { threadId },
+		}),
+		queryKey: modesQueryKey,
+		enabled: catalogEnabled,
+		placeholderData: keepPreviousData,
+	});
+	const modes = modesQuery.data?.modes ?? [];
+
 	const effortsQuery = useQuery({
 		...orpcController.getEfforts.queryOptions({
 			queryKey: effortsQueryKey,
@@ -179,13 +258,39 @@ export function useAgentCatalog({
 	});
 	const personas = personaQuery.data?.personas ?? [];
 
+	const contextUsageQuery = useQuery({
+		...orpcController.getContextUsage.queryOptions({
+			queryKey: contextUsageQueryKey,
+			input: { threadId },
+		}),
+		queryKey: contextUsageQueryKey,
+		enabled: catalogEnabled,
+		refetchInterval: catalogEnabled ? 5000 : false,
+	});
+	useEffect(() => {
+		if (!catalogEnabled) return;
+		setContextUsage(threadId, contextUsageQuery.data?.usage ?? null);
+	}, [
+		catalogEnabled,
+		contextUsageQuery.data?.usage,
+		setContextUsage,
+		threadId,
+	]);
+
 	const displayModel = pickDisplayOption(selection?.modelId, models);
+	const displayMode = pickDisplayOption(selection?.modeId, modes);
 	const displayEffort = pickDisplayOption(selection?.effortId, efforts);
 	const displayPersona = pickDisplayOption(selection?.personaId, personas);
+	const promptCapabilities = readPromptCapabilities(capabilities);
 
 	const setModelMutation = useMutation({
 		...orpcController.setModel.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.setModel,
+		}),
+	});
+	const setModeMutation = useMutation({
+		...orpcController.setMode.mutationOptions({
+			mutationKey: RTC_OPERATION_KEYS.setMode,
 		}),
 	});
 	const setEffortMutation = useMutation({
@@ -253,6 +358,18 @@ export function useAgentCatalog({
 		});
 	}
 
+	function selectMode(modeId: string) {
+		const agentName = boundAgent || displayAgent;
+		if (!agentName) return;
+		setModeSelection(threadId, modeId);
+		setModeMutation.mutate({
+			agentName,
+			modeId,
+			projectId,
+			threadId,
+		});
+	}
+
 	function selectEffort(effortId: string) {
 		const agentName = boundAgent || displayAgent;
 		if (!agentName) return;
@@ -279,16 +396,23 @@ export function useAgentCatalog({
 
 	return {
 		agentLocked,
+		capabilities,
+		commands,
+		contextUsage,
 		displayAgent,
 		displayEffort,
+		displayMode,
 		displayModel,
 		displayPersona,
 		efforts,
 		models,
 		modelsLoading,
+		modes,
 		personas,
+		promptCapabilities,
 		selectAgent,
 		selectEffort,
+		selectMode,
 		selectModel,
 		selectPersona,
 	};

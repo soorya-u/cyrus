@@ -11,15 +11,43 @@ describe("chat schemas", () => {
 		expect(
 			ChatInputSchema.parse({
 				agentName: "claude",
-				message: "hello",
+				message: [{ type: "text", text: "hello" }],
 				projectId: "project-1",
 				threadId: "00000000-0000-4000-8000-000000000001",
 				turnId: "00000000-0000-4000-8000-000000000002",
 			})
 		).toMatchObject({
 			agentName: "claude",
-			message: "hello",
+			message: [{ type: "text", text: "hello" }],
 			projectId: "project-1",
+		});
+	});
+
+	test("rejects plain string messages", () => {
+		expect(() =>
+			ChatInputSchema.parse({
+				agentName: "claude",
+				message: "hello",
+				projectId: "project-1",
+			})
+		).toThrow();
+	});
+
+	test("parses structured prompt blocks", () => {
+		expect(
+			ChatInputSchema.parse({
+				agentName: "claude",
+				message: [
+					{ type: "text", text: "review" },
+					{ type: "resource", uri: "src/index.ts", name: "index.ts" },
+				],
+				projectId: "project-1",
+			})
+		).toMatchObject({
+			message: [
+				{ type: "text", text: "review" },
+				{ type: "resource", uri: "src/index.ts", name: "index.ts" },
+			],
 		});
 	});
 
@@ -27,7 +55,7 @@ describe("chat schemas", () => {
 		expect(() =>
 			ChatInputSchema.parse({
 				agentName: "claude",
-				message: "hello",
+				message: [{ type: "text", text: "hello" }],
 				projectId: "project-1",
 				threadId: "not-a-uuid",
 			})

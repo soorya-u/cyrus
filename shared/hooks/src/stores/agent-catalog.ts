@@ -1,18 +1,33 @@
+import type {
+	AvailableCommand,
+	ContextUsage,
+} from "@cyrus/schemas/rtc/catalog";
 import { create } from "zustand";
 
 type ThreadCatalogSelection = {
 	modelId?: string;
+	modeId?: string;
 	effortId?: string;
 	personaId?: string;
 };
 
 type AgentCatalogState = {
 	selectionByThread: Record<string, ThreadCatalogSelection>;
+	capabilitiesByThread: Record<string, Record<string, unknown>>;
+	commandsByThread: Record<string, AvailableCommand[]>;
+	contextUsageByThread: Record<string, ContextUsage | null>;
 	pendingAgentByThread: Record<string, string | undefined>;
 	resumeBindRequestedByThread: Record<string, boolean>;
 	setModel: (threadId: string, modelId: string) => void;
+	setMode: (threadId: string, modeId: string) => void;
 	setEffort: (threadId: string, effortId: string) => void;
 	setPersona: (threadId: string, personaId: string) => void;
+	setCapabilities: (
+		threadId: string,
+		capabilities: Record<string, unknown>
+	) => void;
+	setCommands: (threadId: string, commands: AvailableCommand[]) => void;
+	setContextUsage: (threadId: string, usage: ContextUsage | null) => void;
 	setPendingAgent: (threadId: string, agentName: string) => void;
 	clearPendingAgent: (threadId: string) => void;
 	markResumeBindRequested: (threadId: string) => void;
@@ -34,14 +49,53 @@ function patchSelection(
 
 export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 	selectionByThread: {},
+	capabilitiesByThread: {},
+	commandsByThread: {},
+	contextUsageByThread: {},
 	pendingAgentByThread: {},
 	resumeBindRequestedByThread: {},
 	setModel: (threadId, modelId) =>
 		set((state) => patchSelection(state, threadId, { modelId })),
+	setMode: (threadId, modeId) =>
+		set((state) => patchSelection(state, threadId, { modeId })),
 	setEffort: (threadId, effortId) =>
 		set((state) => patchSelection(state, threadId, { effortId })),
 	setPersona: (threadId, personaId) =>
 		set((state) => patchSelection(state, threadId, { personaId })),
+	setCapabilities: (threadId, capabilities) =>
+		set((state) => ({
+			capabilitiesByThread: {
+				...state.capabilitiesByThread,
+				[threadId]: capabilities,
+			},
+		})),
+	setCommands: (threadId, commands) =>
+		set((state) => ({
+			commandsByThread: {
+				...state.commandsByThread,
+				[threadId]: commands,
+			},
+		})),
+	setContextUsage: (threadId, usage) =>
+		set((state) => {
+			const current = state.contextUsageByThread[threadId];
+			if (current === usage) return state;
+			if (
+				current != null &&
+				usage != null &&
+				current.used === usage.used &&
+				current.limit === usage.limit
+			) {
+				return state;
+			}
+			if (current == null && usage == null) return state;
+			return {
+				contextUsageByThread: {
+					...state.contextUsageByThread,
+					[threadId]: usage,
+				},
+			};
+		}),
 	setPendingAgent: (threadId, agentName) =>
 		set((state) => ({
 			pendingAgentByThread: {
@@ -69,3 +123,25 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 			return { resumeBindRequestedByThread };
 		}),
 }));
+
+type PromptCapabilities = {
+	image?: boolean;
+	audio?: boolean;
+	embeddedContext?: boolean;
+};
+
+export function readPromptCapabilities(
+	capabilities: Record<string, unknown> | undefined
+): PromptCapabilities {
+	const promptCapabilities = capabilities?.promptCapabilities;
+	if (!promptCapabilities || typeof promptCapabilities !== "object") {
+		return {};
+	}
+
+	const record = promptCapabilities as Record<string, unknown>;
+	return {
+		image: record.image === true,
+		audio: record.audio === true,
+		embeddedContext: record.embeddedContext === true,
+	};
+}

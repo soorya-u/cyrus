@@ -13,6 +13,8 @@ function createMockSession(sessionId: string): RuntimeSession {
 				},
 				modes: { availableModes: [{ id: "mode-1", name: "Mode 1" }] },
 				configOptions: [],
+				commands: [],
+				usage: {},
 			},
 		},
 		close: mock(async () => undefined),
@@ -90,7 +92,7 @@ describe("AgentRuntime", () => {
 			"project-1",
 			"/tmp/project",
 			"session-1",
-			"hello"
+			[{ type: "text", text: "hello" }]
 		)) {
 			events.push(event.type);
 		}

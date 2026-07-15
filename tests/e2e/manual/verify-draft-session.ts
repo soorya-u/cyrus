@@ -101,7 +101,7 @@ try {
 		threadId: thread.thread.id,
 		projectId: project.project.id,
 		agentName,
-		message: "ping",
+		message: [{ type: "text", text: "ping" }],
 	});
 
 	let locked = false;

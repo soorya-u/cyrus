@@ -7,6 +7,8 @@ import { Result } from "better-result";
 import { runTurn } from "../../src/utils/run-turn";
 import { createMockPromptStream } from "../helpers/acp-runtime";
 
+const textMessage = (text: string) => [{ type: "text" as const, text }];
+
 describe("acp mock runtime", () => {
 	test("streams token and completion events", () => {
 		const events: AgentEvent[] = [];
@@ -27,7 +29,7 @@ describe("acp mock runtime", () => {
 			agentName: "mock-agent",
 			threadId: "thread-1",
 			projectId: "project-1",
-			message: "ping",
+			message: textMessage("ping"),
 			emit: (event) => {
 				emitted.push({ type: event.type });
 				return Promise.resolve();
@@ -57,7 +59,7 @@ describe("acp mock runtime", () => {
 			agentName: "mock-agent",
 			threadId: "thread-1",
 			projectId: "project-1",
-			message: "ping",
+			message: textMessage("ping"),
 			emit: () => Promise.resolve(),
 			emitTerminal: (event) => {
 				terminal.push({ type: event.type });

@@ -7,8 +7,8 @@ import {
 	BINARY_DOWNLOAD_TIMEOUT_MS,
 	MAX_BINARY_BYTES,
 } from "@/constants/registry";
-import { ensureDir } from "@/utils/dir";
 import { toMessage } from "@/utils/error";
+import { ensureDir } from "@/utils/fs";
 import type { RegistryAgent } from "@/validators/registry";
 
 type BinaryDist = RegistryAgent["distribution"]["binary"][string];
