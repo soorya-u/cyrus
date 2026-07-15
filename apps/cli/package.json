@@ -22,6 +22,7 @@
     "@cyrus/errors": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
+    "@ff-labs/fff-node": "^0.9.6",
     "@orpc/server": "catalog:",
     "@t3-oss/env-core": "catalog:",
     "@tursodatabase/database": "^0.6.1",

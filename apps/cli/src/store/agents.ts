@@ -4,8 +4,8 @@ import { YAML } from "bun";
 import { AGENTS_PATH } from "@/constants/paths";
 import type { AgentEntry } from "@/validators/agent";
 import { agentEntrySchema } from "@/validators/agent";
-import { ensureDir } from "../utils/dir";
 import { toMessage } from "../utils/error";
+import { ensureDir } from "../utils/fs";
 
 type AgentsRegistry = Record<string, AgentEntry>;
 

@@ -103,7 +103,7 @@ describe("draft session lifecycle", () => {
 			"mock-agent",
 			"thread-1",
 			"project-1",
-			"hello"
+			[{ type: "text", text: "hello" }]
 		);
 		expect(prompt.isOk()).toBe(true);
 		if (prompt.isErr()) throw new Error("expected prompt to succeed");

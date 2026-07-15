@@ -2,7 +2,7 @@ import { closeSync, openSync, readFileSync, unlinkSync } from "node:fs";
 import { Result } from "better-result";
 import { LOG_PATH, PID_PATH } from "@/constants/paths";
 import { env } from "@/lib/env";
-import { ensureDir } from "@/utils/dir";
+import { ensureDir } from "@/utils/fs";
 import { clearPid, isAlive, runningPid, writePid } from "@/utils/process";
 import { print } from "@/utils/style";
 

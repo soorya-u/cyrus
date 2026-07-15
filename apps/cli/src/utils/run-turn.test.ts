@@ -3,6 +3,8 @@ import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { Result } from "better-result";
 import { runTurn } from "./run-turn";
 
+const textMessage = (text: string) => [{ type: "text" as const, text }];
+
 describe("runTurn", () => {
 	test("emits user, thread, streamed, and completed events", async () => {
 		const emitted: ChatChunk["event"][] = [];
@@ -16,7 +18,7 @@ describe("runTurn", () => {
 			agentName: "claude",
 			threadId: "thread-1",
 			projectId: "project-1",
-			message: "hello",
+			message: textMessage("hello"),
 			emit: (event) => {
 				emitted.push(event);
 				return Promise.resolve();
@@ -34,7 +36,11 @@ describe("runTurn", () => {
 
 		expect(result.isOk()).toBe(true);
 		expect(emitted).toEqual([
-			{ type: "user_message", content: "hello" },
+			{
+				type: "user_message",
+				content: "hello",
+				blocks: [{ type: "text", text: "hello" }],
+			},
 			{ type: "thread_started", threadId: "thread-1" },
 			{ type: "token", text: "done", messageId: "m1" },
 		]);
@@ -48,7 +54,7 @@ describe("runTurn", () => {
 			agentName: "claude",
 			threadId: "thread-1",
 			projectId: "project-1",
-			message: "hello",
+			message: textMessage("hello"),
 			emit: () => Promise.reject(new Error("emit failed")),
 			emitTerminal: (event) => {
 				terminal.push(event);
@@ -77,7 +83,7 @@ describe("runTurn", () => {
 			agentName: "claude",
 			threadId: "thread-1",
 			projectId: "project-1",
-			message: "hello",
+			message: textMessage("hello"),
 			emit: () => Promise.resolve(),
 			emitTerminal: (event) => {
 				terminal.push(event);

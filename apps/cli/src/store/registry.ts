@@ -10,8 +10,8 @@ import {
 	REGISTRY_FETCH_TIMEOUT_MS,
 	REGISTRY_URL,
 } from "@/constants/registry";
-import { ensureDir } from "@/utils/dir";
 import { toMessage } from "@/utils/error";
+import { ensureDir } from "@/utils/fs";
 import { type AcpRegistry, acpRegistrySchema } from "@/validators/registry";
 
 type CacheInfo = {

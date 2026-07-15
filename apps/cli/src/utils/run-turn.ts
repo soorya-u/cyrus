@@ -1,4 +1,5 @@
-import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
+import type { ChatChunk, ChatMessage } from "@cyrus/schemas/rtc/chat";
+import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import { Result } from "better-result";
 import type { WorkerRuntime } from "@/core";
 
@@ -6,7 +7,7 @@ type RunTurnOptions = {
 	agentName: string;
 	threadId: string;
 	projectId: string;
-	message: string;
+	message: ChatMessage;
 	emit: (event: ChatChunk["event"]) => Promise<void>;
 	emitTerminal: (
 		event: Extract<
@@ -27,7 +28,11 @@ export async function runTurn({
 	runtime,
 }: RunTurnOptions): Promise<Result<void, unknown>> {
 	const started = await Result.tryPromise(async () => {
-		await emit({ type: "user_message", content: message });
+		await emit({
+			type: "user_message",
+			content: formatPromptBlocks(message),
+			blocks: message,
+		});
 		await emit({ type: "thread_started", threadId });
 	});
 	if (started.isErr()) {

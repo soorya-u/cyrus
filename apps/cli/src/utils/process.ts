@@ -1,7 +1,7 @@
 import { unlink } from "node:fs/promises";
 import { Result } from "better-result";
 import { PID_PATH } from "@/constants/paths";
-import { ensureDir } from "./dir";
+import { ensureDir } from "./fs";
 
 /** Whether a process with this pid is alive (signal 0 probes without killing). */
 export function isAlive(pid: number): boolean {
