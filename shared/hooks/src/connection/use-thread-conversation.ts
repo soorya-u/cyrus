@@ -13,7 +13,9 @@ import { useEffect, useEffectEvent, useMemo } from "react";
 import { useRtc } from "../contexts/rtc";
 
 const EMPTY: ThreadConversation = {
+	approvals: [],
 	diffs: [],
+	elicitations: [],
 	errors: [],
 	messages: [],
 	thoughts: [],

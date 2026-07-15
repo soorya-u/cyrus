@@ -197,3 +197,19 @@ export function readPromptCapabilities(
 		embeddedContext: record.embeddedContext === true,
 	};
 }
+
+/** Whether agent capabilities advertise ACP elicitation support. */
+export function supportsElicitation(
+	capabilities: Record<string, unknown> | undefined
+): boolean {
+	if (!capabilities) return false;
+	if (capabilities.elicitation === true) return true;
+
+	const nested = capabilities.agentCapabilities;
+	if (nested && typeof nested === "object") {
+		const record = nested as Record<string, unknown>;
+		if (record.elicitation === true) return true;
+	}
+
+	return false;
+}

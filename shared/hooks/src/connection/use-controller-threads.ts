@@ -142,41 +142,46 @@ export function useControllerThreads() {
 				return next;
 			});
 
-			try {
-				const chatResult = await Result.tryPromise(() =>
-					workerConnection.client.chat({
-						agentName,
-						message,
-						projectId: thread.projectId,
-						threadId,
-						turnId,
-					})
-				);
-
-				if (chatResult.isErr()) {
-					removeTurnFromCache(queryClient, threadId, turnId);
-					return chatResult.map(() => undefined);
-				}
-
-				const endResult = await Result.tryPromise(() =>
-					waitForTurnEnd(threadId, turnId)
-				);
-
-				invalidateThreads(thread.projectId);
-
-				if (endResult.isErr() && isTurnInterruptedError(endResult.error)) {
-					return Result.ok(undefined);
-				}
-
-				return endResult.map(() => undefined);
-			} finally {
+			const clearActiveTurn = () => {
 				setActiveTurnByThread((current) => {
 					const next = new Map(current);
 					next.delete(threadId);
 					activeTurnByThreadRef.current = next;
 					return next;
 				});
+			};
+
+			const chatResult = await Result.tryPromise(() =>
+				workerConnection.client.chat({
+					agentName,
+					message,
+					projectId: thread.projectId,
+					threadId,
+					turnId,
+				})
+			);
+
+			if (chatResult.isErr()) {
+				removeTurnFromCache(queryClient, threadId, turnId);
+				clearActiveTurn();
+				return chatResult.map(() => undefined);
 			}
+
+			// Keep the composer free after accept: wait for turn end in the
+			// background so queue drain / busy state still track the live turn.
+			Result.tryPromise(() => waitForTurnEnd(threadId, turnId))
+				.then((endResult) => {
+					invalidateThreads(thread.projectId);
+					if (endResult.isErr() && !isTurnInterruptedError(endResult.error)) {
+						return;
+					}
+				})
+				.catch(() => undefined)
+				.finally(() => {
+					clearActiveTurn();
+				});
+
+			return Result.ok(undefined);
 		},
 		[
 			agentsQuery.data?.agents,
@@ -226,7 +231,7 @@ export function useControllerThreads() {
 		}
 	}, [activeTurnByThread, drainPromptQueue, threads]);
 
-	async function sendMessage(
+	function sendMessage(
 		threadId: string,
 		message: ChatMessage
 	): Promise<Result<void, unknown>> {
@@ -235,14 +240,10 @@ export function useControllerThreads() {
 			listOpenConversationTurnIds(queryClient, threadId).length > 0
 		) {
 			usePromptQueueStore.getState().enqueue(threadId, message);
-			return Result.ok(undefined);
+			return Promise.resolve(Result.ok(undefined));
 		}
 
-		const result = await sendMessageNow(threadId, message);
-		if (result.isOk()) {
-			await drainPromptQueue(threadId);
-		}
-		return result;
+		return sendMessageNow(threadId, message);
 	}
 
 	async function stopThread(threadId: string): Promise<Result<void, unknown>> {
