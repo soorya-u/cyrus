@@ -78,6 +78,24 @@ Clients SHALL cache agent capabilities from `bindAgent` per thread and hide unsu
 - **WHEN** the agent exposes no available commands
 - **THEN** the composer placeholder omits slash-command guidance
 
+### Requirement: Slash command autocomplete
+
+Clients SHALL offer `/` autocomplete from session `availableCommands`.
+
+#### Scenario: Select slash command
+
+- **WHEN** the user selects a slash command from autocomplete
+- **THEN** the composer inserts the command text
+
+### Requirement: Prompt queue affordances
+
+Clients SHALL queue outbound prompts while a turn is active and show queued items above the composer.
+
+#### Scenario: Queue while busy
+
+- **WHEN** the user sends while a turn is active
+- **THEN** the message is queued and queue chips are shown above the composer
+
 ### Requirement: Context consumption display
 
 When the bound session provides token or context usage data, the composer footer SHALL display current consumption near catalog controls.

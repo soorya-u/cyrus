@@ -31,11 +31,7 @@
 - [x] 5.2 Add URL attach input
 - [x] 5.3 Render attachment chips in `composer/index.tsx` before send
 
-## 6. Mobile
-
-- [ ] 6.1 Port mode selector, capabilities gating, queue, and attachments
-
-## 7. Tests
+## 6. Tests
 
 - [x] 7.1 Structured prompt maps to ACP content blocks
 - [x] 7.2 Queue drains after turn_completed
