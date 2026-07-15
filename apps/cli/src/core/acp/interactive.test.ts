@@ -139,6 +139,50 @@ describe("InteractivePendingRegistry", () => {
 		await expect(pending).resolves.toEqual({ action: "decline" });
 	});
 
+	test("duplicate elicitation declines without orphaning the first wait", async () => {
+		const registry = new InteractivePendingRegistry();
+		registry.bindTurn({
+			sessionId: "session-1",
+			threadId: "thread-1",
+			turnId: "turn-1",
+			pushEvent: () => undefined,
+		});
+
+		const event = {
+			type: "elicitation_request" as const,
+			sessionId: "session-1",
+			request: {
+				mode: "url" as const,
+				elicitationId: "elicit-1",
+				url: "https://example.com",
+			},
+		};
+
+		const first = registry.awaitElicitation({
+			sessionId: "session-1",
+			elicitationId: "elicit-1",
+			event,
+		});
+
+		await expect(
+			registry.awaitElicitation({
+				sessionId: "session-1",
+				elicitationId: "elicit-1",
+				event,
+			})
+		).resolves.toEqual({ action: "decline" });
+
+		expect(
+			registry.respondElicitation({
+				threadId: "thread-1",
+				elicitationId: "elicit-1",
+				action: "accept",
+			})
+		).toEqual({ turnId: "turn-1" });
+
+		await expect(first).resolves.toEqual({ action: "accept" });
+	});
+
 	test("respondApproval rejects wrong thread", () => {
 		const registry = new InteractivePendingRegistry();
 		registry.bindTurn({

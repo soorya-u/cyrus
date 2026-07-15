@@ -154,6 +154,9 @@ export class InteractivePendingRegistry {
 		}
 
 		const key = elicitationKey(input.sessionId, input.elicitationId);
+		const existing = this.elicitations.get(key);
+		if (existing) return Promise.resolve({ action: "decline" as const });
+
 		binding.pushEvent(input.event);
 
 		return new Promise((resolve) => {

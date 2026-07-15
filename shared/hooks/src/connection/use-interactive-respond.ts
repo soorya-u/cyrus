@@ -1,7 +1,13 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
 import { applyChunkToCache } from "@cyrus/utils/conversations/cache";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRtc } from "../contexts/rtc";
+
+type ConversationsSnapshot = {
+	threadId: string;
+	previous: GetConversationsOutput | undefined;
+};
 
 export function useRespondApproval() {
 	const queryClient = useQueryClient();
@@ -10,7 +16,10 @@ export function useRespondApproval() {
 		...orpcController.respondApproval.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.respondApproval,
 		}),
-		onMutate: (input) => {
+		onMutate: (input): ConversationsSnapshot => {
+			const queryKey = RTC_OPERATION_KEYS.getConversations(input.threadId);
+			const previous =
+				queryClient.getQueryData<GetConversationsOutput>(queryKey);
 			applyChunkToCache(queryClient, {
 				threadId: input.threadId,
 				turnId: "local-interactive",
@@ -21,6 +30,14 @@ export function useRespondApproval() {
 					optionId: input.optionId,
 				},
 			});
+			return { threadId: input.threadId, previous };
+		},
+		onError: (_error, _input, context) => {
+			if (!context) return;
+			queryClient.setQueryData(
+				RTC_OPERATION_KEYS.getConversations(context.threadId),
+				context.previous
+			);
 		},
 	});
 }
@@ -32,7 +49,10 @@ export function useRespondElicitation() {
 		...orpcController.respondElicitation.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.respondElicitation,
 		}),
-		onMutate: (input) => {
+		onMutate: (input): ConversationsSnapshot => {
+			const queryKey = RTC_OPERATION_KEYS.getConversations(input.threadId);
+			const previous =
+				queryClient.getQueryData<GetConversationsOutput>(queryKey);
 			applyChunkToCache(queryClient, {
 				threadId: input.threadId,
 				turnId: "local-interactive",
@@ -43,6 +63,14 @@ export function useRespondElicitation() {
 					action: input.action,
 				},
 			});
+			return { threadId: input.threadId, previous };
+		},
+		onError: (_error, _input, context) => {
+			if (!context) return;
+			queryClient.setQueryData(
+				RTC_OPERATION_KEYS.getConversations(context.threadId),
+				context.previous
+			);
 		},
 	});
 }

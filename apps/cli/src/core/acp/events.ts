@@ -222,7 +222,7 @@ export function mapApprovalRequest(
 			options: (request.options ?? []).map((option) => ({
 				optionId: option.optionId ?? option.kind ?? "deny",
 				name: option.name ?? option.optionId ?? option.kind ?? "Option",
-				kind: option.kind ?? "reject_once",
+				kind: option.kind ?? option.optionId ?? "reject_once",
 			})),
 		},
 	});
