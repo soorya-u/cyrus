@@ -4,6 +4,7 @@ import {
 	useGitStatus,
 } from "@cyrus/hooks/connection/use-git";
 import { useThreadConversation } from "@cyrus/hooks/connection/use-thread-conversation";
+import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useQueryClient } from "@tanstack/react-query";
@@ -59,21 +60,25 @@ export function ThreadWorkspace({
 		}
 	}, [diffOpen, lastTurn, queryClient, threadId]);
 
-	useEffect(() => {
-		if (thread && thread.projectId !== projectId)
-			navigate({
-				to: "/workers/$workerId/p/$projectId/t/$threadId",
-				params: {
-					workerId,
-					projectId: thread.projectId,
-					threadId: thread.id,
-				},
-			});
-	}, [navigate, projectId, thread, workerId]);
+	const threadProjectId = thread?.projectId;
+	const resolvedThreadId = thread?.id;
 
-	async function handleSend(text: string) {
+	useEffect(() => {
+		if (!(resolvedThreadId && threadProjectId)) return;
+		if (threadProjectId === projectId) return;
+		navigate({
+			to: "/workers/$workerId/p/$projectId/t/$threadId",
+			params: {
+				workerId,
+				projectId: threadProjectId,
+				threadId: resolvedThreadId,
+			},
+		});
+	}, [navigate, projectId, resolvedThreadId, threadProjectId, workerId]);
+
+	async function handleSend(message: ChatMessage) {
 		if (!thread) return;
-		await sendMessage(thread.id, text);
+		await sendMessage(thread.id, message);
 	}
 
 	if (!thread) return null;

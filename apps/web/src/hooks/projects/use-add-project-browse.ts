@@ -1,5 +1,5 @@
-import { useListDir } from "@cyrus/hooks/connection/use-list-dir";
-import type { DirListing } from "@cyrus/schemas/rtc/dir";
+import { useListEntries } from "@cyrus/hooks/connection/use-list-entries";
+import type { DirListing } from "@cyrus/schemas/rtc/fs";
 import {
 	appendBrowsePathSegment,
 	canNavigateUp,
@@ -87,11 +87,12 @@ export function useAddProjectBrowse({
 			? getBrowseLeafPathSegment(query)
 			: "";
 
-	const listDirEnabled = isBrowsing && browseDirectoryPath.length > 0 && open;
-	const { data, isLoading, isError } = useListDir(
+	const listEntriesEnabled =
+		isBrowsing && browseDirectoryPath.length > 0 && open;
+	const { data, isLoading, isError } = useListEntries(
 		browseDirectoryPath,
 		1,
-		listDirEnabled
+		listEntriesEnabled
 	);
 
 	const browseEntries = useMemo(() => {

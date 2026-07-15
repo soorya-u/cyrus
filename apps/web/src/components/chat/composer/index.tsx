@@ -1,13 +1,58 @@
+import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
 import { useGitStatus } from "@cyrus/hooks/connection/use-git";
 import { useListAgents } from "@cyrus/hooks/connection/use-list-agents";
+import { useProjects } from "@cyrus/hooks/connection/use-projects";
+import { useSearchEntries } from "@cyrus/hooks/connection/use-search-entries";
+import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { cn } from "cnfast";
-import { useEffect, useRef, useState } from "react";
+import {
+	type ClipboardEvent,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { FileMentionAutocomplete } from "@/components/chat/composer/composer-attachments";
 import { ComposerBranchToolbar } from "@/components/chat/composer/composer-branch-toolbar";
+import {
+	type ComposerCommandKey,
+	ComposerPromptEditor,
+	type ComposerPromptEditorHandle,
+} from "@/components/chat/composer/composer-prompt-editor";
+import { ComposerQueueChips } from "@/components/chat/composer/composer-queue";
+import { COMPOSER_CHIP_PLACEHOLDER } from "@/components/chat/composer/composer-resource-node";
 import { ComposerSkeleton } from "@/components/chat/composer/composer-skeleton";
 import { ComposerUnavailable } from "@/components/chat/composer/composer-unavailable";
 import { ComposerFooterControls } from "@/components/chat/composer/footer-controls";
 import { ComposerPrimaryAction } from "@/components/chat/composer/primary-action";
+import {
+	filterSlashCommands,
+	SlashCommandAutocomplete,
+} from "@/components/chat/composer/slash-command-autocomplete";
+
+const SLASH_TOKEN_PATTERN = /(?:^|\s)\/([\w./-]*)$/;
+const AT_TOKEN_PATTERN = /(?:^|\s)@([\w./-]*)$/;
+const URL_PATTERN = /^https?:\/\/\S+$/i;
+const TRAILING_URL_PATTERN = /(?:^|\s)(https?:\/\/\S+)(\s+)$/i;
+const URL_IN_TEXT_PATTERN = /https?:\/\/\S+/i;
+
+function buildComposerPlaceholder(options: {
+	canAttachFiles: boolean;
+	canSlash: boolean;
+}): string {
+	const hints = ["Ask anything"];
+	if (options.canAttachFiles) hints.push("@ files");
+	hints.push("paste URLs");
+	hints.push("$use skills");
+	if (options.canSlash) hints.push("/ for commands");
+	return hints.join(", ");
+}
+
+function textForTriggers(plainText: string): string {
+	return plainText.replaceAll(COMPOSER_CHIP_PLACEHOLDER, "");
+}
 
 export function Composer({
 	projectId,
@@ -21,7 +66,7 @@ export function Composer({
 	projectId: string;
 	threadId: string;
 	thread: Thread;
-	onSend: (text: string) => void;
+	onSend: (message: ChatMessage) => void;
 	onStop?: () => void;
 	busy?: boolean;
 	stopping?: boolean;
@@ -32,33 +77,176 @@ export function Composer({
 	const agentsLoading = agentsQuery.isLoading;
 	const hasAgents = agents.length > 0;
 
+	const { projects } = useProjects();
+	const projectCwd =
+		projects.find((project) => project.id === projectId)?.cwd ?? "";
+	const threadCwd = thread.worktreePath ?? projectCwd;
+
+	const catalog = useAgentCatalog({ agents, projectId, threadId });
+	const canAttachFiles = Boolean(threadCwd);
+
 	const gitStatus = useGitStatus(threadId);
 	const isGitRepo = gitStatus.data?.isRepo === true;
-	const [value, setValue] = useState("");
+	const [plainText, setPlainText] = useState("");
+	const [hasContent, setHasContent] = useState(false);
 	const [sending, setSending] = useState(false);
-	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const [mentionHighlight, setMentionHighlight] = useState(0);
+	const [slashHighlight, setSlashHighlight] = useState(0);
+	const editorRef = useRef<ComposerPromptEditorHandle | null>(null);
+	const submitStateRef = useRef({ busy, stopping, sending, hasAgents });
+	submitStateRef.current = { busy, stopping, sending, hasAgents };
+
+	const triggerText = textForTriggers(plainText);
+
+	const slashFilter = useMemo(() => {
+		const match = triggerText.match(SLASH_TOKEN_PATTERN);
+		return match?.[1] ?? null;
+	}, [triggerText]);
+
+	const slashMatches = useMemo(() => {
+		if (slashFilter === null) return [];
+		return filterSlashCommands(catalog.commands, slashFilter);
+	}, [catalog.commands, slashFilter]);
+
+	const atMention = useMemo(() => {
+		if (!canAttachFiles) return null;
+		const match = triggerText.match(AT_TOKEN_PATTERN);
+		if (!match) return null;
+		return match[1] ?? "";
+	}, [canAttachFiles, triggerText]);
+
+	const filesQuery = useSearchEntries(
+		threadCwd,
+		atMention ?? "",
+		canAttachFiles && atMention !== null && (atMention?.length ?? 0) > 0
+	);
+	const filePaths = filesQuery.data?.entries.map((entry) => entry.path) ?? [];
+
+	const placeholder = buildComposerPlaceholder({
+		canAttachFiles,
+		canSlash: catalog.commands.length > 0,
+	});
+
+	const filePathsKey = filePaths.join("\0");
+	const slashMatchesKey = slashMatches
+		.map((command) => command.name)
+		.join("\0");
 
 	useEffect(() => {
 		if (busy) setSending(false);
 	}, [busy]);
 
 	useEffect(() => {
-		const textarea = textareaRef.current;
-		if (!textarea) return;
+		setMentionHighlight(0);
+	}, [atMention, filePathsKey]);
 
-		if (value.length >= 0) {
-			textarea.style.height = "auto";
-			textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-		}
-	}, [value]);
+	useEffect(() => {
+		setSlashHighlight(0);
+	}, [slashFilter, slashMatchesKey]);
 
-	function submit() {
-		const text = value.trim();
-		if (!text || busy || stopping || sending || !hasAgents) return;
+	function insertFileMention(path: string) {
+		editorRef.current?.replaceAtTokenWithResource(
+			path,
+			path.split("/").pop() ?? path
+		);
+	}
+
+	function insertSlashCommand(commandName: string) {
+		editorRef.current?.replaceSlashToken(commandName);
+	}
+
+	const submit = useCallback(() => {
+		const state = submitStateRef.current;
+		if (state.stopping || state.sending || !state.hasAgents) return;
+		const message = editorRef.current?.getMessage() ?? [];
+		if (message.length === 0) return;
 
 		setSending(true);
-		onSend(text);
-		setValue("");
+		onSend(message);
+		editorRef.current?.clear();
+		setPlainText("");
+		setHasContent(false);
+		if (state.busy) setSending(false);
+	}, [onSend]);
+
+	const handleMentionKeys = useCallback(
+		(key: ComposerCommandKey): boolean => {
+			if (atMention === null || filePaths.length === 0) return false;
+			if (key === "ArrowDown") {
+				setMentionHighlight((index) => (index + 1) % filePaths.length);
+				return true;
+			}
+			if (key === "ArrowUp") {
+				setMentionHighlight(
+					(index) => (index - 1 + filePaths.length) % filePaths.length
+				);
+				return true;
+			}
+			if (key === "Enter" || key === "Tab") {
+				const path = filePaths[mentionHighlight] ?? filePaths[0];
+				if (path) insertFileMention(path);
+				return true;
+			}
+			return false;
+		},
+		[atMention, filePaths, mentionHighlight]
+	);
+
+	const handleSlashKeys = useCallback(
+		(key: ComposerCommandKey): boolean => {
+			if (slashFilter === null || slashMatches.length === 0) return false;
+			if (key === "ArrowDown") {
+				setSlashHighlight((index) => (index + 1) % slashMatches.length);
+				return true;
+			}
+			if (key === "ArrowUp") {
+				setSlashHighlight(
+					(index) => (index - 1 + slashMatches.length) % slashMatches.length
+				);
+				return true;
+			}
+			if (key === "Enter" || key === "Tab") {
+				const command = slashMatches[slashHighlight] ?? slashMatches[0];
+				if (command) insertSlashCommand(command.name);
+				return true;
+			}
+			return false;
+		},
+		[slashFilter, slashMatches, slashHighlight]
+	);
+
+	const handleCommandKeyDown = useCallback(
+		(key: ComposerCommandKey, _event: KeyboardEvent): boolean => {
+			if (handleMentionKeys(key) || handleSlashKeys(key)) return true;
+			if (key === "Enter") {
+				submit();
+				return true;
+			}
+			return false;
+		},
+		[handleMentionKeys, handleSlashKeys, submit]
+	);
+
+	function handlePlainTextChange(next: string) {
+		setPlainText(next);
+		setHasContent(editorRef.current?.hasContent() ?? false);
+
+		const trigger = textForTriggers(next);
+		if (TRAILING_URL_PATTERN.test(trigger)) {
+			queueMicrotask(() => {
+				editorRef.current?.absorbTrailingUrl();
+			});
+		}
+	}
+
+	function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
+		const pasted = event.clipboardData.getData("text").trim();
+		if (!URL_IN_TEXT_PATTERN.test(pasted)) return;
+
+		if (URL_PATTERN.test(pasted)) {
+			event.preventDefault();
+			editorRef.current?.insertResource(pasted, pasted);
+		}
 	}
 
 	function renderComposerBody() {
@@ -87,22 +275,39 @@ export function Composer({
 
 		return (
 			<div className="group rounded-[22px] p-px transition-colors duration-200">
-				<div className="chat-composer-glass rounded-4xl border border-border transition-colors duration-200 has-focus-visible:border-ring/45">
-					<div className="relative px-3 pt-3.5 pb-2 sm:px-4 sm:pt-4">
-						<div className="relative">
-							<textarea
-								className="block max-h-50 min-h-17.5 w-full resize-none overflow-y-auto whitespace-pre-wrap bg-transparent text-[16px] text-foreground leading-relaxed outline-none placeholder:text-muted-foreground/35 sm:text-[14px]"
-								onChange={(event) => setValue(event.target.value)}
-								onKeyDown={(event) => {
-									if (event.key === "Enter" && !event.shiftKey) {
-										event.preventDefault();
-										submit();
+				<ComposerQueueChips threadId={threadId} />
+				<div className="chat-composer-glass overflow-visible rounded-4xl border border-border transition-colors duration-200 has-focus-visible:border-ring/45">
+					<div className="relative overflow-visible px-3 pt-3.5 pb-2 sm:px-4 sm:pt-4">
+						<div className="relative overflow-visible">
+							{slashFilter === null ? null : (
+								<SlashCommandAutocomplete
+									activeIndex={slashHighlight}
+									commands={catalog.commands}
+									filter={slashFilter}
+									onSelect={(command) => insertSlashCommand(command.name)}
+								/>
+							)}
+							{atMention === null ? null : (
+								<FileMentionAutocomplete
+									activeIndex={mentionHighlight}
+									filter={atMention}
+									isError={filesQuery.isError}
+									isLoading={
+										atMention.length > 0 &&
+										(filesQuery.isFetching || filesQuery.isPending)
 									}
-								}}
-								placeholder="Ask anything, @tag files/folders, $use skills, or / for commands"
-								ref={textareaRef}
-								rows={1}
-								value={value}
+									needsQuery={atMention.length === 0}
+									onSelect={insertFileMention}
+									paths={filePaths}
+									truncated={filesQuery.data?.truncated === true}
+								/>
+							)}
+							<ComposerPromptEditor
+								onCommandKeyDown={handleCommandKeyDown}
+								onPaste={handlePaste}
+								onPlainTextChange={handlePlainTextChange}
+								placeholder={placeholder}
+								ref={editorRef}
 							/>
 						</div>
 					</div>
@@ -122,7 +327,7 @@ export function Composer({
 						>
 							<ComposerPrimaryAction
 								busy={busy}
-								canSend={value.trim().length > 0}
+								canSend={hasContent}
 								onStop={onStop}
 								sending={sending}
 								stopping={stopping}

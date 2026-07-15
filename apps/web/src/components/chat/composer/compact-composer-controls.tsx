@@ -23,14 +23,18 @@ export function CompactComposerControls({
 }) {
 	const {
 		displayEffort,
+		displayMode,
 		displayPersona,
 		efforts,
+		modes,
 		personas,
 		selectEffort,
+		selectMode,
 		selectPersona,
 	} = useAgentCatalog({ agents, projectId, threadId });
 
-	if (efforts.length === 0 && personas.length === 0) return null;
+	if (modes.length === 0 && efforts.length === 0 && personas.length === 0)
+		return null;
 
 	return (
 		<DropdownMenu>
@@ -46,6 +50,22 @@ export function CompactComposerControls({
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-48">
+				{modes.length > 0 && (
+					<>
+						<DropdownMenuLabel>Mode</DropdownMenuLabel>
+						<DropdownMenuRadioGroup
+							onValueChange={selectMode}
+							value={displayMode}
+						>
+							{modes.map((mode) => (
+								<DropdownMenuRadioItem key={mode.id} value={mode.id}>
+									{mode.name}
+								</DropdownMenuRadioItem>
+							))}
+						</DropdownMenuRadioGroup>
+					</>
+				)}
+				{modes.length > 0 && efforts.length > 0 && <DropdownMenuSeparator />}
 				{efforts.length > 0 && (
 					<>
 						<DropdownMenuLabel>Effort</DropdownMenuLabel>

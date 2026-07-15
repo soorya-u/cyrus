@@ -2,6 +2,7 @@ import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
 import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { AgentModelPicker } from "@/components/chat/composer/agent-model-picker";
 import { CompactComposerControls } from "@/components/chat/composer/compact-composer-controls";
+import { ComposerContextUsage } from "@/components/chat/composer/composer-context-usage";
 import {
 	Select,
 	SelectContent,
@@ -55,11 +56,15 @@ export function ComposerFooterControls({
 }) {
 	const isCompact = useIsMobile();
 	const {
+		contextUsage,
 		displayEffort,
+		displayMode,
 		displayPersona,
 		efforts,
+		modes,
 		personas,
 		selectEffort,
+		selectMode,
 		selectPersona,
 	} = useAgentCatalog({ agents, projectId, threadId });
 
@@ -79,6 +84,20 @@ export function ComposerFooterControls({
 				/>
 			) : (
 				<>
+					{modes.length > 0 && (
+						<>
+							<Separator
+								className="mx-0.5 hidden h-4 sm:block"
+								orientation="vertical"
+							/>
+							<CatalogSelect
+								label="Mode"
+								onValueChange={selectMode}
+								options={modes}
+								value={displayMode}
+							/>
+						</>
+					)}
 					{efforts.length > 0 && (
 						<>
 							<Separator
@@ -109,6 +128,8 @@ export function ComposerFooterControls({
 					)}
 				</>
 			)}
+
+			<ComposerContextUsage usage={contextUsage} />
 		</div>
 	);
 }
