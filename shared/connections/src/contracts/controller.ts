@@ -2,6 +2,7 @@ import { ListAgentsOutputSchema } from "@cyrus/schemas/rtc/agents";
 import {
 	BindAgentInputSchema,
 	BindAgentOutputSchema,
+	GetContextUsageOutputSchema,
 	ListEffortsOutputSchema,
 	ListModelsOutputSchema,
 	ListModesOutputSchema,
@@ -22,9 +23,11 @@ import {
 	VoidOutputSchema,
 } from "@cyrus/schemas/rtc/common";
 import {
-	ListDirInputSchema,
-	ListDirOutputSchema,
-} from "@cyrus/schemas/rtc/dir";
+	ListEntriesInputSchema,
+	ListEntriesOutputSchema,
+	SearchEntriesInputSchema,
+	SearchEntriesOutputSchema,
+} from "@cyrus/schemas/rtc/fs";
 import {
 	GitCheckoutInputSchema,
 	GitCreateWorktreeInputSchema,
@@ -67,7 +70,10 @@ export const controllerContract = {
 		.output(CreateProjectOutputSchema),
 	renameProject: oc.input(RenameProjectInputSchema).output(VoidOutputSchema),
 	deleteProject: oc.input(DeleteProjectInputSchema).output(VoidOutputSchema),
-	listDir: oc.input(ListDirInputSchema).output(ListDirOutputSchema),
+	listEntries: oc.input(ListEntriesInputSchema).output(ListEntriesOutputSchema),
+	searchEntries: oc
+		.input(SearchEntriesInputSchema)
+		.output(SearchEntriesOutputSchema),
 	listThreads: oc
 		.input(ProjectQueryInputSchema)
 		.output(ListThreadsOutputSchema),
@@ -95,6 +101,9 @@ export const controllerContract = {
 	setMode: oc.input(SetModeInputSchema).output(VoidOutputSchema),
 	setEffort: oc.input(SetEffortInputSchema).output(VoidOutputSchema),
 	setPersona: oc.input(SetPersonaInputSchema).output(VoidOutputSchema),
+	getContextUsage: oc
+		.input(ThreadCatalogQueryInputSchema)
+		.output(GetContextUsageOutputSchema),
 	chat: oc.input(ChatInputSchema).output(ChatOutputSchema),
 	subscribe: oc.output(eventIterator(ChatChunkSchema)),
 	watchThread: oc.input(WatchThreadInputSchema).output(WatchThreadOutputSchema),

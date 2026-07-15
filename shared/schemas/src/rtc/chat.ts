@@ -202,9 +202,41 @@ export const ThreadStartedEventSchema = z.object({
 	threadId: z.string(),
 });
 
+export const PromptTextBlockSchema = z.object({
+	type: z.literal("text"),
+	text: z.string(),
+});
+
+export const PromptResourceBlockSchema = z.object({
+	type: z.literal("resource"),
+	uri: z.string(),
+	name: z.string().optional(),
+});
+
+export const PromptInputBlockSchema = z.discriminatedUnion("type", [
+	PromptTextBlockSchema,
+	PromptResourceBlockSchema,
+]);
+
+export type PromptInputBlock = z.infer<typeof PromptInputBlockSchema>;
+
+export const ChatMessageSchema = z.array(PromptInputBlockSchema).min(1);
+
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+export function formatPromptBlocks(blocks: PromptInputBlock[]): string {
+	return blocks
+		.map((block) =>
+			block.type === "text" ? block.text : (block.name ?? block.uri)
+		)
+		.join(" ")
+		.trim();
+}
+
 export const UserMessageEventSchema = z.object({
 	type: z.literal("user_message"),
 	content: z.string(),
+	blocks: z.array(PromptInputBlockSchema).optional(),
 });
 
 export const TurnCompletedEventSchema = z.object({
@@ -250,11 +282,13 @@ export type Diff = z.infer<typeof DiffSchema>;
 
 export const ChatInputSchema = z.object({
 	agentName: z.string(),
-	message: z.string(),
+	message: ChatMessageSchema,
 	threadId: z.uuid().optional(),
 	turnId: z.uuid().optional(),
 	projectId: z.string(),
 });
+
+export type ChatInput = z.infer<typeof ChatInputSchema>;
 
 export const ChatOutputSchema = z.object({
 	threadId: z.string(),

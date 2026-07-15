@@ -27,11 +27,18 @@ describe("operation keys", () => {
 			"list-threads",
 			"project-1",
 		]);
-		expect(RTC_OPERATION_KEYS.listDir("/tmp/cyrus", 2)).toEqual([
+		expect(RTC_OPERATION_KEYS.listEntries("/tmp/cyrus", 2)).toEqual([
 			"controller",
-			"list-dir",
+			"list-entries",
 			"/tmp/cyrus",
 			2,
+		]);
+		expect(RTC_OPERATION_KEYS.searchEntries("/tmp/cyrus", "main", 80)).toEqual([
+			"controller",
+			"search-entries",
+			"/tmp/cyrus",
+			"main",
+			80,
 		]);
 	});
 

@@ -68,6 +68,7 @@ function applyUserMessage(
 	const existing = state.messages.get(key);
 	if (existing) {
 		existing.content = event.content;
+		existing.blocks = event.blocks;
 		if (entry.createdAt < existing.createdAt) {
 			existing.createdAt = entry.createdAt;
 		}
@@ -75,6 +76,7 @@ function applyUserMessage(
 	}
 	state.messages.set(key, {
 		content: event.content,
+		blocks: event.blocks,
 		createdAt: entry.createdAt,
 		id: key,
 		role: "user",

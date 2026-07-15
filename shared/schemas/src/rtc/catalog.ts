@@ -17,6 +17,21 @@ export const ModelOptionSchema = SelectOptionSchema.extend({
 
 export const AgentCapabilitiesSchema = z.record(z.string(), z.unknown());
 
+export const AvailableCommandSchema = z.object({
+	name: z.string(),
+	description: z.string(),
+	input: z.unknown().optional().nullable(),
+});
+
+export const ContextUsageSchema = z.object({
+	used: z.number().optional(),
+	limit: z.number().optional(),
+});
+
+export const GetContextUsageOutputSchema = z.object({
+	usage: ContextUsageSchema.nullable(),
+});
+
 export const BindAgentOutputSchema = z.object({
 	sessionId: z.string(),
 	agentName: z.string(),
@@ -26,6 +41,7 @@ export const BindAgentOutputSchema = z.object({
 	modes: z.array(SelectOptionSchema),
 	efforts: z.array(SelectOptionSchema),
 	personas: z.array(SelectOptionSchema),
+	commands: z.array(AvailableCommandSchema).optional(),
 });
 
 export const ListModelsOutputSchema = z.object({
@@ -61,5 +77,8 @@ export const SetPersonaInputSchema = AgentMutationInputSchema.extend({
 });
 
 export type ModelOption = z.infer<typeof ModelOptionSchema>;
+export type AvailableCommand = z.infer<typeof AvailableCommandSchema>;
+export type ContextUsage = z.infer<typeof ContextUsageSchema>;
+export type GetContextUsageOutput = z.infer<typeof GetContextUsageOutputSchema>;
 export type BindAgentInput = z.infer<typeof BindAgentInputSchema>;
 export type BindAgentOutput = z.infer<typeof BindAgentOutputSchema>;

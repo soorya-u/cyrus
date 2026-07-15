@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { ToolCallStatusSchema, ToolKindSchema } from "../enums/tools";
+import { PromptInputBlockSchema } from "../rtc/chat";
 
 export const MessageViewSchema = z.object({
 	id: z.string(),
 	role: z.enum(["user", "assistant"]),
 	content: z.string(),
+	blocks: z.array(PromptInputBlockSchema).optional(),
 	createdAt: z.string(),
 	turnId: z.string(),
 	streaming: z.boolean().optional(),
