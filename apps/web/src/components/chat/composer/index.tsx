@@ -37,14 +37,16 @@ const AT_TOKEN_PATTERN = /(?:^|\s)@([\w./-]*)$/;
 const URL_PATTERN = /^https?:\/\/\S+$/i;
 const TRAILING_URL_PATTERN = /(?:^|\s)(https?:\/\/\S+)(\s+)$/i;
 const URL_IN_TEXT_PATTERN = /https?:\/\/\S+/i;
+const TRAILING_SLASHES_PATTERN = /\/+$/;
 
 function buildComposerPlaceholder(options: {
 	canAttachFiles: boolean;
+	canPasteUrls: boolean;
 	canSlash: boolean;
 }): string {
 	const hints = ["Ask anything"];
 	if (options.canAttachFiles) hints.push("@ files");
-	hints.push("paste URLs");
+	if (options.canPasteUrls) hints.push("paste URLs");
 	hints.push("$use skills");
 	if (options.canSlash) hints.push("/ for commands");
 	return hints.join(", ");
@@ -52,6 +54,11 @@ function buildComposerPlaceholder(options: {
 
 function textForTriggers(plainText: string): string {
 	return plainText.replaceAll(COMPOSER_CHIP_PLACEHOLDER, "");
+}
+
+function resourceNameFromPath(path: string): string {
+	const normalizedPath = path.replace(TRAILING_SLASHES_PATTERN, "");
+	return normalizedPath.split("/").pop() || path;
 }
 
 export function Composer({
@@ -66,7 +73,7 @@ export function Composer({
 	projectId: string;
 	threadId: string;
 	thread: Thread;
-	onSend: (message: ChatMessage) => void;
+	onSend: (message: ChatMessage) => void | Promise<void>;
 	onStop?: () => void;
 	busy?: boolean;
 	stopping?: boolean;
@@ -83,7 +90,11 @@ export function Composer({
 	const threadCwd = thread.worktreePath ?? projectCwd;
 
 	const catalog = useAgentCatalog({ agents, projectId, threadId });
-	const canAttachFiles = Boolean(threadCwd);
+	const supportsEmbeddedContext =
+		catalog.capabilities == null ||
+		catalog.promptCapabilities.embeddedContext !== false;
+	const canAttachFiles = Boolean(threadCwd) && supportsEmbeddedContext;
+	const canPasteUrls = supportsEmbeddedContext;
 
 	const gitStatus = useGitStatus(threadId);
 	const isGitRepo = gitStatus.data?.isRepo === true;
@@ -92,6 +103,8 @@ export function Composer({
 	const [sending, setSending] = useState(false);
 	const [mentionHighlight, setMentionHighlight] = useState(0);
 	const [slashHighlight, setSlashHighlight] = useState(0);
+	const [mentionDismissed, setMentionDismissed] = useState(false);
+	const [slashDismissed, setSlashDismissed] = useState(false);
 	const editorRef = useRef<ComposerPromptEditorHandle | null>(null);
 	const submitStateRef = useRef({ busy, stopping, sending, hasAgents });
 	submitStateRef.current = { busy, stopping, sending, hasAgents };
@@ -124,6 +137,7 @@ export function Composer({
 
 	const placeholder = buildComposerPlaceholder({
 		canAttachFiles,
+		canPasteUrls,
 		canSlash: catalog.commands.length > 0,
 	});
 
@@ -132,22 +146,22 @@ export function Composer({
 		.map((command) => command.name)
 		.join("\0");
 
-	useEffect(() => {
-		if (busy) setSending(false);
-	}, [busy]);
-
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset when token/results change
 	useEffect(() => {
 		setMentionHighlight(0);
+		setMentionDismissed(false);
 	}, [atMention, filePathsKey]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset when token/results change
 	useEffect(() => {
 		setSlashHighlight(0);
+		setSlashDismissed(false);
 	}, [slashFilter, slashMatchesKey]);
 
 	function insertFileMention(path: string) {
 		editorRef.current?.replaceAtTokenWithResource(
 			path,
-			path.split("/").pop() ?? path
+			resourceNameFromPath(path)
 		);
 	}
 
@@ -155,23 +169,31 @@ export function Composer({
 		editorRef.current?.replaceSlashToken(commandName);
 	}
 
-	const submit = useCallback(() => {
+	const submit = useCallback(async () => {
 		const state = submitStateRef.current;
 		if (state.stopping || state.sending || !state.hasAgents) return;
 		const message = editorRef.current?.getMessage() ?? [];
 		if (message.length === 0) return;
 
 		setSending(true);
-		onSend(message);
-		editorRef.current?.clear();
-		setPlainText("");
-		setHasContent(false);
-		if (state.busy) setSending(false);
+		try {
+			await onSend(message);
+			editorRef.current?.clear();
+			setPlainText("");
+			setHasContent(false);
+		} finally {
+			setSending(false);
+		}
 	}, [onSend]);
 
 	const handleMentionKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {
-			if (atMention === null || filePaths.length === 0) return false;
+			if (atMention === null || mentionDismissed) return false;
+			if (key === "Escape") {
+				setMentionDismissed(true);
+				return true;
+			}
+			if (filePaths.length === 0) return false;
 			if (key === "ArrowDown") {
 				setMentionHighlight((index) => (index + 1) % filePaths.length);
 				return true;
@@ -184,17 +206,27 @@ export function Composer({
 			}
 			if (key === "Enter" || key === "Tab") {
 				const path = filePaths[mentionHighlight] ?? filePaths[0];
-				if (path) insertFileMention(path);
+				if (path) {
+					editorRef.current?.replaceAtTokenWithResource(
+						path,
+						resourceNameFromPath(path)
+					);
+				}
 				return true;
 			}
 			return false;
 		},
-		[atMention, filePaths, mentionHighlight]
+		[atMention, filePaths, mentionDismissed, mentionHighlight]
 	);
 
 	const handleSlashKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {
-			if (slashFilter === null || slashMatches.length === 0) return false;
+			if (slashFilter === null || slashDismissed) return false;
+			if (key === "Escape") {
+				setSlashDismissed(true);
+				return true;
+			}
+			if (slashMatches.length === 0) return false;
 			if (key === "ArrowDown") {
 				setSlashHighlight((index) => (index + 1) % slashMatches.length);
 				return true;
@@ -207,19 +239,19 @@ export function Composer({
 			}
 			if (key === "Enter" || key === "Tab") {
 				const command = slashMatches[slashHighlight] ?? slashMatches[0];
-				if (command) insertSlashCommand(command.name);
+				if (command) editorRef.current?.replaceSlashToken(command.name);
 				return true;
 			}
 			return false;
 		},
-		[slashFilter, slashMatches, slashHighlight]
+		[slashDismissed, slashFilter, slashMatches, slashHighlight]
 	);
 
 	const handleCommandKeyDown = useCallback(
 		(key: ComposerCommandKey, _event: KeyboardEvent): boolean => {
 			if (handleMentionKeys(key) || handleSlashKeys(key)) return true;
 			if (key === "Enter") {
-				submit();
+				submit().catch(() => undefined);
 				return true;
 			}
 			return false;
@@ -232,7 +264,7 @@ export function Composer({
 		setHasContent(editorRef.current?.hasContent() ?? false);
 
 		const trigger = textForTriggers(next);
-		if (TRAILING_URL_PATTERN.test(trigger)) {
+		if (canPasteUrls && TRAILING_URL_PATTERN.test(trigger)) {
 			queueMicrotask(() => {
 				editorRef.current?.absorbTrailingUrl();
 			});
@@ -240,6 +272,7 @@ export function Composer({
 	}
 
 	function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
+		if (!canPasteUrls) return;
 		const pasted = event.clipboardData.getData("text").trim();
 		if (!URL_IN_TEXT_PATTERN.test(pasted)) return;
 
@@ -279,7 +312,7 @@ export function Composer({
 				<div className="chat-composer-glass overflow-visible rounded-4xl border border-border transition-colors duration-200 has-focus-visible:border-ring/45">
 					<div className="relative overflow-visible px-3 pt-3.5 pb-2 sm:px-4 sm:pt-4">
 						<div className="relative overflow-visible">
-							{slashFilter === null ? null : (
+							{slashFilter === null || slashDismissed ? null : (
 								<SlashCommandAutocomplete
 									activeIndex={slashHighlight}
 									commands={catalog.commands}
@@ -287,7 +320,7 @@ export function Composer({
 									onSelect={(command) => insertSlashCommand(command.name)}
 								/>
 							)}
-							{atMention === null ? null : (
+							{atMention === null || mentionDismissed ? null : (
 								<FileMentionAutocomplete
 									activeIndex={mentionHighlight}
 									filter={atMention}
@@ -360,7 +393,7 @@ export function Composer({
 						data-chat-composer-form="true"
 						onSubmit={(event) => {
 							event.preventDefault();
-							submit();
+							submit().catch(() => undefined);
 						}}
 					>
 						{renderComposerBody()}

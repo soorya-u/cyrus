@@ -335,8 +335,8 @@ export class AgentRuntime {
 	async close(threadId: string): Promise<void> {
 		const session = this.sessions.get(threadId)?.session;
 		if (!session) return;
-		this.detachSessionMetadata(threadId);
 		await session.close();
+		this.detachSessionMetadata(threadId);
 		this.sessions.delete(threadId);
 	}
 
@@ -344,8 +344,8 @@ export class AgentRuntime {
 		if (threadId) {
 			const entry = this.sessions.get(threadId);
 			if (entry?.session.sessionId === sessionId) {
-				this.detachSessionMetadata(threadId);
 				await entry.session.close();
+				this.detachSessionMetadata(threadId);
 				this.sessions.delete(threadId);
 				return;
 			}
@@ -353,8 +353,8 @@ export class AgentRuntime {
 
 		for (const [id, entry] of this.sessions) {
 			if (entry.session.sessionId !== sessionId) continue;
-			this.detachSessionMetadata(id);
 			await entry.session.close();
+			this.detachSessionMetadata(id);
 			this.sessions.delete(id);
 			return;
 		}
@@ -373,6 +373,9 @@ export class AgentRuntime {
 
 		const runtime = await this.pool.getRuntime(this.agentName);
 		if (!runtime.agentCapabilities?.loadSession) {
+			for (const threadId of this.sessions.keys()) {
+				this.detachSessionMetadata(threadId);
+			}
 			this.sessions.clear();
 			return;
 		}
@@ -393,8 +396,10 @@ export class AgentRuntime {
 						projectId: thread.projectId,
 						cwd: thread.cwd,
 					});
+					this.attachSessionMetadata(threadId, session.session);
 				},
 				err: () => {
+					this.detachSessionMetadata(threadId);
 					this.sessions.delete(threadId);
 				},
 			});

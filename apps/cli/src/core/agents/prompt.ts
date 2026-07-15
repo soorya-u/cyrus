@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import type { ContentBlock } from "@agentclientprotocol/sdk";
 import type { PromptInputBlock } from "@cyrus/schemas/rtc/chat";
 
@@ -35,5 +36,5 @@ function resolveResourceUri(uri: string, threadCwd: string): string {
 	}
 
 	const absolute = resolve(threadCwd, uri);
-	return absolute.startsWith("/") ? `file://${absolute}` : absolute;
+	return pathToFileURL(absolute).href;
 }

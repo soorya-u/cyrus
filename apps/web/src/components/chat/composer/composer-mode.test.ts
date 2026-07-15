@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-
-function shouldShowModeSelector(modes: Array<{ id: string; name: string }>) {
-	return modes.length > 0;
-}
+import { shouldShowModeSelector } from "@/components/chat/composer/composer-mode";
 
 describe("composer mode selector", () => {
 	test("hides mode selector when no modes are available", () => {

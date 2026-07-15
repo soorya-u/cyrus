@@ -10,6 +10,7 @@ export type QueuedPrompt = {
 type PromptQueueState = {
 	queueByThread: Record<string, QueuedPrompt[]>;
 	enqueue: (threadId: string, message: ChatMessage) => QueuedPrompt;
+	peek: (threadId: string) => QueuedPrompt | undefined;
 	dequeue: (threadId: string) => QueuedPrompt | undefined;
 	remove: (threadId: string, id: string) => void;
 	update: (threadId: string, id: string, message: ChatMessage) => void;
@@ -28,6 +29,7 @@ export const usePromptQueueStore = create<PromptQueueState>((set, get) => ({
 		}));
 		return item;
 	},
+	peek: (threadId) => get().queueByThread[threadId]?.[0],
 	dequeue: (threadId) => {
 		const queue = get().queueByThread[threadId] ?? [];
 		const [next, ...rest] = queue;

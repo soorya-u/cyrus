@@ -2,6 +2,7 @@ import type { PromptInputBlock } from "@cyrus/schemas/rtc/chat";
 import type { MessageView } from "@cyrus/schemas/view";
 import { formatMessageTime } from "@cyrus/utils/time";
 import { FileIcon, LinkIcon } from "lucide-react";
+import { renderMarkdown } from "@/components/chat/markdown/markdown-components";
 import { MessageCopyButton } from "@/components/chat/messages/message-copy-button";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import {
@@ -39,7 +40,7 @@ function UserMessageBody({ message }: { message: MessageView }) {
 	if (!blocks || blocks.length === 0) {
 		return (
 			<span className="wrap-break-word whitespace-pre-wrap">
-				{message.content}
+				{renderMarkdown(message.content)}
 			</span>
 		);
 	}
@@ -55,7 +56,7 @@ function UserMessageBody({ message }: { message: MessageView }) {
 							className="wrap-break-word whitespace-pre-wrap"
 							key={`text:${text}`}
 						>
-							{text}
+							{renderMarkdown(text)}
 						</span>
 					);
 				}

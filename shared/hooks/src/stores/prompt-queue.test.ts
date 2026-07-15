@@ -19,18 +19,17 @@ describe("prompt-queue store", () => {
 		expect(usePromptQueueStore.getState().dequeue("thread-1")).toBeUndefined();
 	});
 
-	test("drains the next message after a turn completes", () => {
+	test("peeks without removing the front prompt", () => {
 		usePromptQueueStore.setState({ queueByThread: {} });
 
-		usePromptQueueStore.getState().enqueue("thread-1", textMessage("queued"));
+		usePromptQueueStore.getState().enqueue("thread-1", textMessage("first"));
+		usePromptQueueStore.getState().enqueue("thread-1", textMessage("second"));
+
+		expect(usePromptQueueStore.getState().peek("thread-1")?.message).toEqual(
+			textMessage("first")
+		);
 		expect(
 			usePromptQueueStore.getState().queueByThread["thread-1"]
-		).toHaveLength(1);
-
-		const next = usePromptQueueStore.getState().dequeue("thread-1");
-		expect(next?.message).toEqual(textMessage("queued"));
-		expect(
-			usePromptQueueStore.getState().queueByThread["thread-1"] ?? []
-		).toHaveLength(0);
+		).toHaveLength(2);
 	});
 });

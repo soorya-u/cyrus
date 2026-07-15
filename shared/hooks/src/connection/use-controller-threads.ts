@@ -21,6 +21,27 @@ import { usePromptQueueStore } from "../stores/prompt-queue";
 import { useProjects } from "./use-projects";
 import { useThreads } from "./use-threads";
 
+function listOpenConversationTurnIds(
+	queryClient: ReturnType<typeof useQueryClient>,
+	threadId: string
+): string[] {
+	const data = queryClient.getQueryData<GetConversationsOutput>(
+		RTC_OPERATION_KEYS.getConversations(threadId)
+	);
+	const conversations = data?.conversations ?? [];
+	const turnIds = new Set(conversations.map((entry) => entry.chunk.turnId));
+	const terminalTurnIds = new Set(
+		conversations
+			.filter(
+				(entry) =>
+					entry.chunk.event.type === "turn_completed" ||
+					entry.chunk.event.type === "turn_interrupted"
+			)
+			.map((entry) => entry.chunk.turnId)
+	);
+	return [...turnIds].filter((id) => !terminalTurnIds.has(id));
+}
+
 export function useControllerThreads() {
 	const queryClient = useQueryClient();
 	const { connection: workerConnection, orpc: orpcController } = useRtc();
@@ -179,18 +200,23 @@ export function useControllerThreads() {
 						return;
 					}
 					if (activeTurnByThreadRef.current.has(threadId)) return;
+					if (listOpenConversationTurnIds(queryClient, threadId).length > 0) {
+						return;
+					}
 
-					const next = usePromptQueueStore.getState().dequeue(threadId);
+					const next = usePromptQueueStore.getState().peek(threadId);
 					if (!next) return;
 
 					const result = await sendMessageNow(threadId, next.message);
 					if (result.isErr()) return;
+
+					usePromptQueueStore.getState().remove(threadId, next.id);
 				}
 			} finally {
 				drainingQueueRef.current.delete(threadId);
 			}
 		},
-		[sendMessageNow]
+		[queryClient, sendMessageNow]
 	);
 
 	useEffect(() => {
@@ -204,7 +230,10 @@ export function useControllerThreads() {
 		threadId: string,
 		message: ChatMessage
 	): Promise<Result<void, unknown>> {
-		if (isThreadActive(threadId)) {
+		if (
+			isThreadActive(threadId) ||
+			listOpenConversationTurnIds(queryClient, threadId).length > 0
+		) {
 			usePromptQueueStore.getState().enqueue(threadId, message);
 			return Result.ok(undefined);
 		}
@@ -220,24 +249,7 @@ export function useControllerThreads() {
 		setThreadStopping(threadId, true);
 
 		try {
-			const data = queryClient.getQueryData<GetConversationsOutput>(
-				RTC_OPERATION_KEYS.getConversations(threadId)
-			);
-			const conversations = data?.conversations ?? [];
-
-			const turnIds = new Set(conversations.map((entry) => entry.chunk.turnId));
-			const terminalTurnIds = new Set(
-				conversations
-					.filter(
-						(entry) =>
-							entry.chunk.event.type === "turn_completed" ||
-							entry.chunk.event.type === "turn_interrupted"
-					)
-					.map((entry) => entry.chunk.turnId)
-			);
-			const activeTurnIds = [...turnIds].filter(
-				(id) => !terminalTurnIds.has(id)
-			);
+			const activeTurnIds = listOpenConversationTurnIds(queryClient, threadId);
 
 			for (const turnId of activeTurnIds) {
 				appendTurnTerminal(queryClient, threadId, turnId, "turn_interrupted");

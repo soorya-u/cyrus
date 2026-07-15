@@ -67,4 +67,22 @@ describe("searchFiles", () => {
 		expect(paths).toContain("apps/web/package.json");
 		expect(paths).toContain("apps/web/src/index.tsx");
 	});
+
+	test("preserves leading dots in path-prefix search queries", async () => {
+		const root = await mkdtemp(join(tmpdir(), "cyrus-search-dot-"));
+		await initGitRepo(root);
+		await mkdir(join(root, ".github/workflows"), { recursive: true });
+		await writeFile(join(root, ".github/workflows/ci.yml"), "name: ci\n");
+		await writeFile(join(root, ".env"), "SECRET=1\n");
+
+		const pathResult = await searchFiles(root, ".github/workflows", 20);
+		expect(
+			pathResult.entries.some(
+				(entry) => entry.path === ".github/workflows/ci.yml"
+			)
+		).toBe(true);
+
+		const envResult = await searchFiles(root, "@.env", 20);
+		expect(envResult.entries.some((entry) => entry.path === ".env")).toBe(true);
+	});
 });

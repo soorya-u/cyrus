@@ -142,11 +142,31 @@ export function useAgentCatalog({
 				});
 			}
 			const previousModels = queryClient.getQueryData(modelsQueryKey);
+			const previousModes = queryClient.getQueryData(modesQueryKey);
+			const previousEfforts = queryClient.getQueryData(effortsQueryKey);
+			const previousPersonas = queryClient.getQueryData(personaQueryKey);
+			const previousCapabilities = capabilities;
+			const previousCommands = commands;
+			const previousUsage = contextUsage;
 			if (previousAgent && previousAgent !== variables.agentName) {
 				queryClient.setQueryData(modelsQueryKey, { models: [] });
 				queryClient.setQueryData(modesQueryKey, { modes: [] });
+				queryClient.setQueryData(effortsQueryKey, { efforts: [] });
+				queryClient.setQueryData(personaQueryKey, { personas: [] });
+				setCapabilities(threadId, {});
+				setCommands(threadId, []);
+				setContextUsage(threadId, null);
 			}
-			return { previousThreads, previousModels };
+			return {
+				previousThreads,
+				previousModels,
+				previousModes,
+				previousEfforts,
+				previousPersonas,
+				previousCapabilities,
+				previousCommands,
+				previousUsage,
+			};
 		},
 		onSuccess: (data) => {
 			queryClient.setQueryData(modelsQueryKey, { models: data.models });
@@ -164,6 +184,24 @@ export function useAgentCatalog({
 			}
 			if (context?.previousModels) {
 				queryClient.setQueryData(modelsQueryKey, context.previousModels);
+			}
+			if (context?.previousModes) {
+				queryClient.setQueryData(modesQueryKey, context.previousModes);
+			}
+			if (context?.previousEfforts) {
+				queryClient.setQueryData(effortsQueryKey, context.previousEfforts);
+			}
+			if (context?.previousPersonas) {
+				queryClient.setQueryData(personaQueryKey, context.previousPersonas);
+			}
+			if (context?.previousCapabilities) {
+				setCapabilities(threadId, context.previousCapabilities);
+			}
+			if (context?.previousCommands) {
+				setCommands(threadId, context.previousCommands);
+			}
+			if (context && "previousUsage" in context) {
+				setContextUsage(threadId, context.previousUsage ?? null);
 			}
 		},
 		onSettled: () => {

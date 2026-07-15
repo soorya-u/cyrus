@@ -20,6 +20,7 @@ import {
 	KEY_ARROW_DOWN_COMMAND,
 	KEY_ARROW_UP_COMMAND,
 	KEY_ENTER_COMMAND,
+	KEY_ESCAPE_COMMAND,
 	KEY_TAB_COMMAND,
 	type LexicalNode,
 	type ParagraphNode,
@@ -62,8 +63,8 @@ function $messageFromEditor(): ChatMessage {
 	let textBuffer = "";
 
 	function flushText() {
-		const trimmed = textBuffer.replaceAll(COMPOSER_CHIP_PLACEHOLDER, "").trim();
-		if (trimmed) blocks.push({ type: "text", text: trimmed });
+		const text = textBuffer.replaceAll(COMPOSER_CHIP_PLACEHOLDER, "");
+		if (text.length > 0) blocks.push({ type: "text", text });
 		textBuffer = "";
 	}
 
@@ -90,7 +91,11 @@ function $messageFromEditor(): ChatMessage {
 		}
 	};
 
-	for (const child of $getRoot().getChildren()) visit(child);
+	const paragraphs = $getRoot().getChildren();
+	for (const [index, child] of paragraphs.entries()) {
+		if (index > 0) textBuffer += "\n";
+		visit(child);
+	}
 	flushText();
 	return blocks;
 }
@@ -203,6 +208,17 @@ function CommandKeyPlugin({
 				KEY_TAB_COMMAND,
 				(event) => {
 					if (handle("Tab", event)) {
+						event?.preventDefault();
+						return true;
+					}
+					return false;
+				},
+				COMMAND_PRIORITY_HIGH
+			),
+			editor.registerCommand(
+				KEY_ESCAPE_COMMAND,
+				(event) => {
+					if (handle("Escape", event)) {
 						event?.preventDefault();
 						return true;
 					}

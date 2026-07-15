@@ -7,7 +7,8 @@ import { env } from "@/lib/env";
 
 const LIST_FILES_MAX_ENTRIES = 25_000;
 const LIST_FILES_SCAN_TIMEOUT_MS = 15_000;
-const SEARCH_QUERY_PREFIX_PATTERN = /^[@./]+/;
+const MENTION_PREFIX_PATTERN = /^@/;
+const RELATIVE_PATH_PREFIX_PATTERN = /^\.?\//;
 
 function expandHomeDirectory(cwd: string): string {
 	if (cwd === "~") return os.homedir();
@@ -96,7 +97,10 @@ export async function searchFiles(
 	truncated: boolean;
 }> {
 	const resolved = path.resolve(expandHomeDirectory(cwd));
-	const normalized = query.trim().replace(SEARCH_QUERY_PREFIX_PATTERN, "");
+	const normalized = query
+		.trim()
+		.replace(MENTION_PREFIX_PATTERN, "")
+		.replace(RELATIVE_PATH_PREFIX_PATTERN, "");
 	if (!normalized) {
 		return { entries: [], truncated: false };
 	}

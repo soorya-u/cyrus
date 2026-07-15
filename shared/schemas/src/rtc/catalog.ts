@@ -24,8 +24,8 @@ export const AvailableCommandSchema = z.object({
 });
 
 export const ContextUsageSchema = z.object({
-	used: z.number().optional(),
-	limit: z.number().optional(),
+	used: z.number().min(0).optional(),
+	limit: z.number().min(0).optional(),
 });
 
 export const GetContextUsageOutputSchema = z.object({

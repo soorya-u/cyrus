@@ -3,6 +3,7 @@ import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { AgentModelPicker } from "@/components/chat/composer/agent-model-picker";
 import { CompactComposerControls } from "@/components/chat/composer/compact-composer-controls";
 import { ComposerContextUsage } from "@/components/chat/composer/composer-context-usage";
+import { shouldShowModeSelector } from "@/components/chat/composer/composer-mode";
 import {
 	Select,
 	SelectContent,
@@ -84,7 +85,7 @@ export function ComposerFooterControls({
 				/>
 			) : (
 				<>
-					{modes.length > 0 && (
+					{shouldShowModeSelector(modes) && (
 						<>
 							<Separator
 								className="mx-0.5 hidden h-4 sm:block"
