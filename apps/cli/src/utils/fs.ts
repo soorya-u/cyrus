@@ -112,28 +112,33 @@ export async function searchFiles(
 		}
 
 		const isPathPrefix = normalized.includes("/");
-		const result = isPathPrefix
-			? finder.fileSearch(normalized, { pageSize: limit })
-			: finder.mixedSearch(normalized, { pageSize: limit });
-		if (!result.ok) throw new Error(result.error);
+		if (isPathPrefix) {
+			const result = finder.fileSearch(normalized, { pageSize: limit });
+			if (!result.ok) throw new Error(result.error);
+			const entries = result.value.items.map((item) => ({
+				path: item.relativePath.replaceAll("\\", "/"),
+				kind: "file" as const,
+			}));
+			return {
+				entries,
+				truncated: result.value.totalMatched > entries.length,
+			};
+		}
 
-		const entries = isPathPrefix
-			? result.value.items.map((item) => ({
-					path: item.relativePath.replaceAll("\\", "/"),
+		const result = finder.mixedSearch(normalized, { pageSize: limit });
+		if (!result.ok) throw new Error(result.error);
+		const entries = result.value.items.map((item) => {
+			if (item.type === "file") {
+				return {
+					path: item.item.relativePath.replaceAll("\\", "/"),
 					kind: "file" as const,
-				}))
-			: result.value.items.map((item) => {
-					if (item.type === "file") {
-						return {
-							path: item.item.relativePath.replaceAll("\\", "/"),
-							kind: "file" as const,
-						};
-					}
-					return {
-						path: item.item.relativePath.replaceAll("\\", "/"),
-						kind: "directory" as const,
-					};
-				});
+				};
+			}
+			return {
+				path: item.item.relativePath.replaceAll("\\", "/"),
+				kind: "directory" as const,
+			};
+		});
 
 		return {
 			entries,
