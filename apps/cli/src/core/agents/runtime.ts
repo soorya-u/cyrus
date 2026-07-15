@@ -13,6 +13,7 @@ import {
 	modelsFromSession,
 	modesFromSession,
 	personasFromSession,
+	reconcileInvalidSelectConfigOptions,
 } from "./catalog";
 import { mapPromptBlocksToAcp } from "./prompt";
 
@@ -178,6 +179,38 @@ export class AgentRuntime {
 			sessionId
 		);
 		await session.setModel(modelId);
+		// Model is already applied — reconcile is best-effort so a dependent
+		// reset failure does not report setModel as failed (client refreshes on ok).
+		await Result.tryPromise(() =>
+			this.reconcileDependentConfigOptions(
+				threadId,
+				projectId,
+				cwd,
+				sessionId,
+				session
+			)
+		);
+	}
+
+	private async reconcileDependentConfigOptions(
+		threadId: string,
+		projectId: string,
+		cwd: string,
+		sessionId: string,
+		session: RuntimeSession
+	): Promise<void> {
+		const resets = reconcileInvalidSelectConfigOptions(
+			session.transcript.session.configOptions
+		);
+		for (const reset of resets)
+			await this.setConfigOption(
+				threadId,
+				projectId,
+				cwd,
+				sessionId,
+				reset.configId,
+				reset.value
+			);
 	}
 
 	async setMode(
@@ -324,6 +357,20 @@ export class AgentRuntime {
 			sessionId: session.sessionId,
 			prompt: mapPromptBlocksToAcp(blocks, cwd),
 		});
+	}
+
+	getLiveSession(threadId: string): {
+		sessionId: string;
+		projectId: string;
+		cwd: string;
+	} | null {
+		const entry = this.sessions.get(threadId);
+		if (!entry) return null;
+		return {
+			sessionId: entry.session.sessionId,
+			projectId: entry.projectId,
+			cwd: entry.cwd,
+		};
 	}
 
 	async cancel(threadId: string): Promise<void> {

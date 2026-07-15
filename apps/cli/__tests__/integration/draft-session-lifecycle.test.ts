@@ -39,8 +39,8 @@ function createMockSession(sessionId: string): RuntimeSession {
 
 const sessions: RuntimeSession[] = [];
 
-mock.module("@cyrus/database/repositories/projects", () => ({
-	resolveProjectCwd: async () => Result.ok("/tmp/project"),
+mock.module("@cyrus/database/repositories/git", () => ({
+	resolveThreadGitCwd: async () => Result.ok("/tmp/project"),
 }));
 
 mock.module("@cyrus/database/repositories/threads", () => ({
@@ -52,6 +52,11 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 	) => {
 		threadState.agentName = data.agentName;
 		threadState.sessionId = data.sessionId;
+		return Promise.resolve(Result.ok({ ...threadState }));
+	},
+	clearThreadDraftBinding: () => {
+		threadState.agentName = undefined;
+		threadState.sessionId = undefined;
 		return Promise.resolve(Result.ok({ ...threadState }));
 	},
 }));
@@ -81,7 +86,7 @@ describe("draft session lifecycle", () => {
 		threadState.agentLocked = undefined;
 	});
 
-	test("bind then catalog then prompt reuses the same session id", async () => {
+	test("bind keeps session in memory until persistBoundSession", async () => {
 		const coordinator = createCoordinator();
 
 		const bound = await coordinator.bindAgent(
@@ -93,11 +98,21 @@ describe("draft session lifecycle", () => {
 		if (bound.isErr()) throw new Error("expected bind to succeed");
 		expect(bound.value.sessionId).toBe("session-1");
 		expect(bound.value.capabilities).toEqual({ loadSession: true });
+		expect(threadState.sessionId).toBeUndefined();
+		expect(threadState.agentName).toBeUndefined();
 
 		const models = await coordinator.getModels("thread-1");
 		expect(models.isOk()).toBe(true);
 		if (models.isErr()) throw new Error("expected models to succeed");
 		expect(models.value[0]?.id).toBe("model-1");
+
+		const persisted = await coordinator.persistBoundSession(
+			"thread-1",
+			"project-1"
+		);
+		expect(persisted.isOk()).toBe(true);
+		expect(threadState.sessionId).toBe("session-1");
+		expect(threadState.agentName).toBe("mock-agent");
 
 		const prompt = await coordinator.prompt(
 			"mock-agent",
@@ -152,5 +167,23 @@ describe("draft session lifecycle", () => {
 		);
 
 		expect(sessions[0]?.close).toHaveBeenCalled();
+	});
+
+	test("clears stale draft db binding without resuming it", async () => {
+		threadState.agentName = "mock-agent";
+		threadState.sessionId = "stale-session";
+		threadState.agentLocked = undefined;
+
+		const coordinator = createCoordinator();
+		const bound = await coordinator.bindAgent(
+			"thread-1",
+			"project-1",
+			"mock-agent"
+		);
+		expect(bound.isOk()).toBe(true);
+		if (bound.isErr()) throw new Error("expected bind to succeed");
+		expect(bound.value.sessionId).toBe("session-1");
+		expect(threadState.sessionId).toBeUndefined();
+		expect(threadState.agentName).toBeUndefined();
 	});
 });

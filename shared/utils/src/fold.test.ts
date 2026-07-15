@@ -153,4 +153,27 @@ describe("fold", () => {
 
 		expect(conversation.turns[0]?.state).toBe("interrupted");
 	});
+
+	test("folds thread error events into error views", () => {
+		const conversation = folded([
+			entry(1, "turn-1", { type: "user_message", content: "Hello" }),
+			entry(2, "turn-1", {
+				type: "thread_error",
+				message: "Agent crashed",
+				code: "coordinator.runtime",
+			}),
+			entry(3, "turn-1", { type: "turn_interrupted" }),
+		]);
+
+		expect(conversation.errors).toEqual([
+			{
+				code: "coordinator.runtime",
+				createdAt: "2026-07-11T00:00:02.000Z",
+				id: "error-entry-2",
+				message: "Agent crashed",
+				turnId: "turn-1",
+			},
+		]);
+		expect(conversation.turns[0]?.state).toBe("interrupted");
+	});
 });

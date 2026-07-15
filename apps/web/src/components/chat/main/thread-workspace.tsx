@@ -47,6 +47,16 @@ export function ThreadWorkspace({
 
 	const lastTurn = conversation.turns.at(-1);
 	const lastTurnStateRef = useRef(lastTurn?.state);
+	// Only orphan tip errors (e.g. bind failures) block send. Turn errors stay in
+	// the feed so a failed turn does not permanently prevent the next message.
+	const lastError = conversation.errors.at(-1) ?? null;
+	const lastMessageAt = conversation.messages.at(-1)?.createdAt;
+	const composerBlockingError =
+		lastError &&
+		!conversation.turns.some((turn) => turn.id === lastError.turnId) &&
+		(lastMessageAt == null || lastError.createdAt >= lastMessageAt)
+			? lastError
+			: null;
 
 	useEffect(() => {
 		if (!(diffOpen && lastTurn)) return;
@@ -97,6 +107,7 @@ export function ThreadWorkspace({
 						projectId={projectId}
 						stopping={stopping}
 						thread={thread}
+						threadError={composerBlockingError}
 						threadId={thread.id}
 					/>
 				</div>

@@ -60,6 +60,14 @@ export function useWorkerConversationSync(): void {
 		if (!isTerminalChunk(chunk)) return;
 
 		settleTurnWaiter(chunk.threadId, chunk.turnId, chunk.event);
+		if (chunk.event.type === "turn_completed") {
+			queryClient.invalidateQueries({
+				predicate: (query) =>
+					Array.isArray(query.queryKey) &&
+					query.queryKey[0] === "controller" &&
+					query.queryKey[1] === "list-threads",
+			});
+		}
 		// Persisted events already arrived via subscribe; prune handled in
 		// applyChunkToCache. Mark stale without refetching — an immediate refetch
 		// swaps local entry IDs for server IDs and remounts the feed.

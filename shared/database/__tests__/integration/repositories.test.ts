@@ -8,8 +8,10 @@ import {
 	listProjects,
 } from "@cyrus/database/repositories/projects";
 import {
+	applyAutoThreadTitle,
 	createThread,
 	ensureThread,
+	getThread,
 	listThreads,
 	renameThread,
 	threadNameFromPrompt,
@@ -37,7 +39,7 @@ describe("database repositories", () => {
 		});
 	});
 
-	test("creates threads and derives names from first message", async () => {
+	test("creates threads without renaming from first message before turn completion", async () => {
 		await withTempDatabase(async () => {
 			const project = await createProject("Repo");
 			expect(project.isOk()).toBe(true);
@@ -50,8 +52,54 @@ describe("database repositories", () => {
 			expect(thread.isOk()).toBe(true);
 			if (!thread.isOk()) return;
 
-			expect(thread.value.name).toBe("Fix the failing tests");
+			expect(thread.value.name).toBe("New thread");
 			expect(threadNameFromPrompt("  hello  ")).toBe("hello");
+		});
+	});
+
+	test("auto-title replaces default name and preserves manual renames", async () => {
+		await withTempDatabase(async () => {
+			const project = await createProject("Repo");
+			expect(project.isOk()).toBe(true);
+			if (!project.isOk()) return;
+
+			const thread = await createThread(project.value.id);
+			expect(thread.isOk()).toBe(true);
+			if (!thread.isOk()) return;
+
+			const renamed = await renameThread(thread.value.id, "Manual title");
+			expect(renamed.isOk()).toBe(true);
+			if (!renamed.isOk()) return;
+
+			const preserved = await applyAutoThreadTitle(
+				thread.value.id,
+				"First user message",
+				"Assistant summary sentence."
+			);
+			expect(preserved.isOk()).toBe(true);
+			if (!preserved.isOk()) return;
+			expect(preserved.value).toBeUndefined();
+
+			const refreshed = await getThread(thread.value.id);
+			expect(refreshed.isOk()).toBe(true);
+			if (!refreshed.isOk()) return;
+			expect(refreshed.value?.name).toBe("Manual title");
+
+			const defaultThread = await createThread(project.value.id);
+			expect(defaultThread.isOk()).toBe(true);
+			if (!defaultThread.isOk()) return;
+
+			const autoTitled = await applyAutoThreadTitle(
+				defaultThread.value.id,
+				"Fix the failing tests in auth module",
+				"Updated the auth tests and they pass now."
+			);
+			expect(autoTitled.isOk()).toBe(true);
+			if (!autoTitled.isOk()) return;
+			expect(autoTitled.value?.name).toBe(
+				"Fix the failing tests in auth module"
+			);
+			expect(autoTitled.value?.titleSource).toBe("auto");
 		});
 	});
 

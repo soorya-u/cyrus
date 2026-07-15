@@ -1,7 +1,20 @@
+import type { CoordinatorError } from "@cyrus/errors/coordinator";
+import {
+	type TurnError,
+	turnEmitFailed,
+	turnErrorMessageFromUnknown,
+	turnStreamFailed,
+} from "@cyrus/errors/turn";
 import type { ChatChunk, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import { Result } from "better-result";
 import type { WorkerRuntime } from "@/core";
+import {
+	coordinatorErrorCode,
+	coordinatorErrorMessage,
+} from "@/utils/thread-errors";
+
+type RunTurnError = TurnError | CoordinatorError;
 
 type RunTurnOptions = {
 	agentName: string;
@@ -26,7 +39,7 @@ export async function runTurn({
 	emit,
 	emitTerminal,
 	runtime,
-}: RunTurnOptions): Promise<Result<void, unknown>> {
+}: RunTurnOptions): Promise<Result<void, RunTurnError>> {
 	const started = await Result.tryPromise(async () => {
 		await emit({
 			type: "user_message",
@@ -36,8 +49,14 @@ export async function runTurn({
 		await emit({ type: "thread_started", threadId });
 	});
 	if (started.isErr()) {
+		const error = turnEmitFailed(turnErrorMessageFromUnknown(started.error));
+		await emit({
+			type: "thread_error",
+			message: error.message,
+			code: error._tag,
+		});
 		await emitTerminal({ type: "turn_interrupted" });
-		return started;
+		return Result.err(error);
 	}
 
 	const promptResult = await runtime.threadCoordinator.prompt(
@@ -47,6 +66,11 @@ export async function runTurn({
 		message
 	);
 	if (promptResult.isErr()) {
+		await emit({
+			type: "thread_error",
+			message: coordinatorErrorMessage(promptResult.error),
+			code: coordinatorErrorCode(promptResult.error),
+		});
 		await emitTerminal({ type: "turn_interrupted" });
 		return Result.err(promptResult.error);
 	}
@@ -56,8 +80,14 @@ export async function runTurn({
 	});
 
 	if (streamed.isErr()) {
+		const error = turnStreamFailed(turnErrorMessageFromUnknown(streamed.error));
+		await emit({
+			type: "thread_error",
+			message: error.message,
+			code: error._tag,
+		});
 		await emitTerminal({ type: "turn_interrupted" });
-		return streamed;
+		return Result.err(error);
 	}
 
 	await emitTerminal({ type: "turn_completed" });

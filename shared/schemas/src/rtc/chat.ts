@@ -247,11 +247,18 @@ export const TurnInterruptedEventSchema = z.object({
 	type: z.literal("turn_interrupted"),
 });
 
+export const ThreadErrorEventSchema = z.object({
+	type: z.literal("thread_error"),
+	message: z.string(),
+	code: z.string().optional(),
+});
+
 export const AgentEventSchema = z.discriminatedUnion("type", [
 	ThreadStartedEventSchema,
 	UserMessageEventSchema,
 	TurnCompletedEventSchema,
 	TurnInterruptedEventSchema,
+	ThreadErrorEventSchema,
 	TokenEventSchema,
 	ThoughtEventSchema,
 	MessageCompletedEventSchema,

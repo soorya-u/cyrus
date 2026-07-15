@@ -14,6 +14,7 @@ import { useRtc } from "../contexts/rtc";
 
 const EMPTY: ThreadConversation = {
 	diffs: [],
+	errors: [],
 	messages: [],
 	thoughts: [],
 	toolCalls: [],

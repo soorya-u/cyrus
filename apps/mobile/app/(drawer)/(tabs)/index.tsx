@@ -1,2 +1,9 @@
-// biome-ignore lint/performance/noBarrelFile: Expo Router route entry point
-export { MobileChatApp as default } from "@/components/mobile-chat-app";
+import { Text, View } from "react-native";
+
+export default function ThreadsTab() {
+	return (
+		<View style={{ padding: 16 }}>
+			<Text>Threads (stub)</Text>
+		</View>
+	);
+}

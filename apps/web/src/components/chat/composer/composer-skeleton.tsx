@@ -1,17 +1,15 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Full composer rectangle — height mirrors the empty glass shell:
+ * pt-3.5 + editor min-h-17.5 + pb-2 + footer h-8 + pb-2.5 (= 8.375rem).
+ * sm: pt-4 + … + pb-3 (= 8.625rem).
+ */
 export function ComposerSkeleton() {
 	return (
-		<div className="group rounded-[22px] p-px transition-colors duration-200">
-			<div className="chat-composer-glass rounded-4xl border border-border transition-colors duration-200">
-				<div className="relative px-3 pt-3.5 pb-2 sm:px-4 sm:pt-4">
-					<Skeleton className="min-h-17.5 w-full rounded-2xl" />
-				</div>
-				<div className="flex min-w-0 flex-nowrap items-center justify-between gap-2 px-2.5 pb-2.5 sm:gap-0 sm:px-3 sm:pb-3">
-					<Skeleton className="h-8 w-36 max-w-48 rounded-md sm:max-w-56" />
-					<Skeleton className="size-8 shrink-0 rounded-full" />
-				</div>
-			</div>
+		<div className="group rounded-[22px] p-px" role="status">
+			<span className="sr-only">Loading composer</span>
+			<Skeleton className="h-[8.375rem] w-full rounded-4xl border border-border sm:h-[8.625rem]" />
 		</div>
 	);
 }

@@ -40,13 +40,7 @@ export function projectsHandlers({ os, runtime }: ControllerDeps) {
 			if (listed.isErr()) throwOrpc(listed.error);
 
 			for (const thread of listed.value) {
-				if (thread.sessionId && thread.agentName) {
-					await runtime.threadCoordinator.closeThreadSession(
-						thread.id,
-						thread.sessionId,
-						thread.agentName
-					);
-				}
+				await runtime.threadCoordinator.closeAnyThreadSession(thread.id);
 			}
 
 			const deleted = await deleteStoredProject(input.projectId);

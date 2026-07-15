@@ -1,5 +1,6 @@
 import type {
 	DiffView,
+	ErrorView,
 	MessageView,
 	ThoughtView,
 	ThreadConversation,
@@ -32,11 +33,18 @@ export type DiffFeedEntry = FeedEntryBase & {
 	turnId: string;
 };
 
+export type ErrorFeedEntry = FeedEntryBase & {
+	type: "error";
+	error: ErrorView;
+	turnId: string;
+};
+
 export type FeedEntry =
 	| MessageFeedEntry
 	| ThoughtFeedEntry
 	| ToolFeedEntry
-	| DiffFeedEntry;
+	| DiffFeedEntry
+	| ErrorFeedEntry;
 
 type TimelineItem = {
 	createdAt: string;
@@ -54,7 +62,8 @@ function buildTurnTimeline(
 	messages: MessageView[],
 	thoughts: ThoughtView[],
 	toolCalls: ToolCallView[],
-	diffs: DiffView[]
+	diffs: DiffView[],
+	errors: ErrorView[]
 ): FeedEntry[] {
 	const timeline: TimelineItem[] = [];
 
@@ -117,6 +126,20 @@ function buildTurnTimeline(
 		});
 	}
 
+	for (const error of errors) {
+		if (error.turnId !== turnId) continue;
+		timeline.push({
+			createdAt: error.createdAt,
+			kind: 5,
+			entry: {
+				type: "error",
+				id: error.id,
+				error,
+				turnId,
+			},
+		});
+	}
+
 	timeline.sort((left, right) => {
 		const leftIsUser = left.kind === 0;
 		const rightIsUser = right.kind === 0;
@@ -146,7 +169,8 @@ export function deriveFeed(
 				conversation.messages,
 				conversation.thoughts,
 				conversation.toolCalls,
-				conversation.diffs
+				conversation.diffs,
+				conversation.errors
 			)
 		);
 	}
@@ -156,7 +180,52 @@ export function deriveFeed(
 		entries.push({ type: "message", id: message.id, message });
 	}
 
+	const orphanedErrors = conversation.errors.filter(
+		(error) => !knownTurnIds.has(error.turnId)
+	);
+	for (const error of orphanedErrors) {
+		insertFeedEntryByCreatedAt(entries, {
+			type: "error",
+			id: error.id,
+			error,
+			turnId: error.turnId,
+		});
+	}
+
 	return entries;
+}
+
+function feedEntryCreatedAt(entry: FeedEntry): string | null {
+	switch (entry.type) {
+		case "message":
+			return entry.message.createdAt;
+		case "thought":
+			return entry.thought.createdAt;
+		case "tool":
+			return entry.tool.createdAt;
+		case "diff":
+			return null;
+		case "error":
+			return entry.error.createdAt;
+		default: {
+			const _exhaustive: never = entry;
+			return _exhaustive;
+		}
+	}
+}
+
+function insertFeedEntryByCreatedAt(
+	entries: FeedEntry[],
+	entry: ErrorFeedEntry
+): void {
+	const createdAt = entry.error.createdAt;
+	let index = 0;
+	for (const existing of entries) {
+		const existingAt = feedEntryCreatedAt(existing);
+		if (existingAt !== null && existingAt > createdAt) break;
+		index += 1;
+	}
+	entries.splice(index, 0, entry);
 }
 
 export function getRunningTurn(

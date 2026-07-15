@@ -1,12 +1,7 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { AvailableCommand } from "@cyrus/schemas/rtc/catalog";
 import type { ListThreadsOutput } from "@cyrus/schemas/rtc/threads";
-import {
-	keepPreviousData,
-	useMutation,
-	useQuery,
-	useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useRtc } from "../contexts/rtc";
 import {
@@ -17,6 +12,8 @@ import {
 const EMPTY_COMMANDS: AvailableCommand[] = [];
 
 type CatalogOption = { id: string; name: string };
+
+const EMPTY_OPTIONS: CatalogOption[] = [];
 
 function pickExplicitOption(
 	id: string | undefined,
@@ -63,6 +60,9 @@ export function useAgentCatalog({
 	const pendingAgent = useAgentCatalogStore(
 		(state) => state.pendingAgentByThread[threadId]
 	);
+	const liveBinding = useAgentCatalogStore(
+		(state) => state.liveBindingByThread[threadId]
+	);
 	const setModelSelection = useAgentCatalogStore((state) => state.setModel);
 	const setModeSelection = useAgentCatalogStore((state) => state.setMode);
 	const setEffortSelection = useAgentCatalogStore((state) => state.setEffort);
@@ -80,14 +80,15 @@ export function useAgentCatalog({
 	const clearPendingAgent = useAgentCatalogStore(
 		(state) => state.clearPendingAgent
 	);
+	const setLiveBinding = useAgentCatalogStore((state) => state.setLiveBinding);
+	const clearLiveBinding = useAgentCatalogStore(
+		(state) => state.clearLiveBinding
+	);
 	const markResumeBindRequested = useAgentCatalogStore(
 		(state) => state.markResumeBindRequested
 	);
 	const clearResumeBindRequested = useAgentCatalogStore(
 		(state) => state.clearResumeBindRequested
-	);
-	const resumeBindRequested = useAgentCatalogStore(
-		(state) => state.resumeBindRequestedByThread[threadId]
 	);
 
 	const threadsQueryKey = RTC_OPERATION_KEYS.listThreads(projectId);
@@ -102,21 +103,20 @@ export function useAgentCatalog({
 		(item) => item.id === threadId
 	);
 	const agentLocked = Boolean(thread?.agentLocked);
-	const boundSessionId = thread?.sessionId;
+	const persistedSessionId = agentLocked ? thread?.sessionId : undefined;
+	const preferredAgent =
+		pendingAgent ??
+		liveBinding?.agentName ??
+		(agentLocked ? thread?.agentName : undefined);
 
-	const boundAgent = pickExplicitOption(
-		pendingAgent ?? thread?.agentName,
-		agents
-	);
-	const displayAgent = pickDisplayOption(
-		pendingAgent ?? thread?.agentName,
-		agents
-	);
+	const boundAgent = pickExplicitOption(preferredAgent, agents);
+	const displayAgent = pickDisplayOption(preferredAgent, agents);
+	const catalogAgent = preferredAgent ?? displayAgent;
 
-	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(threadId);
-	const modesQueryKey = RTC_OPERATION_KEYS.getModes(threadId);
-	const effortsQueryKey = RTC_OPERATION_KEYS.getEfforts(threadId);
-	const personaQueryKey = RTC_OPERATION_KEYS.getPersona(threadId);
+	const modelsQueryKey = RTC_OPERATION_KEYS.getModels(threadId, catalogAgent);
+	const modesQueryKey = RTC_OPERATION_KEYS.getModes(threadId, catalogAgent);
+	const effortsQueryKey = RTC_OPERATION_KEYS.getEfforts(threadId, catalogAgent);
+	const personaQueryKey = RTC_OPERATION_KEYS.getPersona(threadId, catalogAgent);
 	const contextUsageQueryKey = RTC_OPERATION_KEYS.getContextUsage(threadId);
 
 	const bindAgentMutation = useMutation({
@@ -124,75 +124,88 @@ export function useAgentCatalog({
 			mutationKey: RTC_OPERATION_KEYS.bindAgent,
 		}),
 		onMutate: async (variables) => {
+			const nextModelsKey = RTC_OPERATION_KEYS.getModels(
+				threadId,
+				variables.agentName
+			);
+			const nextModesKey = RTC_OPERATION_KEYS.getModes(
+				threadId,
+				variables.agentName
+			);
+			const nextEffortsKey = RTC_OPERATION_KEYS.getEfforts(
+				threadId,
+				variables.agentName
+			);
+			const nextPersonaKey = RTC_OPERATION_KEYS.getPersona(
+				threadId,
+				variables.agentName
+			);
+
 			setPendingAgent(threadId, variables.agentName);
+			const currentLive =
+				useAgentCatalogStore.getState().liveBindingByThread[threadId];
+			if (currentLive && currentLive.agentName !== variables.agentName) {
+				clearLiveBinding(threadId);
+			}
 			await queryClient.cancelQueries({ queryKey: threadsQueryKey });
 			const previousThreads =
 				queryClient.getQueryData<ListThreadsOutput>(threadsQueryKey);
-			const previousAgent = previousThreads?.threads.find(
-				(item) => item.id === threadId
-			)?.agentName;
-			if (previousThreads) {
-				queryClient.setQueryData<ListThreadsOutput>(threadsQueryKey, {
-					...previousThreads,
-					threads: previousThreads.threads.map((item) =>
-						item.id === threadId
-							? { ...item, agentName: variables.agentName }
-							: item
-					),
-				});
-			}
-			const previousModels = queryClient.getQueryData(modelsQueryKey);
-			const previousModes = queryClient.getQueryData(modesQueryKey);
-			const previousEfforts = queryClient.getQueryData(effortsQueryKey);
-			const previousPersonas = queryClient.getQueryData(personaQueryKey);
+			const previousAgent =
+				currentLive?.agentName ??
+				previousThreads?.threads.find((item) => item.id === threadId)
+					?.agentName;
 			const previousCapabilities = capabilities;
 			const previousCommands = commands;
 			const previousUsage = contextUsage;
 			if (previousAgent && previousAgent !== variables.agentName) {
-				queryClient.setQueryData(modelsQueryKey, { models: [] });
-				queryClient.setQueryData(modesQueryKey, { modes: [] });
-				queryClient.setQueryData(effortsQueryKey, { efforts: [] });
-				queryClient.setQueryData(personaQueryKey, { personas: [] });
 				setCapabilities(threadId, {});
 				setCommands(threadId, []);
 				setContextUsage(threadId, null);
 			}
 			return {
 				previousThreads,
-				previousModels,
-				previousModes,
-				previousEfforts,
-				previousPersonas,
 				previousCapabilities,
 				previousCommands,
 				previousUsage,
+				nextModelsKey,
+				nextModesKey,
+				nextEffortsKey,
+				nextPersonaKey,
 			};
 		},
-		onSuccess: (data) => {
-			queryClient.setQueryData(modelsQueryKey, { models: data.models });
-			queryClient.setQueryData(modesQueryKey, { modes: data.modes });
-			queryClient.setQueryData(effortsQueryKey, { efforts: data.efforts });
-			queryClient.setQueryData(personaQueryKey, { personas: data.personas });
+		onSuccess: (data, variables) => {
+			const agentName = variables.agentName;
+			setLiveBinding(threadId, {
+				agentName,
+				sessionId: data.sessionId,
+			});
+			queryClient.setQueryData(
+				RTC_OPERATION_KEYS.getModels(threadId, agentName),
+				{ models: data.models }
+			);
+			queryClient.setQueryData(
+				RTC_OPERATION_KEYS.getModes(threadId, agentName),
+				{ modes: data.modes }
+			);
+			queryClient.setQueryData(
+				RTC_OPERATION_KEYS.getEfforts(threadId, agentName),
+				{ efforts: data.efforts }
+			);
+			queryClient.setQueryData(
+				RTC_OPERATION_KEYS.getPersona(threadId, agentName),
+				{ personas: data.personas }
+			);
 			setCapabilities(threadId, data.capabilities);
 			setCommands(threadId, data.commands ?? []);
-			queryClient.invalidateQueries({ queryKey: threadsQueryKey });
+			if (data.agentLocked) {
+				queryClient.invalidateQueries({ queryKey: threadsQueryKey });
+			}
 			queryClient.invalidateQueries({ queryKey: contextUsageQueryKey });
 		},
 		onError: (_error, _variables, context) => {
+			clearLiveBinding(threadId);
 			if (context?.previousThreads) {
 				queryClient.setQueryData(threadsQueryKey, context.previousThreads);
-			}
-			if (context?.previousModels) {
-				queryClient.setQueryData(modelsQueryKey, context.previousModels);
-			}
-			if (context?.previousModes) {
-				queryClient.setQueryData(modesQueryKey, context.previousModes);
-			}
-			if (context?.previousEfforts) {
-				queryClient.setQueryData(effortsQueryKey, context.previousEfforts);
-			}
-			if (context?.previousPersonas) {
-				queryClient.setQueryData(personaQueryKey, context.previousPersonas);
 			}
 			if (context?.previousCapabilities) {
 				setCapabilities(threadId, context.previousCapabilities);
@@ -212,7 +225,11 @@ export function useAgentCatalog({
 
 	const { mutate: bindAgent, isPending: bindAgentPending } = bindAgentMutation;
 
-	const catalogEnabled = Boolean(boundSessionId) && !bindAgentPending;
+	const hasLiveOrPersistedSession = Boolean(
+		liveBinding?.sessionId || persistedSessionId
+	);
+	const catalogEnabled =
+		Boolean(hasLiveOrPersistedSession && catalogAgent) && !bindAgentPending;
 
 	const modelsQuery = useQuery({
 		...orpcController.getModels.queryOptions({
@@ -221,9 +238,10 @@ export function useAgentCatalog({
 		}),
 		queryKey: modelsQueryKey,
 		enabled: catalogEnabled,
-		placeholderData: keepPreviousData,
 	});
-	const models = modelsQuery.data?.models ?? [];
+	const models = catalogAgent
+		? (modelsQuery.data?.models ?? EMPTY_OPTIONS)
+		: EMPTY_OPTIONS;
 
 	const modesQuery = useQuery({
 		...orpcController.getModes.queryOptions({
@@ -232,9 +250,10 @@ export function useAgentCatalog({
 		}),
 		queryKey: modesQueryKey,
 		enabled: catalogEnabled,
-		placeholderData: keepPreviousData,
 	});
-	const modes = modesQuery.data?.modes ?? [];
+	const modes = catalogAgent
+		? (modesQuery.data?.modes ?? EMPTY_OPTIONS)
+		: EMPTY_OPTIONS;
 
 	const effortsQuery = useQuery({
 		...orpcController.getEfforts.queryOptions({
@@ -243,9 +262,10 @@ export function useAgentCatalog({
 		}),
 		queryKey: effortsQueryKey,
 		enabled: catalogEnabled,
-		placeholderData: keepPreviousData,
 	});
-	const efforts = effortsQuery.data?.efforts ?? [];
+	const efforts = catalogAgent
+		? (effortsQuery.data?.efforts ?? EMPTY_OPTIONS)
+		: EMPTY_OPTIONS;
 
 	const personaQuery = useQuery({
 		...orpcController.getPersona.queryOptions({
@@ -254,9 +274,10 @@ export function useAgentCatalog({
 		}),
 		queryKey: personaQueryKey,
 		enabled: catalogEnabled,
-		placeholderData: keepPreviousData,
 	});
-	const personas = personaQuery.data?.personas ?? [];
+	const personas = catalogAgent
+		? (personaQuery.data?.personas ?? EMPTY_OPTIONS)
+		: EMPTY_OPTIONS;
 
 	const contextUsageQuery = useQuery({
 		...orpcController.getContextUsage.queryOptions({
@@ -287,6 +308,11 @@ export function useAgentCatalog({
 		...orpcController.setModel.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.setModel,
 		}),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: effortsQueryKey });
+			queryClient.invalidateQueries({ queryKey: personaQueryKey });
+			queryClient.invalidateQueries({ queryKey: modelsQueryKey });
+		},
 	});
 	const setModeMutation = useMutation({
 		...orpcController.setMode.mutationOptions({
@@ -305,41 +331,83 @@ export function useAgentCatalog({
 	});
 
 	useEffect(() => {
-		if (!(thread?.agentName && boundSessionId) || agentLocked) return;
-		if (bindAgentPending || pendingAgent || resumeBindRequested) return;
+		bindAgentMutation.reset();
+		// Reset scoped to thread switches only — mutation identity changes each render.
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- threadId is the intentional dependency
+	}, [threadId]);
+
+	useEffect(() => {
+		const store = useAgentCatalogStore.getState();
+		if (
+			bindAgentPending ||
+			store.pendingAgentByThread[threadId] ||
+			store.resumeBindRequestedByThread[threadId]
+		) {
+			return;
+		}
 		if (bindAgentMutation.isError) return;
 
-		const cachedModels = queryClient.getQueryData<{ models: unknown[] }>(
-			modelsQueryKey
-		);
-		if (cachedModels?.models?.length) return;
+		const currentLive = store.liveBindingByThread[threadId];
+		if (currentLive) return;
+
+		// Committed threads: rehydrate the persisted session after worker restart.
+		if (agentLocked && thread?.agentName && persistedSessionId) {
+			const cachedModels = queryClient.getQueryData<{ models: unknown[] }>(
+				modelsQueryKey
+			);
+			if (cachedModels?.models?.length) return;
+
+			markResumeBindRequested(threadId);
+			bindAgent({
+				threadId,
+				projectId,
+				agentName: thread.agentName,
+			});
+			return;
+		}
+
+		// Drafts: bind the first agent; session stays worker-local until first message.
+		if (agentLocked) return;
+		const defaultAgent = agents[0]?.id;
+		if (!defaultAgent) return;
 
 		markResumeBindRequested(threadId);
 		bindAgent({
 			threadId,
 			projectId,
-			agentName: thread.agentName,
+			agentName: defaultAgent,
 		});
 	}, [
 		agentLocked,
+		agents,
 		bindAgent,
 		bindAgentMutation.isError,
 		bindAgentPending,
-		boundSessionId,
 		markResumeBindRequested,
 		modelsQueryKey,
-		pendingAgent,
+		persistedSessionId,
 		projectId,
 		queryClient,
-		resumeBindRequested,
 		thread?.agentName,
 		threadId,
 	]);
 
+	useEffect(() => {
+		if (!catalogAgent || models.length === 0) return;
+		const currentModelId =
+			useAgentCatalogStore.getState().selectionByThread[threadId]?.modelId;
+		if (currentModelId && models.some((model) => model.id === currentModelId)) {
+			return;
+		}
+		const firstModel = models[0];
+		if (!firstModel) return;
+		setModelSelection(threadId, firstModel.id);
+	}, [catalogAgent, models, setModelSelection, threadId]);
+
 	const modelsLoading =
+		Boolean(catalogAgent) &&
 		models.length === 0 &&
-		Boolean(boundAgent || displayAgent) &&
-		(bindAgentPending || (catalogEnabled && modelsQuery.isLoading));
+		(bindAgentPending || (catalogEnabled && modelsQuery.isFetching));
 
 	function selectAgent(agentName: string) {
 		if (agentLocked || (boundAgent && agentName === boundAgent)) return;
@@ -396,6 +464,7 @@ export function useAgentCatalog({
 
 	return {
 		agentLocked,
+		bindError: bindAgentMutation.error,
 		capabilities,
 		commands,
 		contextUsage,

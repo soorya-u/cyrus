@@ -4,6 +4,7 @@ export const errorModules = {
 	repository: "repository",
 	coordinator: "coordinator",
 	git: "git",
+	turn: "turn",
 } as const;
 
 export type ErrorModule = (typeof errorModules)[keyof typeof errorModules];
