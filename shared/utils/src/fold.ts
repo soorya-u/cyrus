@@ -1,7 +1,9 @@
 import type { AgentEvent, ToolCallContent } from "@cyrus/schemas/rtc/chat";
 import type { ConversationEntry } from "@cyrus/schemas/rtc/threads";
 import {
+	type ApprovalView,
 	type DiffView,
+	type ElicitationView,
 	type ErrorView,
 	type MessageView,
 	type ThoughtView,
@@ -19,6 +21,8 @@ type MutableState = {
 	toolCalls: Map<string, ToolCallView>;
 	diffs: Map<string, DiffView>;
 	errors: Map<string, ErrorView>;
+	approvals: Map<string, ApprovalView>;
+	elicitations: Map<string, ElicitationView>;
 };
 
 function touchTurn(
@@ -44,7 +48,8 @@ function touchTurn(
 function upsertDiffs(
 	diffs: Map<string, DiffView>,
 	content: ToolCallContent[] | null | undefined,
-	turnId: string
+	turnId: string,
+	toolCallId?: string
 ): void {
 	if (!content) return;
 	for (const item of content) {
@@ -55,6 +60,7 @@ function upsertDiffs(
 			id: `${turnId}:${item.path}`,
 			patch: item.patch,
 			path: item.path,
+			toolCallId,
 			turnId,
 		});
 	}
@@ -180,7 +186,7 @@ function applyToolCall(
 		toolCallId: event.toolCallId,
 		turnId,
 	});
-	upsertDiffs(state.diffs, event.content, turnId);
+	upsertDiffs(state.diffs, event.content, turnId, event.toolCallId);
 }
 
 function applyToolCallUpdate(
@@ -208,7 +214,7 @@ function applyToolCallUpdate(
 			turnId,
 		});
 	}
-	upsertDiffs(state.diffs, event.content, turnId);
+	upsertDiffs(state.diffs, event.content, turnId, event.toolCallId);
 }
 
 function applyMessageCompleted(
@@ -246,6 +252,79 @@ function applyThreadError(
 		message: event.message,
 		turnId,
 	});
+}
+
+function applyApprovalRequest(
+	state: MutableState,
+	entry: ConversationEntry,
+	event: Extract<AgentEvent, { type: "approval_request" }>,
+	turnId: string
+): void {
+	const toolCallId = event.request.toolCall.toolCallId ?? entry.id;
+	const key = `approval-${toolCallId}`;
+	state.approvals.set(key, {
+		createdAt: entry.createdAt,
+		id: key,
+		options: event.request.options.map((option) => ({
+			kind: String(option.kind),
+			name: option.name,
+			optionId: option.optionId,
+		})),
+		sessionId: event.request.sessionId,
+		threadId: entry.threadId,
+		title: event.request.toolCall.title ?? undefined,
+		toolCallId,
+		turnId,
+	});
+}
+
+function applyElicitationRequest(
+	state: MutableState,
+	entry: ConversationEntry,
+	event: Extract<AgentEvent, { type: "elicitation_request" }>,
+	turnId: string
+): void {
+	const key = `elicitation-${event.request.elicitationId}`;
+	state.elicitations.set(key, {
+		createdAt: entry.createdAt,
+		elicitationId: event.request.elicitationId,
+		id: key,
+		message: event.request.message,
+		mode: event.request.mode,
+		requestedSchema:
+			event.request.mode === "form" ? event.request.requestedSchema : undefined,
+		sessionId: event.sessionId,
+		threadId: entry.threadId,
+		turnId,
+		url: event.request.mode === "url" ? event.request.url : undefined,
+	});
+}
+
+function applyApprovalResolved(
+	state: MutableState,
+	event: Extract<AgentEvent, { type: "approval_resolved" }>
+): void {
+	const key = `approval-${event.toolCallId}`;
+	const existing = state.approvals.get(key);
+	if (existing) existing.resolved = true;
+}
+
+function applyElicitationResolved(
+	state: MutableState,
+	event: Extract<AgentEvent, { type: "elicitation_resolved" }>
+): void {
+	const key = `elicitation-${event.elicitationId}`;
+	const existing = state.elicitations.get(key);
+	if (existing) existing.resolved = true;
+}
+
+function resolveInteractiveForTurn(state: MutableState, turnId: string): void {
+	for (const approval of state.approvals.values()) {
+		if (approval.turnId === turnId) approval.resolved = true;
+	}
+	for (const elicitation of state.elicitations.values()) {
+		if (elicitation.turnId === turnId) elicitation.resolved = true;
+	}
 }
 
 function inferTurnState(
@@ -360,6 +439,22 @@ function applyEvent(
 		case "thread_error":
 			applyThreadError(state, entry, event, turnId);
 			return;
+		case "approval_request":
+			applyApprovalRequest(state, entry, event, turnId);
+			return;
+		case "approval_resolved":
+			applyApprovalResolved(state, event);
+			return;
+		case "elicitation_request":
+			applyElicitationRequest(state, entry, event, turnId);
+			return;
+		case "elicitation_resolved":
+			applyElicitationResolved(state, event);
+			return;
+		case "turn_completed":
+		case "turn_interrupted":
+			resolveInteractiveForTurn(state, turnId);
+			return;
 		default:
 			return;
 	}
@@ -369,7 +464,9 @@ export function fold(
 	entries: ConversationEntry[]
 ): Result<ThreadConversation, ZodError> {
 	const state: MutableState = {
+		approvals: new Map(),
 		diffs: new Map(),
+		elicitations: new Map(),
 		errors: new Map(),
 		messages: new Map(),
 		thoughts: new Map(),
@@ -410,7 +507,19 @@ export function fold(
 	);
 
 	const parsed = ThreadConversationSchema.safeParse({
+		approvals: [...state.approvals.values()].sort((left, right) => {
+			const leftTurn = turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER;
+			const rightTurn = turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER;
+			if (leftTurn !== rightTurn) return leftTurn - rightTurn;
+			return left.createdAt.localeCompare(right.createdAt);
+		}),
 		diffs: [...state.diffs.values()],
+		elicitations: [...state.elicitations.values()].sort((left, right) => {
+			const leftTurn = turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER;
+			const rightTurn = turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER;
+			if (leftTurn !== rightTurn) return leftTurn - rightTurn;
+			return left.createdAt.localeCompare(right.createdAt);
+		}),
 		errors: [...state.errors.values()].sort((left, right) => {
 			const leftTurn = turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER;
 			const rightTurn = turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER;

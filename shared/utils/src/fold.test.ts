@@ -140,8 +140,89 @@ describe("fold", () => {
 				id: "turn-1:README.md",
 				patch: "@@ -1 +1 @@",
 				path: "README.md",
+				toolCallId: "tool-1",
 				turnId: "turn-1",
 			},
+		]);
+	});
+
+	test("folds approval and elicitation requests", () => {
+		const conversation = folded([
+			entry(1, "turn-1", { type: "user_message", content: "Edit" }),
+			entry(2, "turn-1", {
+				type: "approval_request",
+				request: {
+					sessionId: "session-1",
+					toolCall: {
+						toolCallId: "tool-1",
+						title: "Write file",
+					},
+					options: [
+						{ optionId: "allow-once", name: "Allow", kind: "allow_once" },
+						{ optionId: "reject-once", name: "Reject", kind: "reject_once" },
+					],
+				},
+			}),
+			entry(3, "turn-1", {
+				type: "elicitation_request",
+				sessionId: "session-1",
+				request: {
+					mode: "url",
+					elicitationId: "elicit-1",
+					url: "https://example.com/auth",
+					message: "Open to continue",
+				},
+			}),
+			entry(4, "turn-1", { type: "turn_completed" }),
+		]);
+
+		expect(conversation.approvals).toEqual([
+			expect.objectContaining({
+				toolCallId: "tool-1",
+				title: "Write file",
+				turnId: "turn-1",
+				resolved: true,
+			}),
+		]);
+		expect(conversation.elicitations).toEqual([
+			expect.objectContaining({
+				elicitationId: "elicit-1",
+				mode: "url",
+				url: "https://example.com/auth",
+				turnId: "turn-1",
+				resolved: true,
+			}),
+		]);
+	});
+
+	test("marks approvals resolved on approval_resolved", () => {
+		const conversation = folded([
+			entry(1, "turn-1", { type: "user_message", content: "Edit" }),
+			entry(2, "turn-1", {
+				type: "approval_request",
+				request: {
+					sessionId: "session-1",
+					toolCall: {
+						toolCallId: "tool-1",
+						title: "Write file",
+					},
+					options: [
+						{ optionId: "allow-once", name: "Allow", kind: "allow_once" },
+					],
+				},
+			}),
+			entry(3, "turn-1", {
+				type: "approval_resolved",
+				toolCallId: "tool-1",
+				optionId: "allow-once",
+			}),
+		]);
+
+		expect(conversation.approvals).toEqual([
+			expect.objectContaining({
+				toolCallId: "tool-1",
+				resolved: true,
+			}),
 		]);
 	});
 
