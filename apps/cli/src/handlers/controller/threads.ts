@@ -70,13 +70,7 @@ export function threadsHandlers({ os, runtime }: ControllerDeps) {
 			if (thread.isErr()) throwOrpc(thread.error);
 			if (!thread.value) throwOrpc(notFound("thread", input.threadId));
 
-			if (thread.value.sessionId && thread.value.agentName) {
-				await runtime.threadCoordinator.closeThreadSession(
-					input.threadId,
-					thread.value.sessionId,
-					thread.value.agentName
-				);
-			}
+			await runtime.threadCoordinator.closeAnyThreadSession(input.threadId);
 
 			if (thread.value.worktreePath) {
 				const projectCwd = await resolveProjectCwd(thread.value.projectId);

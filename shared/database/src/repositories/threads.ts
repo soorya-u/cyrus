@@ -1,6 +1,6 @@
 import type { RepositoryError } from "@cyrus/errors/repository";
 import { notFound } from "@cyrus/errors/repository";
-import type { Thread } from "@cyrus/schemas/rtc/threads";
+import type { Thread, TitleSource } from "@cyrus/schemas/rtc/threads";
 import { ThreadSchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { nowISO } from "@cyrus/utils/time";
@@ -11,10 +11,27 @@ import { threads } from "../models/threads";
 import { repoArgs } from "../utils/repo";
 import { getProject } from "./projects";
 
+export const DEFAULT_THREAD_NAME = "New thread";
+
 export function threadNameFromPrompt(message: string): string {
 	const trimmed = message.trim();
-	if (!trimmed) return "New thread";
+	if (!trimmed) return DEFAULT_THREAD_NAME;
 	return trimmed.slice(0, 50);
+}
+
+export function generateThreadTitle(
+	userMessage: string,
+	_assistantMessage?: string
+): string {
+	return threadNameFromPrompt(userMessage);
+}
+
+function canApplyAutoTitle(thread: Thread): boolean {
+	return thread.titleSource !== "user" && thread.name === DEFAULT_THREAD_NAME;
+}
+
+function canApplyAgentTitle(thread: Thread): boolean {
+	return thread.titleSource !== "user";
 }
 
 type ThreadCreateOptions = {
@@ -41,23 +58,17 @@ const upsertThread = repoArgs(
 			.limit(1);
 
 		if (existing) {
-			const name =
-				options?.firstMessage && existing.name === "New thread"
-					? threadNameFromPrompt(options.firstMessage)
-					: existing.name;
 			const updatedAt = nowISO();
 			const agentName = options?.agentName ?? existing.agentName ?? undefined;
 			await connection.db
 				.update(threads)
 				.set({
-					name,
 					agentName: agentName ?? null,
 					updatedAt,
 				})
 				.where(and(eq(threads.id, id), eq(threads.projectId, projectId)));
 			return parseThreadRow({
 				...existing,
-				name,
 				agentName: agentName ?? null,
 				updatedAt,
 			});
@@ -67,10 +78,9 @@ const upsertThread = repoArgs(
 		const thread = ThreadSchema.parse({
 			id,
 			projectId,
-			name: options?.firstMessage
-				? threadNameFromPrompt(options.firstMessage)
-				: (options?.branch ?? "New thread"),
+			name: options?.branch ?? DEFAULT_THREAD_NAME,
 			agentName: options?.agentName,
+			titleSource: null,
 			branch: options?.branch ?? null,
 			worktreePath: options?.worktreePath ?? null,
 			createdAt,
@@ -80,6 +90,7 @@ const upsertThread = repoArgs(
 			id: thread.id,
 			projectId: thread.projectId,
 			name: thread.name,
+			titleSource: null,
 			agentName: thread.agentName ?? null,
 			sessionId: null,
 			agentLocked: 0,
@@ -155,13 +166,18 @@ export const getThreadSession = repoArgs(async (threadId: string) => {
 });
 
 const writeThreadName = repoArgs(
-	async (threadId: string, name: string, current: Thread) => {
+	async (
+		threadId: string,
+		name: string,
+		current: Thread,
+		titleSource: TitleSource
+	) => {
 		const updatedAt = nowISO();
 		await connection.db
 			.update(threads)
-			.set({ name, updatedAt })
+			.set({ name, titleSource, updatedAt })
 			.where(eq(threads.id, threadId));
-		return ThreadSchema.parse({ ...current, name, updatedAt });
+		return ThreadSchema.parse({ ...current, name, titleSource, updatedAt });
 	}
 );
 
@@ -173,7 +189,36 @@ export async function renameThread(
 	if (thread.isErr()) return Result.err(thread.error);
 	if (!thread.value) return Result.err(notFound("thread", threadId));
 
-	return writeThreadName(threadId, name, thread.value);
+	return writeThreadName(threadId, name, thread.value, "user");
+}
+
+export async function applyAutoThreadTitle(
+	threadId: string,
+	userMessage: string,
+	assistantMessage?: string
+): Promise<Result<Thread | undefined, RepositoryError>> {
+	const thread = await getThread(threadId);
+	if (thread.isErr()) return Result.err(thread.error);
+	if (!thread.value) return Result.err(notFound("thread", threadId));
+	if (!canApplyAutoTitle(thread.value)) return Result.ok(undefined);
+
+	const title = generateThreadTitle(userMessage, assistantMessage);
+	return writeThreadName(threadId, title, thread.value, "auto");
+}
+
+export async function applyAgentThreadTitle(
+	threadId: string,
+	title: string
+): Promise<Result<Thread | undefined, RepositoryError>> {
+	const trimmed = title.trim();
+	if (!trimmed) return Result.ok(undefined);
+
+	const thread = await getThread(threadId);
+	if (thread.isErr()) return Result.err(thread.error);
+	if (!thread.value) return Result.err(notFound("thread", threadId));
+	if (!canApplyAgentTitle(thread.value)) return Result.ok(undefined);
+
+	return writeThreadName(threadId, trimmed.slice(0, 50), thread.value, "agent");
 }
 
 const writeThreadWorktreePath = repoArgs(
@@ -237,6 +282,46 @@ export async function bindThreadAgent(
 	}
 
 	return writeThreadAgent(threadId, projectId, thread.value, data);
+}
+
+const clearThreadAgentBinding = repoArgs(
+	async (threadId: string, projectId: string, current: Thread) => {
+		if (!(current.agentName || current.sessionId)) {
+			return current;
+		}
+		const updatedAt = nowISO();
+		await connection.db
+			.update(threads)
+			.set({
+				agentName: null,
+				sessionId: null,
+				updatedAt,
+			})
+			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
+
+		return ThreadSchema.parse({
+			...current,
+			agentName: null,
+			sessionId: null,
+			updatedAt,
+		});
+	}
+);
+
+/** Clears leftover draft agent/session fields (unlocked threads only). */
+export async function clearThreadDraftBinding(
+	threadId: string,
+	projectId: string
+): Promise<Result<Thread, RepositoryError>> {
+	const thread = await getThread(threadId);
+	if (thread.isErr()) return Result.err(thread.error);
+	if (!thread.value) return Result.err(notFound("thread", threadId));
+	if (thread.value.projectId !== projectId) {
+		return Result.err(notFound("thread", threadId));
+	}
+	if (thread.value.agentLocked) return Result.ok(thread.value);
+
+	return clearThreadAgentBinding(threadId, projectId, thread.value);
 }
 
 const lockThreadAgent = repoArgs(async (threadId: string, current: Thread) => {

@@ -2,27 +2,29 @@
 
 ## Purpose
 
-Map Cyrus threads to ACP sessions on shared agent subprocesses, route prompts, stream events, and recover sessions after respawn.
+Map Cyrus threads to ACP sessions on shared agent subprocesses, route prompts, stream events, and recover committed sessions after respawn.
 
 ## Requirements
 
 ### Requirement: Thread to session mapping
 
-The worker SHALL maintain a mapping from Cyrus thread IDs to ACP `sessionId` values per agent, persisted in the local `threads` table and hydrated into memory on use. Sessions SHALL be created at agent bind time, not on first prompt.
+The worker SHALL maintain a mapping from Cyrus thread IDs to ACP `sessionId` values per agent in memory. Draft (unlocked) sessions SHALL remain memory-only until the first user message persists them to the local `threads` table. Sessions SHALL be created at agent bind time, not on first prompt.
 
-#### Scenario: Bind creates session
+#### Scenario: Bind creates draft session in memory
 
 - **WHEN** `bindAgent` succeeds for a draft thread
-- **THEN** the worker stores the returned `sessionId` in Turso and in the in-memory map
+- **THEN** the worker stores the returned `sessionId` in the in-memory map
+- **AND** does not write `agentName` or `sessionId` to Turso
 
-#### Scenario: First prompt reuses bound session
+#### Scenario: First prompt persists and reuses bound session
 
-- **WHEN** a prompt arrives for a thread with a persisted `sessionId`
-- **THEN** the worker calls ACP `session/prompt` on that session without creating a new one
+- **WHEN** a prompt arrives for a thread with a live in-memory session and no persisted `sessionId`
+- **THEN** the worker persists `agentName` and `sessionId` to Turso before prompting
+- **AND** calls ACP `session/prompt` on that session without creating a new one
 
 #### Scenario: Prompt without bind fails
 
-- **WHEN** a prompt arrives for a thread with no persisted `sessionId`
+- **WHEN** a prompt arrives for a thread with no in-memory session and no committed persisted `sessionId`
 - **THEN** the worker rejects the prompt with an error indicating the agent must be bound first
 
 ### Requirement: Multi-project sessions on one subprocess
@@ -36,17 +38,22 @@ The worker SHALL support multiple sessions with different `cwd` values on the sa
 
 ### Requirement: Session recovery after respawn
 
-The worker SHALL attempt to recover sessions after an agent subprocess respawn or worker restart, preferring `session/resume` over `session/load`, using the persisted `sessionId` and project `cwd` from the thread row.
+The worker SHALL attempt to recover **committed** sessions (`agentLocked` true) after an agent subprocess respawn or worker restart, preferring `session/resume` over `session/load`, using the persisted `sessionId` and project `cwd` from the thread row. Draft sessions SHALL NOT be resumed from Turso; the client SHALL call `bindAgent` again to mint a fresh session.
 
-#### Scenario: Resume on worker restart
+#### Scenario: Resume on worker restart for committed thread
 
-- **WHEN** the worker restarts and a prompt or catalog operation needs a thread with persisted `sessionId`
+- **WHEN** the worker restarts and a prompt or catalog operation needs a locked thread with persisted `sessionId`
 - **THEN** the worker re-attaches via `session/resume` when the agent advertised resume capability
+
+#### Scenario: Draft thread after worker restart
+
+- **WHEN** the worker restarts and a draft thread has no live session
+- **THEN** catalog and chat require a new `bindAgent` (no resume of a disposable draft id)
 
 #### Scenario: Load fallback
 
 - **WHEN** a subprocess respawns and the agent supports `loadSession` but not `resume`
-- **THEN** the worker calls `session/load` for the persisted `sessionId` and waits for history replay
+- **THEN** the worker calls `session/load` for the persisted `sessionId` of a locked thread and waits for history replay
 - **AND** Turso conversation entries remain the client transcript source of truth
 
 ### Requirement: ACP event mapping

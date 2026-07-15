@@ -2,6 +2,7 @@ import type { AgentEvent, ToolCallContent } from "@cyrus/schemas/rtc/chat";
 import type { ConversationEntry } from "@cyrus/schemas/rtc/threads";
 import {
 	type DiffView,
+	type ErrorView,
 	type MessageView,
 	type ThoughtView,
 	type ThreadConversation,
@@ -17,6 +18,7 @@ type MutableState = {
 	thoughts: Map<string, ThoughtView>;
 	toolCalls: Map<string, ToolCallView>;
 	diffs: Map<string, DiffView>;
+	errors: Map<string, ErrorView>;
 };
 
 function touchTurn(
@@ -230,6 +232,22 @@ function applyMessageCompleted(
 	});
 }
 
+function applyThreadError(
+	state: MutableState,
+	entry: ConversationEntry,
+	event: Extract<AgentEvent, { type: "thread_error" }>,
+	turnId: string
+): void {
+	const key = `error-${entry.id}`;
+	state.errors.set(key, {
+		code: event.code,
+		createdAt: entry.createdAt,
+		id: key,
+		message: event.message,
+		turnId,
+	});
+}
+
 function inferTurnState(
 	turnEntries: ConversationEntry[],
 	isLatest: boolean
@@ -237,6 +255,9 @@ function inferTurnState(
 	const events = turnEntries.map((entry) => entry.chunk.event);
 
 	if (events.some((event) => event.type === "turn_interrupted")) {
+		return "interrupted";
+	}
+	if (events.some((event) => event.type === "thread_error")) {
 		return "interrupted";
 	}
 	if (events.some((event) => event.type === "turn_completed")) {
@@ -336,6 +357,9 @@ function applyEvent(
 		case "tool_call_update":
 			applyToolCallUpdate(state, entry, event, turnId);
 			return;
+		case "thread_error":
+			applyThreadError(state, entry, event, turnId);
+			return;
 		default:
 			return;
 	}
@@ -346,6 +370,7 @@ export function fold(
 ): Result<ThreadConversation, ZodError> {
 	const state: MutableState = {
 		diffs: new Map(),
+		errors: new Map(),
 		messages: new Map(),
 		thoughts: new Map(),
 		toolCalls: new Map(),
@@ -386,6 +411,12 @@ export function fold(
 
 	const parsed = ThreadConversationSchema.safeParse({
 		diffs: [...state.diffs.values()],
+		errors: [...state.errors.values()].sort((left, right) => {
+			const leftTurn = turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER;
+			const rightTurn = turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER;
+			if (leftTurn !== rightTurn) return leftTurn - rightTurn;
+			return left.createdAt.localeCompare(right.createdAt);
+		}),
 		thoughts: [...state.thoughts.values()]
 			.filter((thought) => thought.content.trim().length > 0)
 			.sort((left, right) => {

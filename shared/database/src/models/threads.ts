@@ -7,6 +7,7 @@ export const threads = sqliteTable("threads", {
 		.notNull()
 		.references(() => projects.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
+	titleSource: text("title_source"),
 	agentName: text("agent_name"),
 	sessionId: text("session_id"),
 	agentLocked: integer("agent_locked").notNull().default(0),

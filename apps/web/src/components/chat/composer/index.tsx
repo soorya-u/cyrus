@@ -3,8 +3,13 @@ import { useGitStatus } from "@cyrus/hooks/connection/use-git";
 import { useListAgents } from "@cyrus/hooks/connection/use-list-agents";
 import { useProjects } from "@cyrus/hooks/connection/use-projects";
 import { useSearchEntries } from "@cyrus/hooks/connection/use-search-entries";
+import {
+	useComposerDraft,
+	useComposerDraftStore,
+} from "@cyrus/hooks/stores/composer-draft";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
+import type { ErrorView } from "@cyrus/schemas/view";
 import { cn } from "cnfast";
 import {
 	type ClipboardEvent,
@@ -69,6 +74,7 @@ export function Composer({
 	onStop,
 	busy = false,
 	stopping = false,
+	threadError = null,
 }: {
 	projectId: string;
 	threadId: string;
@@ -77,6 +83,7 @@ export function Composer({
 	onStop?: () => void;
 	busy?: boolean;
 	stopping?: boolean;
+	threadError?: ErrorView | null;
 }) {
 	const agentsQuery = useListAgents();
 	const agents = agentsQuery.data?.agents ?? [];
@@ -95,9 +102,11 @@ export function Composer({
 		catalog.promptCapabilities.embeddedContext !== false;
 	const canAttachFiles = Boolean(threadCwd) && supportsEmbeddedContext;
 	const canPasteUrls = supportsEmbeddedContext;
+	const composerBlocked = Boolean(threadError ?? catalog.bindError);
 
 	const gitStatus = useGitStatus(threadId);
 	const isGitRepo = gitStatus.data?.isRepo === true;
+	const { setValue: setDraft, clear: clearDraft } = useComposerDraft(threadId);
 	const [plainText, setPlainText] = useState("");
 	const [hasContent, setHasContent] = useState(false);
 	const [sending, setSending] = useState(false);
@@ -106,8 +115,40 @@ export function Composer({
 	const [mentionDismissed, setMentionDismissed] = useState(false);
 	const [slashDismissed, setSlashDismissed] = useState(false);
 	const editorRef = useRef<ComposerPromptEditorHandle | null>(null);
-	const submitStateRef = useRef({ busy, stopping, sending, hasAgents });
-	submitStateRef.current = { busy, stopping, sending, hasAgents };
+	const restoredForThreadRef = useRef<string | null>(null);
+	const submitStateRef = useRef({
+		busy,
+		stopping,
+		sending,
+		hasAgents,
+		composerBlocked,
+	});
+	submitStateRef.current = {
+		busy,
+		stopping,
+		sending,
+		hasAgents,
+		composerBlocked,
+	};
+
+	// restore persisted draft once per thread (do not depend on draftMessage —
+	// setMessage triggers onChange → setDraft and would loop)
+	useEffect(() => {
+		if (restoredForThreadRef.current === threadId) return;
+		restoredForThreadRef.current = threadId;
+		const draft = useComposerDraftStore.getState().draftsByThread[threadId];
+		const frame = requestAnimationFrame(() => {
+			if (draft && draft.length > 0) {
+				editorRef.current?.setMessage(draft);
+				setHasContent(true);
+			} else {
+				editorRef.current?.clear();
+				setPlainText("");
+				setHasContent(false);
+			}
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [threadId]);
 
 	const triggerText = textForTriggers(plainText);
 
@@ -171,7 +212,14 @@ export function Composer({
 
 	const submit = useCallback(async () => {
 		const state = submitStateRef.current;
-		if (state.stopping || state.sending || !state.hasAgents) return;
+		if (
+			state.stopping ||
+			state.sending ||
+			!state.hasAgents ||
+			state.composerBlocked
+		) {
+			return;
+		}
 		const message = editorRef.current?.getMessage() ?? [];
 		if (message.length === 0) return;
 
@@ -181,10 +229,11 @@ export function Composer({
 			editorRef.current?.clear();
 			setPlainText("");
 			setHasContent(false);
+			clearDraft();
 		} finally {
 			setSending(false);
 		}
-	}, [onSend]);
+	}, [clearDraft, onSend]);
 
 	const handleMentionKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {
@@ -262,6 +311,7 @@ export function Composer({
 	function handlePlainTextChange(next: string) {
 		setPlainText(next);
 		setHasContent(editorRef.current?.hasContent() ?? false);
+		setDraft(editorRef.current?.getMessage() ?? []);
 
 		const trigger = textForTriggers(next);
 		if (canPasteUrls && TRAILING_URL_PATTERN.test(trigger)) {
@@ -360,7 +410,7 @@ export function Composer({
 						>
 							<ComposerPrimaryAction
 								busy={busy}
-								canSend={hasContent}
+								canSend={hasContent && !composerBlocked}
 								onStop={onStop}
 								sending={sending}
 								stopping={stopping}

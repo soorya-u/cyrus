@@ -11,12 +11,18 @@ type ThreadCatalogSelection = {
 	personaId?: string;
 };
 
+type LiveThreadBinding = {
+	agentName: string;
+	sessionId: string;
+};
+
 type AgentCatalogState = {
 	selectionByThread: Record<string, ThreadCatalogSelection>;
 	capabilitiesByThread: Record<string, Record<string, unknown>>;
 	commandsByThread: Record<string, AvailableCommand[]>;
 	contextUsageByThread: Record<string, ContextUsage | null>;
 	pendingAgentByThread: Record<string, string | undefined>;
+	liveBindingByThread: Record<string, LiveThreadBinding | undefined>;
 	resumeBindRequestedByThread: Record<string, boolean>;
 	setModel: (threadId: string, modelId: string) => void;
 	setMode: (threadId: string, modeId: string) => void;
@@ -30,6 +36,8 @@ type AgentCatalogState = {
 	setContextUsage: (threadId: string, usage: ContextUsage | null) => void;
 	setPendingAgent: (threadId: string, agentName: string) => void;
 	clearPendingAgent: (threadId: string) => void;
+	setLiveBinding: (threadId: string, binding: LiveThreadBinding) => void;
+	clearLiveBinding: (threadId: string) => void;
 	markResumeBindRequested: (threadId: string) => void;
 	clearResumeBindRequested: (threadId: string) => void;
 };
@@ -53,15 +61,36 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 	commandsByThread: {},
 	contextUsageByThread: {},
 	pendingAgentByThread: {},
+	liveBindingByThread: {},
 	resumeBindRequestedByThread: {},
 	setModel: (threadId, modelId) =>
-		set((state) => patchSelection(state, threadId, { modelId })),
+		set((state) => {
+			if (state.selectionByThread[threadId]?.modelId === modelId) {
+				return state;
+			}
+			return patchSelection(state, threadId, { modelId });
+		}),
 	setMode: (threadId, modeId) =>
-		set((state) => patchSelection(state, threadId, { modeId })),
+		set((state) => {
+			if (state.selectionByThread[threadId]?.modeId === modeId) {
+				return state;
+			}
+			return patchSelection(state, threadId, { modeId });
+		}),
 	setEffort: (threadId, effortId) =>
-		set((state) => patchSelection(state, threadId, { effortId })),
+		set((state) => {
+			if (state.selectionByThread[threadId]?.effortId === effortId) {
+				return state;
+			}
+			return patchSelection(state, threadId, { effortId });
+		}),
 	setPersona: (threadId, personaId) =>
-		set((state) => patchSelection(state, threadId, { personaId })),
+		set((state) => {
+			if (state.selectionByThread[threadId]?.personaId === personaId) {
+				return state;
+			}
+			return patchSelection(state, threadId, { personaId });
+		}),
 	setCapabilities: (threadId, capabilities) =>
 		set((state) => ({
 			capabilitiesByThread: {
@@ -108,6 +137,29 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 			const { [threadId]: _removed, ...pendingAgentByThread } =
 				state.pendingAgentByThread;
 			return { pendingAgentByThread };
+		}),
+	setLiveBinding: (threadId, binding) =>
+		set((state) => {
+			const current = state.liveBindingByThread[threadId];
+			if (
+				current?.agentName === binding.agentName &&
+				current.sessionId === binding.sessionId
+			) {
+				return state;
+			}
+			return {
+				liveBindingByThread: {
+					...state.liveBindingByThread,
+					[threadId]: binding,
+				},
+			};
+		}),
+	clearLiveBinding: (threadId) =>
+		set((state) => {
+			if (!(threadId in state.liveBindingByThread)) return state;
+			const { [threadId]: _removed, ...liveBindingByThread } =
+				state.liveBindingByThread;
+			return { liveBindingByThread };
 		}),
 	markResumeBindRequested: (threadId) =>
 		set((state) => ({

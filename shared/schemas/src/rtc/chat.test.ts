@@ -99,6 +99,17 @@ describe("chat schemas", () => {
 				},
 			})
 		).toMatchObject({ type: "plan_update" });
+
+		expect(
+			AgentEventSchema.parse({
+				type: "thread_error",
+				message: "Session resume failed",
+				code: "coordinator.runtime",
+			})
+		).toMatchObject({
+			type: "thread_error",
+			message: "Session resume failed",
+		});
 	});
 
 	test("parses chat chunks with nested events", () => {

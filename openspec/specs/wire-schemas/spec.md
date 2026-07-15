@@ -177,3 +177,12 @@ The controller SHALL provide optional `getContextUsage({ threadId })` returning 
 
 - **WHEN** the agent session reports token usage metadata
 - **THEN** `getContextUsage` returns used and limit values
+
+### Requirement: Thread error wire event
+
+The system SHALL define a `thread_error` chat event schema in `@cyrus/schemas/rtc/chat` with a human-readable message and optional error code. The event SHALL be persistable as a `ConversationEntry`.
+
+#### Scenario: Schema exported
+
+- **WHEN** a consumer imports chat event types from `@cyrus/schemas/rtc/chat`
+- **THEN** `ThreadErrorEventSchema` is available and included in the `AgentEvent` union

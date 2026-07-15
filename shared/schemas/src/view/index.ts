@@ -48,11 +48,20 @@ export const TurnViewSchema = z.object({
 	completedAt: z.string().nullable(),
 });
 
+export const ErrorViewSchema = z.object({
+	id: z.string(),
+	message: z.string(),
+	code: z.string().optional(),
+	createdAt: z.string(),
+	turnId: z.string(),
+});
+
 export const ThreadConversationSchema = z.object({
 	messages: z.array(MessageViewSchema),
 	thoughts: z.array(ThoughtViewSchema),
 	toolCalls: z.array(ToolCallViewSchema),
 	diffs: z.array(DiffViewSchema),
+	errors: z.array(ErrorViewSchema),
 	turns: z.array(TurnViewSchema),
 });
 
@@ -61,4 +70,5 @@ export type ThoughtView = z.infer<typeof ThoughtViewSchema>;
 export type ToolCallView = z.infer<typeof ToolCallViewSchema>;
 export type DiffView = z.infer<typeof DiffViewSchema>;
 export type TurnView = z.infer<typeof TurnViewSchema>;
+export type ErrorView = z.infer<typeof ErrorViewSchema>;
 export type ThreadConversation = z.infer<typeof ThreadConversationSchema>;

@@ -7,6 +7,8 @@ const nullableString = z
 	.nullish()
 	.transform((value) => value ?? null);
 
+export const TitleSourceSchema = z.enum(["auto", "agent", "user"]);
+
 export const ThreadSchema = z.object({
 	id: z.string(),
 	projectId: z.string(),
@@ -14,6 +16,7 @@ export const ThreadSchema = z.object({
 	agentName: optionalString,
 	sessionId: optionalString,
 	agentLocked: optionalBoolean,
+	titleSource: TitleSourceSchema.nullable(),
 	branch: nullableString.optional(),
 	worktreePath: nullableString.optional(),
 	createdAt: z.string(),
@@ -72,6 +75,7 @@ export const GetConversationsOutputSchema = z.object({
 	conversations: z.array(ConversationEntrySchema),
 });
 
+export type TitleSource = z.infer<typeof TitleSourceSchema>;
 export type Thread = z.infer<typeof ThreadSchema>;
 export type ConversationEntry = z.infer<typeof ConversationEntrySchema>;
 export type ProjectQueryInput = z.infer<typeof ProjectQueryInputSchema>;

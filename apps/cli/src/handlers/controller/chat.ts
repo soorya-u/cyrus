@@ -1,9 +1,11 @@
 import { appendConversation } from "@cyrus/database/repositories/conversations";
 import {
+	applyAgentThreadTitle,
 	ensureThread,
 	getThread,
 	setAgentLocked,
 } from "@cyrus/database/repositories/threads";
+import { CoordinatorAgentNotBoundError } from "@cyrus/errors/coordinator";
 import { throwOrpc } from "@cyrus/errors/orpc";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
@@ -16,6 +18,7 @@ import {
 	resolvePersistEvent,
 	trackDelta,
 } from "@/utils/streams";
+import { maybeApplyAutoThreadTitle } from "@/utils/thread-title";
 import type { ControllerDeps } from "./deps";
 
 export function chatHandlers({ os, runtime }: ControllerDeps) {
@@ -31,12 +34,25 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 
 			const existing = await getThread(threadId);
 			if (existing.isErr()) throwOrpc(existing.error);
-			if (!(existing.value?.sessionId && existing.value.agentName))
-				throw new ORPCError("BAD_REQUEST", {
-					message: "agent must be bound before chat; call bindAgent first",
+			if (!existing.value)
+				throw new ORPCError("NOT_FOUND", {
+					message: `thread ${threadId} not found`,
 				});
 
-			if (existing.value.agentName !== agentName)
+			const persisted = await runtime.threadCoordinator.persistBoundSession(
+				threadId,
+				projectId
+			);
+			if (persisted.isErr()) {
+				if (CoordinatorAgentNotBoundError.is(persisted.error)) {
+					throw new ORPCError("BAD_REQUEST", {
+						message: "agent must be bound before chat; call bindAgent first",
+					});
+				}
+				throwOrpc(persisted.error);
+			}
+
+			if (persisted.value.agentName !== agentName)
 				throw new ORPCError("BAD_REQUEST", {
 					message: "agentName does not match the bound thread agent",
 				});
@@ -55,7 +71,25 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				context.eventBus.publish(chunk);
 			}
 
+			async function applySessionTitleUpdate(
+				event: ChatChunk["event"]
+			): Promise<boolean> {
+				if (
+					event.type !== "session_update" ||
+					event.sessionUpdate !== "session_info_update"
+				) {
+					return false;
+				}
+				const raw = event.raw as { title?: string | null } | undefined;
+				if (typeof raw?.title === "string" && raw.title.trim()) {
+					await applyAgentThreadTitle(threadId, raw.title);
+				}
+				return true;
+			}
+
 			async function emit(event: ChatChunk["event"]): Promise<void> {
+				if (await applySessionTitleUpdate(event)) return;
+
 				trackDelta(event, messageBuffers, thoughtBuffers);
 
 				if (isStreamingDelta(event))
@@ -100,6 +134,9 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 
 				if (entry.isOk()) {
 					publishChunk(entry.value.chunk);
+					if (event.type === "turn_completed") {
+						await maybeApplyAutoThreadTitle(threadId, turnId);
+					}
 					return;
 				}
 

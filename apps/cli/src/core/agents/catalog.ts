@@ -132,3 +132,27 @@ function flattenSelectOptions(
 	}
 	return flattened;
 }
+
+function selectOptionValues(
+	options: SessionConfigSelectOptions
+): SessionConfigSelectOption["value"][] {
+	return flattenSelectOptions(options).map((option) => option.value);
+}
+
+export function reconcileInvalidSelectConfigOptions(
+	options: SessionConfigOption[]
+): Array<{ configId: string; value: string }> {
+	const resets: Array<{ configId: string; value: string }> = [];
+
+	for (const option of options) {
+		if (option.type !== "select") continue;
+		const validValues = new Set(selectOptionValues(option.options));
+		if (validValues.size === 0) continue;
+		if (validValues.has(option.currentValue)) continue;
+		const fallback = [...validValues][0];
+		if (!fallback) continue;
+		resets.push({ configId: option.id, value: fallback });
+	}
+
+	return resets;
+}

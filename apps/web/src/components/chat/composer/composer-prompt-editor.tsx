@@ -124,9 +124,27 @@ function $deleteBackwardChars(count: number) {
 	}
 }
 
+function $setMessage(message: ChatMessage): void {
+	const root = $getRoot();
+	root.clear();
+	const paragraph = $createParagraphNode();
+	for (const block of message) {
+		if (block.type === "text") {
+			if (block.text) paragraph.append($createTextNode(block.text));
+			continue;
+		}
+		paragraph.append($createComposerResourceNode(block.uri, block.name));
+		paragraph.append($createTextNode(" "));
+	}
+	root.append(paragraph);
+	if (message.length > 0) paragraph.selectEnd();
+}
+
 export type ComposerPromptEditorHandle = {
 	focus: () => void;
 	clear: () => void;
+	setPlainText: (text: string) => void;
+	setMessage: (message: ChatMessage) => void;
 	getPlainText: () => string;
 	getMessage: () => ChatMessage;
 	hasContent: () => boolean;
@@ -255,6 +273,16 @@ function EditorHandlePlugin({
 					root.append($createParagraphNode());
 				});
 			},
+			setPlainText: (text) => {
+				editor.update(() => {
+					$setMessage(text ? [{ type: "text", text }] : []);
+				});
+			},
+			setMessage: (message) => {
+				editor.update(() => {
+					$setMessage(message);
+				});
+			},
 			getPlainText: () => {
 				let text = "";
 				editor.getEditorState().read(() => {
@@ -356,6 +384,12 @@ const ComposerPromptEditorInner = forwardRef<
 	useImperativeHandle(ref, () => ({
 		focus: () => handleRef.current?.focus(),
 		clear: () => handleRef.current?.clear(),
+		setPlainText: (text) => {
+			handleRef.current?.setPlainText(text);
+		},
+		setMessage: (message) => {
+			handleRef.current?.setMessage(message);
+		},
 		getPlainText: () => handleRef.current?.getPlainText() ?? "",
 		getMessage: () => handleRef.current?.getMessage() ?? [],
 		hasContent: () => handleRef.current?.hasContent() ?? false,

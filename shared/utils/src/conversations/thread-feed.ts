@@ -1,5 +1,6 @@
 import type {
 	DiffView,
+	ErrorView,
 	MessageView,
 	ThoughtView,
 	ThreadConversation,
@@ -32,11 +33,18 @@ export type DiffFeedEntry = FeedEntryBase & {
 	turnId: string;
 };
 
+export type ErrorFeedEntry = FeedEntryBase & {
+	type: "error";
+	error: ErrorView;
+	turnId: string;
+};
+
 export type FeedEntry =
 	| MessageFeedEntry
 	| ThoughtFeedEntry
 	| ToolFeedEntry
-	| DiffFeedEntry;
+	| DiffFeedEntry
+	| ErrorFeedEntry;
 
 type TimelineItem = {
 	createdAt: string;
@@ -54,7 +62,8 @@ function buildTurnTimeline(
 	messages: MessageView[],
 	thoughts: ThoughtView[],
 	toolCalls: ToolCallView[],
-	diffs: DiffView[]
+	diffs: DiffView[],
+	errors: ErrorView[]
 ): FeedEntry[] {
 	const timeline: TimelineItem[] = [];
 
@@ -117,6 +126,20 @@ function buildTurnTimeline(
 		});
 	}
 
+	for (const error of errors) {
+		if (error.turnId !== turnId) continue;
+		timeline.push({
+			createdAt: error.createdAt,
+			kind: 5,
+			entry: {
+				type: "error",
+				id: error.id,
+				error,
+				turnId,
+			},
+		});
+	}
+
 	timeline.sort((left, right) => {
 		const leftIsUser = left.kind === 0;
 		const rightIsUser = right.kind === 0;
@@ -146,7 +169,8 @@ export function deriveFeed(
 				conversation.messages,
 				conversation.thoughts,
 				conversation.toolCalls,
-				conversation.diffs
+				conversation.diffs,
+				conversation.errors
 			)
 		);
 	}
@@ -154,6 +178,16 @@ export function deriveFeed(
 	for (const message of conversation.messages) {
 		if (!message.turnId || knownTurnIds.has(message.turnId)) continue;
 		entries.push({ type: "message", id: message.id, message });
+	}
+
+	for (const error of conversation.errors) {
+		if (knownTurnIds.has(error.turnId)) continue;
+		entries.push({
+			type: "error",
+			id: error.id,
+			error,
+			turnId: error.turnId,
+		});
 	}
 
 	return entries;

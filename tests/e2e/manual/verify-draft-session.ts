@@ -83,7 +83,7 @@ try {
 	});
 	const thread = await client.createThread({ projectId: project.project.id });
 
-	console.log("3. bindAgent");
+	console.log("3. bindAgent (memory-only)");
 	const bound = await client.bindAgent({
 		threadId: thread.thread.id,
 		projectId: project.project.id,
@@ -91,12 +91,19 @@ try {
 	});
 	console.log("   sessionId:", bound.sessionId);
 	console.log("   models:", bound.models.length);
+	const afterBind = await client.listThreads({
+		projectId: project.project.id,
+	});
+	const draftRow = afterBind.threads.find((t) => t.id === thread.thread.id);
+	if (draftRow?.sessionId) {
+		throw new Error("bindAgent should not persist sessionId on draft threads");
+	}
 
 	console.log("4. getModels");
 	const models = await client.getModels({ threadId: thread.thread.id });
 	console.log("   models:", models.models.length);
 
-	console.log("5. chat (locks agent)");
+	console.log("5. chat (persists + locks agent)");
 	await client.chat({
 		threadId: thread.thread.id,
 		projectId: project.project.id,
@@ -108,9 +115,10 @@ try {
 	for (let i = 0; i < 40; i++) {
 		const listed = await client.listThreads({ projectId: project.project.id });
 		const row = listed.threads.find((t) => t.id === thread.thread.id);
-		if (row?.agentLocked) {
+		if (row?.agentLocked && row.sessionId) {
 			locked = true;
 			console.log("   agentLocked: true");
+			console.log("   sessionId persisted:", row.sessionId);
 			break;
 		}
 		await Bun.sleep(500);

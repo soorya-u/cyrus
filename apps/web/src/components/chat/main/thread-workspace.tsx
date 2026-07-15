@@ -47,6 +47,10 @@ export function ThreadWorkspace({
 
 	const lastTurn = conversation.turns.at(-1);
 	const lastTurnStateRef = useRef(lastTurn?.state);
+	const latestThreadError =
+		conversation.errors.find((error) => error.turnId === lastTurn?.id) ??
+		conversation.errors.at(-1) ??
+		null;
 
 	useEffect(() => {
 		if (!(diffOpen && lastTurn)) return;
@@ -97,6 +101,7 @@ export function ThreadWorkspace({
 						projectId={projectId}
 						stopping={stopping}
 						thread={thread}
+						threadError={latestThreadError}
 						threadId={thread.id}
 					/>
 				</div>
