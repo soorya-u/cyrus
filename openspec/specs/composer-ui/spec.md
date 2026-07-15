@@ -47,3 +47,47 @@ The composer send/stop button SHALL match t3code primary action behavior: round 
 
 - **WHEN** a message is being sent or the connection is establishing
 - **THEN** the send button displays a spinner instead of the arrow icon
+
+### Requirement: Mode selector in composer footer
+
+The composer footer SHALL expose a mode selector when the bound thread session reports available modes.
+
+#### Scenario: Mode visible
+
+- **WHEN** `getModes` returns non-empty options for a bound thread
+- **THEN** the composer footer displays a mode dropdown on wide viewports
+- **AND** the compact overflow menu includes mode on narrow viewports
+- **AND** `setMode` is called on selection
+
+#### Scenario: No modes
+
+- **WHEN** the agent exposes no modes
+- **THEN** the mode selector is hidden
+
+### Requirement: Capability-aware composer controls
+
+Clients SHALL cache agent capabilities from `bindAgent` per thread and hide unsupported composer affordances.
+
+#### Scenario: Attachments hidden
+
+- **WHEN** capabilities indicate embedded context is not supported
+- **THEN** file and URL attachment controls are not shown
+
+#### Scenario: Slash commands hidden
+
+- **WHEN** the agent exposes no available commands
+- **THEN** the composer placeholder omits slash-command guidance
+
+### Requirement: Context consumption display
+
+When the bound session provides token or context usage data, the composer footer SHALL display current consumption near catalog controls.
+
+#### Scenario: Usage visible
+
+- **WHEN** `getContextUsage` returns used and limit values
+- **THEN** the composer shows usage text (e.g. tokens used vs limit)
+
+#### Scenario: Usage hidden
+
+- **WHEN** the agent does not report usage
+- **THEN** no usage indicator is shown
