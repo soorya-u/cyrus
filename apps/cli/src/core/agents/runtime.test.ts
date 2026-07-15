@@ -92,7 +92,8 @@ describe("AgentRuntime", () => {
 			"project-1",
 			"/tmp/project",
 			"session-1",
-			[{ type: "text", text: "hello" }]
+			[{ type: "text", text: "hello" }],
+			"turn-1"
 		)) {
 			events.push(event.type);
 		}

@@ -9,6 +9,7 @@ import { chatHandlers } from "./chat";
 import { defineControllerOs } from "./deps";
 import { fsHandlers } from "./fs";
 import { gitHandlers } from "./git";
+import { interactiveHandlers } from "./interactive";
 import { projectsHandlers } from "./projects";
 import { threadsHandlers } from "./threads";
 
@@ -28,5 +29,6 @@ export function createControllerRouter(runtime: WorkerRuntime) {
 		...personaHandlers(deps),
 		...contextHandlers(deps),
 		...chatHandlers(deps),
+		...interactiveHandlers(deps),
 	};
 }

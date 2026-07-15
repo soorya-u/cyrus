@@ -5,6 +5,7 @@ import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Result } from "better-result";
 import { setSessionConfigOption } from "@/core/acp/config";
+import { interactivePending } from "@/core/acp/interactive";
 import type { AgentPool } from "@/core/acp/pool";
 import { mapRuntimeSessionEvent } from "../acp/events";
 import {
@@ -292,7 +293,8 @@ export class AgentRuntime {
 		projectId: string,
 		cwd: string,
 		sessionId: string,
-		content: ChatMessage
+		content: ChatMessage,
+		turnId: string
 	): AsyncGenerator<AgentEvent> {
 		await this.ensureHealthyPool();
 
@@ -305,6 +307,16 @@ export class AgentRuntime {
 		const blocks = content;
 		const queue: AgentEvent[] = [];
 		let wake: (() => void) | undefined;
+
+		const unbindTurn = interactivePending.bindTurn({
+			sessionId: session.sessionId,
+			threadId,
+			turnId,
+			pushEvent: (event) => {
+				queue.push(event);
+				wake?.();
+			},
+		});
 
 		const unsub = session.on("event", (event) => {
 			this.syncMetadataFromEvent(threadId, event);
@@ -332,6 +344,8 @@ export class AgentRuntime {
 			}
 		} finally {
 			unsub();
+			unbindTurn();
+			interactivePending.clearThread(threadId);
 		}
 	}
 

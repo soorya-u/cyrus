@@ -1,6 +1,8 @@
-import type { RuntimeSessionEvent } from "@acp-kit/core";
 import type {
-	RequestPermissionRequest,
+	RuntimePermissionRequest,
+	RuntimeSessionEvent,
+} from "@acp-kit/core";
+import type {
 	SessionNotification,
 	SessionUpdate,
 	ToolCallUpdate,
@@ -193,17 +195,34 @@ export function mapSessionNotification(
 }
 
 export function mapApprovalRequest(
-	request: RequestPermissionRequest
+	request: RuntimePermissionRequest
 ): AgentEvent {
+	const rawToolCall = request.raw.toolCall as ToolCallUpdate & { id?: string };
+	const fields = mapToolCallUpdateFields(rawToolCall);
+	const toolCallId =
+		request.toolCallId ||
+		fields.toolCallId ||
+		rawToolCall.toolCallId ||
+		rawToolCall.id ||
+		"unknown-tool-call";
+
 	return ApprovalRequestEventSchema.parse({
 		type: "approval_request",
 		request: {
 			sessionId: request.sessionId,
-			toolCall: mapToolCallUpdateFields(request.toolCall),
-			options: request.options.map((option) => ({
-				optionId: option.optionId,
-				name: option.name,
-				kind: option.kind,
+			toolCall: {
+				...fields,
+				toolCallId,
+				title:
+					request.title ||
+					fields.title ||
+					rawToolCall.title ||
+					"Permission required",
+			},
+			options: (request.options ?? []).map((option) => ({
+				optionId: option.optionId ?? option.kind ?? "deny",
+				name: option.name ?? option.optionId ?? option.kind ?? "Option",
+				kind: option.kind ?? "reject_once",
 			})),
 		},
 	});
