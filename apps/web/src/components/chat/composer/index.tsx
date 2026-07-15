@@ -5,22 +5,29 @@ import { useProjects } from "@cyrus/hooks/connection/use-projects";
 import { useSearchEntries } from "@cyrus/hooks/connection/use-search-entries";
 import {
 	useComposerDraft,
+	useComposerDraftHydrated,
 	useComposerDraftStore,
 } from "@cyrus/hooks/stores/composer-draft";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
-import type { ErrorView } from "@cyrus/schemas/view";
+import type {
+	ApprovalView,
+	ElicitationView,
+	ErrorView,
+} from "@cyrus/schemas/view";
 import { cn } from "cnfast";
 import {
 	type ClipboardEvent,
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
 import { FileMentionAutocomplete } from "@/components/chat/composer/composer-attachments";
 import { ComposerBranchToolbar } from "@/components/chat/composer/composer-branch-toolbar";
+import { ComposerPendingInteractive } from "@/components/chat/composer/composer-interactive";
 import {
 	type ComposerCommandKey,
 	ComposerPromptEditor,
@@ -43,6 +50,8 @@ const URL_PATTERN = /^https?:\/\/\S+$/i;
 const TRAILING_URL_PATTERN = /(?:^|\s)(https?:\/\/\S+)(\s+)$/i;
 const URL_IN_TEXT_PATTERN = /https?:\/\/\S+/i;
 const TRAILING_SLASHES_PATTERN = /\/+$/;
+const EMPTY_APPROVALS: ApprovalView[] = [];
+const EMPTY_ELICITATIONS: ElicitationView[] = [];
 
 function buildComposerPlaceholder(options: {
 	canAttachFiles: boolean;
@@ -75,6 +84,8 @@ export function Composer({
 	busy = false,
 	stopping = false,
 	threadError = null,
+	pendingApprovals = EMPTY_APPROVALS,
+	pendingElicitations = EMPTY_ELICITATIONS,
 }: {
 	projectId: string;
 	threadId: string;
@@ -84,6 +95,8 @@ export function Composer({
 	busy?: boolean;
 	stopping?: boolean;
 	threadError?: ErrorView | null;
+	pendingApprovals?: ApprovalView[];
+	pendingElicitations?: ElicitationView[];
 }) {
 	const agentsQuery = useListAgents();
 	const agents = agentsQuery.data?.agents ?? [];
@@ -107,6 +120,7 @@ export function Composer({
 	const gitStatus = useGitStatus(threadId);
 	const isGitRepo = gitStatus.data?.isRepo === true;
 	const { setValue: setDraft, clear: clearDraft } = useComposerDraft(threadId);
+	const draftHydrated = useComposerDraftHydrated();
 	const [plainText, setPlainText] = useState("");
 	const [hasContent, setHasContent] = useState(false);
 	const [sending, setSending] = useState(false);
@@ -115,7 +129,9 @@ export function Composer({
 	const [mentionDismissed, setMentionDismissed] = useState(false);
 	const [slashDismissed, setSlashDismissed] = useState(false);
 	const editorRef = useRef<ComposerPromptEditorHandle | null>(null);
-	const restoredForThreadRef = useRef<string | null>(null);
+	/** Ignore Lexical empty onChange until draft restore finishes for this mount. */
+	const ignoringEmptyDraftWriteRef = useRef(false);
+	const draftRestoreGenerationRef = useRef(0);
 	const submitStateRef = useRef({
 		busy,
 		stopping,
@@ -131,24 +147,58 @@ export function Composer({
 		composerBlocked,
 	};
 
-	// restore persisted draft once per thread (do not depend on draftMessage —
-	// setMessage triggers onChange → setDraft and would loop)
+	const activeElicitation =
+		pendingElicitations.find((item) => !item.resolved) ?? null;
+	const activeApproval =
+		pendingApprovals.find((item) => !item.resolved) ?? null;
+	const isInteractivePending = Boolean(activeElicitation || activeApproval);
+
+	const editorReady =
+		draftHydrated &&
+		!agentsLoading &&
+		!agentsQuery.isError &&
+		!(agentsReady && !hasAgents) &&
+		!isInteractivePending;
+
+	// Arm before Lexical's mount-time empty onChange can clear localStorage.
+	useLayoutEffect(() => {
+		if (!editorReady) return;
+		ignoringEmptyDraftWriteRef.current = true;
+	}, [editorReady, threadId]);
+
+	// Restore after the editor is actually mounted (not skeleton / approval UI).
 	useEffect(() => {
-		if (restoredForThreadRef.current === threadId) return;
-		restoredForThreadRef.current = threadId;
-		const draft = useComposerDraftStore.getState().draftsByThread[threadId];
-		const frame = requestAnimationFrame(() => {
+		if (!editorReady) return;
+
+		const generation = ++draftRestoreGenerationRef.current;
+		let cancelled = false;
+		let attempts = 0;
+
+		const restore = () => {
+			if (cancelled || generation !== draftRestoreGenerationRef.current) return;
+			const editor = editorRef.current;
+			if (!editor) {
+				if (attempts++ < 60) requestAnimationFrame(restore);
+				return;
+			}
+
+			const draft = useComposerDraftStore.getState().draftsByThread[threadId];
 			if (draft && draft.length > 0) {
-				editorRef.current?.setMessage(draft);
+				editor.setMessage(draft);
 				setHasContent(true);
 			} else {
-				editorRef.current?.clear();
+				editor.clear();
 				setPlainText("");
 				setHasContent(false);
 			}
-		});
-		return () => cancelAnimationFrame(frame);
-	}, [threadId]);
+			ignoringEmptyDraftWriteRef.current = false;
+		};
+
+		restore();
+		return () => {
+			cancelled = true;
+		};
+	}, [editorReady, threadId]);
 
 	const triggerText = textForTriggers(plainText);
 
@@ -224,16 +274,20 @@ export function Composer({
 		if (message.length === 0) return;
 
 		setSending(true);
+		editorRef.current?.clear();
+		setPlainText("");
+		setHasContent(false);
+		clearDraft();
 		try {
 			await onSend(message);
-			editorRef.current?.clear();
-			setPlainText("");
-			setHasContent(false);
-			clearDraft();
+		} catch {
+			editorRef.current?.setMessage(message);
+			setHasContent(true);
+			setDraft(message);
 		} finally {
 			setSending(false);
 		}
-	}, [clearDraft, onSend]);
+	}, [clearDraft, onSend, setDraft]);
 
 	const handleMentionKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {
@@ -310,8 +364,13 @@ export function Composer({
 
 	function handlePlainTextChange(next: string) {
 		setPlainText(next);
+		const message = editorRef.current?.getMessage() ?? [];
 		setHasContent(editorRef.current?.hasContent() ?? false);
-		setDraft(editorRef.current?.getMessage() ?? []);
+
+		if (message.length === 0 && ignoringEmptyDraftWriteRef.current) {
+			return;
+		}
+		setDraft(message);
 
 		const trigger = textForTriggers(next);
 		if (canPasteUrls && TRAILING_URL_PATTERN.test(trigger)) {
@@ -356,6 +415,24 @@ export function Composer({
 			return <ComposerUnavailable />;
 		}
 
+		if (isInteractivePending) {
+			return (
+				<div className="space-y-2">
+					<ComposerQueueChips threadId={threadId} />
+					<ComposerPendingInteractive
+						approval={activeApproval}
+						elicitation={activeElicitation}
+						pendingApprovalCount={
+							pendingApprovals.filter((item) => !item.resolved).length
+						}
+						pendingElicitationCount={
+							pendingElicitations.filter((item) => !item.resolved).length
+						}
+					/>
+				</div>
+			);
+		}
+
 		return (
 			<div className="group rounded-[22px] p-px transition-colors duration-200">
 				<ComposerQueueChips threadId={threadId} />
@@ -386,6 +463,7 @@ export function Composer({
 								/>
 							)}
 							<ComposerPromptEditor
+								key={threadId}
 								onCommandKeyDown={handleCommandKeyDown}
 								onPaste={handlePaste}
 								onPlainTextChange={handlePlainTextChange}

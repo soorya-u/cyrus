@@ -1,5 +1,7 @@
 import type {
+	ApprovalView,
 	DiffView,
+	ElicitationView,
 	ErrorView,
 	MessageView,
 	ThoughtView,
@@ -25,12 +27,14 @@ export type ToolFeedEntry = FeedEntryBase & {
 	type: "tool";
 	tool: ToolCallView;
 	turnId: string;
+	pendingApproval?: ApprovalView;
 };
 
 export type DiffFeedEntry = FeedEntryBase & {
 	type: "diff";
 	diff: DiffView;
 	turnId: string;
+	pendingApproval?: ApprovalView;
 };
 
 export type ErrorFeedEntry = FeedEntryBase & {
@@ -39,12 +43,26 @@ export type ErrorFeedEntry = FeedEntryBase & {
 	turnId: string;
 };
 
+export type ApprovalFeedEntry = FeedEntryBase & {
+	type: "approval";
+	approval: ApprovalView;
+	turnId: string;
+};
+
+export type ElicitationFeedEntry = FeedEntryBase & {
+	type: "elicitation";
+	elicitation: ElicitationView;
+	turnId: string;
+};
+
 export type FeedEntry =
 	| MessageFeedEntry
 	| ThoughtFeedEntry
 	| ToolFeedEntry
 	| DiffFeedEntry
-	| ErrorFeedEntry;
+	| ErrorFeedEntry
+	| ApprovalFeedEntry
+	| ElicitationFeedEntry;
 
 type TimelineItem = {
 	createdAt: string;
@@ -57,36 +75,56 @@ function messageSortKind(message: MessageView): number {
 	return 2;
 }
 
+function findPendingApproval(
+	approvals: ApprovalView[],
+	toolCallId: string | undefined
+): ApprovalView | undefined {
+	if (!toolCallId) return;
+	return approvals.find(
+		(approval) => approval.toolCallId === toolCallId && !approval.resolved
+	);
+}
+
+function pushTurnItems<T extends { turnId: string }>(
+	items: T[],
+	turnId: string,
+	push: (item: T) => void
+): void {
+	for (const item of items) {
+		if (item.turnId !== turnId) continue;
+		push(item);
+	}
+}
+
 function buildTurnTimeline(
 	turnId: string,
 	messages: MessageView[],
 	thoughts: ThoughtView[],
 	toolCalls: ToolCallView[],
 	diffs: DiffView[],
-	errors: ErrorView[]
+	errors: ErrorView[],
+	approvals: ApprovalView[],
+	elicitations: ElicitationView[]
 ): FeedEntry[] {
 	const timeline: TimelineItem[] = [];
 
-	for (const message of messages) {
-		if (message.turnId !== turnId) continue;
+	pushTurnItems(messages, turnId, (message) => {
 		timeline.push({
 			createdAt: message.createdAt,
 			kind: messageSortKind(message),
 			entry: { type: "message", id: message.id, message },
 		});
-	}
+	});
 
-	for (const thought of thoughts) {
-		if (thought.turnId !== turnId) continue;
+	pushTurnItems(thoughts, turnId, (thought) => {
 		timeline.push({
 			createdAt: thought.createdAt,
 			kind: 1,
 			entry: { type: "thought", id: thought.id, thought },
 		});
-	}
+	});
 
-	for (const toolCall of toolCalls) {
-		if (toolCall.turnId !== turnId) continue;
+	pushTurnItems(toolCalls, turnId, (toolCall) => {
 		timeline.push({
 			createdAt: toolCall.createdAt,
 			kind: 3,
@@ -95,9 +133,10 @@ function buildTurnTimeline(
 				id: `tool-${toolCall.toolCallId}`,
 				tool: toolCall,
 				turnId,
+				pendingApproval: findPendingApproval(approvals, toolCall.toolCallId),
 			},
 		});
-	}
+	});
 
 	const diffSortAnchor =
 		toolCalls
@@ -112,8 +151,7 @@ function buildTurnTimeline(
 		)?.createdAt ??
 		turnId;
 
-	for (const diff of diffs) {
-		if (diff.turnId !== turnId) continue;
+	pushTurnItems(diffs, turnId, (diff) => {
 		timeline.push({
 			createdAt: diffSortAnchor,
 			kind: 4,
@@ -122,12 +160,38 @@ function buildTurnTimeline(
 				id: diff.id,
 				diff,
 				turnId,
+				pendingApproval: findPendingApproval(approvals, diff.toolCallId),
 			},
 		});
-	}
+	});
 
-	for (const error of errors) {
-		if (error.turnId !== turnId) continue;
+	pushTurnItems(approvals, turnId, (approval) => {
+		timeline.push({
+			createdAt: approval.createdAt,
+			kind: 4.5,
+			entry: {
+				type: "approval",
+				id: approval.id,
+				approval,
+				turnId,
+			},
+		});
+	});
+
+	pushTurnItems(elicitations, turnId, (elicitation) => {
+		timeline.push({
+			createdAt: elicitation.createdAt,
+			kind: 4.6,
+			entry: {
+				type: "elicitation",
+				id: elicitation.id,
+				elicitation,
+				turnId,
+			},
+		});
+	});
+
+	pushTurnItems(errors, turnId, (error) => {
 		timeline.push({
 			createdAt: error.createdAt,
 			kind: 5,
@@ -138,7 +202,7 @@ function buildTurnTimeline(
 				turnId,
 			},
 		});
-	}
+	});
 
 	timeline.sort((left, right) => {
 		const leftIsUser = left.kind === 0;
@@ -161,6 +225,8 @@ export function deriveFeed(
 
 	const entries: FeedEntry[] = [];
 	const knownTurnIds = new Set(conversation.turns.map((turn) => turn.id));
+	const approvals = conversation.approvals ?? [];
+	const elicitations = conversation.elicitations ?? [];
 
 	for (const turn of conversation.turns) {
 		entries.push(
@@ -170,7 +236,9 @@ export function deriveFeed(
 				conversation.thoughts,
 				conversation.toolCalls,
 				conversation.diffs,
-				conversation.errors
+				conversation.errors,
+				approvals,
+				elicitations
 			)
 		);
 	}
@@ -207,6 +275,10 @@ function feedEntryCreatedAt(entry: FeedEntry): string | null {
 			return null;
 		case "error":
 			return entry.error.createdAt;
+		case "approval":
+			return entry.approval.createdAt;
+		case "elicitation":
+			return entry.elicitation.createdAt;
 		default: {
 			const _exhaustive: never = entry;
 			return _exhaustive;

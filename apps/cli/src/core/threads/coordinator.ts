@@ -17,6 +17,7 @@ import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Result } from "better-result";
+import { interactivePending } from "@/core/acp/interactive";
 import type { AgentPool } from "@/core/acp/pool";
 import {
 	AgentRuntime,
@@ -487,7 +488,8 @@ export class ThreadCoordinator {
 		agentName: string,
 		threadId: string,
 		projectId: string,
-		content: ChatMessage
+		content: ChatMessage,
+		turnId: string
 	): Promise<Result<AsyncGenerator<AgentEvent>, CoordinatorError>> {
 		const bound = await this.resolveBoundThread(threadId, projectId);
 		if (bound.isErr()) return Result.err(bound.error);
@@ -502,12 +504,14 @@ export class ThreadCoordinator {
 				projectId,
 				bound.value.cwd,
 				bound.value.sessionId,
-				content
+				content,
+				turnId
 			)
 		);
 	}
 
 	async cancel(agentName: string, threadId: string): Promise<void> {
+		interactivePending.clearThread(threadId);
 		await this.getAgent(agentName).cancel(threadId);
 	}
 

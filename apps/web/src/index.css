@@ -496,3 +496,12 @@ body {
 	mix-blend-mode: normal;
 	animation: none;
 }
+
+/* Relative-color shimmer can leave transparent fill with no visible glyphs. */
+@supports not (color: oklch(from red l c h)) {
+	.shimmer {
+		-webkit-text-fill-color: currentColor;
+		background-image: none;
+		animation: none;
+	}
+}

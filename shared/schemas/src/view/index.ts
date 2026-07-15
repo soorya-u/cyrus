@@ -38,6 +38,7 @@ export const DiffViewSchema = z.object({
 	additions: z.number(),
 	deletions: z.number(),
 	turnId: z.string(),
+	toolCallId: z.string().optional(),
 });
 
 export const TurnViewSchema = z.object({
@@ -56,12 +57,46 @@ export const ErrorViewSchema = z.object({
 	turnId: z.string(),
 });
 
+export const ApprovalOptionViewSchema = z.object({
+	optionId: z.string(),
+	name: z.string(),
+	kind: z.string(),
+});
+
+export const ApprovalViewSchema = z.object({
+	id: z.string(),
+	threadId: z.string(),
+	sessionId: z.string(),
+	toolCallId: z.string(),
+	title: z.string().optional(),
+	options: z.array(ApprovalOptionViewSchema),
+	createdAt: z.string(),
+	turnId: z.string(),
+	resolved: z.boolean().optional(),
+});
+
+export const ElicitationViewSchema = z.object({
+	id: z.string(),
+	threadId: z.string(),
+	sessionId: z.string(),
+	elicitationId: z.string(),
+	mode: z.enum(["form", "url"]),
+	message: z.string().optional(),
+	url: z.string().optional(),
+	requestedSchema: z.record(z.string(), z.unknown()).optional(),
+	createdAt: z.string(),
+	turnId: z.string(),
+	resolved: z.boolean().optional(),
+});
+
 export const ThreadConversationSchema = z.object({
 	messages: z.array(MessageViewSchema),
 	thoughts: z.array(ThoughtViewSchema),
 	toolCalls: z.array(ToolCallViewSchema),
 	diffs: z.array(DiffViewSchema),
 	errors: z.array(ErrorViewSchema),
+	approvals: z.array(ApprovalViewSchema),
+	elicitations: z.array(ElicitationViewSchema),
 	turns: z.array(TurnViewSchema),
 });
 
@@ -71,4 +106,6 @@ export type ToolCallView = z.infer<typeof ToolCallViewSchema>;
 export type DiffView = z.infer<typeof DiffViewSchema>;
 export type TurnView = z.infer<typeof TurnViewSchema>;
 export type ErrorView = z.infer<typeof ErrorViewSchema>;
+export type ApprovalView = z.infer<typeof ApprovalViewSchema>;
+export type ElicitationView = z.infer<typeof ElicitationViewSchema>;
 export type ThreadConversation = z.infer<typeof ThreadConversationSchema>;

@@ -9,6 +9,9 @@ import { useEffect, useEffectEvent } from "react";
 import { useRtc } from "../contexts/rtc";
 import { useAgentCatalogStore } from "../stores/agent-catalog";
 
+const SUBSCRIBE_RETRY_MS = 1000;
+const SUBSCRIBE_RETRY_MAX_MS = 8000;
+
 function isTerminalChunk(chunk: ChatChunk): boolean {
 	return (
 		chunk.event.type === "turn_completed" ||
@@ -83,25 +86,62 @@ export function useWorkerConversationSync(): void {
 
 	useEffect(() => {
 		let stopped = false;
-		let iterator: Awaited<ReturnType<typeof workerConnection.client.subscribe>>;
+		let iterator: Awaited<
+			ReturnType<typeof workerConnection.client.subscribe>
+		> | null = null;
+		let retryTimer: ReturnType<typeof setTimeout> | undefined;
+		let attempt = 0;
 
-		Result.tryPromise(async () => {
-			iterator = await workerConnection.client.subscribe();
-			if (stopped) {
-				await iterator.return?.(undefined);
-				return;
+		const clearRetry = () => {
+			if (retryTimer !== undefined) {
+				clearTimeout(retryTimer);
+				retryTimer = undefined;
 			}
-			for await (const chunk of iterator) {
-				if (stopped) break;
-				onChunk(chunk);
-			}
-		}).then((result) => {
-			if (result.isErr() && !stopped) onSyncError(result.error);
-		});
+		};
+
+		const scheduleRetry = () => {
+			if (stopped) return;
+			clearRetry();
+			const delay = Math.min(
+				SUBSCRIBE_RETRY_MS * 2 ** attempt,
+				SUBSCRIBE_RETRY_MAX_MS
+			);
+			attempt += 1;
+			retryTimer = setTimeout(() => {
+				runSubscribe().catch(() => undefined);
+			}, delay);
+		};
+
+		const runSubscribe = async () => {
+			if (stopped) return;
+
+			const result = await Result.tryPromise(async () => {
+				iterator = await workerConnection.client.subscribe();
+				if (stopped) {
+					await iterator.return?.(undefined);
+					return;
+				}
+				attempt = 0;
+				for await (const chunk of iterator) {
+					if (stopped) break;
+					onChunk(chunk);
+				}
+			});
+
+			iterator = null;
+			if (stopped) return;
+
+			if (result.isErr()) onSyncError(result.error);
+			scheduleRetry();
+		};
+
+		runSubscribe().catch(() => undefined);
 
 		return () => {
 			stopped = true;
-			iterator?.return?.(undefined);
+			clearRetry();
+			const closing = iterator?.return?.(undefined);
+			if (closing) closing.catch(() => undefined);
 		};
 	}, [workerConnection]);
 }

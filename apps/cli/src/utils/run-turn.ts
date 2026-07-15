@@ -20,6 +20,7 @@ type RunTurnOptions = {
 	agentName: string;
 	threadId: string;
 	projectId: string;
+	turnId: string;
 	message: ChatMessage;
 	emit: (event: ChatChunk["event"]) => Promise<void>;
 	emitTerminal: (
@@ -35,6 +36,7 @@ export async function runTurn({
 	agentName,
 	threadId,
 	projectId,
+	turnId,
 	message,
 	emit,
 	emitTerminal,
@@ -63,7 +65,8 @@ export async function runTurn({
 		agentName,
 		threadId,
 		projectId,
-		message
+		message,
+		turnId
 	);
 	if (promptResult.isErr()) {
 		await emit({

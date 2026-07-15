@@ -17,6 +17,8 @@ import {
 	ChatChunkSchema,
 	ChatInputSchema,
 	ChatOutputSchema,
+	RespondApprovalInputSchema,
+	RespondElicitationInputSchema,
 } from "@cyrus/schemas/rtc/chat";
 import {
 	ThreadCatalogQueryInputSchema,
@@ -109,6 +111,12 @@ export const controllerContract = {
 	watchThread: oc.input(WatchThreadInputSchema).output(WatchThreadOutputSchema),
 	unwatchThread: oc.input(UnwatchThreadInputSchema).output(VoidOutputSchema),
 	cancel: oc.input(CancelInputSchema).output(VoidOutputSchema),
+	respondApproval: oc
+		.input(RespondApprovalInputSchema)
+		.output(VoidOutputSchema),
+	respondElicitation: oc
+		.input(RespondElicitationInputSchema)
+		.output(VoidOutputSchema),
 	getGitStatus: oc
 		.input(ThreadGitQueryInputSchema)
 		.output(GitStatusOutputSchema),

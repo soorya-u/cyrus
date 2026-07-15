@@ -103,3 +103,35 @@ The web chat timeline SHALL support a flat `error` feed entry type rendered alon
 - **WHEN** an error occurs during a turn that also has tool activity
 - **THEN** the error appears as its own flat feed entry
 - **AND** is not nested inside a collapsible work-log group
+
+### Requirement: Approval feed entry in flat timeline
+
+Pending ACP approvals SHALL be answered from the chat composer (replacing the prompt textarea), not as inline feed cards. `deriveFeed` MAY still emit `approval` entries for observers; the web `FeedEntryView` SHALL NOT render them in the timeline.
+
+#### Scenario: Approval renders in composer
+
+- **WHEN** a turn has a pending `approval_request`
+- **THEN** the composer replaces the prompt textarea with stacked option buttons wired to `respondApproval`
+- **AND** the flat feed does not show a separate approval card
+
+#### Scenario: Diff approval actions on DiffRow
+
+- **WHEN** a pending approval references a diff-producing tool call
+- **THEN** accept/reject remains available via the composer interactive panel
+- **AND** the diff row remains a flat feed entry without embedded approve/reject controls
+- **AND** is not confused with git worktree diffs in `diff-panel.tsx`
+
+### Requirement: Elicitation feed entry in flat timeline
+
+Pending elicitation SHALL be answered from the chat composer. `deriveFeed` MAY emit `elicitation` entries; web timeline rendering SHALL omit them in favor of the composer panel.
+
+#### Scenario: Form elicitation in composer
+
+- **WHEN** a turn contains a pending form-mode `elicitation_request`
+- **THEN** the composer shows form fields with stacked submit/decline/cancel actions
+
+#### Scenario: URL elicitation in composer
+
+- **WHEN** a turn contains a pending url-mode `elicitation_request`
+- **THEN** the composer shows the URL with stacked confirm/decline/cancel actions
+- **AND** the entry is not nested inside a collapsible work-log group

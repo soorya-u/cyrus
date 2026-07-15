@@ -150,6 +150,7 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 				agentName,
 				threadId,
 				projectId,
+				turnId,
 				message,
 				emit,
 				emitTerminal,

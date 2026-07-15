@@ -60,6 +60,7 @@ Accept/reject on `work-log/diff-row.tsx` and `work-log/tool-row.tsx` call `respo
 - **[Risk] Orphan pending if client disconnects** → cancel turn clears pending with deny/decline
 - **[Risk] Multi-device double response** → first wins; ignore subsequent
 - **[Risk] Form elicitation sprawl** → keep v1 to ACP form + url only; ship permissions first inside the same PR if forms slip
+- **[Risk] acp-kit has no elicitation host hook** → `@acp-kit/core` `RuntimeHost` currently exposes only `requestPermission`. Permissions fully block via the host. Elicitation has schemas, RPCs, UI, fold/feed, and `awaitElicitation` park API ready; live agent elicitation waits until acp-kit adds a host callback (or we bridge lower-level ACP).
 
 ## Migration Plan
 

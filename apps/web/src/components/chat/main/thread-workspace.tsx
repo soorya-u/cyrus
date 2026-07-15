@@ -4,12 +4,16 @@ import {
 	useGitStatus,
 } from "@cyrus/hooks/connection/use-git";
 import { useThreadConversation } from "@cyrus/hooks/connection/use-thread-conversation";
+import {
+	supportsElicitation,
+	useAgentCatalogStore,
+} from "@cyrus/hooks/stores/agent-catalog";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Composer } from "@/components/chat/composer";
 import { DiffPanel } from "@/components/chat/diff/diff-panel";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
@@ -58,6 +62,21 @@ export function ThreadWorkspace({
 			? lastError
 			: null;
 
+	const pendingApprovals = useMemo(
+		() => (conversation.approvals ?? []).filter((item) => !item.resolved),
+		[conversation.approvals]
+	);
+	const elicitationCapable = useAgentCatalogStore((state) =>
+		supportsElicitation(state.capabilitiesByThread[threadId])
+	);
+	const pendingElicitations = useMemo(
+		() =>
+			elicitationCapable
+				? (conversation.elicitations ?? []).filter((item) => !item.resolved)
+				: [],
+		[conversation.elicitations, elicitationCapable]
+	);
+
 	useEffect(() => {
 		if (!(diffOpen && lastTurn)) return;
 		const previous = lastTurnStateRef.current;
@@ -88,7 +107,8 @@ export function ThreadWorkspace({
 
 	async function handleSend(message: ChatMessage) {
 		if (!thread) return;
-		await sendMessage(thread.id, message);
+		const result = await sendMessage(thread.id, message);
+		if (result.isErr()) throw result.error;
 	}
 
 	if (!thread) return null;
@@ -99,11 +119,17 @@ export function ThreadWorkspace({
 
 			<div className="flex min-h-0 flex-1">
 				<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-					<ChatFeed className="min-h-0" conversation={conversation} />
+					<ChatFeed
+						active={running || active}
+						className="min-h-0"
+						conversation={conversation}
+					/>
 					<Composer
 						busy={running || active}
 						onSend={handleSend}
 						onStop={async () => await stopThread(thread.id)}
+						pendingApprovals={pendingApprovals}
+						pendingElicitations={pendingElicitations}
 						projectId={projectId}
 						stopping={stopping}
 						thread={thread}

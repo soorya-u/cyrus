@@ -19,6 +19,7 @@ describe("runTurn", () => {
 			agentName: "claude",
 			threadId: "thread-1",
 			projectId: "project-1",
+			turnId: "turn-1",
 			message: textMessage("hello"),
 			emit: (event) => {
 				emitted.push(event);
@@ -56,6 +57,7 @@ describe("runTurn", () => {
 			agentName: "claude",
 			threadId: "thread-1",
 			projectId: "project-1",
+			turnId: "turn-1",
 			message: textMessage("hello"),
 			emit: (event) => {
 				if (event.type === "user_message") {
@@ -97,6 +99,7 @@ describe("runTurn", () => {
 			agentName: "claude",
 			threadId: "thread-1",
 			projectId: "project-1",
+			turnId: "turn-1",
 			message: textMessage("hello"),
 			emit: (event) => {
 				emitted.push(event);
@@ -131,6 +134,7 @@ describe("runTurn", () => {
 			agentName: "claude",
 			threadId: "thread-1",
 			projectId: "project-1",
+			turnId: "turn-1",
 			message: textMessage("hello"),
 			emit: (event) => {
 				emitted.push(event);

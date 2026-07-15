@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -99,4 +100,14 @@ export function useComposerDraft(threadId: string): {
 		setValue: (message) => setDraft(threadId, message),
 		clear: () => clearDraft(threadId),
 	};
+}
+
+/** True once localStorage drafts have been rehydrated into the store. */
+export function useComposerDraftHydrated(): boolean {
+	return useSyncExternalStore(
+		(onStoreChange) =>
+			useComposerDraftStore.persist.onFinishHydration(onStoreChange),
+		() => useComposerDraftStore.persist.hasHydrated(),
+		() => false
+	);
 }

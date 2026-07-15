@@ -29,6 +29,7 @@ describe("acp mock runtime", () => {
 			agentName: "mock-agent",
 			threadId: "thread-1",
 			projectId: "project-1",
+			turnId: "turn-1",
 			message: textMessage("ping"),
 			emit: (event) => {
 				emitted.push({ type: event.type });
@@ -59,6 +60,7 @@ describe("acp mock runtime", () => {
 			agentName: "mock-agent",
 			threadId: "thread-1",
 			projectId: "project-1",
+			turnId: "turn-1",
 			message: textMessage("ping"),
 			emit: () => Promise.resolve(),
 			emitTerminal: (event) => {
