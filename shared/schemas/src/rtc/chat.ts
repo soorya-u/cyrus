@@ -130,7 +130,7 @@ export const PlanUpdateContentSchema = z.discriminatedUnion("type", [
 export const PermissionOptionSchema = z.object({
 	optionId: z.string(),
 	name: z.string(),
-	kind: PermissionOptionKindSchema,
+	kind: z.union([PermissionOptionKindSchema, z.string()]),
 });
 
 export const ApprovalRequestSchema = z.object({
@@ -177,6 +177,56 @@ export const PlanRemovedEventSchema = z.object({
 export const ApprovalRequestEventSchema = z.object({
 	type: z.literal("approval_request"),
 	request: ApprovalRequestSchema,
+});
+
+export const ElicitationFormModeSchema = z.object({
+	mode: z.literal("form"),
+	elicitationId: z.string(),
+	message: z.string().optional(),
+	requestedSchema: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const ElicitationUrlModeSchema = z.object({
+	mode: z.literal("url"),
+	elicitationId: z.string(),
+	url: z.string(),
+	message: z.string().optional(),
+});
+
+export const ElicitationRequestPayloadSchema = z.discriminatedUnion("mode", [
+	ElicitationFormModeSchema,
+	ElicitationUrlModeSchema,
+]);
+
+export const ElicitationRequestEventSchema = z.object({
+	type: z.literal("elicitation_request"),
+	sessionId: z.string(),
+	request: ElicitationRequestPayloadSchema,
+});
+
+export const ApprovalResolvedEventSchema = z.object({
+	type: z.literal("approval_resolved"),
+	toolCallId: z.string(),
+	optionId: z.string().optional(),
+});
+
+export const ElicitationResolvedEventSchema = z.object({
+	type: z.literal("elicitation_resolved"),
+	elicitationId: z.string(),
+	action: z.enum(["accept", "decline", "cancel"]).optional(),
+});
+
+export const RespondApprovalInputSchema = z.object({
+	threadId: z.string(),
+	toolCallId: z.string(),
+	optionId: z.string(),
+});
+
+export const RespondElicitationInputSchema = z.object({
+	threadId: z.string(),
+	elicitationId: z.string(),
+	action: z.enum(["accept", "decline", "cancel"]),
+	content: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const SessionUpdateEventSchema = z.object({
@@ -269,6 +319,9 @@ export const AgentEventSchema = z.discriminatedUnion("type", [
 	PlanUpdateEventSchema,
 	PlanRemovedEventSchema,
 	ApprovalRequestEventSchema,
+	ApprovalResolvedEventSchema,
+	ElicitationRequestEventSchema,
+	ElicitationResolvedEventSchema,
 	SessionUpdateEventSchema,
 ]);
 
@@ -284,6 +337,13 @@ export type ToolCallLocation = z.infer<typeof ToolCallLocationSchema>;
 export type ToolCallFields = z.infer<typeof ToolCallFieldsSchema>;
 export type ToolCallUpdateFields = z.infer<typeof ToolCallUpdateFieldsSchema>;
 export type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
+export type ElicitationRequestPayload = z.infer<
+	typeof ElicitationRequestPayloadSchema
+>;
+export type RespondApprovalInput = z.infer<typeof RespondApprovalInputSchema>;
+export type RespondElicitationInput = z.infer<
+	typeof RespondElicitationInputSchema
+>;
 export type AgentEvent = z.infer<typeof AgentEventSchema>;
 export type Diff = z.infer<typeof DiffSchema>;
 

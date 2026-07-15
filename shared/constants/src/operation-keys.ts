@@ -38,6 +38,8 @@ export const RTC_OPERATION_KEYS = {
 	setPersona: ["controller", "set-persona"],
 	watchThread: ["controller", "watch-thread"],
 	unwatchThread: ["controller", "unwatch-thread"],
+	respondApproval: ["controller", "respond-approval"],
+	respondElicitation: ["controller", "respond-elicitation"],
 	getGitStatus: (threadId: string) =>
 		["controller", "get-git-status", threadId] as const,
 	getGitPatch: (threadId: string, path?: string) =>
