@@ -22,6 +22,10 @@ export function FeedEntryView({ entry }: { entry: FeedEntry }) {
 			return <DiffRow diff={entry.diff} />;
 		case "error":
 			return <ErrorRow error={entry.error} />;
+		case "approval":
+		case "elicitation":
+			// Interactive prompts render in the composer, not the feed.
+			return null;
 		default: {
 			const _exhaustive: never = entry;
 			return _exhaustive;

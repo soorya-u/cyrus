@@ -54,8 +54,33 @@ function $ensureParagraph(): ParagraphNode {
 	return paragraph;
 }
 
-function $readPlainText(): string {
-	return $getRoot().getTextContent();
+/** Plain text with chips collapsed to a single placeholder (for @ / triggers). */
+function $readPlainTextWithPlaceholders(): string {
+	let out = "";
+
+	const visit = (node: LexicalNode) => {
+		if ($isComposerResourceNode(node)) {
+			out += COMPOSER_CHIP_PLACEHOLDER;
+			return;
+		}
+		if ($isTextNode(node)) {
+			out += node.getTextContent();
+			return;
+		}
+		if ("getChildren" in node) {
+			for (const child of (
+				node as { getChildren: () => LexicalNode[] }
+			).getChildren()) {
+				visit(child);
+			}
+		}
+	};
+
+	for (const [index, child] of $getRoot().getChildren().entries()) {
+		if (index > 0) out += "\n";
+		visit(child);
+	}
+	return out;
 }
 
 function $messageFromEditor(): ChatMessage {
@@ -63,7 +88,7 @@ function $messageFromEditor(): ChatMessage {
 	let textBuffer = "";
 
 	function flushText() {
-		const text = textBuffer.replaceAll(COMPOSER_CHIP_PLACEHOLDER, "");
+		const text = textBuffer;
 		if (text.length > 0) blocks.push({ type: "text", text });
 		textBuffer = "";
 	}
@@ -286,7 +311,7 @@ function EditorHandlePlugin({
 			getPlainText: () => {
 				let text = "";
 				editor.getEditorState().read(() => {
-					text = $readPlainText();
+					text = $getRoot().getTextContent();
 				});
 				return text;
 			},
@@ -314,7 +339,7 @@ function EditorHandlePlugin({
 			replaceAtTokenWithResource: (uri, name) => {
 				let applied = false;
 				editor.update(() => {
-					const text = $readPlainText();
+					const text = $readPlainTextWithPlaceholders();
 					const match = text.match(AT_TOKEN_END_PATTERN);
 					if (!match?.[1]) return;
 					$getRoot().selectEnd();
@@ -328,7 +353,7 @@ function EditorHandlePlugin({
 			replaceSlashToken: (commandName) => {
 				let applied = false;
 				editor.update(() => {
-					const text = $readPlainText();
+					const text = $readPlainTextWithPlaceholders();
 					const match = text.match(SLASH_TOKEN_END_PATTERN);
 					if (!match?.[1]) return;
 					$getRoot().selectEnd();
@@ -350,7 +375,7 @@ function EditorHandlePlugin({
 			absorbTrailingUrl: () => {
 				let applied = false;
 				editor.update(() => {
-					const text = $readPlainText().replaceAll(
+					const text = $readPlainTextWithPlaceholders().replaceAll(
 						COMPOSER_CHIP_PLACEHOLDER,
 						""
 					);
@@ -405,7 +430,7 @@ const ComposerPromptEditorInner = forwardRef<
 
 	function handleChange(editorState: EditorState) {
 		editorState.read(() => {
-			onPlainTextChange($readPlainText());
+			onPlainTextChange($readPlainTextWithPlaceholders());
 		});
 	}
 

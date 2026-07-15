@@ -133,7 +133,12 @@ export class ComposerResourceNode extends DecoratorNode<ReactElement> {
 	}
 
 	override getTextContent(): string {
-		return COMPOSER_CHIP_PLACEHOLDER;
+		return `@${this.__uri}`;
+	}
+
+	/** Keep chips one unit for caret math; copy still uses full `getTextContent()`. */
+	override getTextContentSize(): number {
+		return 1;
 	}
 
 	override isInline(): true {

@@ -40,7 +40,8 @@ function ToolStatusIcon({
 	showPending: boolean;
 }) {
 	if (showFailed) return <XIcon className="size-3 text-destructive" />;
-	if (showSuccess) return <CheckIcon className="size-3" />;
+	if (showSuccess)
+		return <CheckIcon className="size-3 text-green-600 dark:text-green-500" />;
 	if (showPending) return <MinusIcon className="size-3 opacity-70" />;
 	return null;
 }

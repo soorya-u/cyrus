@@ -5,7 +5,7 @@ import {
 	getTurnStartedAt,
 } from "@cyrus/utils/conversations/thread-feed";
 import { cn } from "cnfast";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FeedEntryView } from "@/components/chat/feed/feed-entry-view";
 import { WorkingMarker } from "@/components/chat/messages/working-marker";
 import {
@@ -19,9 +19,12 @@ import {
 
 export function ChatFeed({
 	conversation,
+	active = false,
 	className,
 }: {
 	conversation: ThreadConversation;
+	/** True while a turn is in flight even before fold marks it running. */
+	active?: boolean;
 	className?: string;
 }) {
 	const feed = useMemo(() => deriveFeed(conversation), [conversation]);
@@ -29,10 +32,28 @@ export function ChatFeed({
 		() => getRunningTurn(conversation),
 		[conversation]
 	);
-	const workingStartedAt =
-		runningTurn && getTurnStartedAt(conversation, runningTurn.id);
+	const foldedStartedAt =
+		(runningTurn && getTurnStartedAt(conversation, runningTurn.id)) ||
+		runningTurn?.completedAt ||
+		null;
 
-	if (feed.length === 0 && !runningTurn) {
+	const [activeStartedAt, setActiveStartedAt] = useState<string | null>(null);
+	useEffect(() => {
+		if (foldedStartedAt) {
+			setActiveStartedAt(foldedStartedAt);
+			return;
+		}
+		if (active) {
+			setActiveStartedAt((prev) => prev ?? new Date().toISOString());
+			return;
+		}
+		setActiveStartedAt(null);
+	}, [active, foldedStartedAt]);
+
+	const showWorking = Boolean(runningTurn || active);
+	const startedAt = foldedStartedAt ?? activeStartedAt;
+
+	if (feed.length === 0 && !showWorking) {
 		return (
 			<div
 				className={cn(
@@ -62,11 +83,13 @@ export function ChatFeed({
 									<FeedEntryView entry={entry} />
 								</MessageScrollerItem>
 							))}
-							{runningTurn && workingStartedAt && (
-								<MessageScrollerItem messageId={`working-${runningTurn.id}`}>
-									<WorkingMarker startedAt={workingStartedAt} />
+							{showWorking && startedAt ? (
+								<MessageScrollerItem
+									messageId={`working-${runningTurn?.id ?? "active"}`}
+								>
+									<WorkingMarker startedAt={startedAt} />
 								</MessageScrollerItem>
-							)}
+							) : null}
 						</MessageScrollerContent>
 					</MessageScrollerViewport>
 					<MessageScrollerButton direction="end" />
