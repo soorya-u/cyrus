@@ -16,7 +16,7 @@ export const ThreadSchema = z.object({
 	agentName: optionalString,
 	sessionId: optionalString,
 	agentLocked: optionalBoolean,
-	titleSource: TitleSourceSchema.nullable(),
+	titleSource: TitleSourceSchema.nullish().transform((value) => value ?? null),
 	branch: nullableString.optional(),
 	worktreePath: nullableString.optional(),
 	createdAt: z.string(),

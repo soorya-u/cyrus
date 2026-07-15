@@ -22,6 +22,7 @@ describe("thread schemas", () => {
 			projectId: "project-1",
 			name: "Main",
 			agentName: undefined,
+			titleSource: null,
 			createdAt: "2026-07-11T00:00:00.000Z",
 			updatedAt: "2026-07-11T00:00:00.000Z",
 		});
@@ -73,6 +74,7 @@ describe("thread schemas", () => {
 			agentName: "claude-acp",
 			sessionId: "session-1",
 			agentLocked: true,
+			titleSource: null,
 			createdAt: "2026-07-11T00:00:00.000Z",
 			updatedAt: "2026-07-11T00:00:00.000Z",
 		});
