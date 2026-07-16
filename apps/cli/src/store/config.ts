@@ -1,6 +1,6 @@
-import { writeFile } from "node:fs/promises";
 import { Result } from "better-result";
 import { YAML } from "bun";
+import writeFileAtomic from "write-file-atomic";
 import { CONFIG_PATH } from "@/constants/paths";
 import { ensureDir } from "@/utils/fs";
 
@@ -29,7 +29,7 @@ async function read(): Promise<Partial<Config>> {
 
 async function write(config: Partial<Config>): Promise<void> {
 	await ensureDir();
-	await writeFile(CONFIG_PATH, YAML.stringify(config), { mode: 0o600 });
+	await writeFileAtomic(CONFIG_PATH, YAML.stringify(config), { mode: 0o600 });
 }
 
 export async function get<K extends keyof Config>(

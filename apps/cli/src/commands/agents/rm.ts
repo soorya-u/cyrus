@@ -1,4 +1,5 @@
 import { removeAgent } from "@/store/agents";
+import { exitWithError } from "@/utils/result";
 import { print } from "@/utils/style";
 
 export async function rm(registryIds: string[]): Promise<void> {
@@ -6,14 +7,13 @@ export async function rm(registryIds: string[]): Promise<void> {
 
 	for (const registryId of registryIds) {
 		const removed = await removeAgent(registryId);
-		removed.match({
-			ok: () => print.success`✓ removed agent "${registryId}"`,
-			err: (message) => {
-				print.error`${message}`;
-				failed = true;
-			},
-		});
+		if (removed.isOk()) {
+			print.success`✓ removed agent "${registryId}"`;
+			continue;
+		}
+		print.error`${removed.error}`;
+		failed = true;
 	}
 
-	if (failed) process.exit(1);
+	if (failed) exitWithError("one or more agents could not be removed");
 }

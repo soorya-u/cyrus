@@ -1,4 +1,5 @@
-import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
+import { useProjects } from "@cyrus/hooks/queries/use-projects";
+import { useThreads } from "@cyrus/hooks/queries/use-threads";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import {
 	type CollisionDetection,
@@ -18,6 +19,7 @@ import {
 	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { FolderPlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -28,8 +30,8 @@ import { SortableProjectItem } from "@/components/sidebar/projects/sortable-proj
 import { ThreadSearchField } from "@/components/sidebar/projects/thread-search-field";
 import { SidebarGroup, SidebarMenu } from "@/components/ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAutoAnimateRef } from "@/hooks/use-auto-animate-ref";
 import { useProjectOrderStore } from "@/stores/project-order";
+import { filterNamedItems } from "@/utils/filters";
 
 type ProjectThreadExplorerProps = {
 	workerId: string;
@@ -51,15 +53,18 @@ export function ProjectThreadExplorer({
 	const navigate = useNavigate();
 	const {
 		projects,
-		threads,
+		invalidateThreads,
 		createProject,
 		renameProject,
 		removeProject,
+	} = useProjects();
+	const {
+		baseThreads: threads,
 		createThread,
 		isCreatingThread,
 		renameThread,
 		deleteThread,
-	} = useControllerThreads();
+	} = useThreads({ projects, invalidateThreads });
 	const [query, setQuery] = useState("");
 	const [expandedProjects, setExpandedProjects] = useState<
 		Record<string, boolean>
@@ -68,8 +73,14 @@ export function ProjectThreadExplorer({
 	const setProjectOrder = useProjectOrderStore(
 		(state) => state.setProjectOrder
 	);
-	const attachProjectListAutoAnimateRef = useAutoAnimateRef();
-	const attachThreadListAutoAnimateRef = useAutoAnimateRef();
+	const [attachProjectListAutoAnimateRef] = useAutoAnimate<HTMLElement>({
+		duration: 180,
+		easing: "ease-out",
+	});
+	const [attachThreadListAutoAnimateRef] = useAutoAnimate<HTMLElement>({
+		duration: 180,
+		easing: "ease-out",
+	});
 	const suppressProjectClickAfterDragRef = useRef(false);
 
 	useEffect(() => {
@@ -90,10 +101,7 @@ export function ProjectThreadExplorer({
 			(project): project is NonNullable<typeof project> => project !== undefined
 		);
 
-	const q = query.trim().toLowerCase();
-	const filteredThreads = q
-		? threads.filter((thread) => thread.name.toLowerCase().includes(q))
-		: threads;
+	const filteredThreads = filterNamedItems(threads, query);
 
 	const threadsByProject = new Map<string, Thread[]>();
 	for (const project of projects) {

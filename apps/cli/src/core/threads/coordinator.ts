@@ -1,69 +1,65 @@
-import { resolveThreadGitCwd } from "@cyrus/database/repositories/git";
-import {
-	bindThreadAgent,
-	clearThreadDraftBinding,
-	getThread,
-} from "@cyrus/database/repositories/threads";
 import {
 	type CoordinatorError,
-	coordinatorAgentLocked,
-	coordinatorAgentMismatch,
-	coordinatorAgentNotBound,
-	coordinatorNotFound,
-	coordinatorRepositoryError,
 	coordinatorRuntimeError,
 } from "@cyrus/errors/coordinator";
 import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
+import { Mutex } from "async-mutex";
 import { Result } from "better-result";
-import { interactivePending } from "@/core/acp/interactive";
 import type { AgentPool } from "@/core/acp/pool";
+import { AgentRuntime } from "@/core/agents/runtime";
+import { bindAgentLocked } from "./bind";
 import {
-	AgentRuntime,
-	catalogSnapshotFromSession,
-} from "@/core/agents/runtime";
+	findLiveBinding,
+	persistBoundSessionLocked,
+	resolveBoundThread as resolveBoundThreadFn,
+	resolveCwd as resolveCwdFn,
+} from "./binding";
+import {
+	getContextUsage,
+	getEfforts,
+	getModels,
+	getModes,
+	getPersonas,
+	setEffort,
+	setMode,
+	setModel,
+	setPersona,
+} from "./catalog";
+import {
+	cancel as cancelTurn,
+	closeAnyThreadSession,
+	prompt as promptTurn,
+} from "./turn";
+import type { BoundThread, CoordinatorHost } from "./types";
 
-type BoundThread = {
-	threadId: string;
-	projectId: string;
-	agentName: string;
-	sessionId: string;
-	cwd: string;
-};
-
-export class ThreadCoordinator {
+export class ThreadCoordinator implements CoordinatorHost {
 	private readonly agents = new Map<string, AgentRuntime>();
 	private readonly pool: AgentPool;
-	private readonly threadLocks = new Map<string, Promise<unknown>>();
+	private readonly threadMutexes = new Map<string, Mutex>();
 
 	constructor(pool: AgentPool) {
 		this.pool = pool;
 	}
 
-	private async withThreadLock<T>(
+	private mutexFor(threadId: string): Mutex {
+		let mutex = this.threadMutexes.get(threadId);
+		if (!mutex) {
+			mutex = new Mutex();
+			this.threadMutexes.set(threadId, mutex);
+		}
+		return mutex;
+	}
+
+	private withThreadLock<T>(
 		threadId: string,
 		fn: () => Promise<T>
 	): Promise<T> {
-		const previous = this.threadLocks.get(threadId) ?? Promise.resolve();
-		let release!: () => void;
-		const gate = new Promise<void>((resolve) => {
-			release = resolve;
-		});
-		const held = previous.catch(() => undefined).then(() => gate);
-		this.threadLocks.set(threadId, held);
-		await previous.catch(() => undefined);
-		try {
-			return await fn();
-		} finally {
-			release();
-			if (this.threadLocks.get(threadId) === held) {
-				this.threadLocks.delete(threadId);
-			}
-		}
+		return this.mutexFor(threadId).runExclusive(fn);
 	}
 
-	private getAgent(agentName: string): AgentRuntime {
+	getAgent(agentName: string): AgentRuntime {
 		let runtime = this.agents.get(agentName);
 		if (!runtime) {
 			runtime = new AgentRuntime(agentName, this.pool);
@@ -72,22 +68,11 @@ export class ThreadCoordinator {
 		return runtime;
 	}
 
-	private findLiveBinding(threadId: string): BoundThread | null {
-		for (const [agentName, runtime] of this.agents) {
-			const live = runtime.getLiveSession(threadId);
-			if (!live) continue;
-			return {
-				threadId,
-				agentName,
-				sessionId: live.sessionId,
-				projectId: live.projectId,
-				cwd: live.cwd,
-			};
-		}
-		return null;
+	findLiveBinding(threadId: string): BoundThread | null {
+		return findLiveBinding(this.agents, threadId);
 	}
 
-	private async withRuntime<T>(
+	async withRuntime<T>(
 		fn: () => Promise<T>
 	): Promise<Result<T, CoordinatorError>> {
 		return (await Result.tryPromise(fn)).mapError((error) =>
@@ -97,26 +82,15 @@ export class ThreadCoordinator {
 		);
 	}
 
-	private async catalogForSession(
-		runtime: AgentRuntime,
+	resolveCwd(threadId: string): Promise<Result<string, CoordinatorError>> {
+		return resolveCwdFn(threadId);
+	}
+
+	resolveBoundThread(
 		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string
-	): Promise<{
-		capabilities: Record<string, unknown>;
-		models: ModelOption[];
-		modes: SelectOption[];
-		efforts: SelectOption[];
-		personas: SelectOption[];
-	}> {
-		return {
-			capabilities: await runtime.getAgentCapabilities(),
-			models: await runtime.getModels(threadId, projectId, cwd, sessionId),
-			modes: await runtime.getModes(threadId, projectId, cwd, sessionId),
-			efforts: await runtime.getEfforts(threadId, projectId, cwd, sessionId),
-			personas: await runtime.getPersonas(threadId, projectId, cwd, sessionId),
-		};
+		projectId?: string
+	): Promise<Result<BoundThread, CoordinatorError>> {
+		return resolveBoundThreadFn(this, threadId, projectId);
 	}
 
 	async bindAgent(
@@ -125,169 +99,8 @@ export class ThreadCoordinator {
 		agentName: string
 	): Promise<Result<BindAgentOutput, CoordinatorError>> {
 		return await this.withThreadLock(threadId, () =>
-			this.bindAgentLocked(threadId, projectId, agentName)
+			bindAgentLocked(this, threadId, projectId, agentName)
 		);
-	}
-
-	private async bindAgentLocked(
-		threadId: string,
-		projectId: string,
-		agentName: string
-	): Promise<Result<BindAgentOutput, CoordinatorError>> {
-		const thread = await getThread(threadId);
-		if (thread.isErr())
-			return Result.err(coordinatorRepositoryError(thread.error));
-
-		if (!thread.value || thread.value.projectId !== projectId)
-			return Result.err(coordinatorNotFound("thread", threadId));
-
-		if (thread.value.agentLocked && thread.value.agentName !== agentName) {
-			return Result.err(coordinatorAgentLocked());
-		}
-
-		const cwd = await this.resolveCwd(threadId);
-		if (cwd.isErr()) return Result.err(cwd.error);
-
-		const runtime = this.getAgent(agentName);
-		const live = this.findLiveBinding(threadId);
-
-		if (thread.value.agentLocked) {
-			return this.bindLockedThread({
-				threadId,
-				projectId,
-				agentName,
-				cwd: cwd.value,
-				runtime,
-				live,
-				sessionId: thread.value.sessionId,
-				agentNameOnThread: thread.value.agentName,
-			});
-		}
-
-		return this.bindDraftThread({
-			threadId,
-			projectId,
-			agentName,
-			cwd: cwd.value,
-			runtime,
-			live,
-			staleAgentName: thread.value.agentName,
-			staleSessionId: thread.value.sessionId,
-		});
-	}
-
-	private async bindLockedThread(params: {
-		threadId: string;
-		projectId: string;
-		agentName: string;
-		cwd: string;
-		runtime: AgentRuntime;
-		live: BoundThread | null;
-		sessionId: string | undefined;
-		agentNameOnThread: string | undefined;
-	}): Promise<Result<BindAgentOutput, CoordinatorError>> {
-		const sessionId = params.live?.sessionId ?? params.sessionId;
-		if (!(sessionId && params.agentNameOnThread)) {
-			return Result.err(coordinatorAgentNotBound());
-		}
-
-		const catalog = await this.withRuntime(() =>
-			this.catalogForSession(
-				params.runtime,
-				params.threadId,
-				params.projectId,
-				params.cwd,
-				sessionId
-			)
-		);
-		if (catalog.isErr()) return Result.err(catalog.error);
-
-		return Result.ok({
-			sessionId,
-			agentName: params.agentName,
-			agentLocked: true,
-			...catalog.value,
-			commands: params.runtime.getAvailableCommands(params.threadId),
-		});
-	}
-
-	private async bindDraftThread(params: {
-		threadId: string;
-		projectId: string;
-		agentName: string;
-		cwd: string;
-		runtime: AgentRuntime;
-		live: BoundThread | null;
-		staleAgentName: string | undefined;
-		staleSessionId: string | undefined;
-	}): Promise<Result<BindAgentOutput, CoordinatorError>> {
-		const { live } = params;
-
-		if (live?.agentName === params.agentName) {
-			const catalog = await this.withRuntime(() =>
-				this.catalogForSession(
-					params.runtime,
-					params.threadId,
-					params.projectId,
-					params.cwd,
-					live.sessionId
-				)
-			);
-			if (catalog.isOk()) {
-				return Result.ok({
-					sessionId: live.sessionId,
-					agentName: params.agentName,
-					agentLocked: undefined,
-					...catalog.value,
-					commands: params.runtime.getAvailableCommands(params.threadId),
-				});
-			}
-		}
-
-		if (live) {
-			const closed = await this.withRuntime(() =>
-				this.getAgent(live.agentName).closeSession(
-					live.sessionId,
-					params.threadId
-				)
-			);
-			if (closed.isErr()) return Result.err(closed.error);
-		}
-
-		if (params.staleAgentName || params.staleSessionId) {
-			const cleared = await clearThreadDraftBinding(
-				params.threadId,
-				params.projectId
-			);
-			if (cleared.isErr())
-				return Result.err(coordinatorRepositoryError(cleared.error));
-		}
-
-		const bound = await this.withRuntime(async () => {
-			const session = await params.runtime.createBoundSession(
-				params.threadId,
-				params.projectId,
-				params.cwd
-			);
-			return {
-				session,
-				capabilities: await params.runtime.getAgentCapabilities(),
-				...catalogSnapshotFromSession(session),
-			};
-		});
-		if (bound.isErr()) return Result.err(bound.error);
-
-		return Result.ok({
-			sessionId: bound.value.session.sessionId,
-			agentName: params.agentName,
-			agentLocked: undefined,
-			capabilities: bound.value.capabilities,
-			models: bound.value.models,
-			modes: bound.value.modes,
-			efforts: bound.value.efforts,
-			personas: bound.value.personas,
-			commands: params.runtime.commandsFromSession(bound.value.session),
-		});
 	}
 
 	/** Persist live draft binding on first user message. No-op if already stored. */
@@ -297,222 +110,86 @@ export class ThreadCoordinator {
 		expectedAgentName?: string
 	): Promise<Result<BoundThread, CoordinatorError>> {
 		return await this.withThreadLock(threadId, () =>
-			this.persistBoundSessionLocked(threadId, projectId, expectedAgentName)
+			persistBoundSessionLocked(this, threadId, projectId, expectedAgentName)
 		);
 	}
 
-	private async persistBoundSessionLocked(
-		threadId: string,
-		projectId: string,
-		expectedAgentName?: string
-	): Promise<Result<BoundThread, CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId, projectId);
-		if (bound.isErr()) return Result.err(bound.error);
-
-		if (expectedAgentName && bound.value.agentName !== expectedAgentName) {
-			return Result.err(
-				coordinatorAgentMismatch(bound.value.agentName, expectedAgentName)
-			);
-		}
-
-		const thread = await getThread(threadId);
-		if (thread.isErr())
-			return Result.err(coordinatorRepositoryError(thread.error));
-		if (!thread.value || thread.value.projectId !== projectId) {
-			return Result.err(coordinatorNotFound("thread", threadId));
-		}
-
-		if (
-			thread.value.agentName === bound.value.agentName &&
-			thread.value.sessionId === bound.value.sessionId
-		) {
-			return Result.ok(bound.value);
-		}
-
-		const persisted = await bindThreadAgent(threadId, projectId, {
-			agentName: bound.value.agentName,
-			sessionId: bound.value.sessionId,
-		});
-		if (persisted.isErr()) {
-			return Result.err(coordinatorRepositoryError(persisted.error));
-		}
-
-		return Result.ok(bound.value);
-	}
-
-	async getModels(
+	getModels(
 		threadId: string
 	): Promise<Result<ModelOption[], CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).getModels(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId
-			)
-		);
+		return getModels(this, threadId);
 	}
 
-	async getModes(
+	getModes(
 		threadId: string
 	): Promise<Result<SelectOption[], CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).getModes(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId
-			)
-		);
+		return getModes(this, threadId);
 	}
 
-	async getEfforts(
+	getEfforts(
 		threadId: string
 	): Promise<Result<SelectOption[], CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).getEfforts(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId
-			)
-		);
+		return getEfforts(this, threadId);
 	}
 
-	async getPersonas(
+	getPersonas(
 		threadId: string
 	): Promise<Result<SelectOption[], CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).getPersonas(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId
-			)
-		);
+		return getPersonas(this, threadId);
 	}
 
-	async setModel(
+	setModel(
 		threadId: string,
 		projectId: string,
 		modelId: string
 	): Promise<Result<void, CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId, projectId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).setModel(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId,
-				modelId
-			)
-		);
+		return setModel(this, threadId, projectId, modelId);
 	}
 
-	async setMode(
+	setMode(
 		threadId: string,
 		projectId: string,
 		modeId: string
 	): Promise<Result<void, CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId, projectId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).setMode(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId,
-				modeId
-			)
-		);
+		return setMode(this, threadId, projectId, modeId);
 	}
 
-	async setEffort(
+	setEffort(
 		threadId: string,
 		projectId: string,
 		effortId: string
 	): Promise<Result<void, CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId, projectId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).setEffort(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId,
-				effortId
-			)
-		);
+		return setEffort(this, threadId, projectId, effortId);
 	}
 
-	async setPersona(
+	setPersona(
 		threadId: string,
 		projectId: string,
 		personaId: string
 	): Promise<Result<void, CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId, projectId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return this.withRuntime(() =>
-			this.getAgent(bound.value.agentName).setPersona(
-				bound.value.threadId,
-				bound.value.projectId,
-				bound.value.cwd,
-				bound.value.sessionId,
-				personaId
-			)
-		);
+		return setPersona(this, threadId, projectId, personaId);
 	}
 
-	async getContextUsage(
+	getContextUsage(
 		threadId: string
 	): Promise<
 		Result<{ used?: number; limit?: number } | null, CoordinatorError>
 	> {
-		const bound = await this.resolveBoundThread(threadId);
-		if (bound.isErr()) return Result.err(bound.error);
-		return Result.ok(
-			this.getAgent(bound.value.agentName).getContextUsage(threadId)
-		);
+		return getContextUsage(this, threadId);
 	}
 
-	async prompt(
+	prompt(
 		agentName: string,
 		threadId: string,
 		projectId: string,
 		content: ChatMessage,
 		turnId: string
 	): Promise<Result<AsyncGenerator<AgentEvent>, CoordinatorError>> {
-		const bound = await this.resolveBoundThread(threadId, projectId);
-		if (bound.isErr()) return Result.err(bound.error);
-		if (bound.value.agentName !== agentName) {
-			return Result.err(
-				coordinatorAgentMismatch(bound.value.agentName, agentName)
-			);
-		}
-		return Result.ok(
-			this.getAgent(agentName).prompt(
-				threadId,
-				projectId,
-				bound.value.cwd,
-				bound.value.sessionId,
-				content,
-				turnId
-			)
-		);
+		return promptTurn(this, agentName, threadId, projectId, content, turnId);
 	}
 
-	async cancel(agentName: string, threadId: string): Promise<void> {
-		interactivePending.clearThread(threadId);
-		await this.getAgent(agentName).cancel(threadId);
+	cancel(agentName: string, threadId: string): Promise<void> {
+		return cancelTurn(this, agentName, threadId);
 	}
 
 	async closeThreadSession(
@@ -526,77 +203,8 @@ export class ThreadCoordinator {
 	}
 
 	async closeAnyThreadSession(threadId: string): Promise<void> {
-		await this.withThreadLock(threadId, async () => {
-			const live = this.findLiveBinding(threadId);
-			if (live) {
-				await this.getAgent(live.agentName).closeSession(
-					live.sessionId,
-					threadId
-				);
-				return;
-			}
-
-			const thread = await getThread(threadId);
-			if (thread.isErr() || !thread.value) return;
-			if (!(thread.value.sessionId && thread.value.agentName)) return;
-			await this.getAgent(thread.value.agentName).closeSession(
-				thread.value.sessionId,
-				threadId
-			);
-		});
-	}
-
-	private async resolveCwd(
-		threadId: string
-	): Promise<Result<string, CoordinatorError>> {
-		const result = await resolveThreadGitCwd(threadId);
-		if (result.isErr())
-			return Result.err(coordinatorRepositoryError(result.error));
-		return Result.ok(result.value);
-	}
-
-	private async resolveBoundThread(
-		threadId: string,
-		projectId?: string
-	): Promise<Result<BoundThread, CoordinatorError>> {
-		const live = this.findLiveBinding(threadId);
-		if (live) {
-			if (projectId && live.projectId !== projectId) {
-				return Result.err(coordinatorNotFound("thread", threadId));
-			}
-			return Result.ok(live);
-		}
-
-		const thread = await getThread(threadId);
-		if (thread.isErr())
-			return Result.err(coordinatorRepositoryError(thread.error));
-		if (!thread.value) {
-			return Result.err(coordinatorNotFound("thread", threadId));
-		}
-		if (projectId && thread.value.projectId !== projectId) {
-			return Result.err(coordinatorNotFound("thread", threadId));
-		}
-
-		// Only resume sessions that were committed by a first user message.
-		if (
-			!(
-				thread.value.agentLocked &&
-				thread.value.sessionId &&
-				thread.value.agentName
-			)
-		) {
-			return Result.err(coordinatorAgentNotBound());
-		}
-
-		const cwd = await this.resolveCwd(threadId);
-		if (cwd.isErr()) return Result.err(cwd.error);
-
-		return Result.ok({
-			threadId,
-			projectId: thread.value.projectId,
-			agentName: thread.value.agentName,
-			sessionId: thread.value.sessionId,
-			cwd: cwd.value,
-		});
+		await this.withThreadLock(threadId, () =>
+			closeAnyThreadSession(this, threadId)
+		);
 	}
 }

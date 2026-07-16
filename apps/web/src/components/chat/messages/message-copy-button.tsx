@@ -1,11 +1,8 @@
+import { useClipboard } from "@mantine/hooks";
 import { cn } from "cnfast";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
-
-const COPY_TOAST_TIMEOUT_MS = 1000;
 
 export function MessageCopyButton({
 	text,
@@ -18,7 +15,7 @@ export function MessageCopyButton({
 	variant?: "outline" | "ghost";
 	className?: string;
 }) {
-	const { copied, copy } = useCopyToClipboard();
+	const { copied, copy } = useClipboard({ timeout: 1400 });
 
 	return (
 		<Tooltip>
@@ -31,11 +28,7 @@ export function MessageCopyButton({
 							className
 						)}
 						disabled={copied}
-						onClick={() => {
-							copy(text).then(() => {
-								toast.success("Copied!", { duration: COPY_TOAST_TIMEOUT_MS });
-							});
-						}}
+						onClick={() => copy(text)}
 						size={size}
 						type="button"
 						variant={variant}

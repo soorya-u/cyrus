@@ -1,9 +1,16 @@
+import type { ConnectionError } from "@cyrus/errors/connection";
+import {
+	connectionErrorMessageFromUnknown,
+	dialFailedError,
+} from "@cyrus/errors/connection";
 import type { DeviceRole } from "@cyrus/schemas/signaling";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import type { AnyContractRouter, ContractRouterClient } from "@orpc/contract";
+import { Result } from "better-result";
 import {
 	createIceBuffer,
+	mapUnknownToDialError,
 	relayLocalIce,
 	type SignalingClient,
 	type SignalingEvents,
@@ -34,7 +41,7 @@ export type RtcConnection<TContract extends AnyContractRouter> = {
 
 export async function dial<TContract extends AnyContractRouter>(
 	options: DialOptions
-): Promise<RtcConnection<TContract>> {
+): Promise<Result<RtcConnection<TContract>, ConnectionError>> {
 	const { createPeerConnection, signaling, events, to, label, config } =
 		options;
 
@@ -44,34 +51,62 @@ export async function dial<TContract extends AnyContractRouter>(
 
 	const channel = pc.createDataChannel(label);
 
-	let rejectDial: ((err: unknown) => void) | null = null;
-	const failSignal = new Promise<never>((_, reject) => {
-		rejectDial = reject;
+	let rejectDial: ((err: ConnectionError) => void) | null = null;
+	const failSignal = new Promise<Result<never, ConnectionError>>((resolve) => {
+		rejectDial = (err) => resolve(Result.err(err));
 	});
 
 	const unsubscribe = events.subscribe((event) => {
 		if (event.type === "answer" && event.from === to) {
-			ice.setRemote(event.answer).catch((err) => {
+			ice.setRemote(event.answer).then((result) => {
+				if (result.isOk()) return;
 				unsubscribe();
 				channel.close();
 				pc.close();
-				rejectDial?.(err);
+				rejectDial?.(result.error);
 			});
 		} else if (event.type === "ice-candidate" && event.from === to) {
-			ice.addRemote(event.candidate);
+			ice.addRemote(event.candidate).then((result) => {
+				if (result.isOk()) return;
+				unsubscribe();
+				channel.close();
+				pc.close();
+				rejectDial?.(result.error);
+			});
 		}
 	});
 
-	const offer = await pc.createOffer();
-	await pc.setLocalDescription(offer);
-	await signaling.offer({ to, offer });
+	const offerResult = await Result.tryPromise({
+		try: async () => {
+			const offer = await pc.createOffer();
+			await pc.setLocalDescription(offer);
+			await signaling.offer({ to, offer });
+		},
+		catch: (error) =>
+			dialFailedError(
+				"Failed to create RTC offer",
+				connectionErrorMessageFromUnknown(error)
+			),
+	});
+	if (offerResult.isErr()) {
+		unsubscribe();
+		channel.close();
+		pc.close();
+		return Result.err(offerResult.error);
+	}
 
-	await Promise.race([whenOpen(channel), failSignal]);
+	const openResult = await Promise.race([whenOpen(channel), failSignal]);
+	if (openResult.isErr()) {
+		unsubscribe();
+		channel.close();
+		pc.close();
+		return Result.err(mapUnknownToDialError(openResult.error));
+	}
 
 	const link = new RPCLink({ websocket: asWebSocket(channel) });
 	const client: ContractRouterClient<TContract> = createORPCClient(link);
 
-	return {
+	return Result.ok({
 		client,
 		peer: pc,
 		channel,
@@ -80,5 +115,5 @@ export async function dial<TContract extends AnyContractRouter>(
 			channel.close();
 			pc.close();
 		},
-	};
+	});
 }

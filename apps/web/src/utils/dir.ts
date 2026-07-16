@@ -1,3 +1,4 @@
+import { matchSorter } from "match-sorter";
 import type { ReactNode } from "react";
 
 export type FilesystemBrowseEntry = {
@@ -29,14 +30,14 @@ export function filterBrowseEntries(input: {
 	highlightedEntry: FilesystemBrowseEntry | null;
 	exactEntry: FilesystemBrowseEntry | null;
 } {
-	const lowerFilter = input.browseFilterQuery.toLowerCase();
 	const showHidden = input.browseFilterQuery.startsWith(".");
 
-	const filteredEntries = input.browseEntries.filter(
-		(entry) =>
-			entry.name.toLowerCase().startsWith(lowerFilter) &&
-			(showHidden || !entry.name.startsWith("."))
+	const visibleEntries = input.browseEntries.filter(
+		(entry) => showHidden || !entry.name.startsWith(".")
 	);
+	const filteredEntries = matchSorter(visibleEntries, input.browseFilterQuery, {
+		keys: ["name"],
+	});
 
 	let highlightedEntry: FilesystemBrowseEntry | null = null;
 	if (input.highlightedItemValue?.startsWith("browse:")) {

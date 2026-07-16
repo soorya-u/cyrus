@@ -23,7 +23,7 @@ async function checkSignalingHub(): Promise<void> {
 	const room = process.env.SMOKE_ROOM_ID;
 	if (!(token && room)) return;
 
-	const session = await connectSignaling({
+	const sessionResult = await connectSignaling({
 		host: baseUrl,
 		room,
 		role: "controller",
@@ -50,6 +50,8 @@ async function checkSignalingHub(): Promise<void> {
 			return body.protocols;
 		},
 	});
+	if (sessionResult.isErr()) throw sessionResult.error;
+	const session = sessionResult.value;
 
 	try {
 		await session.signaling.listPeers();

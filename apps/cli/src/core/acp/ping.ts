@@ -5,7 +5,7 @@ import { agentEntryToProfile } from "@/core/agents/profile";
 import { env } from "@/lib/env";
 import { toMessage } from "@/utils/error";
 import type { AgentEntry } from "@/validators/agent";
-import { createDefaultHost } from "./host";
+import { createInteractiveHost } from "./interactive";
 
 export type AcpPingSuccess = {
 	agentName?: string;
@@ -26,7 +26,7 @@ export async function pingAcpAgent(
 				startupTimeoutMs: env.CYRUS_ACP_TIMEOUT_MS,
 			},
 			transport: nodeChildProcessTransport(),
-			host: createDefaultHost(),
+			host: createInteractiveHost(),
 		})
 	);
 	if (created.isErr()) return Result.err(toMessage(created.error));

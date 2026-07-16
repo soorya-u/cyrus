@@ -1,9 +1,10 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
-import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
+import type { ChatChunk, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type {
 	ConversationEntry,
 	GetConversationsOutput,
 } from "@cyrus/schemas/rtc/threads";
+import { normalizeConversationEntries } from "@cyrus/utils/conversations/entries";
 import type { QueryClient } from "@tanstack/react-query";
 
 /** Minimum ms between streaming delta commits — keeps token rendering readable. */
@@ -77,65 +78,6 @@ function chunkToEntry(chunk: ChatChunk, id?: string): ConversationEntry {
 	};
 }
 
-function dropRedundantEphemeralUserMessages(
-	entries: ConversationEntry[]
-): ConversationEntry[] {
-	const persistedUserTurns = new Set(
-		entries
-			.filter(
-				(entry) => entry.seq > 0 && entry.chunk.event.type === "user_message"
-			)
-			.map((entry) => entry.chunk.turnId)
-	);
-
-	if (persistedUserTurns.size === 0) return entries;
-
-	return entries.filter(
-		(entry) =>
-			!(
-				entry.seq === 0 &&
-				entry.chunk.event.type === "user_message" &&
-				persistedUserTurns.has(entry.chunk.turnId)
-			)
-	);
-}
-
-function sortEntries(entries: ConversationEntry[]): ConversationEntry[] {
-	return [...entries].sort((left, right) => {
-		if (left.seq !== right.seq) {
-			if (left.seq === 0) return 1;
-			if (right.seq === 0) return -1;
-			return left.seq - right.seq;
-		}
-		return left.createdAt.localeCompare(right.createdAt);
-	});
-}
-
-export function mergeConversationEntries(
-	cached: ConversationEntry[],
-	fetched: ConversationEntry[]
-): ConversationEntry[] {
-	if (cached.length === 0) return sortEntries(fetched);
-	if (fetched.length === 0) return sortEntries(cached);
-
-	const merged = new Map<string, ConversationEntry>();
-
-	for (const entry of fetched) {
-		if (entry.seq > 0) merged.set(`seq-${entry.seq}`, entry);
-	}
-
-	for (const entry of cached) {
-		if (entry.seq > 0) {
-			if (!merged.has(`seq-${entry.seq}`))
-				merged.set(`seq-${entry.seq}`, entry);
-			continue;
-		}
-		merged.set(entry.id, entry);
-	}
-
-	return dropRedundantEphemeralUserMessages(sortEntries([...merged.values()]));
-}
-
 function updateCache(
 	queryClient: QueryClient,
 	threadId: string,
@@ -144,8 +86,8 @@ function updateCache(
 	queryClient.setQueryData<GetConversationsOutput>(
 		RTC_OPERATION_KEYS.getConversations(threadId),
 		(old) => ({
-			conversations: dropRedundantEphemeralUserMessages(
-				sortEntries(updater(old?.conversations ?? []))
+			conversations: normalizeConversationEntries(
+				updater(old?.conversations ?? [])
 			),
 		})
 	);
@@ -327,7 +269,7 @@ export function appendOptimisticUserMessage(
 	threadId: string,
 	turnId: string,
 	message: string,
-	blocks?: import("@cyrus/schemas/rtc/chat").ChatMessage
+	blocks?: ChatMessage
 ): void {
 	flushPendingDeltas(queryClient);
 	commitChunk(queryClient, {

@@ -1,3 +1,5 @@
+import type { ConnectionError } from "@cyrus/errors/connection";
+import type { Result } from "better-result";
 import type { ControllerContract } from "../../contracts/controller";
 import { type DialOptions, dial, type RtcConnection } from "../dial";
 
@@ -8,7 +10,7 @@ export type WebControllerOptions = Omit<
 
 export function connectControllerWeb(
 	options: WebControllerOptions
-): Promise<RtcConnection<ControllerContract>> {
+): Promise<Result<RtcConnection<ControllerContract>, ConnectionError>> {
 	return dial<ControllerContract>({
 		...options,
 		label: "controller",

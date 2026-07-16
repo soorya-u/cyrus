@@ -1,6 +1,6 @@
 import { getConversations } from "@cyrus/database/repositories/conversations";
 import { applyAutoThreadTitle } from "@cyrus/database/repositories/threads";
-import { fold } from "@cyrus/utils/fold";
+import { fold } from "@cyrus/utils/conversations/fold";
 
 export async function maybeApplyAutoThreadTitle(
 	threadId: string,

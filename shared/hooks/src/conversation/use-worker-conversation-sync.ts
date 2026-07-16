@@ -1,6 +1,5 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
-import { applyChunkToCache } from "@cyrus/utils/conversations/cache";
 import { settleTurnWaiter } from "@cyrus/utils/conversations/turn-waiters";
 import { useQueryClient } from "@tanstack/react-query";
 import { Result } from "better-result";
@@ -8,6 +7,7 @@ import { log } from "evlog";
 import { useEffect, useEffectEvent } from "react";
 import { useRtc } from "../contexts/rtc";
 import { useAgentCatalogStore } from "../stores/agent-catalog";
+import { applyChunkToCache } from "./conversation-cache";
 
 const SUBSCRIBE_RETRY_MS = 1000;
 const SUBSCRIBE_RETRY_MAX_MS = 8000;
@@ -71,9 +71,7 @@ export function useWorkerConversationSync(): void {
 					query.queryKey[1] === "list-threads",
 			});
 		}
-		// Persisted events already arrived via subscribe; prune handled in
-		// applyChunkToCache. Mark stale without refetching — an immediate refetch
-		// swaps local entry IDs for server IDs and remounts the feed.
+
 		queryClient.invalidateQueries({
 			queryKey: RTC_OPERATION_KEYS.getConversations(chunk.threadId),
 			refetchType: "none",

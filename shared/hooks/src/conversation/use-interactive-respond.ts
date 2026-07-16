@@ -1,8 +1,8 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
-import { applyChunkToCache } from "@cyrus/utils/conversations/cache";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRtc } from "../contexts/rtc";
+import { applyChunkToCache } from "./conversation-cache";
 
 type ConversationsSnapshot = {
 	threadId: string;

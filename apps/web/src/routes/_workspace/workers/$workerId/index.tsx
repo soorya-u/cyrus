@@ -1,4 +1,4 @@
-import { useProjects } from "@cyrus/hooks/connection/use-projects";
+import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { EmptyProject } from "@/components/chat/empty/empty-project";

@@ -1,36 +1,33 @@
-import { openOrCreateRuntimeSession, type RuntimeSession } from "@acp-kit/core";
+import type { RuntimeSession } from "@acp-kit/core";
 import type { AvailableCommand } from "@agentclientprotocol/sdk";
 import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
-import { Result } from "better-result";
-import { setSessionConfigOption } from "@/core/acp/config";
-import { interactivePending } from "@/core/acp/interactive";
 import type { AgentPool } from "@/core/acp/pool";
-import { mapRuntimeSessionEvent } from "../acp/events";
 import {
 	effortsFromSession,
-	findSelectConfigOptionId,
 	modelsFromSession,
 	modesFromSession,
 	personasFromSession,
-	reconcileInvalidSelectConfigOptions,
 } from "./catalog";
-import { mapPromptBlocksToAcp } from "./prompt";
-
-type ThreadSession = {
-	session: RuntimeSession;
-	projectId: string;
-	cwd: string;
-};
-
-type ThreadSessionMetadata = {
-	commands: AvailableCommand[];
-	usage: {
-		used?: number;
-		limit?: number;
-	};
-};
+import {
+	getAgentCapabilities,
+	getEfforts,
+	getModels,
+	getModes,
+	getPersonas,
+	setEffort,
+	setMode,
+	setModel,
+	setPersona,
+} from "./catalog-ops";
+import {
+	commandsFromSession,
+	SessionMetadataStore,
+	usageFromSession,
+} from "./metadata";
+import { runPromptTurn } from "./prompt-turn";
+import { ThreadSessionStore } from "./sessions";
 
 export function catalogSnapshotFromSession(
 	session: RuntimeSession
@@ -46,14 +43,21 @@ export function catalogSnapshotFromSession(
 export class AgentRuntime {
 	private readonly agentName: string;
 	private readonly pool: AgentPool;
-	private readonly sessions = new Map<string, ThreadSession>();
-	private readonly pendingSessions = new Map<string, Promise<RuntimeSession>>();
-	private readonly metadataByThread = new Map<string, ThreadSessionMetadata>();
-	private readonly sessionUnsubs = new Map<string, () => void>();
+	private readonly metadata = new SessionMetadataStore();
+	private readonly sessions: ThreadSessionStore;
 
 	constructor(agentName: string, pool: AgentPool) {
 		this.agentName = agentName;
 		this.pool = pool;
+		this.sessions = new ThreadSessionStore(agentName, pool, this.metadata);
+	}
+
+	private catalogDeps() {
+		return {
+			agentName: this.agentName,
+			pool: this.pool,
+			sessions: this.sessions,
+		};
 	}
 
 	async getModels(
@@ -62,14 +66,13 @@ export class AgentRuntime {
 		cwd: string,
 		sessionId: string
 	): Promise<ModelOption[]> {
-		await this.ensureHealthyPool();
-		const session = await this.requireSession(
+		return await getModels(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
 			sessionId
 		);
-		return modelsFromSession(session);
 	}
 
 	async getModes(
@@ -78,14 +81,13 @@ export class AgentRuntime {
 		cwd: string,
 		sessionId: string
 	): Promise<SelectOption[]> {
-		await this.ensureHealthyPool();
-		const session = await this.requireSession(
+		return await getModes(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
 			sessionId
 		);
-		return modesFromSession(session);
 	}
 
 	async getEfforts(
@@ -94,14 +96,13 @@ export class AgentRuntime {
 		cwd: string,
 		sessionId: string
 	): Promise<SelectOption[]> {
-		await this.ensureHealthyPool();
-		const session = await this.requireSession(
+		return await getEfforts(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
 			sessionId
 		);
-		return effortsFromSession(session);
 	}
 
 	async getPersonas(
@@ -110,44 +111,33 @@ export class AgentRuntime {
 		cwd: string,
 		sessionId: string
 	): Promise<SelectOption[]> {
-		await this.ensureHealthyPool();
-		const session = await this.requireSession(
+		return await getPersonas(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
 			sessionId
 		);
-		return personasFromSession(session);
 	}
 
 	async getAgentCapabilities(): Promise<Record<string, unknown>> {
-		await this.ensureHealthyPool();
-		const runtime = await this.pool.getRuntime(this.agentName);
-		return runtime.agentCapabilities ?? {};
+		return await getAgentCapabilities(this.catalogDeps());
 	}
 
 	getAvailableCommands(threadId: string): AvailableCommand[] {
-		return this.metadataByThread.get(threadId)?.commands ?? [];
+		return this.metadata.getAvailableCommands(threadId);
 	}
 
 	getContextUsage(threadId: string): { used?: number; limit?: number } | null {
-		const usage = this.metadataByThread.get(threadId)?.usage;
-		if (!usage || (usage.used === undefined && usage.limit === undefined))
-			return null;
-
-		return usage;
+		return this.metadata.getContextUsage(threadId);
 	}
 
 	commandsFromSession(session: RuntimeSession): AvailableCommand[] {
-		return session.transcript.session.commands ?? [];
+		return commandsFromSession(session);
 	}
 
-	usageFromSession(session: RuntimeSession): ThreadSessionMetadata["usage"] {
-		const usage = session.transcript.session.usage ?? {};
-		return {
-			used: usage.used ?? usage.totalTokens,
-			limit: usage.size,
-		};
+	usageFromSession(session: RuntimeSession) {
+		return usageFromSession(session);
 	}
 
 	async createBoundSession(
@@ -155,14 +145,7 @@ export class AgentRuntime {
 		projectId: string,
 		cwd: string
 	): Promise<RuntimeSession> {
-		await this.ensureHealthyPool();
-		await this.close(threadId);
-
-		const runtime = await this.pool.getRuntime(this.agentName);
-		const session = await runtime.newSession({ cwd });
-		this.sessions.set(threadId, { session, projectId, cwd });
-		this.attachSessionMetadata(threadId, session);
-		return session;
+		return await this.sessions.createBoundSession(threadId, projectId, cwd);
 	}
 
 	async setModel(
@@ -172,46 +155,14 @@ export class AgentRuntime {
 		sessionId: string,
 		modelId: string
 	): Promise<void> {
-		await this.ensureHealthyPool();
-		const session = await this.requireSession(
+		return await setModel(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
-			sessionId
+			sessionId,
+			modelId
 		);
-		await session.setModel(modelId);
-		// Model is already applied — reconcile is best-effort so a dependent
-		// reset failure does not report setModel as failed (client refreshes on ok).
-		await Result.tryPromise(() =>
-			this.reconcileDependentConfigOptions(
-				threadId,
-				projectId,
-				cwd,
-				sessionId,
-				session
-			)
-		);
-	}
-
-	private async reconcileDependentConfigOptions(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string,
-		session: RuntimeSession
-	): Promise<void> {
-		const resets = reconcileInvalidSelectConfigOptions(
-			session.transcript.session.configOptions
-		);
-		for (const reset of resets)
-			await this.setConfigOption(
-				threadId,
-				projectId,
-				cwd,
-				sessionId,
-				reset.configId,
-				reset.value
-			);
 	}
 
 	async setMode(
@@ -221,14 +172,14 @@ export class AgentRuntime {
 		sessionId: string,
 		modeId: string
 	): Promise<void> {
-		await this.ensureHealthyPool();
-		const session = await this.requireSession(
+		return await setMode(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
-			sessionId
+			sessionId,
+			modeId
 		);
-		await session.setMode(modeId);
 	}
 
 	async setEffort(
@@ -238,12 +189,12 @@ export class AgentRuntime {
 		sessionId: string,
 		effortId: string
 	): Promise<void> {
-		await this.setConfigOptionByCategory(
+		return await setEffort(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
 			sessionId,
-			"thought_level",
 			effortId
 		);
 	}
@@ -255,35 +206,12 @@ export class AgentRuntime {
 		sessionId: string,
 		personaId: string
 	): Promise<void> {
-		const session = await this.requireSession(
-			threadId,
-			projectId,
-			cwd,
-			sessionId
-		);
-		const configId =
-			findSelectConfigOptionId(
-				session.transcript.session.configOptions,
-				"persona"
-			) ??
-			session.transcript.session.configOptions.find(
-				(option) =>
-					option.type === "select" &&
-					(option.category?.includes("persona") ||
-						option.id.toLowerCase().includes("persona"))
-			)?.id;
-
-		if (!configId)
-			throw new Error(
-				`agent ${this.agentName} does not expose persona options`
-			);
-
-		await this.setConfigOption(
+		return await setPersona(
+			this.catalogDeps(),
 			threadId,
 			projectId,
 			cwd,
 			sessionId,
-			configId,
 			personaId
 		);
 	}
@@ -296,81 +224,20 @@ export class AgentRuntime {
 		content: ChatMessage,
 		turnId: string
 	): AsyncGenerator<AgentEvent> {
-		await this.ensureHealthyPool();
-
-		const session = await this.requireSession(
+		yield* runPromptTurn(
+			{
+				agentName: this.agentName,
+				pool: this.pool,
+				sessions: this.sessions,
+				metadata: this.metadata,
+			},
 			threadId,
 			projectId,
 			cwd,
-			sessionId
+			sessionId,
+			content,
+			turnId
 		);
-		const blocks = content;
-		const queue: AgentEvent[] = [];
-		let wake: (() => void) | undefined;
-
-		const unbindTurn = interactivePending.bindTurn({
-			sessionId: session.sessionId,
-			threadId,
-			turnId,
-			pushEvent: (event) => {
-				queue.push(event);
-				wake?.();
-			},
-		});
-
-		const unsub = session.on("event", (event) => {
-			this.syncMetadataFromEvent(threadId, event);
-			queue.push(...mapRuntimeSessionEvent(event));
-			wake?.();
-		});
-
-		try {
-			const turn = this.runPrompt(session, blocks, cwd);
-
-			while (true) {
-				while (queue.length > 0) yield queue.shift() as AgentEvent;
-
-				const raced = await Promise.race([
-					turn.then((response) => ({ kind: "done" as const, response })),
-					new Promise<{ kind: "update" }>((resolve) => {
-						wake = () => resolve({ kind: "update" });
-					}),
-				]);
-
-				if (raced.kind === "done") {
-					while (queue.length > 0) yield queue.shift() as AgentEvent;
-					return;
-				}
-			}
-		} finally {
-			unsub();
-			unbindTurn();
-			interactivePending.clearThread(threadId);
-		}
-	}
-
-	private runPrompt(session: RuntimeSession, blocks: ChatMessage, cwd: string) {
-		if (blocks.length === 1 && blocks[0]?.type === "text") {
-			return session.prompt(blocks[0].text);
-		}
-
-		const connection = this.pool.getSdkConnection(this.agentName) as
-			| {
-					prompt: (params: {
-						sessionId: string;
-						prompt: ReturnType<typeof mapPromptBlocksToAcp>;
-					}) => Promise<unknown>;
-			  }
-			| undefined;
-		if (!connection?.prompt)
-			throw new Error(
-				`agent ${this.agentName} does not support structured prompts`
-			);
-
-		return connection.prompt({
-			sessionId: session.sessionId,
-			prompt: mapPromptBlocksToAcp(blocks, cwd),
-		});
 	}
 
 	getLiveSession(threadId: string): {
@@ -378,279 +245,18 @@ export class AgentRuntime {
 		projectId: string;
 		cwd: string;
 	} | null {
-		const entry = this.sessions.get(threadId);
-		if (!entry) return null;
-		return {
-			sessionId: entry.session.sessionId,
-			projectId: entry.projectId,
-			cwd: entry.cwd,
-		};
+		return this.sessions.getLiveSession(threadId);
 	}
 
 	async cancel(threadId: string): Promise<void> {
-		const session = this.sessions.get(threadId)?.session;
-		if (!session) return;
-		await session.cancel();
+		return await this.sessions.cancel(threadId);
 	}
 
 	async close(threadId: string): Promise<void> {
-		const session = this.sessions.get(threadId)?.session;
-		if (!session) return;
-		await session.close();
-		this.detachSessionMetadata(threadId);
-		this.sessions.delete(threadId);
+		return await this.sessions.close(threadId);
 	}
 
 	async closeSession(sessionId: string, threadId?: string): Promise<void> {
-		if (threadId) {
-			const entry = this.sessions.get(threadId);
-			if (entry?.session.sessionId === sessionId) {
-				await entry.session.close();
-				this.detachSessionMetadata(threadId);
-				this.sessions.delete(threadId);
-				return;
-			}
-		}
-
-		for (const [id, entry] of this.sessions) {
-			if (entry.session.sessionId !== sessionId) continue;
-			await entry.session.close();
-			this.detachSessionMetadata(id);
-			this.sessions.delete(id);
-			return;
-		}
-
-		const connection = this.pool.getSdkConnection(this.agentName) as
-			| { closeSession?: (params: { sessionId: string }) => Promise<unknown> }
-			| undefined;
-		const closeSession = connection?.closeSession;
-		if (closeSession) {
-			await Result.tryPromise(() => closeSession({ sessionId }));
-		}
-	}
-
-	private async recoverSessions(): Promise<void> {
-		if (this.sessions.size === 0) return;
-
-		const runtime = await this.pool.getRuntime(this.agentName);
-		if (!runtime.agentCapabilities?.loadSession) {
-			for (const threadId of this.sessions.keys()) {
-				this.detachSessionMetadata(threadId);
-			}
-			this.sessions.clear();
-			return;
-		}
-
-		for (const [threadId, thread] of this.sessions) {
-			const recovered = await Result.tryPromise(() =>
-				openOrCreateRuntimeSession({
-					runtime,
-					sessionId: thread.session.sessionId,
-					cwd: thread.cwd,
-				})
-			);
-
-			recovered.match({
-				ok: (session) => {
-					this.sessions.set(threadId, {
-						session: session.session,
-						projectId: thread.projectId,
-						cwd: thread.cwd,
-					});
-					this.attachSessionMetadata(threadId, session.session);
-				},
-				err: () => {
-					this.detachSessionMetadata(threadId);
-					this.sessions.delete(threadId);
-				},
-			});
-		}
-	}
-
-	private async ensureHealthyPool(): Promise<void> {
-		if (this.pool.getState(this.agentName) !== "crashed") return;
-		await this.recoverSessions();
-	}
-
-	private async requireSession(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		persistedSessionId: string
-	): Promise<RuntimeSession> {
-		await this.ensureHealthyPool();
-		const existing = this.sessions.get(threadId);
-		if (existing) return existing.session;
-
-		let pending = this.pendingSessions.get(threadId);
-		if (!pending) {
-			pending = this.openSessionFromPersisted(
-				threadId,
-				projectId,
-				cwd,
-				persistedSessionId
-			);
-			this.pendingSessions.set(threadId, pending);
-			pending.finally(() => {
-				this.pendingSessions.delete(threadId);
-			});
-		}
-
-		return await pending;
-	}
-
-	private async openSessionFromPersisted(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		persistedSessionId: string
-	): Promise<RuntimeSession> {
-		const runtime = await this.pool.getRuntime(this.agentName);
-		const recovered = await Result.tryPromise(() =>
-			openOrCreateRuntimeSession({
-				runtime,
-				sessionId: persistedSessionId,
-				cwd,
-			})
-		);
-
-		if (recovered.isErr())
-			throw new Error(
-				`failed to resume session ${persistedSessionId} for agent ${this.agentName}`
-			);
-
-		const session = recovered.value.session;
-		this.sessions.set(threadId, { session, projectId, cwd });
-		this.attachSessionMetadata(threadId, session);
-		return session;
-	}
-
-	private attachSessionMetadata(
-		threadId: string,
-		session: RuntimeSession
-	): void {
-		this.detachSessionMetadata(threadId);
-		this.metadataByThread.set(threadId, {
-			commands: this.commandsFromSession(session),
-			usage: this.usageFromSession(session),
-		});
-
-		const unsub = session.on({
-			sessionCommandsUpdated: (event) => {
-				const current = this.metadataByThread.get(threadId);
-				this.metadataByThread.set(threadId, {
-					commands: event.commands,
-					usage: current?.usage ?? {},
-				});
-			},
-			sessionUsageUpdated: (event) => {
-				const current = this.metadataByThread.get(threadId);
-				this.metadataByThread.set(threadId, {
-					commands: current?.commands ?? [],
-					usage: {
-						used: event.used ?? event.totalTokens,
-						limit: event.size,
-					},
-				});
-			},
-		});
-		this.sessionUnsubs.set(threadId, unsub);
-	}
-
-	private detachSessionMetadata(threadId: string): void {
-		this.sessionUnsubs.get(threadId)?.();
-		this.sessionUnsubs.delete(threadId);
-		this.metadataByThread.delete(threadId);
-	}
-
-	private syncMetadataFromEvent(
-		threadId: string,
-		event: {
-			type: string;
-			commands?: AvailableCommand[];
-			used?: number;
-			size?: number;
-			totalTokens?: number;
-		}
-	): void {
-		if (event.type === "session.commands.updated") {
-			const current = this.metadataByThread.get(threadId);
-			this.metadataByThread.set(threadId, {
-				commands: event.commands ?? [],
-				usage: current?.usage ?? {},
-			});
-			return;
-		}
-
-		if (event.type === "session.usage.updated") {
-			const current = this.metadataByThread.get(threadId);
-			this.metadataByThread.set(threadId, {
-				commands: current?.commands ?? [],
-				usage: {
-					used: event.used ?? event.totalTokens,
-					limit: event.size,
-				},
-			});
-		}
-	}
-
-	private async setConfigOptionByCategory(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string,
-		category: string,
-		value: string
-	): Promise<void> {
-		const session = await this.requireSession(
-			threadId,
-			projectId,
-			cwd,
-			sessionId
-		);
-		const configId = findSelectConfigOptionId(
-			session.transcript.session.configOptions,
-			category
-		);
-		if (!configId) {
-			throw new Error(
-				`agent ${this.agentName} does not expose ${category} options`
-			);
-		}
-		await this.setConfigOption(
-			threadId,
-			projectId,
-			cwd,
-			sessionId,
-			configId,
-			value
-		);
-	}
-
-	private async setConfigOption(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string,
-		configId: string,
-		value: string
-	): Promise<void> {
-		const session = await this.requireSession(
-			threadId,
-			projectId,
-			cwd,
-			sessionId
-		);
-
-		const connection = this.pool.getSdkConnection(this.agentName);
-		if (!connection)
-			throw new Error(`agent ${this.agentName} is not connected`);
-
-		await setSessionConfigOption(
-			connection,
-			session.sessionId,
-			configId,
-			value
-		);
+		return await this.sessions.closeSession(sessionId, threadId);
 	}
 }

@@ -1,8 +1,8 @@
-import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
-import { useGitStatus } from "@cyrus/hooks/connection/use-git";
-import { useListAgents } from "@cyrus/hooks/connection/use-list-agents";
-import { useProjects } from "@cyrus/hooks/connection/use-projects";
-import { useSearchEntries } from "@cyrus/hooks/connection/use-search-entries";
+import { useAgentCatalog } from "@cyrus/hooks/agent-catalog/use-agent-catalog";
+import { useGitStatus } from "@cyrus/hooks/queries/use-git";
+import { useListAgents } from "@cyrus/hooks/queries/use-list-agents";
+import { useProjects } from "@cyrus/hooks/queries/use-projects";
+import { useSearchEntries } from "@cyrus/hooks/queries/use-search-entries";
 import {
 	useComposerDraft,
 	useComposerDraftHydrated,
@@ -15,6 +15,7 @@ import type {
 	ElicitationView,
 	ErrorView,
 } from "@cyrus/schemas/view";
+import { inferProjectTitleFromPath } from "@cyrus/utils/path";
 import { cn } from "cnfast";
 import {
 	type ClipboardEvent,
@@ -39,17 +40,14 @@ import { ComposerSkeleton } from "@/components/chat/composer/composer-skeleton";
 import { ComposerUnavailable } from "@/components/chat/composer/composer-unavailable";
 import { ComposerFooterControls } from "@/components/chat/composer/footer-controls";
 import { ComposerPrimaryAction } from "@/components/chat/composer/primary-action";
-import {
-	filterSlashCommands,
-	SlashCommandAutocomplete,
-} from "@/components/chat/composer/slash-command-autocomplete";
+import { SlashCommandAutocomplete } from "@/components/chat/composer/slash-command-autocomplete";
+import { filterSlashCommands } from "@/utils/filters";
 
 const SLASH_TOKEN_PATTERN = /(?:^|\s)\/([\w./-]*)$/;
 const AT_TOKEN_PATTERN = /(?:^|\s)@([\w./-]*)$/;
 const URL_PATTERN = /^https?:\/\/\S+$/i;
 const TRAILING_URL_PATTERN = /(?:^|\s)(https?:\/\/\S+)(\s+)$/i;
 const URL_IN_TEXT_PATTERN = /https?:\/\/\S+/i;
-const TRAILING_SLASHES_PATTERN = /\/+$/;
 const EMPTY_APPROVALS: ApprovalView[] = [];
 const EMPTY_ELICITATIONS: ElicitationView[] = [];
 
@@ -68,11 +66,6 @@ function buildComposerPlaceholder(options: {
 
 function textForTriggers(plainText: string): string {
 	return plainText.replaceAll(COMPOSER_CHIP_PLACEHOLDER, "");
-}
-
-function resourceNameFromPath(path: string): string {
-	const normalizedPath = path.replace(TRAILING_SLASHES_PATTERN, "");
-	return normalizedPath.split("/").pop() || path;
 }
 
 export function Composer({
@@ -253,7 +246,7 @@ export function Composer({
 	function insertFileMention(path: string) {
 		editorRef.current?.replaceAtTokenWithResource(
 			path,
-			resourceNameFromPath(path)
+			inferProjectTitleFromPath(path)
 		);
 	}
 
@@ -313,7 +306,7 @@ export function Composer({
 				if (path) {
 					editorRef.current?.replaceAtTokenWithResource(
 						path,
-						resourceNameFromPath(path)
+						inferProjectTitleFromPath(path)
 					);
 				}
 				return true;

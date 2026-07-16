@@ -3,7 +3,7 @@ import {
 	useCreateWorktree,
 	useGitStatus,
 	useListGitRefs,
-} from "@cyrus/hooks/connection/use-git";
+} from "@cyrus/hooks/queries/use-git";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { cn } from "cnfast";
 import {
@@ -30,6 +30,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { filterNamedItems } from "@/utils/filters";
 
 type WorkspaceMode = "local" | "worktree";
 
@@ -127,9 +128,7 @@ export function ComposerBranchToolbar({ thread }: ComposerBranchToolbarProps) {
 
 	const filteredRefs = useMemo(() => {
 		const refs = gitRefs.data?.refs ?? [];
-		const query = branchQuery.trim().toLowerCase();
-		if (!query) return refs;
-		return refs.filter((ref) => ref.name.toLowerCase().includes(query));
+		return filterNamedItems(refs, branchQuery);
 	}, [branchQuery, gitRefs.data?.refs]);
 
 	const refsLoading = gitRefs.isLoading && gitRefs.data === undefined;

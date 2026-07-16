@@ -1,25 +1,26 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import { isTurnInterruptedError } from "@cyrus/errors/turn";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
 import {
-	appendOptimisticUserMessage,
-	appendTurnTerminal,
-	removeTurnFromCache,
-} from "@cyrus/utils/conversations/cache";
-import {
-	isTurnInterruptedError,
 	settleTurnWaiter,
 	waitForTurnEnd,
 } from "@cyrus/utils/conversations/turn-waiters";
 import { randomId } from "@cyrus/utils/identity";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Result } from "better-result";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRtc } from "../contexts/rtc";
+import { useListAgents } from "../queries/use-list-agents";
+import { useProjects } from "../queries/use-projects";
+import { useThreads } from "../queries/use-threads";
 import { usePromptQueueStore } from "../stores/prompt-queue";
-import { useProjects } from "./use-projects";
-import { useThreads } from "./use-threads";
+import {
+	appendOptimisticUserMessage,
+	appendTurnTerminal,
+	removeTurnFromCache,
+} from "./conversation-cache";
 
 function listOpenConversationTurnIds(
 	queryClient: ReturnType<typeof useQueryClient>,
@@ -42,39 +43,20 @@ function listOpenConversationTurnIds(
 	return [...turnIds].filter((id) => !terminalTurnIds.has(id));
 }
 
-export function useControllerThreads() {
+/** Owns send / stop / prompt-queue drain and per-thread busy state. */
+export function useThreadTurns() {
 	const queryClient = useQueryClient();
-	const { connection: workerConnection, orpc: orpcController } = useRtc();
+	const { connection: workerConnection } = useRtc();
 	const [stoppingThreadIds, setStoppingThreadIds] = useState(
 		() => new Set<string>()
 	);
 
-	const {
-		projects,
-		isLoading,
-		invalidateThreads,
-		createProject,
-		renameProject,
-		removeProject,
-	} = useProjects();
-
-	const {
-		baseThreads: threads,
-		createThread,
-		isCreatingThread,
-		renameThread,
-		deleteThread,
-	} = useThreads({
+	const { projects, invalidateThreads } = useProjects();
+	const { baseThreads: threads } = useThreads({
 		projects,
 		invalidateThreads,
 	});
-
-	const agentsQuery = useQuery({
-		...orpcController.listAgents.queryOptions({
-			queryKey: RTC_OPERATION_KEYS.listAgents,
-		}),
-		queryKey: RTC_OPERATION_KEYS.listAgents,
-	});
+	const agentsQuery = useListAgents();
 
 	const isThreadStopping = useCallback(
 		(threadId: string) => stoppingThreadIds.has(threadId),
@@ -91,11 +73,6 @@ export function useControllerThreads() {
 	const isThreadActive = useCallback(
 		(threadId: string) => activeTurnByThreadRef.current.has(threadId),
 		[]
-	);
-
-	const getActiveTurnId = useCallback(
-		(threadId: string) => activeTurnByThread.get(threadId),
-		[activeTurnByThread]
 	);
 
 	function setThreadStopping(threadId: string, stopping: boolean): void {
@@ -169,14 +146,13 @@ export function useControllerThreads() {
 
 			// Keep the composer free after accept: wait for turn end in the
 			// background so queue drain / busy state still track the live turn.
-			Result.tryPromise(() => waitForTurnEnd(threadId, turnId))
+			waitForTurnEnd(threadId, turnId)
 				.then((endResult) => {
 					invalidateThreads(thread.projectId);
 					if (endResult.isErr() && !isTurnInterruptedError(endResult.error)) {
 						return;
 					}
 				})
-				.catch(() => undefined)
 				.finally(() => {
 					clearActiveTurn();
 				});
@@ -277,20 +253,9 @@ export function useControllerThreads() {
 	}
 
 	return {
-		projects,
-		threads,
-		isLoading,
-		createProject,
-		renameProject,
-		removeProject,
-		createThread,
-		isCreatingThread,
-		renameThread,
-		deleteThread,
 		sendMessage,
 		stopThread,
 		isThreadStopping,
 		isThreadActive,
-		getActiveTurnId,
 	};
 }

@@ -1,3 +1,11 @@
+import type { ConnectionError } from "@cyrus/errors/connection";
+import {
+	connectionErrorMessageFromUnknown,
+	dataChannelFailedError,
+	dialFailedError,
+	iceFailedError,
+	isConnectionError,
+} from "@cyrus/errors/connection";
 import type { ServerEvent } from "@cyrus/schemas/signaling";
 import { Result } from "better-result";
 import type { SignalingClient } from "../contracts/signaling";
@@ -48,28 +56,63 @@ export function createSignalingEvents(
 	};
 }
 
+type IceBuffer = {
+	setRemote(
+		description: RTCSessionDescriptionInit
+	): Promise<Result<void, ConnectionError>>;
+	addRemote(
+		candidate: RTCIceCandidateInit
+	): Promise<Result<void, ConnectionError>>;
+};
+
 // buffers remote ICE that arrives before setRemoteDescription resolves
-export function createIceBuffer(pc: RTCPeerConnection) {
+export function createIceBuffer(pc: RTCPeerConnection): IceBuffer {
 	const pending: RTCIceCandidateInit[] = [];
 	let remoteReady = false;
 
 	return {
 		async setRemote(description: RTCSessionDescriptionInit) {
-			await pc.setRemoteDescription(description);
+			const setRemoteResult = await Result.tryPromise({
+				try: () => pc.setRemoteDescription(description),
+				catch: (error) =>
+					iceFailedError(
+						"Failed to set remote description",
+						connectionErrorMessageFromUnknown(error)
+					),
+			});
+			if (setRemoteResult.isErr()) return setRemoteResult;
+
 			remoteReady = true;
 			while (pending.length > 0) {
 				const candidate = pending.shift();
-				if (candidate) {
-					await pc.addIceCandidate(candidate);
-				}
+				if (!candidate) continue;
+				const addResult = await Result.tryPromise({
+					try: () => pc.addIceCandidate(candidate),
+					catch: (error) =>
+						iceFailedError(
+							"Failed to add ICE candidate",
+							connectionErrorMessageFromUnknown(error)
+						),
+				});
+				if (addResult.isErr()) return addResult;
 			}
+
+			return Result.ok(undefined);
 		},
 		async addRemote(candidate: RTCIceCandidateInit) {
-			if (remoteReady) {
-				await pc.addIceCandidate(candidate);
-			} else {
+			if (!remoteReady) {
 				pending.push(candidate);
+				return Result.ok(undefined);
 			}
+
+			return await Result.tryPromise({
+				try: () => pc.addIceCandidate(candidate),
+				catch: (error) =>
+					iceFailedError(
+						"Failed to add ICE candidate",
+						connectionErrorMessageFromUnknown(error)
+					),
+			});
 		},
 	};
 }
@@ -101,21 +144,43 @@ export function relayLocalIce(
 }
 
 // resolves once the data channel reaches the `open` state
-export function whenOpen(channel: RTCDataChannel): Promise<void> {
+export function whenOpen(
+	channel: RTCDataChannel
+): Promise<Result<void, ConnectionError>> {
 	if (channel.readyState === "open") {
-		return Promise.resolve();
+		return Promise.resolve(Result.ok(undefined));
 	}
-	return new Promise((resolve, reject) => {
-		channel.addEventListener("open", () => resolve(), { once: true });
+
+	return new Promise((resolve) => {
+		channel.addEventListener("open", () => resolve(Result.ok(undefined)), {
+			once: true,
+		});
 		channel.addEventListener(
 			"error",
-			() => reject(new Error("data channel failed to open")),
+			() =>
+				resolve(
+					Result.err(dataChannelFailedError("data channel failed to open"))
+				),
 			{ once: true }
 		);
 		channel.addEventListener(
 			"close",
-			() => reject(new Error("data channel closed before opening")),
+			() =>
+				resolve(
+					Result.err(
+						dataChannelFailedError("data channel closed before opening")
+					)
+				),
 			{ once: true }
 		);
 	});
+}
+
+export function mapUnknownToDialError(error: unknown): ConnectionError {
+	if (isConnectionError(error)) return error;
+
+	return dialFailedError(
+		"Failed to establish RTC connection",
+		connectionErrorMessageFromUnknown(error)
+	);
 }

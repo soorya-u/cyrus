@@ -1,4 +1,7 @@
+import type { RepositoryError } from "@cyrus/errors/repository";
+import { databaseError } from "@cyrus/errors/repository";
 import type { DatabasePromise } from "@tursodatabase/database-common";
+import { Result } from "better-result";
 import { pushSchema } from "drizzle-kit/payload/sqlite";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/tursodatabase/database";
@@ -32,7 +35,7 @@ export class DatabaseConnection {
 		// NOTE: If there is any diff in models between worker and controller, this
 		// is where we control it via role.
 		role: "worker" | "controller"
-	): Promise<DrizzleDb> {
+	): Promise<Result<DrizzleDb, RepositoryError>> {
 		return this.setup(connect, models, role);
 	}
 
@@ -40,16 +43,25 @@ export class DatabaseConnection {
 		connect: DatabaseConnect,
 		schema: Record<string, unknown>,
 		_role: "worker" | "controller"
-	): Promise<DrizzleDb> {
-		const bootstrap = await connect();
-		await this.push(bootstrap, schema);
-		await bootstrap.close();
+	): Promise<Result<DrizzleDb, RepositoryError>> {
+		return await Result.tryPromise({
+			try: async () => {
+				const bootstrap = await connect();
+				await this.push(bootstrap, schema);
+				await bootstrap.close();
 
-		const client = await connect();
-		this.nativeClient = client;
-		this.drizzleDb = drizzle({ client });
-		await this.configure();
-		return this.drizzleDb;
+				const client = await connect();
+				this.nativeClient = client;
+				this.drizzleDb = drizzle({ client });
+				await this.configure();
+				return this.drizzleDb;
+			},
+			catch: (error) =>
+				databaseError(
+					"Failed to open database",
+					error instanceof Error ? error.message : String(error)
+				),
+		});
 	}
 
 	async close(): Promise<void> {

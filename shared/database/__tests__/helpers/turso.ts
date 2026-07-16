@@ -14,7 +14,11 @@ export async function withTempDatabase<T>(run: () => Promise<T>): Promise<T> {
 
 	try {
 		process.chdir(tempDir);
-		await connection.open(() => connect(dbPath, { timeout: 5000 }), "worker");
+		const openResult = await connection.open(
+			() => connect(dbPath, { timeout: 5000 }),
+			"worker"
+		);
+		if (openResult.isErr()) throw openResult.error;
 		opened = true;
 		return await run();
 	} finally {

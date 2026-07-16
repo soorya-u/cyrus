@@ -1,5 +1,6 @@
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
+import { clamp, useMediaQuery } from "@mantine/hooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cnfast";
 import { PanelLeftCloseIcon, PanelLeftIcon } from "lucide-react";
@@ -30,7 +31,6 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsMobile } from "@/hooks/use-media-query";
 
 type ResponsiveSidebarState = "expanded" | "collapsed";
 
@@ -151,7 +151,7 @@ function SidebarProvider({
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 }) {
-	const isMobile = useIsMobile();
+	const isMobile = useMediaQuery("(max-width: 768px)", false);
 	const [openMobile, setOpenMobile] = useState(false);
 
 	// This is the internal state of the sidebar.
@@ -403,13 +403,6 @@ function SidebarTrigger({
 	);
 }
 
-function clampSidebarWidth(
-	width: number,
-	options: SidebarResolvedResizableOptions
-): number {
-	return Math.max(options.minWidth, Math.min(width, options.maxWidth));
-}
-
 function SidebarRail({
 	className,
 	onClick,
@@ -495,7 +488,11 @@ function SidebarRail({
 			}
 
 			const startWidth = sidebarContainer.getBoundingClientRect().width;
-			const initialWidth = clampSidebarWidth(startWidth, resolvedResizable);
+			const initialWidth = clamp(
+				startWidth,
+				resolvedResizable.minWidth,
+				resolvedResizable.maxWidth
+			);
 			const transitionTargets = [
 				sidebarRoot.querySelector<HTMLElement>("[data-slot='sidebar-gap']"),
 				sidebarRoot.querySelector<HTMLElement>(
@@ -550,9 +547,10 @@ function SidebarRail({
 			if (Math.abs(delta) > 2) {
 				resizeState.moved = true;
 			}
-			resizeState.pendingWidth = clampSidebarWidth(
+			resizeState.pendingWidth = clamp(
 				resizeState.startWidth + delta,
-				resolvedResizable
+				resolvedResizable.minWidth,
+				resolvedResizable.maxWidth
 			);
 			if (resizeState.rafId !== null) {
 				return;
@@ -644,7 +642,11 @@ function SidebarRail({
 
 		const storedWidth = readStoredSidebarWidth(resolvedResizable.storageKey);
 		if (storedWidth === null) return;
-		const clampedWidth = clampSidebarWidth(storedWidth, resolvedResizable);
+		const clampedWidth = clamp(
+			storedWidth,
+			resolvedResizable.minWidth,
+			resolvedResizable.maxWidth
+		);
 		wrapper.style.setProperty("--sidebar-width", `${clampedWidth}px`);
 		resolvedResizable.onResize?.(clampedWidth);
 	}, [resolvedResizable]);

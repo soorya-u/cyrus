@@ -1,3 +1,4 @@
+import { inferProjectTitleFromPath } from "@cyrus/utils/path";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
 	$applyNodeReplacement,
@@ -15,8 +16,6 @@ import type { ReactElement } from "react";
 export const COMPOSER_CHIP_PLACEHOLDER = "\uFFFC";
 
 const HTTP_URI_PATTERN = /^https?:\/\//i;
-const PATH_SPLIT_PATTERN = /[/\\]/;
-const TRAILING_SLASH_PATTERN = /\/+$/;
 
 type SerializedComposerResourceNode = Spread<
 	{
@@ -27,12 +26,6 @@ type SerializedComposerResourceNode = Spread<
 	},
 	SerializedLexicalNode
 >;
-
-function basename(path: string): string {
-	const normalized = path.replace(TRAILING_SLASH_PATTERN, "");
-	const parts = normalized.split(PATH_SPLIT_PATTERN);
-	return parts.at(-1) || path;
-}
 
 function ResourceChipView({
 	uri,
@@ -45,7 +38,7 @@ function ResourceChipView({
 }) {
 	const [editor] = useLexicalComposerContext();
 	const isUrl = HTTP_URI_PATTERN.test(uri);
-	const label = name ?? basename(uri);
+	const label = name ?? inferProjectTitleFromPath(uri);
 
 	function remove() {
 		editor.update(() => {

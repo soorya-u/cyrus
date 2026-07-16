@@ -2,7 +2,6 @@ import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
 import { connection } from "@cyrus/database/connection";
 import { generateName, randomId } from "@cyrus/utils/identity";
-import { Result } from "better-result";
 import { createWorkerRuntime } from "@/core";
 import { createControllerRouter } from "@/handlers/controller";
 import { workerRouter } from "@/handlers/worker";
@@ -11,6 +10,7 @@ import { env } from "@/lib/env";
 import { createThreadEventBus } from "@/queue/bus";
 import { get, getOrCreate } from "@/store/config";
 import { initDatabase } from "@/store/database";
+import { unwrapOrExit } from "@/utils/result";
 import { print } from "@/utils/style";
 
 export async function worker(): Promise<void> {
@@ -32,21 +32,20 @@ export async function worker(): Promise<void> {
 
 	const runtime = createWorkerRuntime();
 
-	(await Result.tryPromise(() => initDatabase())).tapError((err) => {
-		print.error`Failed to initialize database: ${String(err)}`;
-		process.exit(1);
-	});
+	unwrapOrExit(await initDatabase());
 
 	print.dim`worker "${name}" joining hub`;
 
-	const signalingSession = await connectSignaling({
-		host: env.CLI_PUBLIC_SERVER_URL,
-		room,
-		role: "worker",
-		id,
-		name,
-		protocols: authClient.wsTicket.protocols,
-	});
+	const signalingSession = unwrapOrExit(
+		await connectSignaling({
+			host: env.CLI_PUBLIC_SERVER_URL,
+			room,
+			role: "worker",
+			id,
+			name,
+			protocols: authClient.wsTicket.protocols,
+		})
+	);
 	print.success`✓ connected — waiting for message…`;
 
 	const eventBus = createThreadEventBus();

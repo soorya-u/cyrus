@@ -1,5 +1,6 @@
 import { connectControllerWeb } from "@cyrus/connections/rtc/controller/web";
 import { connectSignaling } from "@cyrus/connections/rtc/session";
+import { signalingFailedError } from "@cyrus/errors/connection";
 import type { RtcDialer, SignalingDialer } from "@cyrus/providers/types";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { getControllerId, getControllerName } from "@/stores/identity";
@@ -8,7 +9,7 @@ import { env } from "./env";
 
 export const dialSignaling: SignalingDialer = async () => {
 	const { data } = await authClient.getSession();
-	if (!data?.user) throw new Error("Not authenticated");
+	if (!data?.user) throw signalingFailedError("Not authenticated");
 
 	const session = await connectSignaling({
 		host: env.VITE_SERVER_URL,
@@ -18,8 +19,12 @@ export const dialSignaling: SignalingDialer = async () => {
 		name: getControllerName(),
 		protocols: authClient.wsTicket.protocols,
 	});
+	if (session.isErr()) throw session.error;
 
-	return { session, orpc: createTanstackQueryUtils(session.signaling) };
+	return {
+		session: session.value,
+		orpc: createTanstackQueryUtils(session.value.signaling),
+	};
 };
 
 export const dialRtc: RtcDialer = async (session, workerId) => {
@@ -28,6 +33,10 @@ export const dialRtc: RtcDialer = async (session, workerId) => {
 		events: session.events,
 		to: workerId,
 	});
+	if (connection.isErr()) throw connection.error;
 
-	return { connection, orpc: createTanstackQueryUtils(connection.client) };
+	return {
+		connection: connection.value,
+		orpc: createTanstackQueryUtils(connection.value.client),
+	};
 };

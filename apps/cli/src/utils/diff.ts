@@ -1,4 +1,5 @@
 import { createPatch } from "diff";
+import parseDiff from "parse-diff";
 
 type DiffContentLike = {
 	type: "diff";
@@ -23,13 +24,23 @@ export function enrichDiffContent<T>(
 		if (!isDiffContent(item)) return item;
 		const oldText = item.oldText ?? "";
 		const patch = createPatch(item.path, oldText, item.newText);
-		let additions = 0;
-		let deletions = 0;
-		for (const line of patch.split("\n")) {
-			if (line.startsWith("+++") || line.startsWith("---")) continue;
-			if (line.startsWith("+")) additions++;
-			else if (line.startsWith("-")) deletions++;
-		}
+		const { additions, deletions } = summarizePatch(patch);
 		return { ...item, patch, additions, deletions } as T;
 	});
+}
+
+function summarizePatch(patch: string): {
+	additions: number;
+	deletions: number;
+} {
+	const diff = { additions: 0, deletions: 0 };
+
+	const parsed = parseDiff(patch);
+	for (const file of parsed)
+		for (const chunk of file.chunks)
+			for (const change of chunk.changes)
+				if (change.type === "add") diff.additions++;
+				else if (change.type === "del") diff.deletions++;
+
+	return diff;
 }

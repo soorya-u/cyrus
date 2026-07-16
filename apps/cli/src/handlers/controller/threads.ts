@@ -10,7 +10,7 @@ import {
 	listThreads,
 	renameThread,
 } from "@cyrus/database/repositories/threads";
-import { throwOrpc } from "@cyrus/errors/orpc";
+import { orpcOk, throwOrpc } from "@cyrus/errors/orpc";
 import { notFound } from "@cyrus/errors/repository";
 import { log } from "evlog";
 import { tryCheckoutGitRef } from "@/git/checkout";
@@ -19,94 +19,84 @@ import type { ControllerDeps } from "./deps";
 
 export function threadsHandlers({ os, runtime }: ControllerDeps) {
 	return {
-		listThreads: os.listThreads.handler(async ({ input }) =>
-			(await listThreads(input.projectId)).match({
-				ok: (threads) => ({ threads }),
-				err: throwOrpc,
-			})
-		),
+		listThreads: os.listThreads.handler(async ({ input }) => ({
+			threads: orpcOk(await listThreads(input.projectId)),
+		})),
 
 		createThread: os.createThread.handler(async ({ input }) => {
-			const created = await createStoredThread(input.projectId, {
-				branch: input.branch,
-				worktreePath: input.worktreePath,
-			});
-			if (created.isErr()) throwOrpc(created.error);
+			const thread = orpcOk(
+				await createStoredThread(input.projectId, {
+					branch: input.branch,
+					worktreePath: input.worktreePath,
+				})
+			);
 
 			if (input.branch && !input.worktreePath) {
 				const projectCwd = await resolveProjectCwd(input.projectId);
 				if (projectCwd.isOk()) {
-					const checkedOut = await tryCheckoutGitRef(
-						projectCwd.value,
-						input.branch
-					);
-					if (checkedOut.isErr()) throwOrpc(checkedOut.error);
+					orpcOk(await tryCheckoutGitRef(projectCwd.value, input.branch));
 				}
 			}
 
-			return { thread: created.value };
+			return { thread };
 		}),
 
 		getConversations: os.getConversations.handler(async ({ input }) => {
-			const thread = await getThread(input.threadId);
-			if (thread.isErr()) throwOrpc(thread.error);
-			if (!thread.value) throwOrpc(notFound("thread", input.threadId));
+			const thread = orpcOk(await getThread(input.threadId));
+			if (!thread) throwOrpc(notFound("thread", input.threadId));
 
-			return (await getConversations(input.threadId, input.afterSeq)).match({
-				ok: (conversations) => ({ conversations }),
-				err: throwOrpc,
-			});
+			return {
+				conversations: orpcOk(
+					await getConversations(input.threadId, input.afterSeq)
+				),
+			};
 		}),
 
-		renameThread: os.renameThread.handler(async ({ input }) =>
-			(await renameThread(input.threadId, input.name)).match({
-				ok: () => ({}),
-				err: throwOrpc,
-			})
-		),
+		renameThread: os.renameThread.handler(async ({ input }) => {
+			orpcOk(await renameThread(input.threadId, input.name));
+			return {};
+		}),
 
 		deleteThread: os.deleteThread.handler(async ({ input }) => {
-			const thread = await getThread(input.threadId);
-			if (thread.isErr()) throwOrpc(thread.error);
-			if (!thread.value) throwOrpc(notFound("thread", input.threadId));
+			const thread = orpcOk(await getThread(input.threadId));
+			if (!thread) throwOrpc(notFound("thread", input.threadId));
 
 			await runtime.threadCoordinator.closeAnyThreadSession(input.threadId);
 
-			if (thread.value.worktreePath) {
-				const projectCwd = await resolveProjectCwd(thread.value.projectId);
+			if (thread.worktreePath) {
+				const projectCwd = await resolveProjectCwd(thread.projectId);
 				if (projectCwd.isOk()) {
 					const removed = await removeGitWorktree(
 						projectCwd.value,
-						thread.value.worktreePath
+						thread.worktreePath
 					);
 					if (removed.isErr())
 						log.warn({
 							kind: "worktree_cleanup_failed",
 							threadId: input.threadId,
-							worktreePath: thread.value.worktreePath,
+							worktreePath: thread.worktreePath,
 							error: removed.error,
 						});
 				}
 			}
 
-			const deleted = await deleteThread(input.threadId);
-			if (deleted.isErr()) throwOrpc(deleted.error);
-			if (!deleted.value) throwOrpc(notFound("thread", input.threadId));
+			const deleted = orpcOk(await deleteThread(input.threadId));
+			if (!deleted) throwOrpc(notFound("thread", input.threadId));
 
 			return {};
 		}),
 
 		watchThread: os.watchThread.handler(async ({ input, context }) => {
-			const thread = await getThread(input.threadId);
-			if (thread.isErr()) throwOrpc(thread.error);
-			if (!thread.value) throwOrpc(notFound("thread", input.threadId));
+			const thread = orpcOk(await getThread(input.threadId));
+			if (!thread) throwOrpc(notFound("thread", input.threadId));
 
 			context.eventBus.watch(context.peerId, input.threadId);
 
-			return (await getSnapshotHighWaterMark(input.threadId)).match({
-				ok: (snapshotHighWaterMark) => ({ snapshotHighWaterMark }),
-				err: throwOrpc,
-			});
+			return {
+				snapshotHighWaterMark: orpcOk(
+					await getSnapshotHighWaterMark(input.threadId)
+				),
+			};
 		}),
 
 		unwatchThread: os.unwatchThread.handler(({ input, context }) => {

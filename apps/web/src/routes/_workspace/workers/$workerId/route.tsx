@@ -1,4 +1,4 @@
-import { useWorkerConversationSync } from "@cyrus/hooks/connection/use-worker-conversation-sync";
+import { useWorkerConversationSync } from "@cyrus/hooks/conversation/use-worker-conversation-sync";
 import { RtcProvider } from "@cyrus/providers/rtc/rtc-provider";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";

@@ -1,16 +1,6 @@
 import type { AvailableCommand } from "@cyrus/schemas/rtc/catalog";
 import { cn } from "cnfast";
-
-export function filterSlashCommands(
-	commands: AvailableCommand[],
-	filter: string
-): AvailableCommand[] {
-	const lower = filter.toLowerCase();
-	return commands.filter((command) => {
-		const name = command.name.toLowerCase();
-		return name.startsWith(lower) || name.includes(lower);
-	});
-}
+import { filterSlashCommands } from "@/utils/filters";
 
 export function SlashCommandAutocomplete({
 	commands,

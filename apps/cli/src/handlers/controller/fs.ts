@@ -1,50 +1,39 @@
-import { ORPCError } from "@orpc/server";
+import { fsErrorFromUnknown } from "@cyrus/errors/fs";
+import { orpcOk } from "@cyrus/errors/orpc";
 import { Result } from "better-result";
-import { toMessage } from "@/utils/error";
 import { listDir, listFiles, searchFiles } from "@/utils/fs";
 import type { ControllerOs } from "./deps";
-
-function isMissingPathError(error: unknown): boolean {
-	return (
-		typeof error === "object" &&
-		error !== null &&
-		"code" in error &&
-		(error as { code: unknown }).code === "ENOENT"
-	);
-}
-
-function throwFsOrpcError(error: unknown): never {
-	throw new ORPCError(
-		isMissingPathError(error) ? "NOT_FOUND" : "INTERNAL_SERVER_ERROR",
-		{ message: toMessage(error) }
-	);
-}
 
 export function fsHandlers(os: ControllerOs) {
 	return {
 		listEntries: os.listEntries.handler(async ({ input }) => {
 			const depth = input.depth ?? 1;
-			const dirsResult = await Result.tryPromise(() =>
-				listDir(input.cwd, depth)
+			const dirs = orpcOk(
+				await Result.tryPromise({
+					try: () => listDir(input.cwd, depth),
+					catch: (error) => fsErrorFromUnknown(error, input.cwd),
+				})
 			);
-			if (dirsResult.isErr()) throwFsOrpcError(dirsResult.error);
 
-			if (!input.includeFiles) return { dirs: dirsResult.value };
+			if (!input.includeFiles) return { dirs };
 
-			const filesResult = await Result.tryPromise(() =>
-				listFiles(input.cwd, depth)
+			const files = orpcOk(
+				await Result.tryPromise({
+					try: () => listFiles(input.cwd, depth),
+					catch: (error) => fsErrorFromUnknown(error, input.cwd),
+				})
 			);
-			if (filesResult.isErr()) throwFsOrpcError(filesResult.error);
 
-			return { dirs: dirsResult.value, files: filesResult.value };
+			return { dirs, files };
 		}),
 		searchEntries: os.searchEntries.handler(async ({ input }) => {
 			const limit = input.limit ?? 80;
-			const result = await Result.tryPromise(() =>
-				searchFiles(input.cwd, input.query, limit)
+			return orpcOk(
+				await Result.tryPromise({
+					try: () => searchFiles(input.cwd, input.query, limit),
+					catch: (error) => fsErrorFromUnknown(error, input.cwd),
+				})
 			);
-			if (result.isErr()) throwFsOrpcError(result.error);
-			return result.value;
 		}),
 	};
 }

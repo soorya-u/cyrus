@@ -3,7 +3,7 @@ import { Result } from "better-result";
 import { agentEntryToProfile } from "@/core/agents/profile";
 import { env } from "@/lib/env";
 import type { AgentEntry } from "@/validators/agent";
-import { createDefaultHost } from "./host";
+import { createInteractiveHost } from "./interactive";
 import { createTrackedTransport } from "./transport";
 
 export type ProcessState = "stopped" | "starting" | "ready" | "crashed";
@@ -104,7 +104,7 @@ export class AgentPool {
 				startupTimeoutMs: env.CYRUS_ACP_TIMEOUT_MS,
 			},
 			transport,
-			host: createDefaultHost((info) => {
+			host: createInteractiveHost((info) => {
 				const managed = this.agents.get(name);
 				if (!managed) return;
 				managed.state = info.code === 0 ? "stopped" : "crashed";

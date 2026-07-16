@@ -1,5 +1,4 @@
 import type { ToolCallView } from "@cyrus/schemas/view";
-import { asRecord, asTrimmedString } from "./guards";
 
 export type ToolFields = {
 	command: string | null;
@@ -7,6 +6,18 @@ export type ToolFields = {
 	query: string | null;
 	output: string | null;
 };
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+	return value !== null && typeof value === "object" && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: undefined;
+}
+
+function asTrimmedString(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
+}
 
 export function extractToolFields(tool: ToolCallView): ToolFields {
 	const rawInput = asRecord(tool.rawInput);

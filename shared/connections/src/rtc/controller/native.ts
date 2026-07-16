@@ -1,3 +1,5 @@
+import type { ConnectionError } from "@cyrus/errors/connection";
+import type { Result } from "better-result";
 import { RTCPeerConnection as NativeRTCPeerConnection } from "react-native-webrtc";
 import type { ControllerContract } from "../../contracts/controller";
 import { type DialOptions, dial, type RtcConnection } from "../dial";
@@ -9,7 +11,7 @@ export type NativeControllerOptions = Omit<
 
 export function connectControllerNative(
 	options: NativeControllerOptions
-): Promise<RtcConnection<ControllerContract>> {
+): Promise<Result<RtcConnection<ControllerContract>, ConnectionError>> {
 	return dial<ControllerContract>({
 		...options,
 		label: "controller",

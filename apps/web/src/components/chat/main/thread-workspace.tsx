@@ -1,9 +1,11 @@
-import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
+import { useThreadConversation } from "@cyrus/hooks/conversation/use-thread-conversation";
+import { useThreadTurns } from "@cyrus/hooks/conversation/use-thread-turns";
 import {
 	invalidateThreadGitQueries,
 	useGitStatus,
-} from "@cyrus/hooks/connection/use-git";
-import { useThreadConversation } from "@cyrus/hooks/connection/use-thread-conversation";
+} from "@cyrus/hooks/queries/use-git";
+import { useProjects } from "@cyrus/hooks/queries/use-projects";
+import { useThreads } from "@cyrus/hooks/queries/use-threads";
 import {
 	supportsElicitation,
 	useAgentCatalogStore,
@@ -13,12 +15,17 @@ import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 import { Composer } from "@/components/chat/composer";
-import { DiffPanel } from "@/components/chat/diff/diff-panel";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
 import { useChatUiStore } from "@/stores/chat-ui";
+
+const DiffPanel = lazy(() =>
+	import("@/components/chat/diff/diff-panel").then((mod) => ({
+		default: mod.DiffPanel,
+	}))
+);
 
 type ThreadWorkspaceProps = {
 	workerId: string;
@@ -35,8 +42,10 @@ export function ThreadWorkspace({
 }: ThreadWorkspaceProps) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { threads, sendMessage, stopThread, isThreadStopping, isThreadActive } =
-		useControllerThreads();
+	const { projects, invalidateThreads } = useProjects();
+	const { baseThreads: threads } = useThreads({ projects, invalidateThreads });
+	const { sendMessage, stopThread, isThreadStopping, isThreadActive } =
+		useThreadTurns();
 	const { diffOpen, setDiffOpen } = useChatUiStore();
 	useGitStatus(diffOpen ? threadId : undefined);
 
@@ -139,10 +148,12 @@ export function ThreadWorkspace({
 				</div>
 				{diffOpen ? (
 					<div className="w-105 shrink-0">
-						<DiffPanel
-							onClose={() => setDiffOpen(false)}
-							threadId={thread.id}
-						/>
+						<Suspense fallback={null}>
+							<DiffPanel
+								onClose={() => setDiffOpen(false)}
+								threadId={thread.id}
+							/>
+						</Suspense>
 					</div>
 				) : null}
 			</div>

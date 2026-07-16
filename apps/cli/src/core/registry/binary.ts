@@ -2,7 +2,7 @@ import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Result } from "better-result";
-import { $ } from "bun";
+import extract from "extract-zip";
 import {
 	BINARY_DOWNLOAD_TIMEOUT_MS,
 	MAX_BINARY_BYTES,
@@ -113,25 +113,7 @@ async function extractZip(
 		await Result.tryPromise(async () => {
 			try {
 				await writeFile(archivePath, data);
-
-				const tar = await $`tar -xf ${archivePath} -C ${dest}`
-					.nothrow()
-					.quiet();
-				if (tar.exitCode !== 0) {
-					if (!Bun.which("unzip"))
-						throw new Error(
-							"failed to extract zip archive — install unzip or use tar"
-						);
-
-					const unzip = await $`unzip -q ${archivePath} -d ${dest}`
-						.nothrow()
-						.quiet();
-
-					if (unzip.exitCode !== 0)
-						throw new Error(
-							`failed to extract zip archive (exit ${unzip.exitCode})`
-						);
-				}
+				await extract(archivePath, { dir: dest });
 			} finally {
 				await removeQuietly(archivePath);
 				await rm(tmpDir, { recursive: true, force: true }).catch(
