@@ -104,14 +104,37 @@
       }
     },
     {
-      "includes": ["apps/mobile/src/app/**/_layout.tsx"],
+      "includes": ["apps/web/**"],
       "linter": {
         "rules": {
           "style": {
-            "noExportedImports": "off"
-          },
-          "performance": {
-            "noBarrelFile": "off"
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/connections",
+                      "!@cyrus/connections/**",
+                      "!@cyrus/constants",
+                      "!@cyrus/constants/**",
+                      "!@cyrus/hooks",
+                      "!@cyrus/hooks/**",
+                      "!@cyrus/providers",
+                      "!@cyrus/providers/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**",
+                      "!@cyrus/styles",
+                      "!@cyrus/styles/**",
+                      "!@cyrus/utils",
+                      "!@cyrus/utils/**"
+                    ],
+                    "message": "Web may only import allowed @cyrus shared packages (see apps/web/package.json)."
+                  }
+                ]
+              }
+            }
           }
         }
       }
@@ -120,8 +143,306 @@
       "includes": ["apps/cli/**"],
       "linter": {
         "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/connections",
+                      "!@cyrus/connections/**",
+                      "!@cyrus/database",
+                      "!@cyrus/database/**",
+                      "!@cyrus/errors",
+                      "!@cyrus/errors/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**",
+                      "!@cyrus/utils",
+                      "!@cyrus/utils/**"
+                    ],
+                    "message": "CLI may only import allowed @cyrus shared packages (see apps/cli/package.json)."
+                  }
+                ]
+              }
+            }
+          },
           "suspicious": {
             "noUnusedExpressions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/server/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/connections",
+                      "!@cyrus/connections/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**"
+                    ],
+                    "message": "Server may only import allowed @cyrus shared packages (see apps/server/package.json)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/mobile/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/connections",
+                      "!@cyrus/connections/**",
+                      "!@cyrus/hooks",
+                      "!@cyrus/hooks/**",
+                      "!@cyrus/providers",
+                      "!@cyrus/providers/**",
+                      "!@cyrus/utils",
+                      "!@cyrus/utils/**"
+                    ],
+                    "message": "Mobile may only import allowed @cyrus shared packages (see apps/mobile/package.json)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/desktop/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@cyrus/**"],
+                    "message": "Desktop must not import workspace packages directly."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "shared/errors/**",
+        "shared/constants/**",
+        "shared/styles/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@cyrus/**"],
+                    "message": "Leaf shared packages must not import other @cyrus packages."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["shared/schemas/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**"
+                    ],
+                    "message": "Schemas must not import other @cyrus packages."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["shared/utils/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/constants",
+                      "!@cyrus/constants/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**"
+                    ],
+                    "message": "Utils may only import @cyrus/constants and @cyrus/schemas."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["shared/connections/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**"
+                    ],
+                    "message": "Connections may only import @cyrus/schemas."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["shared/providers/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/connections",
+                      "!@cyrus/connections/**",
+                      "!@cyrus/constants",
+                      "!@cyrus/constants/**"
+                    ],
+                    "message": "Providers may only import @cyrus/connections and @cyrus/constants."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["shared/database/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/database",
+                      "!@cyrus/database/**",
+                      "!@cyrus/errors",
+                      "!@cyrus/errors/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**",
+                      "!@cyrus/utils",
+                      "!@cyrus/utils/**"
+                    ],
+                    "message": "Database may only import @cyrus/errors, @cyrus/schemas, and @cyrus/utils."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["shared/hooks/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cyrus/**",
+                      "!@cyrus/constants",
+                      "!@cyrus/constants/**",
+                      "!@cyrus/providers",
+                      "!@cyrus/providers/**",
+                      "!@cyrus/schemas",
+                      "!@cyrus/schemas/**",
+                      "!@cyrus/utils",
+                      "!@cyrus/utils/**"
+                    ],
+                    "message": "Hooks may only import @cyrus/constants, @cyrus/providers, @cyrus/schemas, and @cyrus/utils."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/mobile/src/app/**/_layout.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExportedImports": "off"
+          },
+          "performance": {
+            "noBarrelFile": "off"
           }
         }
       }
