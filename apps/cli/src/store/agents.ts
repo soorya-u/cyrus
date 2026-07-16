@@ -1,6 +1,6 @@
-import { writeFile } from "node:fs/promises";
 import { Result } from "better-result";
 import { YAML } from "bun";
+import writeFileAtomic from "write-file-atomic";
 import { AGENTS_PATH } from "@/constants/paths";
 import type { AgentEntry } from "@/validators/agent";
 import { agentEntrySchema } from "@/validators/agent";
@@ -62,7 +62,9 @@ async function writeRegistry(
 	return (
 		await Result.tryPromise(async () => {
 			await ensureDir();
-			await writeFile(AGENTS_PATH, YAML.stringify(registry), { mode: 0o600 });
+			await writeFileAtomic(AGENTS_PATH, YAML.stringify(registry), {
+				mode: 0o600,
+			});
 		})
 	).mapError(toMessage);
 }
