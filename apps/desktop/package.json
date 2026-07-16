@@ -16,7 +16,6 @@
     "@soorya-u/better-auth-desktop": "catalog:",
     "@t3-oss/env-core": "catalog:",
     "better-auth": "catalog:",
-    "conf": "^15.1.0",
     "electrobun": "^1.18.1",
     "evlog": "catalog:",
     "zod": "catalog:"

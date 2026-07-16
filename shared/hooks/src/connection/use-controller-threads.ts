@@ -294,5 +294,3 @@ export function useControllerThreads() {
 		getActiveTurnId,
 	};
 }
-
-export type UseControllerThreads = ReturnType<typeof useControllerThreads>;

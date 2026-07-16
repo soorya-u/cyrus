@@ -60,5 +60,3 @@ export const auth = betterAuth({
 		wsTicketPlugin(),
 	],
 });
-
-export type Auth = typeof auth;

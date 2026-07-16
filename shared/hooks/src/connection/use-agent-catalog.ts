@@ -330,10 +330,10 @@ export function useAgentCatalog({
 		}),
 	});
 
+	// Reset scoped to thread switches only — mutation identity changes each render.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: threadId is the intentional trigger
 	useEffect(() => {
 		bindAgentMutation.reset();
-		// Reset scoped to thread switches only — mutation identity changes each render.
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- threadId is the intentional dependency
 	}, [threadId]);
 
 	useEffect(() => {
@@ -486,5 +486,3 @@ export function useAgentCatalog({
 		selectPersona,
 	};
 }
-
-export type UseAgentCatalog = ReturnType<typeof useAgentCatalog>;

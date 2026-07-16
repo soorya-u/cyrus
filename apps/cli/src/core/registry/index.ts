@@ -22,10 +22,6 @@ function defaultIconUrl(id: string): string {
 	return `https://cdn.agentclientprotocol.com/registry/v1/latest/${id}.svg`;
 }
 
-export async function warmRegistryCache(): Promise<Result<void, string>> {
-	return (await fetchRegistry()).map(() => undefined);
-}
-
 export async function syncRegistry(): Promise<Result<void, string>> {
 	return (await fetchRegistry({ force: true })).map(() => undefined);
 }

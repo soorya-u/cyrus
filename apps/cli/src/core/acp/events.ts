@@ -2,11 +2,7 @@ import type {
 	RuntimePermissionRequest,
 	RuntimeSessionEvent,
 } from "@acp-kit/core";
-import type {
-	SessionNotification,
-	SessionUpdate,
-	ToolCallUpdate,
-} from "@agentclientprotocol/sdk";
+import type { ToolCallUpdate } from "@agentclientprotocol/sdk";
 import { ToolCallStatusSchema } from "@cyrus/schemas/enums/tools";
 import {
 	type AgentEvent,
@@ -14,8 +10,6 @@ import {
 	ApprovalRequestEventSchema,
 	MessageCompletedEventSchema,
 	PlanEventSchema,
-	PlanRemovedEventSchema,
-	PlanUpdateEventSchema,
 	ReasoningCompletedEventSchema,
 	ThoughtEventSchema,
 	TokenEventSchema,
@@ -130,70 +124,6 @@ function mapToolStatus(
 	return;
 }
 
-export function mapSessionUpdate(update: SessionUpdate): AgentEvent[] {
-	switch (update.sessionUpdate) {
-		case "agent_message_chunk":
-			return update.content.type === "text"
-				? [
-						TokenEventSchema.parse({
-							type: "token",
-							text: update.content.text,
-							messageId: update.messageId,
-						}),
-					]
-				: [];
-		case "agent_thought_chunk":
-			return update.content.type === "text"
-				? [
-						ThoughtEventSchema.parse({
-							type: "thought",
-							text: update.content.text,
-							messageId: update.messageId,
-						}),
-					]
-				: [];
-		case "tool_call":
-			return [mapToolCall(update)];
-		case "tool_call_update":
-			return [mapToolCallUpdate(update)];
-		case "plan":
-			return [
-				PlanEventSchema.parse({
-					type: "plan",
-					entries: update.entries,
-				}),
-			];
-		case "plan_update":
-			return [
-				PlanUpdateEventSchema.parse({
-					type: "plan_update",
-					plan: update.plan,
-				}),
-			];
-		case "plan_removed":
-			return [
-				PlanRemovedEventSchema.parse({
-					type: "plan_removed",
-					id: update.id,
-				}),
-			];
-		default:
-			return [
-				AgentEventSchema.parse({
-					type: "session_update",
-					sessionUpdate: update.sessionUpdate,
-					raw: update,
-				}),
-			];
-	}
-}
-
-export function mapSessionNotification(
-	notification: SessionNotification
-): AgentEvent[] {
-	return mapSessionUpdate(notification.update);
-}
-
 export function mapApprovalRequest(
 	request: RuntimePermissionRequest
 ): AgentEvent {
@@ -225,28 +155,6 @@ export function mapApprovalRequest(
 				kind: option.kind ?? option.optionId ?? "reject_once",
 			})),
 		},
-	});
-}
-
-function mapToolCall(
-	update: Extract<SessionUpdate, { sessionUpdate: "tool_call" }>
-): AgentEvent {
-	const { sessionUpdate: _, _meta, content, ...fields } = update;
-	return ToolCallEventSchema.parse({
-		type: "tool_call",
-		...fields,
-		content: enrichDiffContent(content),
-	});
-}
-
-function mapToolCallUpdate(
-	update: Extract<SessionUpdate, { sessionUpdate: "tool_call_update" }>
-): AgentEvent {
-	const { sessionUpdate: _, _meta, content, ...fields } = update;
-	return ToolCallUpdateEventSchema.parse({
-		type: "tool_call_update",
-		...fields,
-		content: enrichDiffContent(content),
 	});
 }
 

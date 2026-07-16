@@ -1,0 +1,61 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "ignoreBinaries": ["wrangler", "dotenvx"],
+  "ignoreDependencies": ["@cyrus/typescript", "@biomejs/biome"],
+  "ignoreIssues": {
+    "apps/web/src/components/ui/**": ["exports", "types"]
+  },
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.{ts,sh}", "wrangler.json"]
+    },
+    "apps/cli": {
+      "entry": ["src/**/*.test.ts", "__tests__/**/*.ts"]
+    },
+    "apps/desktop": {
+      "entry": ["electrobun.config.ts", "src/bun/index.ts"],
+      "ignoreDependencies": ["@types/three"]
+    },
+    "apps/mobile": {
+      "entry": ["src/app/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["expo-updates", "expo-system-ui"]
+    },
+    "apps/server": {
+      "entry": ["src/index.ts"]
+    },
+    "apps/web": {
+      "ignoreIssues": {
+        "src/components/ui/**": ["exports", "types"]
+      }
+    },
+    "shared/*": {
+      "includeEntryExports": true
+    },
+    "shared/schemas": {
+      "includeEntryExports": true,
+      "ignoreIssues": {
+        "src/**": ["types"]
+      }
+    },
+    "tests/e2e": {
+      "entry": [
+        "scenarios/**/*.ts",
+        "harness/**/*.ts",
+        "manual/**/*.ts",
+        "web/global-setup.ts",
+        "web/global-teardown.ts",
+        "web/prepare-playwright.ts"
+      ]
+    },
+    "tooling/test": {
+      "entry": ["setup/**/*.ts", "mocks/**/*.ts", "smoke/**/*.ts"]
+    },
+    "tooling/typescript": {
+      "entry": ["tsconfig.base.json"]
+    },
+    "tooling/github": {
+      "entry": ["setup/action.yml"]
+    }
+  }
+}

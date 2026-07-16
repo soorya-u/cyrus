@@ -3,10 +3,12 @@
     "scheme": "cyrus",
     "userInterfaceStyle": "automatic",
     "orientation": "default",
-    "web": { "bundler": "metro" },
+    "web": {
+      "bundler": "metro"
+    },
     "name": "cyrus",
     "slug": "cyrus",
-    "plugins": ["expo-font"],
+    "plugins": ["expo-font", "expo-secure-store"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

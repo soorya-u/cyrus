@@ -11,21 +11,19 @@
     "test:unit": "bun test"
   },
   "dependencies": {
-    "@cyrus/connections": "workspace:*",
     "@cyrus/constants": "workspace:*",
     "@cyrus/providers": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
-    "@orpc/tanstack-query": "^1.14.6",
     "@tanstack/react-query": "catalog:",
     "better-result": "catalog:",
-    "evlog": "^2.19.2",
+    "evlog": "catalog:",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
-    "@types/react": "^19.2.15",
+    "@types/react": "catalog:",
     "react": "catalog:",
     "typescript": "catalog:"
   }
