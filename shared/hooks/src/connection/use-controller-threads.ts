@@ -1,14 +1,9 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import { isTurnInterruptedError } from "@cyrus/errors/turn";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
 import {
-	appendOptimisticUserMessage,
-	appendTurnTerminal,
-	removeTurnFromCache,
-} from "@cyrus/utils/conversations/cache";
-import {
-	isTurnInterruptedError,
 	settleTurnWaiter,
 	waitForTurnEnd,
 } from "@cyrus/utils/conversations/turn-waiters";
@@ -18,6 +13,11 @@ import { Result } from "better-result";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRtc } from "../contexts/rtc";
 import { usePromptQueueStore } from "../stores/prompt-queue";
+import {
+	appendOptimisticUserMessage,
+	appendTurnTerminal,
+	removeTurnFromCache,
+} from "./conversation-cache";
 import { useProjects } from "./use-projects";
 import { useThreads } from "./use-threads";
 
@@ -169,14 +169,13 @@ export function useControllerThreads() {
 
 			// Keep the composer free after accept: wait for turn end in the
 			// background so queue drain / busy state still track the live turn.
-			Result.tryPromise(() => waitForTurnEnd(threadId, turnId))
+			waitForTurnEnd(threadId, turnId)
 				.then((endResult) => {
 					invalidateThreads(thread.projectId);
 					if (endResult.isErr() && !isTurnInterruptedError(endResult.error)) {
 						return;
 					}
 				})
-				.catch(() => undefined)
 				.finally(() => {
 					clearActiveTurn();
 				});

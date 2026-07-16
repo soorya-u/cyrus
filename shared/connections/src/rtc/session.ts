@@ -1,3 +1,9 @@
+import type { ConnectionError } from "@cyrus/errors/connection";
+import {
+	connectionErrorMessageFromUnknown,
+	invalidHostError,
+	signalingFailedError,
+} from "@cyrus/errors/connection";
 import type { DeviceRole } from "@cyrus/schemas/signaling";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
@@ -22,40 +28,55 @@ export type SignalingSession = {
 	close(): void;
 };
 
-export function normalizeHost(host: string): {
+export type NormalizedHost = {
 	host: string;
 	protocol: "ws" | "wss";
-} {
-	if (host.includes("://")) {
-		const url = new URL(host);
-		return {
-			host: url.host,
-			protocol:
-				url.protocol === "https:" || url.protocol === "wss:" ? "wss" : "ws",
-		};
+};
+
+export function normalizeHost(
+	host: string
+): Result<NormalizedHost, ConnectionError> {
+	if (!host.includes("://")) {
+		return Result.ok({ host, protocol: "ws" });
 	}
-	return { host, protocol: "ws" };
+
+	return Result.try({
+		try: () => {
+			const url = new URL(host);
+			return {
+				host: url.host,
+				protocol:
+					url.protocol === "https:" || url.protocol === "wss:" ? "wss" : "ws",
+			} satisfies NormalizedHost;
+		},
+		catch: (error) =>
+			invalidHostError(
+				"Invalid signaling host",
+				connectionErrorMessageFromUnknown(error)
+			),
+	});
 }
 
+// biome-ignore lint/suspicious/useAwait: returns a Promise via `new Promise`, not await
 async function waitForPartySocketOpen(
 	socket: PartySocket,
 	timeoutMs = 30_000
-): Promise<void> {
-	if (socket.readyState === WebSocket.OPEN) return;
+): Promise<Result<void, ConnectionError>> {
+	if (socket.readyState === WebSocket.OPEN) return Result.ok(undefined);
 
-	await new Promise<void>((resolve, reject) => {
+	return new Promise((resolve) => {
 		const timeout = setTimeout(() => {
 			cleanup();
-			reject(new Error("WebSocket open timeout"));
+			resolve(Result.err(signalingFailedError("WebSocket open timeout")));
 		}, timeoutMs);
 
 		const onOpen = () => {
 			cleanup();
-			resolve();
+			resolve(Result.ok(undefined));
 		};
 		const onClose = () => {
 			cleanup();
-			reject(new Error("WebSocket closed before open"));
+			resolve(Result.err(signalingFailedError("WebSocket closed before open")));
 		};
 		const cleanup = () => {
 			clearTimeout(timeout);
@@ -70,8 +91,11 @@ async function waitForPartySocketOpen(
 
 export async function connectSignaling(
 	options: ConnectSignalingOptions
-): Promise<SignalingSession> {
-	const { host, protocol } = normalizeHost(options.host);
+): Promise<Result<SignalingSession, ConnectionError>> {
+	const normalized = normalizeHost(options.host);
+	if (normalized.isErr()) return Result.err(normalized.error);
+
+	const { host, protocol } = normalized.value;
 
 	const socket = new PartySocket({
 		host,
@@ -86,20 +110,35 @@ export async function connectSignaling(
 	const link = new RPCLink({ websocket: socket as unknown as WebSocket });
 	const signaling: SignalingClient = createORPCClient(link);
 
-	(await Result.tryPromise(() => waitForPartySocketOpen(socket)))
-		.tapError(() => socket.close())
-		.unwrap();
+	const openResult = await waitForPartySocketOpen(socket);
+	if (openResult.isErr()) {
+		socket.close();
+		return Result.err(openResult.error);
+	}
 
-	const result = await Result.tryPromise(async () => {
-		const stream = await signaling.onSignalingEvent({
-			name: options.name,
-			role: options.role,
-		});
-		return createSignalingEvents(stream);
+	const eventsResult = await Result.tryPromise({
+		try: async () => {
+			const stream = await signaling.onSignalingEvent({
+				name: options.name,
+				role: options.role,
+			});
+			return createSignalingEvents(stream);
+		},
+		catch: (error) =>
+			signalingFailedError(
+				"Failed to subscribe to signaling events",
+				connectionErrorMessageFromUnknown(error)
+			),
 	});
-	const events = result.tapError(() => socket.close()).unwrap();
 
-	return {
+	if (eventsResult.isErr()) {
+		socket.close();
+		return Result.err(eventsResult.error);
+	}
+
+	const events = eventsResult.value;
+
+	return Result.ok({
 		socket,
 		signaling,
 		events,
@@ -107,5 +146,5 @@ export async function connectSignaling(
 			events.close();
 			socket.close();
 		},
-	};
+	});
 }

@@ -1,7 +1,7 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { ThreadConversation } from "@cyrus/schemas/view";
-import { mergeConversationEntries } from "@cyrus/utils/conversations/cache";
-import { fold } from "@cyrus/utils/fold";
+import { mergeConversationEntries } from "@cyrus/utils/conversations/entries";
+import { fold } from "@cyrus/utils/conversations/fold";
 import {
 	keepPreviousData,
 	useQuery,
