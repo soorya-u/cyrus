@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { isTurnInterruptedError, turnWaitFailed } from "@cyrus/errors/turn";
 import {
-	isTurnInterruptedError,
 	rejectTurnWaiter,
 	settleTurnWaiter,
 	waitForTurnEnd,
@@ -14,20 +14,22 @@ describe("turn waiters", () => {
 			type: "turn_completed",
 		});
 
-		await expect(ended).resolves.toBeUndefined();
+		const result = await ended;
+		expect(result.isOk()).toBe(true);
 	});
 
-	test("rejects with an interrupted error when a turn is interrupted", async () => {
+	test("returns interrupted error when a turn is interrupted", async () => {
 		const ended = waitForTurnEnd("thread-interrupt", "turn-1");
 
 		settleTurnWaiter("thread-interrupt", "turn-1", {
 			type: "turn_interrupted",
 		});
 
-		await expect(ended).rejects.toThrow("turn interrupted");
-		await ended.catch((error) =>
-			expect(isTurnInterruptedError(error)).toBe(true)
-		);
+		const result = await ended;
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) return;
+		expect(isTurnInterruptedError(result.error)).toBe(true);
+		expect(result.error.message).toBe("turn interrupted");
 	});
 
 	test("ignores non-terminal events", async () => {
@@ -41,26 +43,35 @@ describe("turn waiters", () => {
 			type: "turn_completed",
 		});
 
-		await expect(ended).resolves.toBeUndefined();
+		const result = await ended;
+		expect(result.isOk()).toBe(true);
 	});
 
 	test("rejects explicitly and removes the waiter", async () => {
 		const ended = waitForTurnEnd("thread-error", "turn-1");
 
-		rejectTurnWaiter("thread-error", "turn-1", new Error("boom"));
+		rejectTurnWaiter("thread-error", "turn-1", turnWaitFailed("boom"));
 		settleTurnWaiter("thread-error", "turn-1", {
 			type: "turn_completed",
 		});
 
-		await expect(ended).rejects.toThrow("boom");
+		const result = await ended;
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) return;
+		expect(result.error.message).toBe("boom");
 	});
 
-	test("rejects immediately when the abort signal is already aborted", async () => {
+	test("returns aborted when the abort signal is already aborted", async () => {
 		const controller = new AbortController();
 		controller.abort();
 
-		await expect(
-			waitForTurnEnd("thread-abort", "turn-1", controller.signal)
-		).rejects.toThrow("turn aborted");
+		const result = await waitForTurnEnd(
+			"thread-abort",
+			"turn-1",
+			controller.signal
+		);
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) return;
+		expect(result.error.message).toBe("turn aborted");
 	});
 });

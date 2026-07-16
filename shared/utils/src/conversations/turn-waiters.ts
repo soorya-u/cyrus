@@ -1,24 +1,10 @@
+import type { TurnWaitError } from "@cyrus/errors/turn";
+import { turnAborted, turnInterrupted } from "@cyrus/errors/turn";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
-
-export class TurnInterruptedError extends Error {
-	readonly name = "TurnInterruptedError";
-
-	constructor() {
-		super("turn interrupted");
-	}
-}
-
-export function isTurnInterruptedError(error: unknown): boolean {
-	return (
-		error instanceof TurnInterruptedError ||
-		(error instanceof Error && error.message === "turn interrupted")
-	);
-}
+import { Result } from "better-result";
 
 type TurnWaiter = {
-	resolve: () => void;
-	reject: (error: Error) => void;
-	onAbort?: () => void;
+	settle: (result: Result<void, TurnWaitError>) => void;
 };
 
 const turnWaiters = new Map<string, TurnWaiter>();
@@ -49,31 +35,31 @@ export function settleTurnWaiter(
 
 	turnWaiters.delete(key);
 	if (event.type === "turn_completed") {
-		waiter.resolve();
+		waiter.settle(Result.ok(undefined));
 		return;
 	}
-	waiter.reject(new TurnInterruptedError());
+	waiter.settle(Result.err(turnInterrupted()));
 }
 
 export function rejectTurnWaiter(
 	threadId: string,
 	turnId: string,
-	error: Error
+	error: TurnWaitError
 ): void {
 	const key = turnKey(threadId, turnId);
 	const waiter = turnWaiters.get(key);
 	if (!waiter) return;
 
 	turnWaiters.delete(key);
-	waiter.reject(error);
+	waiter.settle(Result.err(error));
 }
 
 export function waitForTurnEnd(
 	threadId: string,
 	turnId: string,
 	signal?: AbortSignal
-): Promise<void> {
-	return new Promise((resolve, reject) => {
+): Promise<Result<void, TurnWaitError>> {
+	return new Promise((resolve) => {
 		const key = turnKey(threadId, turnId);
 
 		function cleanup() {
@@ -83,7 +69,7 @@ export function waitForTurnEnd(
 
 		function onAbort() {
 			cleanup();
-			reject(new Error("turn aborted"));
+			resolve(Result.err(turnAborted()));
 		}
 
 		if (signal?.aborted) {
@@ -94,15 +80,10 @@ export function waitForTurnEnd(
 		signal?.addEventListener("abort", onAbort, { once: true });
 
 		turnWaiters.set(key, {
-			resolve: () => {
+			settle: (result) => {
 				cleanup();
-				resolve();
+				resolve(result);
 			},
-			reject: (error) => {
-				cleanup();
-				reject(error);
-			},
-			onAbort,
 		});
 	});
 }
