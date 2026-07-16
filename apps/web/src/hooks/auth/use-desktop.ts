@@ -1,8 +1,8 @@
 import { AUTH_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import { useClipboard } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
 import { log } from "evlog";
 import { toast } from "sonner";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { authClient } from "@/lib/auth";
 
 type SocialProvider = Parameters<
@@ -10,7 +10,7 @@ type SocialProvider = Parameters<
 >[0]["provider"];
 
 export function useAuthDesktop(provider: SocialProvider) {
-	const { copy } = useCopyToClipboard();
+	const { copy } = useClipboard();
 
 	const trySignIn = () => authClient.signIn.social({ provider });
 
@@ -23,7 +23,7 @@ export function useAuthDesktop(provider: SocialProvider) {
 			});
 			const url = result?.data?.url;
 			if (!url) throw new Error("No sign-in URL returned");
-			await copy(url);
+			copy(url);
 		},
 		onSuccess: () => toast.success("Link copied to clipboard"),
 		onError: (error) => {

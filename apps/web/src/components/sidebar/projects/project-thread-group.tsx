@@ -8,9 +8,9 @@ import {
 	MoreHorizontalIcon,
 	SquarePenIcon,
 } from "lucide-react";
-import { ThreadRow } from "@/components/chat/thread-row";
 import { DeleteProjectDialog } from "@/components/portals/delete-project-dialog";
 import { RenameProjectDialog } from "@/components/portals/rename-project-dialog";
+import { ThreadRow } from "@/components/sidebar/projects/thread-row";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

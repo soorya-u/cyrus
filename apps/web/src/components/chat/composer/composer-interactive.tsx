@@ -1,7 +1,7 @@
 import {
 	useRespondApproval,
 	useRespondElicitation,
-} from "@cyrus/hooks/connection/use-interactive-respond";
+} from "@cyrus/hooks/conversation/use-interactive-respond";
 import type { ApprovalView, ElicitationView } from "@cyrus/schemas/view";
 import { type ReactNode, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";

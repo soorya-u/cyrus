@@ -1,4 +1,4 @@
-import { useListEntries } from "@cyrus/hooks/connection/use-list-entries";
+import { useListEntries } from "@cyrus/hooks/queries/use-list-entries";
 import type { DirListing } from "@cyrus/schemas/rtc/fs";
 import {
 	appendBrowsePathSegment,

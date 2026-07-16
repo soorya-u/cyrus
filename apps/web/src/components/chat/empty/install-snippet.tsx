@@ -1,3 +1,4 @@
+import { useClipboard } from "@mantine/hooks";
 import { cn } from "cnfast";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
@@ -7,11 +8,10 @@ import {
 	INSTALL_METHODS,
 	type InstallMethod,
 } from "@/constants/commands";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 export function InstallSnippet({ className }: { className?: string }) {
 	const [method, setMethod] = useState<InstallMethod>("npm");
-	const { copied, copy } = useCopyToClipboard();
+	const { copied, copy } = useClipboard({ timeout: 1400 });
 	const command = INSTALL_COMMANDS[method];
 
 	return (
@@ -43,9 +43,7 @@ export function InstallSnippet({ className }: { className?: string }) {
 				<Button
 					aria-label="Copy install command"
 					className="size-7 shrink-0"
-					onClick={() => {
-						copy(command).catch(() => undefined);
-					}}
+					onClick={() => copy(command)}
 					size="icon-xs"
 					type="button"
 					variant="ghost"

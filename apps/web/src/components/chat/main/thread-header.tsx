@@ -1,8 +1,8 @@
-import { useControllerThreads } from "@cyrus/hooks/connection/use-controller-threads";
 import {
 	useGitStatus,
 	useInitGitRepository,
-} from "@cyrus/hooks/connection/use-git";
+} from "@cyrus/hooks/queries/use-git";
+import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cnfast";
@@ -30,7 +30,7 @@ export function ThreadHeader({
 	projectId,
 }: ThreadHeaderProps) {
 	const { diffOpen, toggleDiffOpen } = useChatUiStore();
-	const { projects } = useControllerThreads();
+	const { projects } = useProjects();
 	const project = projects.find((item) => item.id === projectId);
 	const gitStatus = useGitStatus(thread.id);
 	const initGitRepository = useInitGitRepository();

@@ -3,7 +3,7 @@ import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { QueryClient } from "@tanstack/react-query";
 import { appendOptimisticUserMessage } from "./conversation-cache";
 
-describe("controller thread cache integration", () => {
+describe("conversation cache", () => {
 	test("appends an optimistic user message to the conversations cache", () => {
 		const queryClient = new QueryClient();
 		const threadId = "thread-1";

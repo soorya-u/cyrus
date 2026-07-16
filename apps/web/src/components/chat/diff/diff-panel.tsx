@@ -1,4 +1,4 @@
-import { useGitPatch, useGitStatus } from "@cyrus/hooks/connection/use-git";
+import { useGitPatch, useGitStatus } from "@cyrus/hooks/queries/use-git";
 import { PatchDiff } from "@pierre/diffs/react";
 import { cn } from "cnfast";
 import { ChevronDownIcon, GitBranchIcon, RefreshCwIcon } from "lucide-react";

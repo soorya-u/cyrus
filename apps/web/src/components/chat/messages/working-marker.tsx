@@ -1,20 +1,20 @@
 import { formatElapsedTimerNow } from "@cyrus/utils/timer";
-import { useEffect, useRef } from "react";
+import { useInterval } from "@mantine/hooks";
+import { useRef } from "react";
 import { Marker, MarkerContent } from "@/components/ui/marker";
 
 export function WorkingMarker({ startedAt }: { startedAt: string }) {
 	const textRef = useRef<HTMLSpanElement>(null);
 	const initialText = formatElapsedTimerNow(startedAt);
 
-	useEffect(() => {
-		const updateText = () => {
+	useInterval(
+		() => {
 			if (textRef.current)
 				textRef.current.textContent = formatElapsedTimerNow(startedAt);
-		};
-		updateText();
-		const id = window.setInterval(updateText, 1000);
-		return () => window.clearInterval(id);
-	}, [startedAt]);
+		},
+		1000,
+		{ autoInvoke: true }
+	);
 
 	return (
 		<Marker className="py-0.5 pl-1.5" role="status">

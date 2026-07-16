@@ -1,4 +1,4 @@
-import { useWorkerConversationSync } from "@cyrus/hooks/connection/use-worker-conversation-sync";
+import { useWorkerConversationSync } from "@cyrus/hooks/conversation/use-worker-conversation-sync";
 import { RtcProvider } from "@cyrus/providers/rtc/rtc-provider";
 import { useLocalSearchParams } from "expo-router";
 import { Text, View } from "react-native";

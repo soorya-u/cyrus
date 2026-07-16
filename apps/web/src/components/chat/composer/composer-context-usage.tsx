@@ -2,12 +2,11 @@ import type { ContextUsage } from "@cyrus/schemas/rtc/catalog";
 import { cn } from "cnfast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 
-function formatTokens(value: number): string {
-	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}m`;
-	if (value >= 1000)
-		return `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
-	return String(Math.round(value));
-}
+const tokenFormatter = new Intl.NumberFormat("en", {
+	compactDisplay: "short",
+	maximumFractionDigits: 1,
+	notation: "compact",
+});
 
 export function ComposerContextUsage({
 	usage,
@@ -35,8 +34,8 @@ export function ComposerContextUsage({
 		: "var(--color-muted-foreground)";
 
 	const label = hasLimit
-		? `Context ${formatTokens(used)} / ${formatTokens(limit)} tokens`
-		: `Context ${formatTokens(used)} tokens`;
+		? `Context ${tokenFormatter.format(used)} / ${tokenFormatter.format(limit)} tokens`
+		: `Context ${tokenFormatter.format(used)} tokens`;
 
 	return (
 		<Tooltip>
@@ -90,7 +89,7 @@ export function ComposerContextUsage({
 						overloaded ? "text-destructive" : "text-muted-foreground"
 					)}
 				>
-					{formatTokens(used)}
+					{tokenFormatter.format(used)}
 				</span>
 			</TooltipTrigger>
 			<TooltipPopup side="top">{label}</TooltipPopup>

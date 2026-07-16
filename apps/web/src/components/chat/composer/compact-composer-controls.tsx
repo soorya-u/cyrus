@@ -1,7 +1,6 @@
-import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import { useAgentCatalog } from "@cyrus/hooks/agent-catalog/use-agent-catalog";
 import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { EllipsisIcon } from "lucide-react";
-import { shouldShowModeSelector } from "@/components/chat/composer/composer-mode";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -34,11 +33,7 @@ export function CompactComposerControls({
 		selectPersona,
 	} = useAgentCatalog({ agents, projectId, threadId });
 
-	if (
-		!shouldShowModeSelector(modes) &&
-		efforts.length === 0 &&
-		personas.length === 0
-	)
+	if (modes.length === 0 && efforts.length === 0 && personas.length === 0)
 		return null;
 
 	return (
@@ -55,7 +50,7 @@ export function CompactComposerControls({
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-48">
-				{shouldShowModeSelector(modes) && (
+				{modes.length > 0 && (
 					<>
 						<DropdownMenuLabel>Mode</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
@@ -70,9 +65,7 @@ export function CompactComposerControls({
 						</DropdownMenuRadioGroup>
 					</>
 				)}
-				{shouldShowModeSelector(modes) && efforts.length > 0 && (
-					<DropdownMenuSeparator />
-				)}
+				{modes.length > 0 && efforts.length > 0 && <DropdownMenuSeparator />}
 				{efforts.length > 0 && (
 					<>
 						<DropdownMenuLabel>Effort</DropdownMenuLabel>

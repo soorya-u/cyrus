@@ -1,4 +1,4 @@
-import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import { useAgentCatalog } from "@cyrus/hooks/agent-catalog/use-agent-catalog";
 import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { cn } from "cnfast";
 import { BotIcon, ChevronDownIcon } from "lucide-react";

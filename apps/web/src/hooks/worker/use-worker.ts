@@ -1,4 +1,4 @@
-import { useWorkers } from "@cyrus/hooks/connection/use-workers";
+import { useWorkers } from "@cyrus/hooks/queries/use-workers";
 import { useNavigate } from "@tanstack/react-router";
 
 export const useWorker = () => {

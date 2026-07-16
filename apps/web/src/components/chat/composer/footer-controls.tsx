@@ -1,9 +1,9 @@
-import { useAgentCatalog } from "@cyrus/hooks/connection/use-agent-catalog";
+import { useAgentCatalog } from "@cyrus/hooks/agent-catalog/use-agent-catalog";
 import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
+import { useMediaQuery } from "@mantine/hooks";
 import { AgentModelPicker } from "@/components/chat/composer/agent-model-picker";
 import { CompactComposerControls } from "@/components/chat/composer/compact-composer-controls";
 import { ComposerContextUsage } from "@/components/chat/composer/composer-context-usage";
-import { shouldShowModeSelector } from "@/components/chat/composer/composer-mode";
 import {
 	Select,
 	SelectContent,
@@ -12,7 +12,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useIsMobile } from "@/hooks/use-media-query";
 
 const TRIGGER_CLASS =
 	"h-8 min-w-0 max-w-40 shrink justify-between gap-1.5 whitespace-nowrap border-none bg-transparent px-2 text-muted-foreground/70 shadow-none hover:bg-accent hover:text-foreground/80 dark:bg-transparent dark:hover:bg-accent sm:max-w-48 sm:px-3";
@@ -55,7 +54,7 @@ export function ComposerFooterControls({
 	projectId: string;
 	threadId: string;
 }) {
-	const isCompact = useIsMobile();
+	const isCompact = useMediaQuery("(max-width: 768px)", false);
 	const {
 		contextUsage,
 		displayEffort,
@@ -85,7 +84,7 @@ export function ComposerFooterControls({
 				/>
 			) : (
 				<>
-					{shouldShowModeSelector(modes) && (
+					{modes.length > 0 && (
 						<>
 							<Separator
 								className="mx-0.5 hidden h-4 sm:block"
