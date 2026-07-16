@@ -16,6 +16,7 @@
     "@better-auth-ui/react": "^1.6.27",
     "@cyrus/connections": "workspace:*",
     "@cyrus/constants": "workspace:*",
+    "@cyrus/errors": "workspace:*",
     "@cyrus/hooks": "workspace:*",
     "@cyrus/providers": "workspace:*",
     "@cyrus/schemas": "workspace:*",

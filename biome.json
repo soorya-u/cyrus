@@ -119,6 +119,8 @@
                       "!@cyrus/connections/**",
                       "!@cyrus/constants",
                       "!@cyrus/constants/**",
+                      "!@cyrus/errors",
+                      "!@cyrus/errors/**",
                       "!@cyrus/hooks",
                       "!@cyrus/hooks/**",
                       "!@cyrus/providers",

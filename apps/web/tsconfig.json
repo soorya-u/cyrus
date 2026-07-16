@@ -11,6 +11,7 @@
     "rootDirs": ["."],
     "paths": {
       "@/*": ["./src/*"],
+      "@cyrus/errors/*": ["../../shared/errors/src/*"],
       "@cyrus/hooks/*": ["../../shared/hooks/src/*"],
       "@cyrus/providers/*": ["../../shared/providers/src/*"],
       "@cyrus/utils/*": ["../../shared/utils/src/*"]
