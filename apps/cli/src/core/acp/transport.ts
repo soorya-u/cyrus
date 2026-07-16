@@ -3,7 +3,7 @@ import {
 	createSdkConnectionFactory,
 	nodeChildProcessTransport,
 } from "@acp-kit/core/node";
-import type { SessionConfigAgent } from "@/core/acp/config";
+import type { SessionConfigAgent } from "@/core/agents/session-config";
 
 export function createTrackedTransport(): {
 	transport: AcpTransport;
