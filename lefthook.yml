@@ -12,6 +12,10 @@ pre-push:
   jobs:
     - name: check-types
       run: bun check:types
+    - name: check-knip
+      run: bun check:knip
+    - name: check-syncpack
+      run: bun check:syncpack
     - name: test-unit
       run: bun test:unit
 

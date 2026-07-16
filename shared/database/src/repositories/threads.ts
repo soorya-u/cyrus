@@ -152,19 +152,6 @@ export const getThread = repoArgs(async (threadId: string) => {
 	return row ? parseThreadRow(row) : undefined;
 });
 
-export const getThreadSession = repoArgs(async (threadId: string) => {
-	const [row] = await connection.db
-		.select({
-			sessionId: threads.sessionId,
-			agentName: threads.agentName,
-		})
-		.from(threads)
-		.where(eq(threads.id, threadId))
-		.limit(1);
-	if (!(row?.sessionId && row.agentName)) return;
-	return { sessionId: row.sessionId, agentName: row.agentName };
-});
-
 const writeThreadName = repoArgs(
 	async (
 		threadId: string,

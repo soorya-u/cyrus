@@ -11,5 +11,3 @@ export function useListAgents() {
 		}),
 	});
 }
-
-export type UseListAgents = ReturnType<typeof useListAgents>;

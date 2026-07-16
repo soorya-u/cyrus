@@ -29,6 +29,30 @@ jobs:
       - name: Lint
         run: bun check
 
+  knip:
+    name: Knip
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./tooling/github/setup
+
+      - name: Knip
+        run: bun check:knip
+
+  syncpack:
+    name: Syncpack
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./tooling/github/setup
+
+      - name: Syncpack
+        run: bun check:syncpack
+
   check-types:
     name: Type Check
     runs-on: ubuntu-latest

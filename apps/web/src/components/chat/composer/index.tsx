@@ -161,6 +161,7 @@ export function Composer({
 		!isInteractivePending;
 
 	// Arm before Lexical's mount-time empty onChange can clear localStorage.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: re-arm on thread switch as well as editorReady
 	useLayoutEffect(() => {
 		if (!editorReady) return;
 		ignoringEmptyDraftWriteRef.current = true;

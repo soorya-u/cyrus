@@ -1,5 +1,5 @@
 import { TaggedError } from "better-result";
-import { errorModules, errorTag, isModuleError } from "./common";
+import { errorModules, errorTag } from "./common";
 import type { EmptyPayload } from "./orpc";
 
 const tags = {
@@ -29,10 +29,6 @@ export class GitOperationFailedError extends TaggedError(tags.operationFailed)<{
 }
 
 export type GitError = GitNotRepositoryError | GitOperationFailedError;
-
-export function isGitError(cause: unknown): cause is GitError {
-	return isModuleError(cause, errorModules.git);
-}
 
 export function notRepositoryError(): GitError {
 	return new GitNotRepositoryError({});

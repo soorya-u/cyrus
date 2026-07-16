@@ -117,20 +117,6 @@ export type EnabledAgent = {
 	icon: string;
 };
 
-/** All enabled agents from agents.yml for listAgents / composer. */
-export async function listEnabledAgents(): Promise<EnabledAgent[]> {
-	const registry = await readRegistry();
-	if (registry.isErr()) return [];
-
-	return Object.entries(registry.value)
-		.map(([id, entry]) => ({
-			id,
-			name: entry.name,
-			icon: entry.icon,
-		}))
-		.sort((a, b) => a.id.localeCompare(b.id));
-}
-
 export async function listEnabledAgentIds(): Promise<Set<string>> {
 	const registry = await readRegistry();
 	if (registry.isErr()) return new Set();

@@ -19,7 +19,7 @@
     "@cyrus/schemas": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
     "@neondatabase/serverless": "^1.1.0",
-    "@orpc/server": "^1.14.6",
+    "@orpc/server": "catalog:",
     "@soorya-u/better-auth-desktop": "catalog:",
     "@soorya-u/better-auth-ws-ticket": "catalog:",
     "@t3-oss/env-core": "catalog:",

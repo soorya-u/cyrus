@@ -8,5 +8,3 @@ export const nameSchema = z
 		/^[a-zA-Z0-9-]+$/,
 		"name may only contain letters, numbers, hyphens and underscores"
 	);
-
-export type AgentName = z.infer<typeof nameSchema>;

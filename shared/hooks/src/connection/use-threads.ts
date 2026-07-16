@@ -84,5 +84,4 @@ export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
 	};
 }
 
-export type UseThreads = ReturnType<typeof useThreads>;
 export type { Thread } from "@cyrus/schemas/rtc/threads";

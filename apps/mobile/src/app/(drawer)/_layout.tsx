@@ -9,7 +9,7 @@ export default function DrawerLayout() {
 
 	if (isPending) {
 		return (
-			<View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+			<View className="flex-1 items-center justify-center">
 				<Text>Loading…</Text>
 			</View>
 		);
@@ -23,17 +23,13 @@ export default function DrawerLayout() {
 		<SignalingProvider
 			dialSignaling={dialSignaling}
 			errorFallback={({ error, retry }) => (
-				<View
-					style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-				>
+				<View className="flex-1 items-center justify-center">
 					<Text>Connection failed: {error.message}</Text>
 					<Text onPress={retry}>Retry</Text>
 				</View>
 			)}
 			pendingFallback={
-				<View
-					style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-				>
+				<View className="flex-1 items-center justify-center">
 					<Text>Connecting…</Text>
 				</View>
 			}

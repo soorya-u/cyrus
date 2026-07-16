@@ -104,7 +104,7 @@
       }
     },
     {
-      "includes": ["apps/mobile/app/**/_layout.tsx"],
+      "includes": ["apps/mobile/src/app/**/_layout.tsx"],
       "linter": {
         "rules": {
           "style": {

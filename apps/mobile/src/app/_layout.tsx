@@ -29,7 +29,7 @@ export default function Layout() {
 		<QueryProvider
 			onError={(error) => log.error({ kind: "query_error", error })}
 		>
-			<GestureHandlerRootView style={{ flex: 1 }}>
+			<GestureHandlerRootView className="flex-1">
 				<KeyboardProvider>
 					<HeroUINativeProvider>
 						<StackLayout />

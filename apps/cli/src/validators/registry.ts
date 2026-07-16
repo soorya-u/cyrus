@@ -10,8 +10,6 @@ export const registryIdSchema = z
 		"registry id must start with a letter and contain only lowercase letters, digits, and hyphens"
 	);
 
-export type RegistryId = z.infer<typeof registryIdSchema>;
-
 export function registryIdArgParser(value: string): string {
 	const result = registryIdSchema.safeParse(value);
 	if (!result.success) {

@@ -3,7 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./*"],
+      "@/*": ["./src/*"],
       "@cyrus/providers/*": ["../../shared/providers/src/*"],
       "@cyrus/hooks/*": ["../../shared/hooks/src/*"]
     }

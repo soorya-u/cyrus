@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/syncpack/schema.json",
+  "versionGroups": [
+    {
+      "label": "Ignore package.json version fields on private workspace packages",
+      "dependencyTypes": ["local"],
+      "isIgnored": true
+    },
+    {
+      "label": "Local workspace packages must use workspace:*",
+      "dependencies": ["$LOCAL"],
+      "dependencyTypes": ["prod", "dev"],
+      "pinVersion": "workspace:*"
+    },
+    {
+      "label": "Cataloged dependencies must use catalog:",
+      "dependencies": [
+        "@better-auth/expo",
+        "@dotenvx/dotenvx",
+        "@orpc/server",
+        "@soorya-u/better-auth-desktop",
+        "@soorya-u/better-auth-ws-ticket",
+        "@t3-oss/env-core",
+        "@tanstack/react-query",
+        "@types/bun",
+        "@types/react",
+        "@types/react-dom",
+        "better-auth",
+        "better-result",
+        "drizzle-kit",
+        "drizzle-orm",
+        "evlog",
+        "react",
+        "react-dom",
+        "typescript",
+        "zod"
+      ],
+      "dependencyTypes": ["prod", "dev"],
+      "policy": "catalog"
+    }
+  ]
+}

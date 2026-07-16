@@ -1,112 +1,7 @@
-import type { PromptInputBlock } from "@cyrus/schemas/rtc/chat";
 import { cn } from "cnfast";
-import { FileIcon, FolderIcon, LinkIcon, XIcon } from "lucide-react";
-import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
+import { FileIcon, FolderIcon } from "lucide-react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { Spinner } from "@/components/ui/spinner";
-
-const HTTP_URI_PATTERN = /^https?:\/\//i;
-
-export type ComposerAttachment = Extract<
-	PromptInputBlock,
-	{ type: "resource" }
-> & { id: string };
-
-let nextAttachmentId = 0;
-
-export function createAttachment(
-	uri: string,
-	name?: string
-): ComposerAttachment {
-	nextAttachmentId += 1;
-	return {
-		id: `attachment-${nextAttachmentId}`,
-		type: "resource",
-		uri,
-		name,
-	};
-}
-
-function attachmentKindLabel(isUrl: boolean, isDirectory: boolean): string {
-	if (isUrl) return "URL";
-	if (isDirectory) return "Folder";
-	return "File";
-}
-
-function AttachmentKindIcon({
-	isUrl,
-	isDirectory,
-}: {
-	isUrl: boolean;
-	isDirectory: boolean;
-}) {
-	if (isUrl) {
-		return <LinkIcon className="size-3 shrink-0 text-muted-foreground" />;
-	}
-	if (isDirectory) {
-		return <FolderIcon className="size-3 shrink-0 text-muted-foreground" />;
-	}
-	return <FileIcon className="size-3 shrink-0 text-muted-foreground" />;
-}
-
-export function InlineAttachmentChip({
-	attachment,
-	onRemove,
-	onNavigateToText,
-}: {
-	attachment: ComposerAttachment;
-	onRemove: (id: string) => void;
-	onNavigateToText?: () => void;
-}) {
-	const isUrl = HTTP_URI_PATTERN.test(attachment.uri);
-	const isDirectory = !isUrl && attachment.uri.endsWith("/");
-	const label = attachment.name ?? attachment.uri;
-	const kind = attachmentKindLabel(isUrl, isDirectory);
-
-	function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-		if (event.key === "Backspace" || event.key === "Delete") {
-			event.preventDefault();
-			event.stopPropagation();
-			onRemove(attachment.id);
-			return;
-		}
-		if (event.key === "ArrowLeft") {
-			event.preventDefault();
-			onNavigateToText?.();
-		}
-	}
-
-	return (
-		<button
-			aria-label={`${kind} ${label}. Press Backspace to remove.`}
-			className="inline-flex max-w-[min(100%,14rem)] shrink-0 items-center gap-0.5 rounded-md border border-border/80 bg-muted/50 py-0.5 pr-0.5 pl-1.5 align-middle text-xs leading-none outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-			data-composer-attachment-id={attachment.id}
-			onKeyDown={handleKeyDown}
-			type="button"
-		>
-			<AttachmentKindIcon isDirectory={isDirectory} isUrl={isUrl} />
-			<span className="truncate font-mono text-[11px]">{label}</span>
-			<span
-				aria-hidden="true"
-				className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
-				onClick={(event) => {
-					event.preventDefault();
-					event.stopPropagation();
-					onRemove(attachment.id);
-				}}
-				onKeyDown={(event) => {
-					if (event.key === "Enter" || event.key === " ") {
-						event.preventDefault();
-						event.stopPropagation();
-						onRemove(attachment.id);
-					}
-				}}
-				role="presentation"
-			>
-				<XIcon className="size-3" />
-			</span>
-		</button>
-	);
-}
 
 export function FileMentionAutocomplete({
 	paths,
@@ -130,6 +25,7 @@ export function FileMentionAutocomplete({
 	const listRef = useRef<HTMLUListElement | null>(null);
 	const pathsKey = paths.join("\0");
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: scroll when selection or result set changes
 	useEffect(() => {
 		const active = listRef.current?.querySelector<HTMLElement>(
 			'[data-active="true"]'
