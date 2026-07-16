@@ -8,49 +8,38 @@ import {
 	deleteThreadsForProject,
 	listThreads,
 } from "@cyrus/database/repositories/threads";
-import { throwOrpc } from "@cyrus/errors/orpc";
+import { orpcOk, throwOrpc } from "@cyrus/errors/orpc";
 import { notFound } from "@cyrus/errors/repository";
 import type { ControllerDeps } from "./deps";
 
 export function projectsHandlers({ os, runtime }: ControllerDeps) {
 	return {
-		listProjects: os.listProjects.handler(async () =>
-			(await listProjects()).match({
-				ok: (projects) => ({ projects }),
-				err: throwOrpc,
-			})
-		),
+		listProjects: os.listProjects.handler(async () => ({
+			projects: orpcOk(await listProjects()),
+		})),
 
-		createProject: os.createProject.handler(async ({ input }) =>
-			(await createStoredProject(input.name, input.cwd)).match({
-				ok: (project) => ({ project }),
-				err: throwOrpc,
-			})
-		),
+		createProject: os.createProject.handler(async ({ input }) => ({
+			project: orpcOk(await createStoredProject(input.name, input.cwd)),
+		})),
 
-		renameProject: os.renameProject.handler(async ({ input }) =>
-			(await renameProject(input.projectId, input.name)).match({
-				ok: () => ({}),
-				err: throwOrpc,
-			})
-		),
+		renameProject: os.renameProject.handler(async ({ input }) => {
+			orpcOk(await renameProject(input.projectId, input.name));
+			return {};
+		}),
 
 		deleteProject: os.deleteProject.handler(async ({ input }) => {
-			const listed = await listThreads(input.projectId);
-			if (listed.isErr()) throwOrpc(listed.error);
+			const listed = orpcOk(await listThreads(input.projectId));
 
-			for (const thread of listed.value) {
+			for (const thread of listed) {
 				await runtime.threadCoordinator.closeAnyThreadSession(thread.id);
 			}
 
-			const deleted = await deleteStoredProject(input.projectId);
-			if (deleted.isErr()) throwOrpc(deleted.error);
-			if (!deleted.value) {
+			const deleted = orpcOk(await deleteStoredProject(input.projectId));
+			if (!deleted) {
 				throwOrpc(notFound("project", input.projectId));
 			}
 
-			const threads = await deleteThreadsForProject(input.projectId);
-			if (threads.isErr()) throwOrpc(threads.error);
+			orpcOk(await deleteThreadsForProject(input.projectId));
 			return {};
 		}),
 	};

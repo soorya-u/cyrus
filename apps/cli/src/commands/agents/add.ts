@@ -4,6 +4,7 @@ import {
 	registryAgentToEntry,
 } from "@/core/registry";
 import { addAgent } from "@/store/agents";
+import { exitWithError } from "@/utils/result";
 import { print } from "@/utils/style";
 
 export async function add(registryIds: string[]): Promise<void> {
@@ -27,22 +28,20 @@ export async function add(registryIds: string[]): Promise<void> {
 		}
 
 		const saved = await addAgent(registryId, registryAgentToEntry(agent));
-		saved.match({
-			ok: () => {
-				print.success`✓ enabled agent "${registryId}" (${agent.name})`;
-				for (const warning of preflight.warnings) print.line`  ⚠ ${warning}`;
+		if (saved.isErr()) {
+			print.error`${saved.error}`;
+			failed = true;
+			continue;
+		}
 
-				if (preflight.warnings.length > 0)
-					print.dim`Run \`cyrusd agents doctor ${registryId}\` to verify.`;
-			},
-			err: (message) => {
-				print.error`${message}`;
-				failed = true;
-			},
-		});
+		print.success`✓ enabled agent "${registryId}" (${agent.name})`;
+		for (const warning of preflight.warnings) print.line`  ⚠ ${warning}`;
+
+		if (preflight.warnings.length > 0)
+			print.dim`Run \`cyrusd agents doctor ${registryId}\` to verify.`;
 	}
 
 	if (unknownId) print.dim`Run \`cyrusd agents registry sync\` and try again.`;
 
-	if (failed) process.exit(1);
+	if (failed) exitWithError("one or more agents could not be enabled");
 }

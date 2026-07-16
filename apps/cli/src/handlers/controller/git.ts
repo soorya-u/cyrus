@@ -7,7 +7,7 @@ import {
 	getThread,
 	updateThreadWorktreePath,
 } from "@cyrus/database/repositories/threads";
-import { throwOrpc } from "@cyrus/errors/orpc";
+import { orpcOk, throwOrpc } from "@cyrus/errors/orpc";
 import { notFound } from "@cyrus/errors/repository";
 import { Result } from "better-result";
 import { checkoutGitRef } from "@/git/checkout";
@@ -19,15 +19,11 @@ import { createGitWorktree, removeGitWorktree } from "@/git/worktree";
 import type { ControllerOs } from "./deps";
 
 async function requireThreadCwd(threadId: string): Promise<string> {
-	const cwd = await resolveThreadGitCwd(threadId);
-	if (cwd.isErr()) throwOrpc(cwd.error);
-	return cwd.value;
+	return orpcOk(await resolveThreadGitCwd(threadId));
 }
 
 async function requireProjectCwd(projectId: string): Promise<string> {
-	const cwd = await resolveProjectGitCwd(projectId);
-	if (cwd.isErr()) throwOrpc(cwd.error);
-	return cwd.value;
+	return orpcOk(await resolveProjectGitCwd(projectId));
 }
 
 export function gitHandlers(os: ControllerOs) {
@@ -39,10 +35,7 @@ export function gitHandlers(os: ControllerOs) {
 
 		getGitPatch: os.getGitPatch.handler(async ({ input }) => {
 			const cwd = await requireThreadCwd(input.threadId);
-			return (await getGitPatch(cwd, input.path)).match({
-				ok: (patch) => ({ patch }),
-				err: throwOrpc,
-			});
+			return { patch: orpcOk(await getGitPatch(cwd, input.path)) };
 		}),
 
 		listGitRefs: os.listGitRefs.handler(async ({ input }) => {
@@ -52,61 +45,39 @@ export function gitHandlers(os: ControllerOs) {
 
 		checkoutGitRef: os.checkoutGitRef.handler(async ({ input }) => {
 			const cwd = await requireThreadCwd(input.threadId);
-			return (await checkoutGitRef(cwd, input.refName)).match({
-				ok: () => ({}),
-				err: throwOrpc,
-			});
+			orpcOk(await checkoutGitRef(cwd, input.refName));
+			return {};
 		}),
 
 		createGitWorktree: os.createGitWorktree.handler(async ({ input }) => {
-			const thread = await getThread(input.threadId);
-			if (thread.isErr()) throwOrpc(thread.error);
-			if (!thread.value) {
+			const thread = orpcOk(await getThread(input.threadId));
+			if (!thread) {
 				throwOrpc(notFound("thread", input.threadId));
 			}
 
-			const projectCwd = await resolveProjectCwd(thread.value.projectId);
-			if (projectCwd.isErr()) throwOrpc(projectCwd.error);
-
-			const worktree = await createGitWorktree(
-				projectCwd.value,
-				input.refName,
-				input.path
+			const projectCwd = orpcOk(await resolveProjectCwd(thread.projectId));
+			const worktree = orpcOk(
+				await createGitWorktree(projectCwd, input.refName, input.path)
 			);
-			if (worktree.isErr()) throwOrpc(worktree.error);
 
-			const updated = await updateThreadWorktreePath(
-				input.threadId,
-				worktree.value
-			);
+			const updated = await updateThreadWorktreePath(input.threadId, worktree);
 			if (updated.isErr()) {
-				await Result.tryPromise(() =>
-					removeGitWorktree(projectCwd.value, worktree.value)
-				);
+				await Result.tryPromise(() => removeGitWorktree(projectCwd, worktree));
 				throwOrpc(updated.error);
 			}
 
-			return { worktreePath: worktree.value };
+			return { worktreePath: worktree };
 		}),
 
 		removeGitWorktree: os.removeGitWorktree.handler(async ({ input }) => {
-			const thread = await getThread(input.threadId);
-			if (thread.isErr()) throwOrpc(thread.error);
-			if (!thread.value) throwOrpc(notFound("thread", input.threadId));
+			const thread = orpcOk(await getThread(input.threadId));
+			if (!thread) throwOrpc(notFound("thread", input.threadId));
 
-			if (!thread.value.worktreePath) return {};
+			if (!thread.worktreePath) return {};
 
-			const projectCwd = await resolveProjectCwd(thread.value.projectId);
-			if (projectCwd.isErr()) throwOrpc(projectCwd.error);
-
-			const removed = await removeGitWorktree(
-				projectCwd.value,
-				thread.value.worktreePath
-			);
-			if (removed.isErr()) throwOrpc(removed.error);
-
-			const updated = await updateThreadWorktreePath(input.threadId, null);
-			if (updated.isErr()) throwOrpc(updated.error);
+			const projectCwd = orpcOk(await resolveProjectCwd(thread.projectId));
+			orpcOk(await removeGitWorktree(projectCwd, thread.worktreePath));
+			orpcOk(await updateThreadWorktreePath(input.threadId, null));
 			return {};
 		}),
 
@@ -122,10 +93,8 @@ export function gitHandlers(os: ControllerOs) {
 
 		initGitRepository: os.initGitRepository.handler(async ({ input }) => {
 			const cwd = await requireThreadCwd(input.threadId);
-			return (await initGitRepository(cwd)).match({
-				ok: () => ({}),
-				err: throwOrpc,
-			});
+			orpcOk(await initGitRepository(cwd));
+			return {};
 		}),
 	};
 }
