@@ -33,7 +33,9 @@ export async function connectE2eController(
 	while (Date.now() < deadline) {
 		let session: SignalingSession | undefined;
 		const result = await Result.tryPromise(async () => {
-			session = await connectSignaling(options);
+			const connected = await connectSignaling(options);
+			if (connected.isErr()) throw connected.error;
+			session = connected.value;
 			const peers = await session.signaling.listPeers();
 			return { session, peers };
 		});

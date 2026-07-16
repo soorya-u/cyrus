@@ -8,7 +8,7 @@ import { Result } from "better-result";
 import { asc, eq } from "drizzle-orm";
 import { connection } from "../connection";
 import { projects } from "../models/projects";
-import { repo, repoArgs } from "../utils/repo";
+import { fromRepoFailure, repo, repoArgs } from "../utils/repo";
 
 export type { Project } from "@cyrus/schemas/rtc/projects";
 
@@ -37,7 +37,13 @@ export async function resolveProjectCwd(
 	if (!project.value) return Result.err(notFound("project", projectId));
 
 	const cwd = project.value.cwd.trim();
-	if (cwd) await mkdir(cwd, { recursive: true });
+	if (cwd) {
+		const created = await Result.tryPromise({
+			try: () => mkdir(cwd, { recursive: true }),
+			catch: fromRepoFailure,
+		});
+		if (created.isErr()) return Result.err(created.error);
+	}
 
 	return Result.ok(cwd);
 }

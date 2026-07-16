@@ -18,8 +18,12 @@ export const dialSignaling: SignalingDialer = async () => {
 		name: getControllerName(),
 		protocols: authClient.wsTicket.protocols,
 	});
+	if (session.isErr()) throw session.error;
 
-	return { session, orpc: createTanstackQueryUtils(session.signaling) };
+	return {
+		session: session.value,
+		orpc: createTanstackQueryUtils(session.value.signaling),
+	};
 };
 
 export const dialRtc: RtcDialer = async (session, workerId) => {
@@ -28,6 +32,10 @@ export const dialRtc: RtcDialer = async (session, workerId) => {
 		events: session.events,
 		to: workerId,
 	});
+	if (connection.isErr()) throw connection.error;
 
-	return { connection, orpc: createTanstackQueryUtils(connection.client) };
+	return {
+		connection: connection.value,
+		orpc: createTanstackQueryUtils(connection.value.client),
+	};
 };
