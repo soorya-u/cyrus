@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cyrus/constants": "workspace:*",
+    "@cyrus/errors": "workspace:*",
     "@cyrus/providers": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",

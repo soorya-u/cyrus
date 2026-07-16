@@ -312,10 +312,12 @@
                       "@cyrus/**",
                       "!@cyrus/constants",
                       "!@cyrus/constants/**",
+                      "!@cyrus/errors",
+                      "!@cyrus/errors/**",
                       "!@cyrus/schemas",
                       "!@cyrus/schemas/**"
                     ],
-                    "message": "Utils may only import @cyrus/constants and @cyrus/schemas."
+                    "message": "Utils may only import @cyrus/constants, @cyrus/errors, and @cyrus/schemas."
                   }
                 ]
               }
@@ -336,10 +338,12 @@
                   {
                     "group": [
                       "@cyrus/**",
+                      "!@cyrus/errors",
+                      "!@cyrus/errors/**",
                       "!@cyrus/schemas",
                       "!@cyrus/schemas/**"
                     ],
-                    "message": "Connections may only import @cyrus/schemas."
+                    "message": "Connections may only import @cyrus/errors and @cyrus/schemas."
                   }
                 ]
               }
@@ -418,6 +422,8 @@
                       "@cyrus/**",
                       "!@cyrus/constants",
                       "!@cyrus/constants/**",
+                      "!@cyrus/errors",
+                      "!@cyrus/errors/**",
                       "!@cyrus/providers",
                       "!@cyrus/providers/**",
                       "!@cyrus/schemas",
@@ -425,7 +431,7 @@
                       "!@cyrus/utils",
                       "!@cyrus/utils/**"
                     ],
-                    "message": "Hooks may only import @cyrus/constants, @cyrus/providers, @cyrus/schemas, and @cyrus/utils."
+                    "message": "Hooks may only import @cyrus/constants, @cyrus/errors, @cyrus/providers, @cyrus/schemas, and @cyrus/utils."
                   }
                 ]
               }

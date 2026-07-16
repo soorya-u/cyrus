@@ -10,9 +10,8 @@
     "test:unit": "bun test"
   },
   "dependencies": {
-    "@cyrus/constants": "workspace:*",
+    "@cyrus/errors": "workspace:*",
     "@cyrus/schemas": "workspace:*",
-    "@tanstack/react-query": "catalog:",
     "better-result": "catalog:",
     "date-fns": "^4.4.0",
     "random-word-slugs": "^0.1.7",
@@ -21,7 +20,6 @@
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
-    "react": "catalog:",
     "typescript": "catalog:"
   }
 }
