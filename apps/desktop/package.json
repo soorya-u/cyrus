@@ -23,6 +23,7 @@
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/three": "^0.184.1",
     "concurrently": "^9.1.0",
     "typescript": "catalog:"
   }

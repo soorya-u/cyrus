@@ -14,7 +14,8 @@
       "entry": ["src/**/*.test.ts", "__tests__/**/*.ts"]
     },
     "apps/desktop": {
-      "entry": ["electrobun.config.ts", "src/bun/index.ts"]
+      "entry": ["electrobun.config.ts", "src/bun/index.ts"],
+      "ignoreDependencies": ["@types/three"]
     },
     "apps/mobile": {
       "entry": ["src/app/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
