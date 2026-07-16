@@ -10,6 +10,11 @@ const tags = {
 	agentMismatch: errorTag(errorModules.coordinator, "agent_mismatch"),
 	repository: errorTag(errorModules.coordinator, "repository"),
 	runtime: errorTag(errorModules.coordinator, "runtime"),
+	noPendingApproval: errorTag(errorModules.coordinator, "no_pending_approval"),
+	noPendingElicitation: errorTag(
+		errorModules.coordinator,
+		"no_pending_elicitation"
+	),
 } as const;
 
 export class CoordinatorNotFoundError extends TaggedError(tags.notFound)<{
@@ -85,13 +90,39 @@ export class CoordinatorRuntimeError extends TaggedError(tags.runtime)<{
 	}
 }
 
+export class CoordinatorNoPendingApprovalError extends TaggedError(
+	tags.noPendingApproval
+)<EmptyPayload>() {
+	get message() {
+		return "no pending approval for this tool call";
+	}
+
+	get orpcCode() {
+		return "BAD_REQUEST" as const;
+	}
+}
+
+export class CoordinatorNoPendingElicitationError extends TaggedError(
+	tags.noPendingElicitation
+)<EmptyPayload>() {
+	get message() {
+		return "no pending elicitation for this id";
+	}
+
+	get orpcCode() {
+		return "BAD_REQUEST" as const;
+	}
+}
+
 export type CoordinatorError =
 	| CoordinatorNotFoundError
 	| CoordinatorAgentLockedError
 	| CoordinatorAgentNotBoundError
 	| CoordinatorAgentMismatchError
 	| CoordinatorRepositoryError
-	| CoordinatorRuntimeError;
+	| CoordinatorRuntimeError
+	| CoordinatorNoPendingApprovalError
+	| CoordinatorNoPendingElicitationError;
 
 export function isCoordinatorError(cause: unknown): cause is CoordinatorError {
 	return isModuleError(cause, errorModules.coordinator);
@@ -130,4 +161,12 @@ export function coordinatorRuntimeError(
 	detail?: string
 ): CoordinatorRuntimeError {
 	return new CoordinatorRuntimeError({ message, detail });
+}
+
+export function coordinatorNoPendingApproval(): CoordinatorNoPendingApprovalError {
+	return new CoordinatorNoPendingApprovalError({});
+}
+
+export function coordinatorNoPendingElicitation(): CoordinatorNoPendingElicitationError {
+	return new CoordinatorNoPendingElicitationError({});
 }
