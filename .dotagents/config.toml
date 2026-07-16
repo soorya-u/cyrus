@@ -1,6 +1,5 @@
 schema = "https://dotagents.soorya-u.dev/v1/schemas/config.schema.json"
 features = [
-    "command",
     "instruction",
     "skill",
 ]

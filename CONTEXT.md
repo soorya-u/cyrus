@@ -1,0 +1,137 @@
+# Cyrus
+
+Cyrus is a cross-platform app for controlling AI coding agents (Claude Code, Codex, and others) that run across a user's own devices. Metadata is shared through a minimal sync server; agent execution stays local to the device that owns the code.
+
+## Language
+
+### Topology
+
+**Worker**:
+The per-device Cyrus process (`cyrusd`) that owns local projects and executes agent sessions and git operations.
+_Avoid_: daemon, server, host
+
+**Peer**:
+A connected client instance (web, mobile, desktop, CLI) belonging to the user.
+_Avoid_: client, device
+
+**Room**:
+The single per-user space in which all of a user's peers and workers meet. One room per user.
+_Avoid_: workspace, org, team
+
+**Signaling**:
+The room-level connection through the sync server that lets peers discover and dial workers.
+
+**Controller**:
+A peer's direct connection to one specific worker, over which all worker RPCs run.
+_Avoid_: RTC connection (as a domain term), channel
+
+### Projects and threads
+
+**Project**:
+A directory on a worker's device that threads run against.
+_Avoid_: repo, workspace, folder
+
+**Thread**:
+One conversation with one agent, scoped to a project.
+_Avoid_: session, chat, conversation (as an entity name)
+
+**Draft thread**:
+A thread before its first user message. Its agent binding lives only in worker memory and can still be switched.
+
+**Committed thread**:
+A thread after its first user message. The agent is locked, the session is persisted, and the binding can no longer change.
+_Avoid_: locked thread
+
+**Bind**:
+Associating an agent (and a fresh agent session) with a thread, yielding that session's catalog.
+_Avoid_: attach, connect
+
+**Turn**:
+One prompt–response cycle within a thread. A turn is running, complete, or interrupted.
+_Avoid_: exchange, round
+
+**Effective cwd**:
+The directory a thread's agent and git operations run in: the thread's worktree path if set, otherwise the project directory.
+
+### Conversation data
+
+**Conversation entry**:
+One durably persisted event in a thread's transcript. The persisted entries — not the agent's own session state — are the transcript's source of truth.
+_Avoid_: message row, log line
+
+**Seq**:
+The monotonic sequence number assigned to a conversation entry when it is persisted. Seq 0 marks a chunk that will never be persisted.
+
+**Chat chunk**:
+A live conversation event delivered to watching peers as a turn runs.
+
+**Ephemeral delta**:
+A streamed fragment (token or thought) with seq 0 — broadcast live but never persisted; the completed message is persisted once, in full.
+_Avoid_: partial message
+
+**Snapshot**:
+The durable transcript a client has fetched for a thread.
+
+**Overlay**:
+The client-side store of live chunks layered on top of the snapshot until the durable transcript catches up.
+_Avoid_: live cache, buffer (on the client)
+
+**Watermark**:
+The highest persisted seq a client's snapshot covers; chunks at or below it are pruned from the overlay.
+_Avoid_: cursor
+
+**Watch**:
+A peer's registered interest in a thread's live chunks. Only watching peers receive a thread's chunks.
+_Avoid_: subscribe (to a thread)
+
+**Replay buffer**:
+The worker-held log of an in-flight turn's chunks, replayed to peers that start watching mid-turn and discarded when the turn ends.
+
+**Fold**:
+The pure derivation of a conversation view (messages, tool calls, diffs, turn states) from a log of conversation entries.
+
+**Feed**:
+The flat, chronological presentation layout (message, thought, tool, diff, and error rows) derived from a folded conversation. Feed entries are presentation-only and never cross the wire.
+
+### Agents
+
+**Agent**:
+An ACP-speaking coding agent (e.g. Claude Code, Codex) enabled from the ACP registry.
+_Avoid_: provider, model, bot, assistant
+
+**ACP**:
+The Agent Client Protocol — the wire protocol Cyrus workers speak to agent subprocesses.
+
+**Session**:
+The agent-side ACP conversation, identified by a `sessionId` and its own working directory. One agent subprocess multiplexes many sessions; a committed thread maps to exactly one.
+
+**Host**:
+The worker-side ACP callback surface that serves agent requests (permissions, elicitation) and can block a turn while awaiting a user response.
+
+**Registry**:
+The public ACP agent registry from which agents are discovered, enabled, and their spawn commands resolved.
+
+**Catalog**:
+The option set a bound session reports: models, modes, efforts, personas, capabilities, and available commands.
+_Avoid_: config, settings
+
+**Approval**:
+A blocking permission request raised by an agent tool call; the turn does not proceed until the user responds or cancels.
+_Avoid_: permission prompt
+
+**Elicitation**:
+A blocking agent request for structured user input — a form or a URL confirmation — answered from the composer.
+
+**Doctor**:
+The health check that spawns an enabled agent and verifies the ACP handshake completes.
+
+### Client UI
+
+**Composer**:
+The chat input area: prompt box, agent/model picker, mode/effort/persona controls, prompt queue, and the panel where approvals and elicitations are answered.
+
+**Prompt queue**:
+Messages queued per thread while a turn is active, sent sequentially once the turn completes.
+
+**Diff panel**:
+The git-backed side panel showing real working-tree changes at the thread's effective cwd — distinct from agent-reported diffs in the feed.
