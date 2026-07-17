@@ -1,6 +1,7 @@
 import {
 	useGitStatus,
 	useInitGitRepository,
+	useProjectGitStatus,
 } from "@cyrus/hooks/queries/use-git";
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
@@ -22,22 +23,30 @@ type ThreadHeaderProps = {
 	thread: Thread;
 	workerId: string;
 	projectId: string;
+	localDraft?: boolean;
 };
 
 export function ThreadHeader({
 	thread,
 	workerId,
 	projectId,
+	localDraft = false,
 }: ThreadHeaderProps) {
 	const { diffOpen, toggleDiffOpen } = useChatUiStore();
 	const { projects } = useProjects();
 	const project = projects.find((item) => item.id === projectId);
-	const gitStatus = useGitStatus(thread.id);
+	const threadGitStatus = useGitStatus(localDraft ? undefined : thread.id);
+	const projectGitStatus = useProjectGitStatus(
+		localDraft ? projectId : undefined
+	);
+	const gitStatus = localDraft ? projectGitStatus : threadGitStatus;
 	const initGitRepository = useInitGitRepository();
 
 	const isRepo = gitStatus.data?.isRepo === true;
 
 	function renderGitAction() {
+		if (localDraft) return null;
+
 		if (isRepo)
 			return (
 				<button

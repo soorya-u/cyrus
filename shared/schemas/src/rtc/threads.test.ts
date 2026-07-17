@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	ConversationEntrySchema,
 	RenameThreadInputSchema,
+	StartThreadInputSchema,
 	ThreadSchema,
 	WatchThreadOutputSchema,
 } from "./threads";
@@ -25,6 +26,25 @@ describe("thread schemas", () => {
 			titleSource: null,
 			createdAt: "2026-07-11T00:00:00.000Z",
 			updatedAt: "2026-07-11T00:00:00.000Z",
+		});
+	});
+
+	test("parses startThread input with preferences and worktree choice", () => {
+		expect(
+			StartThreadInputSchema.parse({
+				projectId: "project-1",
+				agentName: "mock-agent",
+				message: [{ type: "text", text: "hello" }],
+				branch: "feature",
+				worktree: true,
+				preferences: { modelId: "model-1" },
+			})
+		).toMatchObject({
+			projectId: "project-1",
+			agentName: "mock-agent",
+			branch: "feature",
+			worktree: true,
+			preferences: { modelId: "model-1" },
 		});
 	});
 

@@ -1,5 +1,6 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Result } from "better-result";
 import { useCallback, useEffect } from "react";
 import { useRtc } from "../contexts/rtc";
 import {
@@ -23,12 +24,15 @@ type UseAgentCatalogOptions = {
 	threadId: string;
 	projectId: string;
 	agents: CatalogOption[];
+	/** Controller-local draft: no server thread row; skip listThreads. */
+	localDraft?: boolean;
 };
 
 export function useAgentCatalog({
 	threadId,
 	projectId,
 	agents,
+	localDraft = false,
 }: UseAgentCatalogOptions) {
 	const queryClient = useQueryClient();
 	const { orpc: orpcController } = useRtc();
@@ -73,12 +77,13 @@ export function useAgentCatalog({
 			input: { projectId },
 		}),
 		queryKey: threadsQueryKey,
+		enabled: !localDraft,
 	});
-	const thread = threadsQuery.data?.threads.find(
-		(item) => item.id === threadId
-	);
+	const thread = localDraft
+		? undefined
+		: threadsQuery.data?.threads.find((item) => item.id === threadId);
 	const agentLocked = Boolean(thread?.agentLocked);
-	const isDraft = !agentLocked;
+	const isDraft = localDraft || !agentLocked;
 	const persistedSessionId = agentLocked ? thread?.sessionId : undefined;
 	const preferredAgent =
 		pendingAgent ??
@@ -266,6 +271,13 @@ export function useAgentCatalog({
 	const prepareDraftSend = useCallback(() => {
 		const committedAgentName =
 			liveBinding?.agentName ?? thread?.agentName ?? catalogAgent ?? "";
+		// Local drafts have no server thread row; prefs travel with startThread.
+		if (isDraft && !thread) {
+			if (!catalogAgent) {
+				return Promise.resolve(Result.err(new Error("no agent selected")));
+			}
+			return Promise.resolve(Result.ok(catalogAgent));
+		}
 		return bindDraftForSend({
 			isDraft,
 			agentName: catalogAgent,
@@ -290,6 +302,7 @@ export function useAgentCatalog({
 		setModeMutation,
 		setModelMutation,
 		setPersonaMutation,
+		thread,
 		thread?.agentName,
 		threadId,
 	]);

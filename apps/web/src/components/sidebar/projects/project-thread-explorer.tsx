@@ -1,6 +1,7 @@
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { useThreads } from "@cyrus/hooks/queries/use-threads";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
+import { randomId } from "@cyrus/utils/identity";
 import {
 	type CollisionDetection,
 	closestCorners,
@@ -23,7 +24,6 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { FolderPlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { NewProjectDialog } from "@/components/portals/new-project-dialog";
 import { ProjectThreadGroup } from "@/components/sidebar/projects/project-thread-group";
 import { SortableProjectItem } from "@/components/sidebar/projects/sortable-project-item";
@@ -60,8 +60,6 @@ export function ProjectThreadExplorer({
 	} = useProjects();
 	const {
 		baseThreads: threads,
-		createThread,
-		isCreatingThread,
 		renameThread,
 		deleteThread,
 	} = useThreads({ projects, invalidateThreads });
@@ -154,17 +152,10 @@ export function ProjectThreadExplorer({
 	}
 
 	function handleNewThread(projectId: string) {
-		if (isCreatingThread) return;
-		createThread(projectId, {
-			onSuccess: (threadId) => {
-				navigate({
-					to: "/workers/$workerId/p/$projectId/t/$threadId",
-					params: { workerId, projectId, threadId },
-				});
-			},
-			onError: (error) => {
-				toast.error(error.message);
-			},
+		const draftId = randomId();
+		navigate({
+			to: "/workers/$workerId/p/$projectId/d/$draftId",
+			params: { workerId, projectId, draftId },
 		});
 	}
 

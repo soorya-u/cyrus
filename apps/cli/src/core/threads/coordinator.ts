@@ -22,6 +22,11 @@ import {
 	getDraftCatalog as getDraftCatalogFn,
 } from "./draft-catalog";
 import {
+	type StartThreadInput,
+	type StartThreadResult,
+	startThread as startThreadFn,
+} from "./start-thread";
+import {
 	cancel as cancelTurn,
 	closeAnyThreadSession,
 	prompt as promptTurn,
@@ -38,6 +43,7 @@ export class ThreadCoordinator implements CoordinatorHost {
 	private readonly agents = new Map<string, AgentRuntime>();
 	private readonly pool: AgentPool;
 	private readonly threadMutexes = new Map<string, Mutex>();
+	private readonly projectMutexes = new Map<string, Mutex>();
 
 	constructor(pool: AgentPool) {
 		this.pool = pool;
@@ -52,11 +58,27 @@ export class ThreadCoordinator implements CoordinatorHost {
 		return mutex;
 	}
 
+	private projectMutexFor(projectId: string): Mutex {
+		let mutex = this.projectMutexes.get(projectId);
+		if (!mutex) {
+			mutex = new Mutex();
+			this.projectMutexes.set(projectId, mutex);
+		}
+		return mutex;
+	}
+
 	private withThreadLock<T>(
 		threadId: string,
 		fn: () => Promise<T>
 	): Promise<T> {
 		return this.mutexFor(threadId).runExclusive(fn);
+	}
+
+	private withProjectLock<T>(
+		projectId: string,
+		fn: () => Promise<T>
+	): Promise<T> {
+		return this.projectMutexFor(projectId).runExclusive(fn);
 	}
 
 	getAgent(agentName: string): AgentRuntime {
@@ -200,6 +222,16 @@ export class ThreadCoordinator implements CoordinatorHost {
 		projectId: string
 	): Promise<Result<DraftCatalog, CoordinatorError>> {
 		return getDraftCatalogFn(this, agentName, projectId);
+	}
+
+	/** Birth a thread from a first message: row, session, prefs, binding. */
+	startThread(
+		input: StartThreadInput
+	): Promise<Result<StartThreadResult, CoordinatorError>> {
+		// Serialize checkout/worktree mutations that share a project cwd.
+		return this.withProjectLock(input.projectId, () =>
+			startThreadFn(this, input)
+		);
 	}
 
 	prompt(
