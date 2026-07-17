@@ -563,7 +563,11 @@ export function Composer({
 				)}
 			>
 				{isGitRepo ? (
-					<ComposerBranchToolbar localDraft={localDraft} thread={thread} />
+					<ComposerBranchToolbar
+						key={thread.id}
+						localDraft={localDraft}
+						thread={thread}
+					/>
 				) : null}
 			</div>
 		</div>

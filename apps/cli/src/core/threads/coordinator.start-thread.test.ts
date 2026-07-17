@@ -23,9 +23,11 @@ const conversations: Array<{
 	turnId: string;
 	event: { type: string; message?: string; content?: string };
 }> = [];
+const ops: string[] = [];
 
 let projectCwd = "/tmp/project";
 let sessionCreateError: Error | null = null;
+let setModelError: Error | null = null;
 const sessions: RuntimeSession[] = [];
 let nextSessionCwd: string | undefined;
 
@@ -42,7 +44,11 @@ function createMockSession(sessionId: string): RuntimeSession {
 			},
 		},
 		close: mock(async () => undefined),
-		setModel: mock(async () => undefined),
+		setModel: mock(() => {
+			ops.push("preferences");
+			if (setModelError) return Promise.reject(setModelError);
+			return Promise.resolve();
+		}),
 		setMode: mock(async () => undefined),
 		on: () => () => undefined,
 		prompt: mock(async () => ({})),
@@ -74,6 +80,7 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 		projectId: string,
 		options?: { branch?: string; worktreePath?: string }
 	) => {
+		ops.push("createThread");
 		const id = `thread-${threads.size + 1}`;
 		const now = "2026-07-17T00:00:00.000Z";
 		const row: ThreadRow = {
@@ -100,6 +107,7 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 		_projectId: string,
 		data: { agentName: string; sessionId: string }
 	) => {
+		ops.push("bindThreadAgent");
 		const row = threads.get(threadId);
 		if (!row) return Promise.resolve(Result.err(new Error("not found")));
 		row.agentName = data.agentName;
@@ -107,12 +115,14 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 		return Promise.resolve(Result.ok({ ...row }));
 	},
 	setAgentLocked: (threadId: string) => {
+		ops.push("setAgentLocked");
 		const row = threads.get(threadId);
 		if (!row) return Promise.resolve(Result.err(new Error("not found")));
 		row.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...row }));
 	},
 	updateThreadWorktreePath: (threadId: string, worktreePath: string | null) => {
+		ops.push("git");
 		const row = threads.get(threadId);
 		if (!row) return Promise.resolve(Result.err(new Error("not found")));
 		row.worktreePath = worktreePath;
@@ -149,13 +159,18 @@ mock.module("@cyrus/database/repositories/conversations", () => ({
 }));
 
 mock.module("@/git/worktree", () => ({
-	createGitWorktree: (_projectCwd: string, refName: string, path?: string) =>
-		Promise.resolve(Result.ok(path ?? `/tmp/worktrees/${refName}`)),
+	createGitWorktree: (_projectCwd: string, refName: string, path?: string) => {
+		ops.push("git");
+		return Promise.resolve(Result.ok(path ?? `/tmp/worktrees/${refName}`));
+	},
 	removeGitWorktree: () => Promise.resolve(Result.ok(undefined)),
 }));
 
 mock.module("@/git/checkout", () => ({
-	tryCheckoutGitRef: () => Promise.resolve(Result.ok(undefined)),
+	tryCheckoutGitRef: () => {
+		ops.push("git");
+		return Promise.resolve(Result.ok(undefined));
+	},
 	checkoutGitRef: () => Promise.resolve(Result.ok(undefined)),
 }));
 
@@ -164,6 +179,7 @@ function createCoordinator() {
 		getState: () => "ready",
 		getRuntime: async () => ({
 			newSession: ({ cwd }: { cwd: string }) => {
+				ops.push("createBoundSession");
 				nextSessionCwd = cwd;
 				if (sessionCreateError) {
 					return Promise.reject(sessionCreateError);
@@ -186,8 +202,10 @@ describe("startThread", () => {
 	beforeEach(() => {
 		threads.clear();
 		conversations.length = 0;
+		ops.length = 0;
 		sessions.length = 0;
 		sessionCreateError = null;
+		setModelError = null;
 		nextSessionCwd = undefined;
 		projectCwd = "/tmp/project";
 	});
@@ -199,6 +217,8 @@ describe("startThread", () => {
 			projectId: "project-1",
 			agentName: "mock-agent",
 			message: [{ type: "text", text: "hello" }],
+			branch: "main",
+			preferences: { modelId: "model-1" },
 			turnId: "turn-1",
 		});
 
@@ -206,6 +226,14 @@ describe("startThread", () => {
 		if (started.isErr()) throw new Error("expected startThread to succeed");
 		expect(started.value.bound).not.toBeNull();
 		expect(started.value.turnId).toBe("turn-1");
+		expect(ops).toEqual([
+			"createThread",
+			"git",
+			"createBoundSession",
+			"preferences",
+			"bindThreadAgent",
+			"setAgentLocked",
+		]);
 
 		const thread = threads.get(started.value.threadId);
 		expect(thread?.agentName).toBe("mock-agent");
@@ -287,6 +315,26 @@ describe("startThread", () => {
 		);
 	});
 
+	test("rejects worktree without a branch before creating a session", async () => {
+		const coordinator = createCoordinator();
+
+		const started = await coordinator.startThread({
+			projectId: "project-1",
+			agentName: "mock-agent",
+			message: [{ type: "text", text: "no branch" }],
+			worktree: true,
+			turnId: "turn-wt-missing-branch",
+		});
+
+		expect(started.isOk()).toBe(true);
+		if (started.isErr()) throw new Error("expected ok with bound null");
+		expect(started.value.bound).toBeNull();
+		expect(sessions).toHaveLength(0);
+		expect(conversations[1]?.event.message).toContain(
+			"worktree requires a branch"
+		);
+	});
+
 	test("applies draft model preference on the new session", async () => {
 		const coordinator = createCoordinator();
 
@@ -302,6 +350,29 @@ describe("startThread", () => {
 		if (started.isErr()) throw new Error("expected ok");
 		expect(started.value.bound).not.toBeNull();
 		expect(sessions[0]?.setModel).toHaveBeenCalledWith("model-1");
+	});
+
+	test("skips unsupported model preference and still binds the session", async () => {
+		setModelError = new Error(
+			'Unhandled exception: "Method not found": session/set_model'
+		);
+		const coordinator = createCoordinator();
+
+		const started = await coordinator.startThread({
+			projectId: "project-1",
+			agentName: "mock-agent",
+			message: [{ type: "text", text: "unsupported model" }],
+			preferences: { modelId: "model-1" },
+			turnId: "turn-prefs-skip",
+		});
+
+		expect(started.isOk()).toBe(true);
+		if (started.isErr()) throw new Error("expected ok");
+		expect(started.value.bound).not.toBeNull();
+		expect(sessions[0]?.setModel).toHaveBeenCalledWith("model-1");
+		expect(
+			conversations.some((entry) => entry.event.type === "thread_error")
+		).toBe(false);
 	});
 
 	test("after a mid-flight failure the thread can be bound and prompted for retry", async () => {

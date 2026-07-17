@@ -140,6 +140,12 @@ export function launchTurn(options: {
 		options.threadId
 	);
 
+	let terminalPublished = false;
+	const trackedEmitTerminal: typeof emitTerminal = async (event) => {
+		await emitTerminal(event);
+		terminalPublished = true;
+	};
+
 	runTurn({
 		agentName: options.agentName,
 		threadId: options.threadId,
@@ -147,7 +153,7 @@ export function launchTurn(options: {
 		turnId: options.turnId,
 		message: options.message,
 		emit,
-		emitTerminal,
+		emitTerminal: trackedEmitTerminal,
 		runtime: options.runtime,
 	})
 		.then((result) => {
@@ -167,5 +173,10 @@ export function launchTurn(options: {
 				threadId: options.threadId,
 				turnId: options.turnId,
 			});
+			if (!terminalPublished) {
+				trackedEmitTerminal({ type: "turn_interrupted" }).catch(
+					() => undefined
+				);
+			}
 		});
 }

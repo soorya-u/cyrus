@@ -16,7 +16,7 @@ import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
 import { Result } from "better-result";
 import { tryCheckoutGitRef } from "@/git/checkout";
-import { createGitWorktree } from "@/git/worktree";
+import { createGitWorktree, removeGitWorktree } from "@/git/worktree";
 import {
 	coordinatorErrorCode,
 	coordinatorErrorMessage,
@@ -54,7 +54,7 @@ async function persistFailure(
 	turnId: string,
 	message: ChatMessage,
 	error: unknown
-): Promise<void> {
+): Promise<Result<void, CoordinatorError>> {
 	const userMessage = await appendConversation(threadId, {
 		threadId,
 		turnId,
@@ -64,9 +64,11 @@ async function persistFailure(
 			blocks: message,
 		},
 	});
-	if (userMessage.isErr()) return;
+	if (userMessage.isErr()) {
+		return Result.err(coordinatorRepositoryError(userMessage.error));
+	}
 
-	await appendConversation(threadId, {
+	const threadError = await appendConversation(threadId, {
 		threadId,
 		turnId,
 		event: {
@@ -77,11 +79,31 @@ async function persistFailure(
 				: {}),
 		},
 	});
-	await appendConversation(threadId, {
+	if (threadError.isErr()) {
+		return Result.err(coordinatorRepositoryError(threadError.error));
+	}
+
+	const interrupted = await appendConversation(threadId, {
 		threadId,
 		turnId,
 		event: { type: "turn_interrupted" },
 	});
+	if (interrupted.isErr()) {
+		return Result.err(coordinatorRepositoryError(interrupted.error));
+	}
+
+	return Result.ok(undefined);
+}
+
+async function failAfterRow(
+	threadId: string,
+	turnId: string,
+	message: ChatMessage,
+	error: unknown
+): Promise<Result<StartThreadResult, CoordinatorError>> {
+	const persisted = await persistFailure(threadId, turnId, message, error);
+	if (persisted.isErr()) return Result.err(persisted.error);
+	return Result.ok({ threadId, turnId, bound: null });
 }
 
 async function applyBranchOrWorktree(
@@ -91,6 +113,10 @@ async function applyBranchOrWorktree(
 	worktree: boolean | undefined,
 	worktreePath: string | undefined
 ): Promise<Result<void, CoordinatorError>> {
+	const wantsWorktree = Boolean(worktree || worktreePath);
+	if (wantsWorktree && !branch) {
+		return Result.err(coordinatorRuntimeError("worktree requires a branch"));
+	}
 	if (!branch) return Result.ok(undefined);
 
 	const projectCwd = await resolveProjectCwd(projectId);
@@ -98,7 +124,7 @@ async function applyBranchOrWorktree(
 		return Result.err(coordinatorRepositoryError(projectCwd.error));
 	}
 
-	if (worktree || worktreePath) {
+	if (wantsWorktree) {
 		const created = await createGitWorktree(
 			projectCwd.value,
 			branch,
@@ -109,6 +135,7 @@ async function applyBranchOrWorktree(
 		}
 		const updated = await updateThreadWorktreePath(threadId, created.value);
 		if (updated.isErr()) {
+			await removeGitWorktree(projectCwd.value, created.value);
 			return Result.err(coordinatorRepositoryError(updated.error));
 		}
 		return Result.ok(undefined);
@@ -153,7 +180,14 @@ async function applyPreferences(
 				value
 			)
 		);
-		if (setResult.isErr()) return Result.err(setResult.error);
+		if (setResult.isErr()) {
+			// Some agents advertise catalog options but do not implement the
+			// matching ACP setter (e.g. session/set_model → Method not found).
+			// Skip that preference so first-send can still bind and prompt.
+			const message = coordinatorErrorMessage(setResult.error);
+			if (message.includes("Method not found")) continue;
+			return Result.err(setResult.error);
+		}
 	}
 	return Result.ok(undefined);
 }
@@ -169,9 +203,9 @@ export async function startThread(
 ): Promise<Result<StartThreadResult, CoordinatorError>> {
 	const turnId = input.turnId ?? randomId();
 
+	// Persist branch only; worktree path is written after successful creation.
 	const created = await createThread(input.projectId, {
 		branch: input.branch,
-		worktreePath: input.worktreePath,
 	});
 	if (created.isErr()) {
 		return Result.err(coordinatorRepositoryError(created.error));
@@ -186,14 +220,12 @@ export async function startThread(
 		input.worktreePath
 	);
 	if (git.isErr()) {
-		await persistFailure(threadId, turnId, input.message, git.error);
-		return Result.ok({ threadId, turnId, bound: null });
+		return failAfterRow(threadId, turnId, input.message, git.error);
 	}
 
 	const cwd = await host.resolveCwd(threadId);
 	if (cwd.isErr()) {
-		await persistFailure(threadId, turnId, input.message, cwd.error);
-		return Result.ok({ threadId, turnId, bound: null });
+		return failAfterRow(threadId, turnId, input.message, cwd.error);
 	}
 
 	const runtime = host.getAgent(input.agentName);
@@ -201,8 +233,7 @@ export async function startThread(
 		runtime.createBoundSession(threadId, input.projectId, cwd.value)
 	);
 	if (session.isErr()) {
-		await persistFailure(threadId, turnId, input.message, session.error);
-		return Result.ok({ threadId, turnId, bound: null });
+		return failAfterRow(threadId, turnId, input.message, session.error);
 	}
 
 	const bound: BoundThread = {
@@ -215,8 +246,7 @@ export async function startThread(
 
 	const prefs = await applyPreferences(host, bound, input.preferences);
 	if (prefs.isErr()) {
-		await persistFailure(threadId, turnId, input.message, prefs.error);
-		return Result.ok({ threadId, turnId, bound: null });
+		return failAfterRow(threadId, turnId, input.message, prefs.error);
 	}
 
 	const persisted = await bindThreadAgent(threadId, input.projectId, {
@@ -224,14 +254,12 @@ export async function startThread(
 		sessionId: session.value.sessionId,
 	});
 	if (persisted.isErr()) {
-		await persistFailure(threadId, turnId, input.message, persisted.error);
-		return Result.ok({ threadId, turnId, bound: null });
+		return failAfterRow(threadId, turnId, input.message, persisted.error);
 	}
 
 	const locked = await setAgentLocked(threadId);
 	if (locked.isErr()) {
-		await persistFailure(threadId, turnId, input.message, locked.error);
-		return Result.ok({ threadId, turnId, bound: null });
+		return failAfterRow(threadId, turnId, input.message, locked.error);
 	}
 
 	return Result.ok({ threadId, turnId, bound });

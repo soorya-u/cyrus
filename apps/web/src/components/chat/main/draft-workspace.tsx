@@ -1,3 +1,4 @@
+import { coordinatorRuntimeError } from "@cyrus/errors/coordinator";
 import { useStartThread } from "@cyrus/hooks/queries/use-start-thread";
 import { useAgentCatalogStore } from "@cyrus/hooks/stores/agent-catalog";
 import { useComposerDraftStore } from "@cyrus/hooks/stores/composer-draft";
@@ -9,7 +10,6 @@ import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { useNavigate } from "@tanstack/react-router";
-import { Result } from "better-result";
 import { useEffect, useMemo } from "react";
 import { Composer } from "@/components/chat/composer";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
@@ -75,28 +75,28 @@ export function DraftWorkspace({
 			catalog.pendingAgentByThread[draftId] ??
 			catalog.liveBindingByThread[draftId]?.agentName;
 		if (!agentName) {
-			throw new Error("no agent selected");
+			// TanStack mutation / composer boundary — throw TaggedError.
+			throw coordinatorRuntimeError("no agent selected");
 		}
 
 		const selection = catalog.selectionByThread[draftId] ?? {};
 		const turnId = randomId();
-		const started = await Result.tryPromise(() =>
-			startThread.mutateAsync({
-				projectId,
-				agentName,
-				message,
-				turnId,
-				branch: gitChoice?.branch,
-				worktree: gitChoice?.worktree,
-				preferences: {
-					modelId: selection.modelId,
-					modeId: selection.modeId,
-					effortId: selection.effortId,
-					personaId: selection.personaId,
-				},
-			})
-		);
-		if (started.isErr()) throw started.error;
+		// mutateAsync already rejects with the oRPC/domain error — do not wrap
+		// in Result.tryPromise (that would erase the TaggedError into UnhandledException).
+		const started = await startThread.mutateAsync({
+			projectId,
+			agentName,
+			message,
+			turnId,
+			branch: gitChoice?.branch,
+			worktree: gitChoice?.worktree,
+			preferences: {
+				modelId: selection.modelId,
+				modeId: selection.modeId,
+				effortId: selection.effortId,
+				personaId: selection.personaId,
+			},
+		});
 
 		clearDraftControllerState(draftId);
 		await navigate({
@@ -104,7 +104,7 @@ export function DraftWorkspace({
 			params: {
 				workerId,
 				projectId,
-				threadId: started.value.threadId,
+				threadId: started.threadId,
 			},
 		});
 	}
