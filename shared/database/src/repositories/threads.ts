@@ -298,60 +298,6 @@ export async function bindThreadAgent(
 	return writeThreadAgent(threadId, projectId, thread.value, data);
 }
 
-const clearThreadAgentBinding = repoArgs(
-	async (threadId: string, projectId: string, current: Thread) => {
-		if (!(current.agentName || current.sessionId)) {
-			return current;
-		}
-		const updatedAt = nowISO();
-		const updated = await connection.db
-			.update(threads)
-			.set({
-				agentName: null,
-				sessionId: null,
-				updatedAt,
-			})
-			.where(
-				and(
-					eq(threads.id, threadId),
-					eq(threads.projectId, projectId),
-					eq(threads.agentLocked, 0)
-				)
-			)
-			.returning();
-
-		if (updated.length === 0) {
-			const latest = await getThread(threadId);
-			if (latest.isErr()) throw latest.error;
-			if (!latest.value) throw notFound("thread", threadId);
-			return latest.value;
-		}
-
-		return ThreadSchema.parse({
-			...current,
-			agentName: null,
-			sessionId: null,
-			updatedAt,
-		});
-	}
-);
-
-/** Clears leftover draft agent/session fields (unlocked threads only). */
-export async function clearThreadDraftBinding(
-	threadId: string,
-	projectId: string
-): Promise<Result<Thread, RepositoryError>> {
-	const thread = await getThread(threadId);
-	if (thread.isErr()) return Result.err(thread.error);
-	if (!thread.value) return Result.err(notFound("thread", threadId));
-	if (thread.value.projectId !== projectId) {
-		return Result.err(notFound("thread", threadId));
-	}
-	if (thread.value.agentLocked) return Result.ok(thread.value);
-
-	return clearThreadAgentBinding(threadId, projectId, thread.value);
-}
-
 const lockThreadAgent = repoArgs(async (threadId: string, current: Thread) => {
 	const updatedAt = nowISO();
 	await connection.db

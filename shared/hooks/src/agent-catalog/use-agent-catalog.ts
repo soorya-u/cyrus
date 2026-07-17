@@ -7,7 +7,6 @@ import {
 	readPromptCapabilities,
 	useAgentCatalogStore,
 } from "../stores/agent-catalog";
-import { bindDraftForSend } from "./prepare-draft-send";
 import {
 	type CatalogOption,
 	type CatalogQueryKeys,
@@ -15,8 +14,6 @@ import {
 	pickDisplayOption,
 	pickExplicitOption,
 } from "./selectors";
-import { useAutoBind } from "./use-auto-bind";
-import { useBindAgent } from "./use-bind-agent";
 import { useCatalogQueries } from "./use-catalog-queries";
 import { useDraftCatalog } from "./use-draft-catalog";
 
@@ -103,22 +100,11 @@ export function useAgentCatalog({
 		threads: threadsQueryKey,
 	};
 
-	const bindAgentMutation = useBindAgent({
-		threadId,
-		keys,
-		capabilities,
-		commands,
-		contextUsage,
-	});
-	const { mutate: bindAgent, isPending: bindAgentPending } = bindAgentMutation;
-
 	const hasLiveOrPersistedSession = Boolean(
 		liveBinding?.sessionId || persistedSessionId
 	);
-	const committedCatalogEnabled =
-		!isDraft &&
-		Boolean(hasLiveOrPersistedSession && catalogAgent) &&
-		!bindAgentPending;
+	const threadCatalogEnabled =
+		!isDraft && Boolean(hasLiveOrPersistedSession && catalogAgent);
 
 	const draftCatalog = useDraftCatalog({
 		isDraft,
@@ -128,23 +114,23 @@ export function useAgentCatalog({
 	});
 
 	const {
-		models: committedModels,
-		modes: committedModes,
-		efforts: committedEfforts,
-		personas: committedPersonas,
+		models: threadModels,
+		modes: threadModes,
+		efforts: threadEfforts,
+		personas: threadPersonas,
 		modelsQuery,
 	} = useCatalogQueries({
 		threadId,
 		catalogAgent,
-		catalogEnabled: committedCatalogEnabled,
-		contextUsageEnabled: committedCatalogEnabled,
+		catalogEnabled: threadCatalogEnabled,
+		contextUsageEnabled: threadCatalogEnabled,
 		keys,
 	});
 
-	const models = isDraft ? draftCatalog.models : committedModels;
-	const modes = isDraft ? draftCatalog.modes : committedModes;
-	const efforts = isDraft ? draftCatalog.efforts : committedEfforts;
-	const personas = isDraft ? draftCatalog.personas : committedPersonas;
+	const models = isDraft ? draftCatalog.models : threadModels;
+	const modes = isDraft ? draftCatalog.modes : threadModes;
+	const efforts = isDraft ? draftCatalog.efforts : threadEfforts;
+	const personas = isDraft ? draftCatalog.personas : threadPersonas;
 
 	const displayModel = pickDisplayOption(selection?.modelId, models);
 	const displayMode = pickDisplayOption(selection?.modeId, modes);
@@ -178,18 +164,6 @@ export function useAgentCatalog({
 		}),
 	});
 
-	useAutoBind({
-		threadId,
-		projectId,
-		agentLocked,
-		threadAgentName: thread?.agentName,
-		persistedSessionId,
-		modelsQueryKey: keys.models,
-		bindAgent,
-		bindAgentPending,
-		bindIsError: bindAgentMutation.isError,
-	});
-
 	useEffect(() => {
 		if (!isDraft) return;
 		if (pendingAgent) return;
@@ -215,25 +189,20 @@ export function useAgentCatalog({
 		models.length === 0 &&
 		(isDraft
 			? draftCatalog.isFetching
-			: bindAgentPending ||
-				(committedCatalogEnabled && modelsQuery.isFetching));
+			: threadCatalogEnabled && modelsQuery.isFetching);
 
 	function selectAgent(agentName: string) {
 		if (agentLocked) return;
-		if (isDraft) {
-			if (agentName === catalogAgent && draftCatalog.error) {
-				queryClient.invalidateQueries({ queryKey: draftCatalog.queryKey });
-				return;
-			}
-			if (boundAgent && agentName === boundAgent) return;
-			setPendingAgent(threadId, agentName);
-			setCapabilities(threadId, {});
-			setCommands(threadId, []);
-			setContextUsage(threadId, null);
+		if (!isDraft) return;
+		if (agentName === catalogAgent && draftCatalog.error) {
+			queryClient.invalidateQueries({ queryKey: draftCatalog.queryKey });
 			return;
 		}
 		if (boundAgent && agentName === boundAgent) return;
-		bindAgentMutation.mutate({ threadId, projectId, agentName });
+		setPendingAgent(threadId, agentName);
+		setCapabilities(threadId, {});
+		setCommands(threadId, []);
+		setContextUsage(threadId, null);
 	}
 
 	function selectModel(modelId: string) {
@@ -269,47 +238,17 @@ export function useAgentCatalog({
 	}
 
 	const prepareDraftSend = useCallback(() => {
-		const committedAgentName =
+		const agentName =
 			liveBinding?.agentName ?? thread?.agentName ?? catalogAgent ?? "";
-		// Local drafts have no server thread row; prefs travel with startThread.
-		if (isDraft && !thread) {
-			if (!catalogAgent) {
-				return Promise.resolve(Result.err(new Error("no agent selected")));
-			}
-			return Promise.resolve(Result.ok(catalogAgent));
+		if (!agentName) {
+			return Promise.resolve(Result.err(new Error("no agent selected")));
 		}
-		return bindDraftForSend({
-			isDraft,
-			agentName: catalogAgent,
-			committedAgentName,
-			threadId,
-			projectId,
-			bindAgent: (input) => bindAgentMutation.mutateAsync(input),
-			mutations: {
-				setModel: (input) => setModelMutation.mutateAsync(input),
-				setMode: (input) => setModeMutation.mutateAsync(input),
-				setEffort: (input) => setEffortMutation.mutateAsync(input),
-				setPersona: (input) => setPersonaMutation.mutateAsync(input),
-			},
-		});
-	}, [
-		bindAgentMutation,
-		catalogAgent,
-		isDraft,
-		liveBinding?.agentName,
-		projectId,
-		setEffortMutation,
-		setModeMutation,
-		setModelMutation,
-		setPersonaMutation,
-		thread,
-		thread?.agentName,
-		threadId,
-	]);
+		return Promise.resolve(Result.ok(agentName));
+	}, [catalogAgent, liveBinding?.agentName, thread?.agentName]);
 
 	return {
 		agentLocked,
-		bindError: isDraft ? draftCatalog.error : bindAgentMutation.error,
+		catalogError: isDraft ? draftCatalog.error : null,
 		capabilities,
 		commands,
 		contextUsage: isDraft ? null : contextUsage,

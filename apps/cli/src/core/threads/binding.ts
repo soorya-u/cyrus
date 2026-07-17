@@ -2,9 +2,11 @@ import { resolveThreadGitCwd } from "@cyrus/database/repositories/git";
 import {
 	bindThreadAgent,
 	getThread,
+	setAgentLocked,
 } from "@cyrus/database/repositories/threads";
 import {
 	type CoordinatorError,
+	coordinatorAgentLocked,
 	coordinatorAgentMismatch,
 	coordinatorAgentNotBound,
 	coordinatorNotFound,
@@ -36,12 +38,13 @@ export async function resolveCwd(
 	threadId: string
 ): Promise<Result<string, CoordinatorError>> {
 	const result = await resolveThreadGitCwd(threadId);
-	if (result.isErr()) {
+	if (result.isErr())
 		return Result.err(coordinatorRepositoryError(result.error));
-	}
+
 	return Result.ok(result.value);
 }
 
+/** Resolve a thread's session: live if present, otherwise cold from DB. */
 export async function resolveBoundThread(
 	host: Pick<CoordinatorHost, "findLiveBinding" | "resolveCwd">,
 	threadId: string,
@@ -49,33 +52,30 @@ export async function resolveBoundThread(
 ): Promise<Result<BoundThread, CoordinatorError>> {
 	const live = host.findLiveBinding(threadId);
 	if (live) {
-		if (projectId && live.projectId !== projectId) {
+		if (projectId && live.projectId !== projectId)
 			return Result.err(coordinatorNotFound("thread", threadId));
-		}
+
 		return Result.ok(live);
 	}
 
 	const thread = await getThread(threadId);
-	if (thread.isErr()) {
+	if (thread.isErr())
 		return Result.err(coordinatorRepositoryError(thread.error));
-	}
-	if (!thread.value) {
-		return Result.err(coordinatorNotFound("thread", threadId));
-	}
-	if (projectId && thread.value.projectId !== projectId) {
-		return Result.err(coordinatorNotFound("thread", threadId));
-	}
 
-	// Only resume sessions that were committed by a first user message.
+	if (!thread.value) return Result.err(coordinatorNotFound("thread", threadId));
+
+	if (projectId && thread.value.projectId !== projectId)
+		return Result.err(coordinatorNotFound("thread", threadId));
+
+	// Cold: resume from the persisted session id when an operation needs one.
 	if (
 		!(
 			thread.value.agentLocked &&
 			thread.value.sessionId &&
 			thread.value.agentName
 		)
-	) {
+	)
 		return Result.err(coordinatorAgentNotBound());
-	}
 
 	const cwd = await host.resolveCwd(threadId);
 	if (cwd.isErr()) return Result.err(cwd.error);
@@ -89,43 +89,77 @@ export async function resolveBoundThread(
 	});
 }
 
-export async function persistBoundSessionLocked(
+/**
+ * Ensure a thread has a live or cold session for chat.
+ * Live/cold threads are returned as-is; unbound threads (e.g. after a
+ * mid-flight startThread failure) get a new session created and locked.
+ */
+export async function ensureSessionLocked(
 	host: CoordinatorHost,
 	threadId: string,
 	projectId: string,
-	expectedAgentName?: string
+	agentName: string
 ): Promise<Result<BoundThread, CoordinatorError>> {
-	const bound = await host.resolveBoundThread(threadId, projectId);
-	if (bound.isErr()) return Result.err(bound.error);
+	const live = host.findLiveBinding(threadId);
+	if (live) {
+		if (live.projectId !== projectId)
+			return Result.err(coordinatorNotFound("thread", threadId));
 
-	if (expectedAgentName && bound.value.agentName !== expectedAgentName) {
-		return Result.err(
-			coordinatorAgentMismatch(bound.value.agentName, expectedAgentName)
-		);
+		if (live.agentName !== agentName)
+			return Result.err(coordinatorAgentMismatch(live.agentName, agentName));
+
+		return Result.ok(live);
 	}
 
 	const thread = await getThread(threadId);
-	if (thread.isErr()) {
+	if (thread.isErr())
 		return Result.err(coordinatorRepositoryError(thread.error));
-	}
-	if (!thread.value || thread.value.projectId !== projectId) {
+
+	if (!thread.value || thread.value.projectId !== projectId)
 		return Result.err(coordinatorNotFound("thread", threadId));
+
+	if (thread.value.agentLocked) {
+		if (thread.value.agentName !== agentName)
+			return Result.err(coordinatorAgentLocked());
+
+		if (!(thread.value.sessionId && thread.value.agentName))
+			return Result.err(coordinatorAgentNotBound());
+
+		const cwd = await host.resolveCwd(threadId);
+		if (cwd.isErr()) return Result.err(cwd.error);
+		return Result.ok({
+			threadId,
+			projectId,
+			agentName: thread.value.agentName,
+			sessionId: thread.value.sessionId,
+			cwd: cwd.value,
+		});
 	}
 
-	if (
-		thread.value.agentName === bound.value.agentName &&
-		thread.value.sessionId === bound.value.sessionId
-	) {
-		return Result.ok(bound.value);
-	}
+	const cwd = await host.resolveCwd(threadId);
+	if (cwd.isErr()) return Result.err(cwd.error);
+
+	const session = await host.withRuntime(() =>
+		host.getAgent(agentName).createBoundSession(threadId, projectId, cwd.value)
+	);
+	if (session.isErr()) return Result.err(session.error);
 
 	const persisted = await bindThreadAgent(threadId, projectId, {
-		agentName: bound.value.agentName,
-		sessionId: bound.value.sessionId,
+		agentName,
+		sessionId: session.value.sessionId,
 	});
-	if (persisted.isErr()) {
+	if (persisted.isErr())
 		return Result.err(coordinatorRepositoryError(persisted.error));
-	}
 
-	return Result.ok(bound.value);
+	const locked = await setAgentLocked(threadId);
+	if (locked.isErr())
+		return Result.err(coordinatorRepositoryError(locked.error));
+
+	return Result.ok({
+		threadId,
+		projectId,
+		agentName,
+		sessionId: session.value.sessionId,
+		cwd: cwd.value,
+	});
 }

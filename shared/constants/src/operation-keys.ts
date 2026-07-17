@@ -13,7 +13,6 @@ export const RTC_OPERATION_KEYS = {
 	searchEntries: (cwd: string, query: string, limit = 80) =>
 		["controller", "search-entries", cwd, query, limit] as const,
 	createProject: ["controller", "create-project"],
-	createThread: ["controller", "create-thread"],
 	startThread: ["controller", "start-thread"],
 	renameProject: ["controller", "rename-project"],
 	deleteProject: ["controller", "delete-project"],
@@ -22,7 +21,6 @@ export const RTC_OPERATION_KEYS = {
 	getConversations: (threadId: string) =>
 		["controller", "get-conversations", threadId] as const,
 	listAgents: ["controller", "list-agents"],
-	bindAgent: ["controller", "bind-agent"],
 	getDraftCatalog: (agentName: string, projectId: string) =>
 		["controller", "get-draft-catalog", agentName, projectId] as const,
 	getModels: (threadId: string, agentName = "") =>

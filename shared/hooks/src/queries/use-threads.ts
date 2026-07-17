@@ -27,13 +27,6 @@ export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
 		[threadQueries]
 	);
 
-	const createThreadMutation = useMutation({
-		...orpcController.createThread.mutationOptions({
-			mutationKey: RTC_OPERATION_KEYS.createThread,
-		}),
-		onSuccess: (data) => invalidateThreads(data.thread.projectId),
-	});
-
 	const renameThreadMutation = useMutation({
 		...orpcController.renameThread.mutationOptions({
 			mutationKey: RTC_OPERATION_KEYS.renameThread,
@@ -48,25 +41,6 @@ export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
 		onSuccess: () => invalidateThreads(),
 	});
 
-	function createThread(
-		projectId: string,
-		options?: {
-			branch?: string;
-			worktreePath?: string;
-			onSuccess?: (threadId: string) => void;
-			onError?: (error: Error) => void;
-		}
-	) {
-		const { onSuccess, onError, branch, worktreePath } = options ?? {};
-		createThreadMutation.mutate(
-			{ projectId, branch, worktreePath },
-			{
-				onSuccess: (data) => onSuccess?.(data.thread.id),
-				onError,
-			}
-		);
-	}
-
 	function renameThread(id: string, name: string) {
 		renameThreadMutation.mutate({ threadId: id, name });
 	}
@@ -77,8 +51,6 @@ export function useThreads({ projects, invalidateThreads }: UseThreadsOptions) {
 
 	return {
 		baseThreads,
-		createThread,
-		isCreatingThread: createThreadMutation.isPending,
 		renameThread,
 		deleteThread,
 	};

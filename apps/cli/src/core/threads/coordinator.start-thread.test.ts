@@ -128,7 +128,6 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 		row.worktreePath = worktreePath;
 		return Promise.resolve(Result.ok({ ...row }));
 	},
-	clearThreadDraftBinding: () => Promise.resolve(Result.ok(undefined)),
 }));
 
 mock.module("@cyrus/database/repositories/conversations", () => ({
@@ -375,7 +374,7 @@ describe("startThread", () => {
 		).toBe(false);
 	});
 
-	test("after a mid-flight failure the thread can be bound and prompted for retry", async () => {
+	test("after a mid-flight failure the thread can be ensured and prompted for retry", async () => {
 		sessionCreateError = new Error("session boom");
 		const coordinator = createCoordinator();
 
@@ -393,20 +392,13 @@ describe("startThread", () => {
 		).toBe(true);
 
 		sessionCreateError = null;
-		const rebound = await coordinator.bindAgent(
+		const ensured = await coordinator.ensureSession(
 			started.value.threadId,
 			"project-1",
 			"mock-agent"
 		);
-		expect(rebound.isOk()).toBe(true);
-		if (rebound.isErr()) throw new Error("expected bind to succeed");
-
-		const persisted = await coordinator.persistBoundSession(
-			started.value.threadId,
-			"project-1",
-			"mock-agent"
-		);
-		expect(persisted.isOk()).toBe(true);
+		expect(ensured.isOk()).toBe(true);
+		if (ensured.isErr()) throw new Error("expected ensureSession to succeed");
 
 		const prompt = await coordinator.prompt(
 			"mock-agent",

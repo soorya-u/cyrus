@@ -1,7 +1,5 @@
 import { ListAgentsOutputSchema } from "@cyrus/schemas/rtc/agents";
 import {
-	BindAgentInputSchema,
-	BindAgentOutputSchema,
 	GetContextUsageOutputSchema,
 	GetDraftCatalogInputSchema,
 	GetDraftCatalogOutputSchema,
@@ -52,8 +50,6 @@ import {
 	RenameProjectInputSchema,
 } from "@cyrus/schemas/rtc/projects";
 import {
-	CreateThreadInputSchema,
-	CreateThreadOutputSchema,
 	GetConversationsOutputSchema,
 	ListThreadsOutputSchema,
 	ProjectQueryInputSchema,
@@ -69,7 +65,6 @@ import { eventIterator, oc } from "@orpc/contract";
 
 export const controllerContract = {
 	listAgents: oc.output(ListAgentsOutputSchema),
-	bindAgent: oc.input(BindAgentInputSchema).output(BindAgentOutputSchema),
 	getDraftCatalog: oc
 		.input(GetDraftCatalogInputSchema)
 		.output(GetDraftCatalogOutputSchema),
@@ -86,9 +81,6 @@ export const controllerContract = {
 	listThreads: oc
 		.input(ProjectQueryInputSchema)
 		.output(ListThreadsOutputSchema),
-	createThread: oc
-		.input(CreateThreadInputSchema)
-		.output(CreateThreadOutputSchema),
 	startThread: oc.input(StartThreadInputSchema).output(StartThreadOutputSchema),
 	getConversations: oc
 		.input(ThreadQueryInputSchema)

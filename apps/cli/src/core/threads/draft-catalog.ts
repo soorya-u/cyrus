@@ -3,12 +3,12 @@ import {
 	type CoordinatorError,
 	coordinatorRepositoryError,
 } from "@cyrus/errors/coordinator";
-import type { BindAgentOutput } from "@cyrus/schemas/rtc/catalog";
+import type { GetDraftCatalogOutput } from "@cyrus/schemas/rtc/catalog";
 import { Result } from "better-result";
 import type { CoordinatorHost } from "./types";
 
 export type DraftCatalog = Pick<
-	BindAgentOutput,
+	GetDraftCatalogOutput,
 	"capabilities" | "models" | "modes" | "efforts" | "personas" | "commands"
 >;
 

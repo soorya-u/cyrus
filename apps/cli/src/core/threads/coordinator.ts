@@ -2,7 +2,7 @@ import {
 	type CoordinatorError,
 	coordinatorRuntimeError,
 } from "@cyrus/errors/coordinator";
-import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
+import type { ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Mutex } from "async-mutex";
@@ -10,10 +10,9 @@ import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
 import type { CatalogField } from "@/core/agents/runtime";
 import { AgentRuntime } from "@/core/agents/runtime";
-import { bindAgentLocked } from "./bind";
 import {
+	ensureSessionLocked,
 	findLiveBinding,
-	persistBoundSessionLocked,
 	resolveBoundThread as resolveBoundThreadFn,
 	resolveCwd as resolveCwdFn,
 } from "./binding";
@@ -115,24 +114,14 @@ export class ThreadCoordinator implements CoordinatorHost {
 		return resolveBoundThreadFn(this, threadId, projectId);
 	}
 
-	async bindAgent(
+	/** Live/cold resolve, or create+lock a session for unbound mid-flight retries. */
+	async ensureSession(
 		threadId: string,
 		projectId: string,
 		agentName: string
-	): Promise<Result<BindAgentOutput, CoordinatorError>> {
-		return await this.withThreadLock(threadId, () =>
-			bindAgentLocked(this, threadId, projectId, agentName)
-		);
-	}
-
-	/** Persist live draft binding on first user message. No-op if already stored. */
-	async persistBoundSession(
-		threadId: string,
-		projectId: string,
-		expectedAgentName?: string
 	): Promise<Result<BoundThread, CoordinatorError>> {
 		return await this.withThreadLock(threadId, () =>
-			persistBoundSessionLocked(this, threadId, projectId, expectedAgentName)
+			ensureSessionLocked(this, threadId, projectId, agentName)
 		);
 	}
 

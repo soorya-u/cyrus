@@ -118,7 +118,7 @@ export function Composer({
 		catalog.promptCapabilities.embeddedContext !== false;
 	const canAttachFiles = Boolean(threadCwd) && supportsEmbeddedContext;
 	const canPasteUrls = supportsEmbeddedContext;
-	const composerBlocked = Boolean(threadError ?? catalog.bindError);
+	const composerBlocked = Boolean(threadError ?? catalog.catalogError);
 
 	const threadGitStatus = useGitStatus(localDraft ? undefined : threadId);
 	const projectGitStatus = useProjectGitStatus(
@@ -493,7 +493,7 @@ export function Composer({
 						data-chat-composer-footer="true"
 					>
 						<div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-							{catalog.bindError ? (
+							{catalog.catalogError ? (
 								<div className="flex min-w-0 items-center gap-2 px-1">
 									<p className="min-w-0 truncate text-destructive text-xs">
 										Could not load agent catalog. Select the agent again to
