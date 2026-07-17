@@ -138,4 +138,21 @@ describe("getDraftCatalog probe", () => {
 		expect(sessions).toHaveLength(0);
 		expect(coordinator.findLiveBinding("any-thread")).toBeNull();
 	});
+
+	test("a second probe also closes with zero live sessions remaining", async () => {
+		const coordinator = createCoordinator();
+
+		const first = await coordinator.getDraftCatalog("mock-agent", "project-1");
+		expect(first.isOk()).toBe(true);
+
+		const second = await coordinator.getDraftCatalog("mock-agent", "project-1");
+		expect(second.isOk()).toBe(true);
+		if (second.isErr()) throw new Error("expected second probe to succeed");
+
+		expect(second.value.models[0]?.id).toBe("model-1");
+		expect(sessions).toHaveLength(2);
+		expect(sessions[0]?.close).toHaveBeenCalled();
+		expect(sessions[1]?.close).toHaveBeenCalled();
+		expect(coordinator.findLiveBinding("any-thread")).toBeNull();
+	});
 });
