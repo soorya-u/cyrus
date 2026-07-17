@@ -5,16 +5,18 @@ export function effortHandlers({ os, runtime }: ControllerDeps) {
 	return {
 		getEfforts: os.getEfforts.handler(async ({ input }) => ({
 			efforts: orpcOk(
-				await runtime.threadCoordinator.getEfforts(input.threadId)
+				await runtime.threadCoordinator.catalog(input.threadId, "effort", {
+					type: "get",
+				})
 			),
 		})),
 		setEffort: os.setEffort.handler(async ({ input }) => {
 			orpcOk(
-				await runtime.threadCoordinator.setEffort(
-					input.threadId,
-					input.projectId,
-					input.effortId
-				)
+				await runtime.threadCoordinator.catalog(input.threadId, "effort", {
+					type: "set",
+					projectId: input.projectId,
+					value: input.effortId,
+				})
 			);
 			return {};
 		}),

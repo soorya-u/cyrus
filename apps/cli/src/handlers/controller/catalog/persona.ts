@@ -5,16 +5,18 @@ export function personaHandlers({ os, runtime }: ControllerDeps) {
 	return {
 		getPersona: os.getPersona.handler(async ({ input }) => ({
 			personas: orpcOk(
-				await runtime.threadCoordinator.getPersonas(input.threadId)
+				await runtime.threadCoordinator.catalog(input.threadId, "persona", {
+					type: "get",
+				})
 			),
 		})),
 		setPersona: os.setPersona.handler(async ({ input }) => {
 			orpcOk(
-				await runtime.threadCoordinator.setPersona(
-					input.threadId,
-					input.projectId,
-					input.personaId
-				)
+				await runtime.threadCoordinator.catalog(input.threadId, "persona", {
+					type: "set",
+					projectId: input.projectId,
+					value: input.personaId,
+				})
 			);
 			return {};
 		}),

@@ -8,6 +8,7 @@ import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Mutex } from "async-mutex";
 import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
+import type { CatalogField } from "@/core/agents/runtime";
 import { AgentRuntime } from "@/core/agents/runtime";
 import { bindAgentLocked } from "./bind";
 import {
@@ -16,17 +17,6 @@ import {
 	resolveBoundThread as resolveBoundThreadFn,
 	resolveCwd as resolveCwdFn,
 } from "./binding";
-import {
-	getContextUsage,
-	getEfforts,
-	getModels,
-	getModes,
-	getPersonas,
-	setEffort,
-	setMode,
-	setModel,
-	setPersona,
-} from "./catalog";
 import {
 	type DraftCatalog,
 	getDraftCatalog as getDraftCatalogFn,
@@ -37,6 +27,12 @@ import {
 	prompt as promptTurn,
 } from "./turn";
 import type { BoundThread, CoordinatorHost } from "./types";
+
+export type { CatalogField } from "@/core/agents/runtime";
+
+type CatalogGetOp = { type: "get" };
+type CatalogSetOp = { type: "set"; projectId: string; value: string };
+type CatalogOp = CatalogGetOp | CatalogSetOp;
 
 export class ThreadCoordinator implements CoordinatorHost {
 	private readonly agents = new Map<string, AgentRuntime>();
@@ -118,68 +114,85 @@ export class ThreadCoordinator implements CoordinatorHost {
 		);
 	}
 
-	getModels(
-		threadId: string
-	): Promise<Result<ModelOption[], CoordinatorError>> {
-		return getModels(this, threadId);
-	}
-
-	getModes(
-		threadId: string
-	): Promise<Result<SelectOption[], CoordinatorError>> {
-		return getModes(this, threadId);
-	}
-
-	getEfforts(
-		threadId: string
-	): Promise<Result<SelectOption[], CoordinatorError>> {
-		return getEfforts(this, threadId);
-	}
-
-	getPersonas(
-		threadId: string
-	): Promise<Result<SelectOption[], CoordinatorError>> {
-		return getPersonas(this, threadId);
-	}
-
-	setModel(
+	catalog(
 		threadId: string,
-		projectId: string,
-		modelId: string
-	): Promise<Result<void, CoordinatorError>> {
-		return setModel(this, threadId, projectId, modelId);
-	}
-
-	setMode(
+		field: "model",
+		op: CatalogGetOp
+	): Promise<Result<ModelOption[], CoordinatorError>>;
+	catalog(
 		threadId: string,
-		projectId: string,
-		modeId: string
-	): Promise<Result<void, CoordinatorError>> {
-		return setMode(this, threadId, projectId, modeId);
-	}
-
-	setEffort(
+		field: "mode" | "effort" | "persona",
+		op: CatalogGetOp
+	): Promise<Result<SelectOption[], CoordinatorError>>;
+	catalog(
 		threadId: string,
-		projectId: string,
-		effortId: string
-	): Promise<Result<void, CoordinatorError>> {
-		return setEffort(this, threadId, projectId, effortId);
-	}
-
-	setPersona(
+		field: CatalogField,
+		op: CatalogSetOp
+	): Promise<Result<undefined, CoordinatorError>>;
+	async catalog(
 		threadId: string,
-		projectId: string,
-		personaId: string
-	): Promise<Result<void, CoordinatorError>> {
-		return setPersona(this, threadId, projectId, personaId);
+		field: CatalogField,
+		op: CatalogOp
+	): Promise<
+		Result<ModelOption[] | SelectOption[] | undefined, CoordinatorError>
+	> {
+		if (op.type === "set") {
+			return await this.withThreadLock(threadId, () =>
+				this.runCatalog(threadId, field, op)
+			);
+		}
+		return await this.runCatalog(threadId, field, op);
 	}
 
-	getContextUsage(
+	private async runCatalog(
+		threadId: string,
+		field: CatalogField,
+		op: CatalogOp
+	): Promise<
+		Result<ModelOption[] | SelectOption[] | undefined, CoordinatorError>
+	> {
+		const bound = await this.resolveBoundThread(
+			threadId,
+			op.type === "set" ? op.projectId : undefined
+		);
+		if (bound.isErr()) return Result.err(bound.error);
+
+		if (op.type === "get") {
+			return this.withRuntime(() =>
+				this.getAgent(bound.value.agentName).getCatalogField(
+					field,
+					bound.value.threadId,
+					bound.value.projectId,
+					bound.value.cwd,
+					bound.value.sessionId
+				)
+			);
+		}
+
+		const setResult = await this.withRuntime(() =>
+			this.getAgent(bound.value.agentName).setCatalogField(
+				field,
+				bound.value.threadId,
+				bound.value.projectId,
+				bound.value.cwd,
+				bound.value.sessionId,
+				op.value
+			)
+		);
+		if (setResult.isErr()) return Result.err(setResult.error);
+		return Result.ok(undefined);
+	}
+
+	async getContextUsage(
 		threadId: string
 	): Promise<
 		Result<{ used?: number; limit?: number } | null, CoordinatorError>
 	> {
-		return getContextUsage(this, threadId);
+		const bound = await this.resolveBoundThread(threadId);
+		if (bound.isErr()) return Result.err(bound.error);
+		return Result.ok(
+			this.getAgent(bound.value.agentName).getContextUsage(threadId)
+		);
 	}
 
 	getDraftCatalog(

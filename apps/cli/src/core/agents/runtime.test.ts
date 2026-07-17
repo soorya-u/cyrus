@@ -55,7 +55,8 @@ describe("AgentRuntime", () => {
 		);
 
 		expect(created.sessionId).toBe("session-1");
-		const models = await runtime.getModels(
+		const models = await runtime.getCatalogField(
+			"model",
 			"thread-1",
 			"project-1",
 			"/tmp/project",

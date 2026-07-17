@@ -4,15 +4,19 @@ import type { ControllerDeps } from "../deps";
 export function modelHandlers({ os, runtime }: ControllerDeps) {
 	return {
 		getModels: os.getModels.handler(async ({ input }) => ({
-			models: orpcOk(await runtime.threadCoordinator.getModels(input.threadId)),
+			models: orpcOk(
+				await runtime.threadCoordinator.catalog(input.threadId, "model", {
+					type: "get",
+				})
+			),
 		})),
 		setModel: os.setModel.handler(async ({ input }) => {
 			orpcOk(
-				await runtime.threadCoordinator.setModel(
-					input.threadId,
-					input.projectId,
-					input.modelId
-				)
+				await runtime.threadCoordinator.catalog(input.threadId, "model", {
+					type: "set",
+					projectId: input.projectId,
+					value: input.modelId,
+				})
 			);
 			return {};
 		}),

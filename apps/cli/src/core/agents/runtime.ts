@@ -1,8 +1,7 @@
 import type { RuntimeSession } from "@acp-kit/core";
 import type { AvailableCommand } from "@agentclientprotocol/sdk";
-import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
+import type { BindAgentOutput } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
-import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
 import {
@@ -11,16 +10,11 @@ import {
 	modesFromSession,
 	personasFromSession,
 } from "./catalog";
+import type { CatalogField, CatalogFieldValue } from "./catalog-ops";
 import {
 	getAgentCapabilities,
-	getEfforts,
-	getModels,
-	getModes,
-	getPersonas,
-	setEffort,
-	setMode,
-	setModel,
-	setPersona,
+	getCatalogField,
+	setCatalogField,
 } from "./catalog-ops";
 import {
 	commandsFromSession,
@@ -29,6 +23,8 @@ import {
 } from "./metadata";
 import { runPromptTurn } from "./prompt-turn";
 import { ThreadSessionStore } from "./sessions";
+
+export type { CatalogField, CatalogFieldValue } from "./catalog-ops";
 
 export function catalogSnapshotFromSession(
 	session: RuntimeSession
@@ -61,14 +57,16 @@ export class AgentRuntime {
 		};
 	}
 
-	async getModels(
+	async getCatalogField<F extends CatalogField>(
+		field: F,
 		threadId: string,
 		projectId: string,
 		cwd: string,
 		sessionId: string
-	): Promise<ModelOption[]> {
-		return await getModels(
+	): Promise<CatalogFieldValue[F]> {
+		return await getCatalogField(
 			this.catalogDeps(),
+			field,
 			threadId,
 			projectId,
 			cwd,
@@ -76,48 +74,22 @@ export class AgentRuntime {
 		);
 	}
 
-	async getModes(
+	async setCatalogField(
+		field: CatalogField,
 		threadId: string,
 		projectId: string,
 		cwd: string,
-		sessionId: string
-	): Promise<SelectOption[]> {
-		return await getModes(
+		sessionId: string,
+		value: string
+	): Promise<void> {
+		return await setCatalogField(
 			this.catalogDeps(),
+			field,
 			threadId,
 			projectId,
 			cwd,
-			sessionId
-		);
-	}
-
-	async getEfforts(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string
-	): Promise<SelectOption[]> {
-		return await getEfforts(
-			this.catalogDeps(),
-			threadId,
-			projectId,
-			cwd,
-			sessionId
-		);
-	}
-
-	async getPersonas(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string
-	): Promise<SelectOption[]> {
-		return await getPersonas(
-			this.catalogDeps(),
-			threadId,
-			projectId,
-			cwd,
-			sessionId
+			sessionId,
+			value
 		);
 	}
 
@@ -173,74 +145,6 @@ export class AgentRuntime {
 		} finally {
 			await Result.tryPromise(() => session.close());
 		}
-	}
-
-	async setModel(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string,
-		modelId: string
-	): Promise<void> {
-		return await setModel(
-			this.catalogDeps(),
-			threadId,
-			projectId,
-			cwd,
-			sessionId,
-			modelId
-		);
-	}
-
-	async setMode(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string,
-		modeId: string
-	): Promise<void> {
-		return await setMode(
-			this.catalogDeps(),
-			threadId,
-			projectId,
-			cwd,
-			sessionId,
-			modeId
-		);
-	}
-
-	async setEffort(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string,
-		effortId: string
-	): Promise<void> {
-		return await setEffort(
-			this.catalogDeps(),
-			threadId,
-			projectId,
-			cwd,
-			sessionId,
-			effortId
-		);
-	}
-
-	async setPersona(
-		threadId: string,
-		projectId: string,
-		cwd: string,
-		sessionId: string,
-		personaId: string
-	): Promise<void> {
-		return await setPersona(
-			this.catalogDeps(),
-			threadId,
-			projectId,
-			cwd,
-			sessionId,
-			personaId
-		);
 	}
 
 	async *prompt(

@@ -13,7 +13,7 @@ export async function connectE2eControllerRtc(
 		throw new Error(`worker "${workerId}" not found in signaling peers`);
 	}
 
-	return dial<ControllerContract>({
+	const dialed = await dial<ControllerContract>({
 		signaling: session.signaling,
 		events: session.events,
 		to: workerId,
@@ -23,4 +23,8 @@ export async function connectE2eControllerRtc(
 				config as ConstructorParameters<typeof NodeRTCPeerConnection>[0]
 			) as unknown as RTCPeerConnection,
 	});
+	if (dialed.isErr()) {
+		throw new Error(`RTC dial failed: ${dialed.error.message}`);
+	}
+	return dialed.value;
 }
