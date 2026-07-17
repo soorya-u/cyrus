@@ -15,6 +15,7 @@ import { useRtc } from "../contexts/rtc";
 import { useListAgents } from "../queries/use-list-agents";
 import { useProjects } from "../queries/use-projects";
 import { useThreads } from "../queries/use-threads";
+import { useAgentCatalogStore } from "../stores/agent-catalog";
 import { usePromptQueueStore } from "../stores/prompt-queue";
 import {
 	appendOptimisticUserMessage,
@@ -84,9 +85,19 @@ export function useThreadTurns() {
 		});
 	}
 
-	function resolveAgentName(threadId: string): string {
-		const thread = threads.find((item) => item.id === threadId);
-		return thread?.agentName ?? agentsQuery.data?.agents[0]?.id ?? "";
+	function resolveAgentName(
+		threadId: string,
+		fallbackThreadAgent?: string
+	): string {
+		const store = useAgentCatalogStore.getState();
+		return (
+			store.liveBindingByThread[threadId]?.agentName ??
+			store.pendingAgentByThread[threadId] ??
+			fallbackThreadAgent ??
+			threads.find((item) => item.id === threadId)?.agentName ??
+			agentsQuery.data?.agents[0]?.id ??
+			""
+		);
 	}
 
 	const sendMessageNow = useCallback(
@@ -102,8 +113,7 @@ export function useThreadTurns() {
 			if (!thread)
 				return Result.err(new Error(`thread not found: ${threadId}`));
 
-			const agentName =
-				thread.agentName ?? agentsQuery.data?.agents[0]?.id ?? "";
+			const agentName = resolveAgentName(threadId, thread.agentName);
 			const turnId = randomId();
 			appendOptimisticUserMessage(
 				queryClient,

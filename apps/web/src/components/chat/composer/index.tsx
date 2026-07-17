@@ -273,6 +273,13 @@ export function Composer({
 		setHasContent(false);
 		clearDraft();
 		try {
+			const prepared = await catalog.prepareDraftSend();
+			if (prepared.isErr()) {
+				editorRef.current?.setMessage(message);
+				setHasContent(true);
+				setDraft(message);
+				return;
+			}
 			await onSend(message);
 		} catch {
 			editorRef.current?.setMessage(message);
@@ -281,7 +288,7 @@ export function Composer({
 		} finally {
 			setSending(false);
 		}
-	}, [clearDraft, onSend, setDraft]);
+	}, [catalog.prepareDraftSend, clearDraft, onSend, setDraft]);
 
 	const handleMentionKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {
@@ -471,11 +478,21 @@ export function Composer({
 						className="flex min-w-0 flex-nowrap items-center justify-between gap-2 overflow-visible px-2.5 pb-2.5 sm:gap-0 sm:px-3 sm:pb-3"
 						data-chat-composer-footer="true"
 					>
-						<ComposerFooterControls
-							agents={agents}
-							projectId={projectId}
-							threadId={threadId}
-						/>
+						<div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
+							{catalog.bindError ? (
+								<div className="flex min-w-0 items-center gap-2 px-1">
+									<p className="min-w-0 truncate text-destructive text-xs">
+										Could not load agent catalog. Select the agent again to
+										retry.
+									</p>
+								</div>
+							) : null}
+							<ComposerFooterControls
+								agents={agents}
+								projectId={projectId}
+								threadId={threadId}
+							/>
+						</div>
 						<div
 							className="flex shrink-0 flex-nowrap items-center justify-end gap-2"
 							data-chat-composer-actions="right"

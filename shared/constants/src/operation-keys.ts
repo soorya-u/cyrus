@@ -22,6 +22,8 @@ export const RTC_OPERATION_KEYS = {
 		["controller", "get-conversations", threadId] as const,
 	listAgents: ["controller", "list-agents"],
 	bindAgent: ["controller", "bind-agent"],
+	getDraftCatalog: (agentName: string, projectId: string) =>
+		["controller", "get-draft-catalog", agentName, projectId] as const,
 	getModels: (threadId: string, agentName = "") =>
 		["controller", "get-models", threadId, agentName] as const,
 	getModes: (threadId: string, agentName = "") =>

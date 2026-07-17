@@ -38,5 +38,14 @@ export function agentsHandlers({ os, runtime }: ControllerDeps) {
 			}
 			return result.value;
 		}),
+
+		getDraftCatalog: os.getDraftCatalog.handler(async ({ input }) => {
+			const result = await runtime.threadCoordinator.getDraftCatalog(
+				input.agentName,
+				input.projectId
+			);
+			if (result.isErr()) throwOrpc(result.error);
+			return result.value;
+		}),
 	};
 }

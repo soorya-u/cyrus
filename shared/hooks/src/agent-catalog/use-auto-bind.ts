@@ -12,7 +12,6 @@ type BindAgentInput = {
 type UseAutoBindOptions = {
 	threadId: string;
 	projectId: string;
-	agents: { id: string; name: string }[];
 	agentLocked: boolean;
 	threadAgentName: string | undefined;
 	persistedSessionId: string | undefined;
@@ -23,13 +22,12 @@ type UseAutoBindOptions = {
 };
 
 /**
- * Auto-binds an agent when a thread has none live: rehydrates a persisted
- * session for committed threads, or binds the default agent for drafts.
+ * Rehydrates a persisted session for committed threads after worker restart.
+ * Drafts do not bind — their catalog comes from getDraftCatalog probes.
  */
 export function useAutoBind({
 	threadId,
 	projectId,
-	agents,
 	agentLocked,
 	threadAgentName,
 	persistedSessionId,
@@ -57,28 +55,17 @@ export function useAutoBind({
 		const currentLive = store.liveBindingByThread[threadId];
 		if (currentLive) return;
 
-		// Committed threads: rehydrate the persisted session after worker restart.
-		if (agentLocked && threadAgentName && persistedSessionId) {
-			const cachedModels = queryClient.getQueryData<{ models: unknown[] }>(
-				modelsQueryKey
-			);
-			if (cachedModels?.models?.length) return;
+		if (!(agentLocked && threadAgentName && persistedSessionId)) return;
 
-			markResumeBindRequested(threadId);
-			bindAgent({ threadId, projectId, agentName: threadAgentName });
-			return;
-		}
-
-		// Drafts: bind the first agent; session stays worker-local until first message.
-		if (agentLocked) return;
-		const defaultAgent = agents[0]?.id;
-		if (!defaultAgent) return;
+		const cachedModels = queryClient.getQueryData<{ models: unknown[] }>(
+			modelsQueryKey
+		);
+		if (cachedModels?.models?.length) return;
 
 		markResumeBindRequested(threadId);
-		bindAgent({ threadId, projectId, agentName: defaultAgent });
+		bindAgent({ threadId, projectId, agentName: threadAgentName });
 	}, [
 		agentLocked,
-		agents,
 		bindAgent,
 		bindIsError,
 		bindAgentPending,
