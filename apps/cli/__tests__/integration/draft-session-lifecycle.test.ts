@@ -101,7 +101,9 @@ describe("draft session lifecycle", () => {
 		expect(threadState.sessionId).toBeUndefined();
 		expect(threadState.agentName).toBeUndefined();
 
-		const models = await coordinator.getModels("thread-1");
+		const models = await coordinator.catalog("thread-1", "model", {
+			type: "get",
+		});
 		expect(models.isOk()).toBe(true);
 		if (models.isErr()) throw new Error("expected models to succeed");
 		expect(models.value[0]?.id).toBe("model-1");

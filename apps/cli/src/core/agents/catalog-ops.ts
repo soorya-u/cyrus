@@ -14,19 +14,29 @@ import {
 import { setSessionConfigOption } from "./session-config";
 import type { ThreadSessionStore } from "./sessions";
 
+export type CatalogField = "model" | "mode" | "effort" | "persona";
+
 export type CatalogOpsDeps = {
 	agentName: string;
 	pool: AgentPool;
 	sessions: ThreadSessionStore;
 };
 
-export async function getModels(
+export type CatalogFieldValue = {
+	model: ModelOption[];
+	mode: SelectOption[];
+	effort: SelectOption[];
+	persona: SelectOption[];
+};
+
+export async function getCatalogField<F extends CatalogField>(
 	deps: CatalogOpsDeps,
+	field: F,
 	threadId: string,
 	projectId: string,
 	cwd: string,
 	sessionId: string
-): Promise<ModelOption[]> {
+): Promise<CatalogFieldValue[F]> {
 	await deps.sessions.ensureHealthyPool();
 	const session = await deps.sessions.requireSession(
 		threadId,
@@ -34,58 +44,37 @@ export async function getModels(
 		cwd,
 		sessionId
 	);
-	return modelsFromSession(session);
+	return readField(session, field);
 }
 
-export async function getModes(
+export async function setCatalogField(
 	deps: CatalogOpsDeps,
+	field: CatalogField,
 	threadId: string,
 	projectId: string,
 	cwd: string,
-	sessionId: string
-): Promise<SelectOption[]> {
+	sessionId: string,
+	value: string
+): Promise<void> {
 	await deps.sessions.ensureHealthyPool();
-	const session = await deps.sessions.requireSession(
-		threadId,
-		projectId,
-		cwd,
-		sessionId
-	);
-	return modesFromSession(session);
-}
-
-export async function getEfforts(
-	deps: CatalogOpsDeps,
-	threadId: string,
-	projectId: string,
-	cwd: string,
-	sessionId: string
-): Promise<SelectOption[]> {
-	await deps.sessions.ensureHealthyPool();
-	const session = await deps.sessions.requireSession(
-		threadId,
-		projectId,
-		cwd,
-		sessionId
-	);
-	return effortsFromSession(session);
-}
-
-export async function getPersonas(
-	deps: CatalogOpsDeps,
-	threadId: string,
-	projectId: string,
-	cwd: string,
-	sessionId: string
-): Promise<SelectOption[]> {
-	await deps.sessions.ensureHealthyPool();
-	const session = await deps.sessions.requireSession(
-		threadId,
-		projectId,
-		cwd,
-		sessionId
-	);
-	return personasFromSession(session);
+	switch (field) {
+		case "model":
+			await setModel(deps, threadId, projectId, cwd, sessionId, value);
+			return;
+		case "mode":
+			await setMode(deps, threadId, projectId, cwd, sessionId, value);
+			return;
+		case "effort":
+			await setEffort(deps, threadId, projectId, cwd, sessionId, value);
+			return;
+		case "persona":
+			await setPersona(deps, threadId, projectId, cwd, sessionId, value);
+			return;
+		default: {
+			const _exhaustive: never = field;
+			throw new Error(`unsupported catalog field: ${_exhaustive}`);
+		}
+	}
 }
 
 export async function getAgentCapabilities(
@@ -96,7 +85,27 @@ export async function getAgentCapabilities(
 	return runtime.agentCapabilities ?? {};
 }
 
-export async function setModel(
+function readField<F extends CatalogField>(
+	session: RuntimeSession,
+	field: F
+): CatalogFieldValue[F] {
+	switch (field) {
+		case "model":
+			return modelsFromSession(session) as CatalogFieldValue[F];
+		case "mode":
+			return modesFromSession(session) as CatalogFieldValue[F];
+		case "effort":
+			return effortsFromSession(session) as CatalogFieldValue[F];
+		case "persona":
+			return personasFromSession(session) as CatalogFieldValue[F];
+		default: {
+			const _exhaustive: never = field;
+			return _exhaustive;
+		}
+	}
+}
+
+async function setModel(
 	deps: CatalogOpsDeps,
 	threadId: string,
 	projectId: string,
@@ -104,7 +113,6 @@ export async function setModel(
 	sessionId: string,
 	modelId: string
 ): Promise<void> {
-	await deps.sessions.ensureHealthyPool();
 	const session = await deps.sessions.requireSession(
 		threadId,
 		projectId,
@@ -126,7 +134,7 @@ export async function setModel(
 	);
 }
 
-export async function setMode(
+async function setMode(
 	deps: CatalogOpsDeps,
 	threadId: string,
 	projectId: string,
@@ -134,7 +142,6 @@ export async function setMode(
 	sessionId: string,
 	modeId: string
 ): Promise<void> {
-	await deps.sessions.ensureHealthyPool();
 	const session = await deps.sessions.requireSession(
 		threadId,
 		projectId,
@@ -144,7 +151,7 @@ export async function setMode(
 	await session.setMode(modeId);
 }
 
-export async function setEffort(
+async function setEffort(
 	deps: CatalogOpsDeps,
 	threadId: string,
 	projectId: string,
@@ -163,7 +170,7 @@ export async function setEffort(
 	);
 }
 
-export async function setPersona(
+async function setPersona(
 	deps: CatalogOpsDeps,
 	threadId: string,
 	projectId: string,

@@ -33,10 +33,34 @@ async function catalogForSession(
 }> {
 	return {
 		capabilities: await runtime.getAgentCapabilities(),
-		models: await runtime.getModels(threadId, projectId, cwd, sessionId),
-		modes: await runtime.getModes(threadId, projectId, cwd, sessionId),
-		efforts: await runtime.getEfforts(threadId, projectId, cwd, sessionId),
-		personas: await runtime.getPersonas(threadId, projectId, cwd, sessionId),
+		models: await runtime.getCatalogField(
+			"model",
+			threadId,
+			projectId,
+			cwd,
+			sessionId
+		),
+		modes: await runtime.getCatalogField(
+			"mode",
+			threadId,
+			projectId,
+			cwd,
+			sessionId
+		),
+		efforts: await runtime.getCatalogField(
+			"effort",
+			threadId,
+			projectId,
+			cwd,
+			sessionId
+		),
+		personas: await runtime.getCatalogField(
+			"persona",
+			threadId,
+			projectId,
+			cwd,
+			sessionId
+		),
 	};
 }
 
