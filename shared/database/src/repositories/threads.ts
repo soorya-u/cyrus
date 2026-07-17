@@ -257,33 +257,45 @@ export async function updateThreadWorktreePath(
 	return writeThreadWorktreePath(threadId, worktreePath, thread.value);
 }
 
-const writeThreadAgent = repoArgs(
+const writeBoundLockedAgent = repoArgs(
 	async (
 		threadId: string,
 		projectId: string,
-		current: Thread,
 		data: { agentName: string; sessionId: string }
 	) => {
 		const updatedAt = nowISO();
-		await connection.db
+		const updated = await connection.db
 			.update(threads)
 			.set({
 				agentName: data.agentName,
 				sessionId: data.sessionId,
+				agentLocked: 1,
 				updatedAt,
 			})
-			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
+			.where(
+				and(
+					eq(threads.id, threadId),
+					eq(threads.projectId, projectId),
+					or(eq(threads.agentLocked, 0), eq(threads.agentName, data.agentName))
+				)
+			)
+			.returning();
 
-		return ThreadSchema.parse({
-			...current,
-			agentName: data.agentName,
-			sessionId: data.sessionId,
-			updatedAt,
-		});
+		if (updated.length === 0) {
+			throw persistFailed("thread agent claim failed");
+		}
+
+		const [row] = updated;
+		if (!row) {
+			throw persistFailed("thread agent claim failed");
+		}
+
+		return parseThreadRow(row);
 	}
 );
 
-export async function bindThreadAgent(
+/** Persist session id and lock agent ownership in one write. */
+export async function bindAndLockThreadAgent(
 	threadId: string,
 	projectId: string,
 	data: { agentName: string; sessionId: string }
@@ -294,33 +306,44 @@ export async function bindThreadAgent(
 	if (thread.value.projectId !== projectId) {
 		return Result.err(notFound("thread", threadId));
 	}
+	if (thread.value.agentLocked && thread.value.agentName !== data.agentName) {
+		return Result.err(
+			persistFailed("thread agent is locked to a different agent")
+		);
+	}
 
-	return writeThreadAgent(threadId, projectId, thread.value, data);
+	return writeBoundLockedAgent(threadId, projectId, data);
 }
 
 const writeLockedAgent = repoArgs(
-	async (
-		threadId: string,
-		projectId: string,
-		current: Thread,
-		agentName: string
-	) => {
+	async (threadId: string, projectId: string, agentName: string) => {
 		const updatedAt = nowISO();
-		await connection.db
+		const updated = await connection.db
 			.update(threads)
 			.set({
 				agentName,
 				agentLocked: 1,
 				updatedAt,
 			})
-			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
+			.where(
+				and(
+					eq(threads.id, threadId),
+					eq(threads.projectId, projectId),
+					or(eq(threads.agentLocked, 0), eq(threads.agentName, agentName))
+				)
+			)
+			.returning();
 
-		return ThreadSchema.parse({
-			...current,
-			agentName,
-			agentLocked: true,
-			updatedAt,
-		});
+		if (updated.length === 0) {
+			throw persistFailed("thread agent claim failed");
+		}
+
+		const [row] = updated;
+		if (!row) {
+			throw persistFailed("thread agent claim failed");
+		}
+
+		return parseThreadRow(row);
 	}
 );
 
@@ -345,7 +368,7 @@ export async function lockThreadAgent(
 		);
 	}
 
-	return writeLockedAgent(threadId, projectId, thread.value, agentName);
+	return writeLockedAgent(threadId, projectId, agentName);
 }
 
 const lockThreadAgentFlag = repoArgs(

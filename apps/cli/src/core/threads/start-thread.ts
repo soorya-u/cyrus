@@ -1,10 +1,9 @@
 import { appendConversation } from "@cyrus/database/repositories/conversations";
 import { resolveProjectCwd } from "@cyrus/database/repositories/projects";
 import {
-	bindThreadAgent,
+	bindAndLockThreadAgent,
 	createThread,
 	lockThreadAgent,
-	setAgentLocked,
 	updateThreadWorktreePath,
 } from "@cyrus/database/repositories/threads";
 import {
@@ -97,6 +96,7 @@ async function persistFailure(
 }
 
 async function failAfterRow(
+	host: CoordinatorHost,
 	threadId: string,
 	projectId: string,
 	agentName: string,
@@ -108,16 +108,15 @@ async function failAfterRow(
 	// Threads are locked to their agent by construction, even when session
 	// creation failed — retry binds a session in place.
 	if (sessionId) {
-		const persisted = await bindThreadAgent(threadId, projectId, {
+		const persisted = await bindAndLockThreadAgent(threadId, projectId, {
 			agentName,
 			sessionId,
 		});
 		if (persisted.isErr()) {
+			await host.withRuntime(() =>
+				host.getAgent(agentName).closeSession(sessionId, threadId)
+			);
 			return Result.err(coordinatorRepositoryError(persisted.error));
-		}
-		const locked = await setAgentLocked(threadId);
-		if (locked.isErr()) {
-			return Result.err(coordinatorRepositoryError(locked.error));
 		}
 	} else {
 		const locked = await lockThreadAgent(threadId, projectId, agentName);
@@ -246,6 +245,7 @@ export async function startThread(
 	);
 	if (git.isErr()) {
 		return failAfterRow(
+			host,
 			threadId,
 			input.projectId,
 			input.agentName,
@@ -258,6 +258,7 @@ export async function startThread(
 	const cwd = await host.resolveCwd(threadId);
 	if (cwd.isErr()) {
 		return failAfterRow(
+			host,
 			threadId,
 			input.projectId,
 			input.agentName,
@@ -273,6 +274,7 @@ export async function startThread(
 	);
 	if (session.isErr()) {
 		return failAfterRow(
+			host,
 			threadId,
 			input.projectId,
 			input.agentName,
@@ -293,6 +295,7 @@ export async function startThread(
 	const prefs = await applyPreferences(host, bound, input.preferences);
 	if (prefs.isErr()) {
 		return failAfterRow(
+			host,
 			threadId,
 			input.projectId,
 			input.agentName,
@@ -303,32 +306,22 @@ export async function startThread(
 		);
 	}
 
-	const persisted = await bindThreadAgent(threadId, input.projectId, {
+	const persisted = await bindAndLockThreadAgent(threadId, input.projectId, {
 		agentName: input.agentName,
 		sessionId: session.value.sessionId,
 	});
 	if (persisted.isErr()) {
-		return failAfterRow(
-			threadId,
-			input.projectId,
-			input.agentName,
-			turnId,
-			input.message,
-			persisted.error,
-			session.value.sessionId
+		await host.withRuntime(() =>
+			runtime.closeSession(session.value.sessionId, threadId)
 		);
-	}
-
-	const locked = await setAgentLocked(threadId);
-	if (locked.isErr()) {
 		return failAfterRow(
+			host,
 			threadId,
 			input.projectId,
 			input.agentName,
 			turnId,
 			input.message,
-			locked.error,
-			session.value.sessionId
+			persisted.error
 		);
 	}
 

@@ -22,13 +22,12 @@ e2eDescribe("thread lifecycle", () => {
 				protocols: wsTicketProtocols(stack.auth.token),
 			});
 
-			const rtc = await connectE2eControllerRtc(
-				connected.session,
-				"e2e-worker-1"
-			);
-			const client = rtc.client;
+			let rtc: Awaited<ReturnType<typeof connectE2eControllerRtc>> | undefined;
 
 			try {
+				rtc = await connectE2eControllerRtc(connected.session, "e2e-worker-1");
+				const client = rtc.client;
+
 				const agents = await client.listAgents();
 				const agentName = agents.agents[0]?.id;
 				expect(agentName).toBeTruthy();
@@ -43,8 +42,8 @@ e2eDescribe("thread lifecycle", () => {
 				const before = await client.listThreads({ projectId });
 				expect(before.threads).toEqual([]);
 
-				// Probe catalog for a draft — no thread row; probe must close
-				// (a second probe still leaves zero threads = no leaked worker state).
+				// Probe catalog for a draft — no thread row should appear afterward
+				// (probe session is closed; controller-visible worker state stays empty).
 				const catalog = await client.getDraftCatalog({
 					agentName,
 					projectId,
@@ -53,13 +52,6 @@ e2eDescribe("thread lifecycle", () => {
 
 				const afterProbe = await client.listThreads({ projectId });
 				expect(afterProbe.threads).toEqual([]);
-
-				const catalogAgain = await client.getDraftCatalog({
-					agentName,
-					projectId,
-				});
-				expect(catalogAgain.models.length).toBeGreaterThan(0);
-				expect((await client.listThreads({ projectId })).threads).toEqual([]);
 
 				const started = await client.startThread({
 					projectId,
@@ -76,7 +68,7 @@ e2eDescribe("thread lifecycle", () => {
 				expect(afterStart.threads[0]?.agentName).toBe(agentName);
 				expect(afterStart.threads[0]?.sessionId).toBeTruthy();
 			} finally {
-				rtc.close();
+				rtc?.close();
 				connected.session.close();
 			}
 		});

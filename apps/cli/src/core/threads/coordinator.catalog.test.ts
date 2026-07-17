@@ -71,13 +71,14 @@ mock.module("@cyrus/database/repositories/git", () => ({
 
 mock.module("@cyrus/database/repositories/threads", () => ({
 	getThread: async () => Result.ok({ ...threadState }),
-	bindThreadAgent: (
+	bindAndLockThreadAgent: (
 		_threadId: string,
 		_projectId: string,
 		data: { agentName: string; sessionId: string }
 	) => {
 		threadState.agentName = data.agentName;
 		threadState.sessionId = data.sessionId;
+		threadState.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...threadState }));
 	},
 	setAgentLocked: () => {

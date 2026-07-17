@@ -1,8 +1,7 @@
 import { resolveThreadGitCwd } from "@cyrus/database/repositories/git";
 import {
-	bindThreadAgent,
+	bindAndLockThreadAgent,
 	getThread,
-	lockThreadAgent,
 } from "@cyrus/database/repositories/threads";
 import {
 	type CoordinatorError,
@@ -168,8 +167,7 @@ async function createAndPersistBinding(
 	host: CoordinatorHost,
 	threadId: string,
 	projectId: string,
-	agentName: string,
-	alreadyLocked: boolean
+	agentName: string
 ): Promise<Result<BoundThread, CoordinatorError>> {
 	const cwd = await host.resolveCwd(threadId);
 	if (cwd.isErr()) return Result.err(cwd.error);
@@ -179,19 +177,15 @@ async function createAndPersistBinding(
 	);
 	if (session.isErr()) return Result.err(session.error);
 
-	const persisted = await bindThreadAgent(threadId, projectId, {
+	const persisted = await bindAndLockThreadAgent(threadId, projectId, {
 		agentName,
 		sessionId: session.value.sessionId,
 	});
 	if (persisted.isErr()) {
+		await host.withRuntime(() =>
+			host.getAgent(agentName).closeSession(session.value.sessionId, threadId)
+		);
 		return Result.err(coordinatorRepositoryError(persisted.error));
-	}
-
-	if (!alreadyLocked) {
-		const locked = await lockThreadAgent(threadId, projectId, agentName);
-		if (locked.isErr()) {
-			return Result.err(coordinatorRepositoryError(locked.error));
-		}
 	}
 
 	return Result.ok({
@@ -251,11 +245,5 @@ export async function bindLocked(
 		);
 	}
 
-	return createAndPersistBinding(
-		host,
-		threadId,
-		projectId,
-		agentName,
-		Boolean(thread.value.agentLocked)
-	);
+	return createAndPersistBinding(host, threadId, projectId, agentName);
 }
