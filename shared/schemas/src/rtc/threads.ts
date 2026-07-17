@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ChatChunkSchema } from "./chat";
+import { ChatChunkSchema, ChatMessageSchema } from "./chat";
 import { optionalBoolean, optionalString } from "./common";
 
 const nullableString = z
@@ -67,6 +67,29 @@ export const CreateThreadOutputSchema = z.object({
 	thread: ThreadSchema,
 });
 
+export const StartThreadInputSchema = z.object({
+	projectId: z.string(),
+	agentName: z.string(),
+	message: ChatMessageSchema,
+	turnId: z.uuid().optional(),
+	branch: z.string().min(1).optional(),
+	worktree: z.boolean().optional(),
+	worktreePath: z.string().min(1).optional(),
+	preferences: z
+		.object({
+			modelId: z.string().optional(),
+			modeId: z.string().optional(),
+			effortId: z.string().optional(),
+			personaId: z.string().optional(),
+		})
+		.optional(),
+});
+
+export const StartThreadOutputSchema = z.object({
+	threadId: z.string(),
+	turnId: z.string(),
+});
+
 export const ListThreadsOutputSchema = z.object({
 	threads: z.array(ThreadSchema),
 });
@@ -85,6 +108,8 @@ export type WatchThreadOutput = z.infer<typeof WatchThreadOutputSchema>;
 export type UnwatchThreadInput = z.infer<typeof UnwatchThreadInputSchema>;
 export type CreateThreadInput = z.infer<typeof CreateThreadInputSchema>;
 export type CreateThreadOutput = z.infer<typeof CreateThreadOutputSchema>;
+export type StartThreadInput = z.infer<typeof StartThreadInputSchema>;
+export type StartThreadOutput = z.infer<typeof StartThreadOutputSchema>;
 export type ListThreadsOutput = z.infer<typeof ListThreadsOutputSchema>;
 export type GetConversationsOutput = z.infer<
 	typeof GetConversationsOutputSchema

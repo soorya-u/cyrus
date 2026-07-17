@@ -58,6 +58,8 @@ import {
 	ListThreadsOutputSchema,
 	ProjectQueryInputSchema,
 	RenameThreadInputSchema,
+	StartThreadInputSchema,
+	StartThreadOutputSchema,
 	ThreadQueryInputSchema,
 	UnwatchThreadInputSchema,
 	WatchThreadInputSchema,
@@ -87,6 +89,7 @@ export const controllerContract = {
 	createThread: oc
 		.input(CreateThreadInputSchema)
 		.output(CreateThreadOutputSchema),
+	startThread: oc.input(StartThreadInputSchema).output(StartThreadOutputSchema),
 	getConversations: oc
 		.input(ThreadQueryInputSchema)
 		.output(GetConversationsOutputSchema),

@@ -1,5 +1,8 @@
 import { useAgentCatalog } from "@cyrus/hooks/agent-catalog/use-agent-catalog";
-import { useGitStatus } from "@cyrus/hooks/queries/use-git";
+import {
+	useGitStatus,
+	useProjectGitStatus,
+} from "@cyrus/hooks/queries/use-git";
 import { useListAgents } from "@cyrus/hooks/queries/use-list-agents";
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { useSearchEntries } from "@cyrus/hooks/queries/use-search-entries";
@@ -79,6 +82,7 @@ export function Composer({
 	threadError = null,
 	pendingApprovals = EMPTY_APPROVALS,
 	pendingElicitations = EMPTY_ELICITATIONS,
+	localDraft = false,
 }: {
 	projectId: string;
 	threadId: string;
@@ -90,6 +94,7 @@ export function Composer({
 	threadError?: ErrorView | null;
 	pendingApprovals?: ApprovalView[];
 	pendingElicitations?: ElicitationView[];
+	localDraft?: boolean;
 }) {
 	const agentsQuery = useListAgents();
 	const agents = agentsQuery.data?.agents ?? [];
@@ -110,8 +115,12 @@ export function Composer({
 	const canPasteUrls = supportsEmbeddedContext;
 	const composerBlocked = Boolean(threadError ?? catalog.bindError);
 
-	const gitStatus = useGitStatus(threadId);
-	const isGitRepo = gitStatus.data?.isRepo === true;
+	const threadGitStatus = useGitStatus(localDraft ? undefined : threadId);
+	const projectGitStatus = useProjectGitStatus(
+		localDraft ? projectId : undefined
+	);
+	const isGitRepo =
+		(localDraft ? projectGitStatus : threadGitStatus).data?.isRepo === true;
 	const { setValue: setDraft, clear: clearDraft } = useComposerDraft(threadId);
 	const draftHydrated = useComposerDraftHydrated();
 	const [plainText, setPlainText] = useState("");
@@ -548,7 +557,9 @@ export function Composer({
 						: "pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:pb-[calc(env(safe-area-inset-bottom)+1rem)]"
 				)}
 			>
-				{isGitRepo ? <ComposerBranchToolbar thread={thread} /> : null}
+				{isGitRepo ? (
+					<ComposerBranchToolbar localDraft={localDraft} thread={thread} />
+				) : null}
 			</div>
 		</div>
 	);

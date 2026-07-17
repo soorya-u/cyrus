@@ -22,6 +22,11 @@ import {
 	getDraftCatalog as getDraftCatalogFn,
 } from "./draft-catalog";
 import {
+	type StartThreadInput,
+	type StartThreadResult,
+	startThread as startThreadFn,
+} from "./start-thread";
+import {
 	cancel as cancelTurn,
 	closeAnyThreadSession,
 	prompt as promptTurn,
@@ -200,6 +205,13 @@ export class ThreadCoordinator implements CoordinatorHost {
 		projectId: string
 	): Promise<Result<DraftCatalog, CoordinatorError>> {
 		return getDraftCatalogFn(this, agentName, projectId);
+	}
+
+	/** Birth a thread from a first message: row, session, prefs, binding. */
+	startThread(
+		input: StartThreadInput
+	): Promise<Result<StartThreadResult, CoordinatorError>> {
+		return startThreadFn(this, input);
 	}
 
 	prompt(

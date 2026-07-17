@@ -125,3 +125,35 @@ export function invalidateThreadGitQueries(
 ) {
 	invalidateGitQueries(queryClient, threadId);
 }
+
+export function useProjectGitStatus(projectId: string | undefined) {
+	const { orpc: orpcController } = useRtc();
+
+	return useQuery(
+		projectId
+			? orpcController.getProjectGitStatus.queryOptions({
+					queryKey: RTC_OPERATION_KEYS.getProjectGitStatus(projectId),
+					input: { projectId },
+				})
+			: {
+					queryKey: RTC_OPERATION_KEYS.getProjectGitStatus("none"),
+					queryFn: skipToken,
+				}
+	);
+}
+
+export function useListProjectGitRefs(projectId: string | undefined) {
+	const { orpc: orpcController } = useRtc();
+
+	return useQuery(
+		projectId
+			? orpcController.listProjectGitRefs.queryOptions({
+					queryKey: RTC_OPERATION_KEYS.listProjectGitRefs(projectId),
+					input: { projectId },
+				})
+			: {
+					queryKey: RTC_OPERATION_KEYS.listProjectGitRefs("none"),
+					queryFn: skipToken,
+				}
+	);
+}

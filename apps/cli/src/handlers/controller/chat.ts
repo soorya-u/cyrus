@@ -1,25 +1,11 @@
-import { appendConversation } from "@cyrus/database/repositories/conversations";
-import {
-	applyAgentThreadTitle,
-	ensureThread,
-	getThread,
-	setAgentLocked,
-} from "@cyrus/database/repositories/threads";
+import { ensureThread, getThread } from "@cyrus/database/repositories/threads";
 import { CoordinatorAgentNotBoundError } from "@cyrus/errors/coordinator";
 import { throwOrpc } from "@cyrus/errors/orpc";
-import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
 import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import { randomId } from "@cyrus/utils/identity";
 import { ORPCError } from "@orpc/server";
-import { log } from "evlog";
-import { runTurn } from "@/utils/run-turn";
-import {
-	isStreamingDelta,
-	resolvePersistEvent,
-	trackDelta,
-} from "@/utils/streams";
-import { maybeApplyAutoThreadTitle } from "@/utils/thread-title";
 import type { ControllerDeps } from "./deps";
+import { launchTurn } from "./turn-emit";
 
 export function chatHandlers({ os, runtime }: ControllerDeps) {
 	return {
@@ -58,112 +44,46 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 			});
 			if (thread.isErr()) throwOrpc(thread.error);
 
-			const messageBuffers = new Map<string, string>();
-			const thoughtBuffers = new Map<string, string>();
-
-			context.eventBus.ensureWatch(context.peerId, threadId);
-
-			function publishChunk(chunk: ChatChunk): void {
-				context.eventBus.publish(chunk);
-			}
-
-			async function applySessionTitleUpdate(
-				event: ChatChunk["event"]
-			): Promise<boolean> {
-				if (
-					event.type !== "session_update" ||
-					event.sessionUpdate !== "session_info_update"
-				) {
-					return false;
-				}
-				const raw = event.raw as { title?: string | null } | undefined;
-				if (typeof raw?.title === "string" && raw.title.trim()) {
-					await applyAgentThreadTitle(threadId, raw.title);
-				}
-				return true;
-			}
-
-			async function emit(event: ChatChunk["event"]): Promise<void> {
-				if (await applySessionTitleUpdate(event)) return;
-
-				trackDelta(event, messageBuffers, thoughtBuffers);
-
-				if (isStreamingDelta(event))
-					return publishChunk({ threadId, turnId, seq: 0, event });
-
-				const persistEvent = resolvePersistEvent(
-					event,
-					messageBuffers,
-					thoughtBuffers
-				);
-				const entry = await appendConversation(threadId, {
-					threadId,
-					turnId,
-					event: persistEvent,
-				});
-				if (entry.isErr()) throwOrpc(entry.error);
-				if (persistEvent.type === "user_message") {
-					const locked = await setAgentLocked(threadId);
-					if (locked.isErr()) throwOrpc(locked.error);
-				}
-				publishChunk(entry.value.chunk);
-			}
-
-			async function emitTerminal(
-				event: Extract<
-					ChatChunk["event"],
-					{ type: "turn_completed" | "turn_interrupted" }
-				>
-			): Promise<void> {
-				trackDelta(event, messageBuffers, thoughtBuffers);
-
-				const persistEvent = resolvePersistEvent(
-					event,
-					messageBuffers,
-					thoughtBuffers
-				);
-				const entry = await appendConversation(threadId, {
-					threadId,
-					turnId,
-					event: persistEvent,
-				});
-
-				if (entry.isOk()) {
-					publishChunk(entry.value.chunk);
-					if (event.type === "turn_completed") {
-						await maybeApplyAutoThreadTitle(threadId, turnId);
-					}
-					return;
-				}
-
-				log.error({
-					kind: "terminal_event_persist",
-					error: entry.error,
-					threadId,
-					turnId,
-					event: event.type,
-				});
-				publishChunk({ threadId, turnId, seq: 0, event });
-			}
-
-			runTurn({
+			launchTurn({
 				agentName,
 				threadId,
 				projectId,
 				turnId,
 				message,
-				emit,
-				emitTerminal,
+				context,
 				runtime,
-			})
-				.then((result) => {
-					result.tapError((error) => {
-						log.error({ kind: "chat_turn_failed", error, threadId, turnId });
-					});
-				})
-				.catch((error) => {
-					log.error({ kind: "chat_turn_failed", error, threadId, turnId });
+			});
+
+			return { threadId, turnId };
+		}),
+
+		startThread: os.startThread.handler(async ({ input, context }) => {
+			const turnId = input.turnId ?? randomId();
+			const started = await runtime.threadCoordinator.startThread({
+				projectId: input.projectId,
+				agentName: input.agentName,
+				message: input.message,
+				preferences: input.preferences,
+				branch: input.branch,
+				worktree: input.worktree,
+				worktreePath: input.worktreePath,
+				turnId,
+			});
+			if (started.isErr()) throwOrpc(started.error);
+
+			const { threadId, bound } = started.value;
+
+			if (bound)
+				launchTurn({
+					agentName: input.agentName,
+					threadId,
+					projectId: input.projectId,
+					turnId,
+					message: input.message,
+					context,
+					runtime,
 				});
+			else context.eventBus.ensureWatch(context.peerId, threadId);
 
 			return { threadId, turnId };
 		}),

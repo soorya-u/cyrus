@@ -14,6 +14,7 @@ export const RTC_OPERATION_KEYS = {
 		["controller", "search-entries", cwd, query, limit] as const,
 	createProject: ["controller", "create-project"],
 	createThread: ["controller", "create-thread"],
+	startThread: ["controller", "start-thread"],
 	renameProject: ["controller", "rename-project"],
 	deleteProject: ["controller", "delete-project"],
 	renameThread: ["controller", "rename-thread"],
