@@ -247,7 +247,7 @@ describe("startThread", () => {
 		expect(thread?.sessionId).toBeUndefined();
 		expect(thread?.agentLocked).toBeUndefined();
 
-		expect(conversations).toHaveLength(2);
+		expect(conversations).toHaveLength(3);
 		expect(conversations[0]).toMatchObject({
 			threadId: started.value.threadId,
 			turnId: "turn-fail",
@@ -259,6 +259,11 @@ describe("startThread", () => {
 			event: { type: "thread_error", code: "coordinator.runtime" },
 		});
 		expect(conversations[1]?.event.message).toContain("session boom");
+		expect(conversations[2]).toMatchObject({
+			threadId: started.value.threadId,
+			turnId: "turn-fail",
+			event: { type: "turn_interrupted" },
+		});
 	});
 
 	test("creates the session at the worktree cwd when a worktree is requested", async () => {
@@ -299,7 +304,7 @@ describe("startThread", () => {
 		expect(sessions[0]?.setModel).toHaveBeenCalledWith("model-1");
 	});
 
-	test("after a mid-flight failure the thread can be bound for retry", async () => {
+	test("after a mid-flight failure the thread can be bound and prompted for retry", async () => {
 		sessionCreateError = new Error("session boom");
 		const coordinator = createCoordinator();
 
@@ -312,6 +317,9 @@ describe("startThread", () => {
 		expect(started.isOk()).toBe(true);
 		if (started.isErr()) throw new Error("expected ok");
 		expect(started.value.bound).toBeNull();
+		expect(
+			conversations.some((entry) => entry.event.type === "user_message")
+		).toBe(true);
 
 		sessionCreateError = null;
 		const rebound = await coordinator.bindAgent(
@@ -321,6 +329,26 @@ describe("startThread", () => {
 		);
 		expect(rebound.isOk()).toBe(true);
 		if (rebound.isErr()) throw new Error("expected bind to succeed");
-		expect(rebound.value.sessionId).toBe("session-1");
+
+		const persisted = await coordinator.persistBoundSession(
+			started.value.threadId,
+			"project-1",
+			"mock-agent"
+		);
+		expect(persisted.isOk()).toBe(true);
+
+		const prompt = await coordinator.prompt(
+			"mock-agent",
+			started.value.threadId,
+			"project-1",
+			[{ type: "text", text: "retry me" }],
+			"turn-retry"
+		);
+		expect(prompt.isOk()).toBe(true);
+		if (prompt.isErr()) throw new Error("expected prompt to succeed");
+		for await (const _event of prompt.value) {
+			/* drain */
+		}
+		expect(sessions[0]?.prompt).toHaveBeenCalledWith("retry me");
 	});
 });

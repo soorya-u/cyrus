@@ -1,12 +1,16 @@
 import { useStartThread } from "@cyrus/hooks/queries/use-start-thread";
 import { useAgentCatalogStore } from "@cyrus/hooks/stores/agent-catalog";
-import { useLocalDraftStore } from "@cyrus/hooks/stores/local-draft";
+import { useComposerDraftStore } from "@cyrus/hooks/stores/composer-draft";
+import {
+	discardLocalDraft,
+	useLocalDraftStore,
+} from "@cyrus/hooks/stores/local-draft";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { useNavigate } from "@tanstack/react-router";
 import { Result } from "better-result";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Composer } from "@/components/chat/composer";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
@@ -28,6 +32,12 @@ const EMPTY_CONVERSATION = {
 	turns: [],
 };
 
+function clearDraftControllerState(draftId: string): void {
+	discardLocalDraft(draftId);
+	useComposerDraftStore.getState().clearDraft(draftId);
+	useAgentCatalogStore.getState().clearPendingAgent(draftId);
+}
+
 export function DraftWorkspace({
 	workerId,
 	projectId,
@@ -35,8 +45,14 @@ export function DraftWorkspace({
 }: DraftWorkspaceProps) {
 	const navigate = useNavigate();
 	const startThread = useStartThread(projectId);
-	const clearLocalDraft = useLocalDraftStore((state) => state.clearDraft);
 	const gitChoice = useLocalDraftStore((state) => state.gitByDraft[draftId]);
+
+	useEffect(
+		() => () => {
+			clearDraftControllerState(draftId);
+		},
+		[draftId]
+	);
 
 	const draftThread = useMemo<Thread>(
 		() => ({
@@ -82,7 +98,7 @@ export function DraftWorkspace({
 		);
 		if (started.isErr()) throw started.error;
 
-		clearLocalDraft(draftId);
+		clearDraftControllerState(draftId);
 		await navigate({
 			to: "/workers/$workerId/p/$projectId/t/$threadId",
 			params: {

@@ -77,6 +77,11 @@ async function persistFailure(
 				: {}),
 		},
 	});
+	await appendConversation(threadId, {
+		threadId,
+		turnId,
+		event: { type: "turn_interrupted" },
+	});
 }
 
 async function applyBranchOrWorktree(

@@ -24,12 +24,15 @@ type UseAgentCatalogOptions = {
 	threadId: string;
 	projectId: string;
 	agents: CatalogOption[];
+	/** Controller-local draft: no server thread row; skip listThreads. */
+	localDraft?: boolean;
 };
 
 export function useAgentCatalog({
 	threadId,
 	projectId,
 	agents,
+	localDraft = false,
 }: UseAgentCatalogOptions) {
 	const queryClient = useQueryClient();
 	const { orpc: orpcController } = useRtc();
@@ -74,12 +77,13 @@ export function useAgentCatalog({
 			input: { projectId },
 		}),
 		queryKey: threadsQueryKey,
+		enabled: !localDraft,
 	});
-	const thread = threadsQuery.data?.threads.find(
-		(item) => item.id === threadId
-	);
+	const thread = localDraft
+		? undefined
+		: threadsQuery.data?.threads.find((item) => item.id === threadId);
 	const agentLocked = Boolean(thread?.agentLocked);
-	const isDraft = !agentLocked;
+	const isDraft = localDraft || !agentLocked;
 	const persistedSessionId = agentLocked ? thread?.sessionId : undefined;
 	const preferredAgent =
 		pendingAgent ??

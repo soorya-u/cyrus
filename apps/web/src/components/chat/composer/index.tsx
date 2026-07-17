@@ -107,7 +107,12 @@ export function Composer({
 		projects.find((project) => project.id === projectId)?.cwd ?? "";
 	const threadCwd = thread.worktreePath ?? projectCwd;
 
-	const catalog = useAgentCatalog({ agents, projectId, threadId });
+	const catalog = useAgentCatalog({
+		agents,
+		localDraft,
+		projectId,
+		threadId,
+	});
 	const supportsEmbeddedContext =
 		catalog.capabilities == null ||
 		catalog.promptCapabilities.embeddedContext !== false;

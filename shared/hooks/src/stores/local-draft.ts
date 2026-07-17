@@ -40,3 +40,8 @@ export const useLocalDraftStore = create<LocalDraftState>((set) => ({
 			return { gitByDraft: rest };
 		}),
 }));
+
+/** Drop controller-local git choice for an abandoned or sent draft. */
+export function discardLocalDraft(draftId: string): void {
+	useLocalDraftStore.getState().clearDraft(draftId);
+}
