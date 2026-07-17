@@ -57,11 +57,11 @@ mock.module("@acp-kit/core", () => ({
 }));
 
 mock.module("@cyrus/database/repositories/git", () => ({
-	resolveThreadGitCwd: async () => Result.ok("/tmp/project"),
+	resolveThreadGitCwd: () => Promise.resolve(Result.ok("/tmp/project")),
 }));
 
 mock.module("@cyrus/database/repositories/threads", () => ({
-	getThread: async () => Result.ok({ ...threadState }),
+	getThread: () => Promise.resolve(Result.ok({ ...threadState })),
 	bindThreadAgent: (
 		_threadId: string,
 		_projectId: string,
@@ -69,6 +69,15 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 	) => {
 		threadState.agentName = data.agentName;
 		threadState.sessionId = data.sessionId;
+		threadState.agentLocked = true;
+		return Promise.resolve(Result.ok({ ...threadState }));
+	},
+	lockThreadAgent: (
+		_threadId: string,
+		_projectId: string,
+		agentName: string
+	) => {
+		threadState.agentName = agentName;
 		threadState.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...threadState }));
 	},
@@ -95,13 +104,13 @@ function createCoordinator() {
 	return new ThreadCoordinator(pool);
 }
 
-function seedCommittedCold(sessionId = "persisted-1") {
+function seedCold(sessionId = "persisted-1") {
 	threadState.agentName = "mock-agent";
 	threadState.sessionId = sessionId;
 	threadState.agentLocked = true;
 }
 
-describe("ThreadCoordinator live/cold binding", () => {
+describe("ThreadCoordinator session binding", () => {
 	beforeEach(() => {
 		sessions.length = 0;
 		resumeCalls.length = 0;
@@ -110,14 +119,17 @@ describe("ThreadCoordinator live/cold binding", () => {
 		threadState.agentLocked = undefined;
 	});
 
-	test("findLiveBinding is null when the session is cold", () => {
-		seedCommittedCold();
+	test("sessionBindingState is cold when only a persisted session id exists", async () => {
+		seedCold();
 		const coordinator = createCoordinator();
+		const state = await coordinator.sessionBindingState("thread-1");
+		expect(state.isOk()).toBe(true);
+		if (state.isOk()) expect(state.value).toBe("cold");
 		expect(coordinator.findLiveBinding("thread-1")).toBeNull();
 	});
 
 	test("catalog get resumes a cold session from the persisted session id", async () => {
-		seedCommittedCold("persisted-1");
+		seedCold("persisted-1");
 		const coordinator = createCoordinator();
 
 		const models = await coordinator.catalog("thread-1", "model", {
@@ -131,6 +143,9 @@ describe("ThreadCoordinator live/cold binding", () => {
 		expect(resumeCalls).toEqual([
 			{ sessionId: "persisted-1", cwd: "/tmp/project" },
 		]);
+		const liveState = await coordinator.sessionBindingState("thread-1");
+		expect(liveState.isOk()).toBe(true);
+		if (liveState.isOk()) expect(liveState.value).toBe("live");
 		expect(coordinator.findLiveBinding("thread-1")).toEqual({
 			threadId: "thread-1",
 			agentName: "mock-agent",
@@ -141,7 +156,7 @@ describe("ThreadCoordinator live/cold binding", () => {
 	});
 
 	test("catalog prefers the live binding after resume", async () => {
-		seedCommittedCold("persisted-1");
+		seedCold("persisted-1");
 		const coordinator = createCoordinator();
 
 		await coordinator.catalog("thread-1", "model", { type: "get" });
@@ -157,8 +172,38 @@ describe("ThreadCoordinator live/cold binding", () => {
 		}
 	});
 
+	test("bind resumes a cold session then prompt uses the live session", async () => {
+		seedCold("persisted-1");
+		const coordinator = createCoordinator();
+
+		const bound = await coordinator.bind("thread-1", "project-1", "mock-agent");
+		expect(bound.isOk()).toBe(true);
+		if (bound.isErr()) throw new Error("expected bind to succeed");
+		expect(bound.value.sessionId).toBe("persisted-1");
+		expect(resumeCalls).toEqual([
+			{ sessionId: "persisted-1", cwd: "/tmp/project" },
+		]);
+		const liveState = await coordinator.sessionBindingState("thread-1");
+		expect(liveState.isOk()).toBe(true);
+		if (liveState.isOk()) expect(liveState.value).toBe("live");
+
+		const prompt = await coordinator.prompt(
+			"mock-agent",
+			"thread-1",
+			"project-1",
+			[{ type: "text", text: "hello" }],
+			"turn-1"
+		);
+		expect(prompt.isOk()).toBe(true);
+		if (prompt.isErr()) throw new Error("expected prompt to succeed");
+		for await (const _event of prompt.value) {
+			/* drain */
+		}
+		expect(sessions[0]?.prompt).toHaveBeenCalledWith("hello");
+	});
+
 	test("catalog set errors when the live binding belongs to a different project", async () => {
-		seedCommittedCold("persisted-1");
+		seedCold("persisted-1");
 		const coordinator = createCoordinator();
 		await coordinator.catalog("thread-1", "model", { type: "get" });
 
@@ -173,21 +218,17 @@ describe("ThreadCoordinator live/cold binding", () => {
 		}
 	});
 
-	test("ensureSession creates and locks a session for an unbound thread", async () => {
+	test("bind creates and locks a session for a locked thread without a session id", async () => {
+		threadState.agentName = "mock-agent";
+		threadState.agentLocked = true;
 		const coordinator = createCoordinator();
-		const bound = await coordinator.ensureSession(
-			"thread-1",
-			"project-1",
-			"mock-agent"
-		);
+		const bound = await coordinator.bind("thread-1", "project-1", "mock-agent");
 		expect(bound.isOk()).toBe(true);
-		if (bound.isErr()) throw new Error("expected ensureSession to succeed");
+		if (bound.isErr()) throw new Error("expected bind to succeed");
 		expect(bound.value.sessionId).toBe("session-1");
-		expect(threadState.agentName).toBe("mock-agent");
 		expect(threadState.sessionId).toBe("session-1");
-		expect(threadState.agentLocked).toBe(true);
-		expect(coordinator.findLiveBinding("thread-1")?.sessionId).toBe(
-			"session-1"
-		);
+		const liveState = await coordinator.sessionBindingState("thread-1");
+		expect(liveState.isOk()).toBe(true);
+		if (liveState.isOk()) expect(liveState.value).toBe("live");
 	});
 });

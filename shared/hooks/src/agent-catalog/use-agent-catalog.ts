@@ -1,7 +1,6 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Result } from "better-result";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useRtc } from "../contexts/rtc";
 import {
 	readPromptCapabilities,
@@ -79,13 +78,11 @@ export function useAgentCatalog({
 	const thread = localDraft
 		? undefined
 		: threadsQuery.data?.threads.find((item) => item.id === threadId);
-	const agentLocked = Boolean(thread?.agentLocked);
-	const isDraft = localDraft || !agentLocked;
-	const persistedSessionId = agentLocked ? thread?.sessionId : undefined;
+	const isDraft = localDraft;
+	const agentLocked = Boolean(thread?.agentLocked) || !isDraft;
+	const persistedSessionId = thread?.sessionId;
 	const preferredAgent =
-		pendingAgent ??
-		liveBinding?.agentName ??
-		(agentLocked ? thread?.agentName : undefined);
+		pendingAgent ?? liveBinding?.agentName ?? thread?.agentName;
 
 	const boundAgent = pickExplicitOption(preferredAgent, agents);
 	const displayAgent = pickDisplayOption(preferredAgent, agents);
@@ -192,7 +189,6 @@ export function useAgentCatalog({
 			: threadCatalogEnabled && modelsQuery.isFetching);
 
 	function selectAgent(agentName: string) {
-		if (agentLocked) return;
 		if (!isDraft) return;
 		if (agentName === catalogAgent && draftCatalog.error) {
 			queryClient.invalidateQueries({ queryKey: draftCatalog.queryKey });
@@ -237,15 +233,6 @@ export function useAgentCatalog({
 		setPersonaMutation.mutate({ agentName, personaId, projectId, threadId });
 	}
 
-	const prepareDraftSend = useCallback(() => {
-		const agentName =
-			liveBinding?.agentName ?? thread?.agentName ?? catalogAgent ?? "";
-		if (!agentName) {
-			return Promise.resolve(Result.err(new Error("no agent selected")));
-		}
-		return Promise.resolve(Result.ok(agentName));
-	}, [catalogAgent, liveBinding?.agentName, thread?.agentName]);
-
 	return {
 		agentLocked,
 		catalogError: isDraft ? draftCatalog.error : null,
@@ -263,7 +250,6 @@ export function useAgentCatalog({
 		modelsLoading,
 		modes,
 		personas,
-		prepareDraftSend,
 		promptCapabilities,
 		selectAgent,
 		selectEffort,

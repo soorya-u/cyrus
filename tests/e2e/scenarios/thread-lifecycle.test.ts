@@ -43,7 +43,8 @@ e2eDescribe("thread lifecycle", () => {
 				const before = await client.listThreads({ projectId });
 				expect(before.threads).toEqual([]);
 
-				// Probe catalog for a draft — no thread row should appear.
+				// Probe catalog for a draft — no thread row; probe must close
+				// (a second probe still leaves zero threads = no leaked worker state).
 				const catalog = await client.getDraftCatalog({
 					agentName,
 					projectId,
@@ -52,6 +53,13 @@ e2eDescribe("thread lifecycle", () => {
 
 				const afterProbe = await client.listThreads({ projectId });
 				expect(afterProbe.threads).toEqual([]);
+
+				const catalogAgain = await client.getDraftCatalog({
+					agentName,
+					projectId,
+				});
+				expect(catalogAgain.models.length).toBeGreaterThan(0);
+				expect((await client.listThreads({ projectId })).threads).toEqual([]);
 
 				const started = await client.startThread({
 					projectId,

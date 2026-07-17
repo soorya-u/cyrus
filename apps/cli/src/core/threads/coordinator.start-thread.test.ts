@@ -121,6 +121,18 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 		row.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...row }));
 	},
+	lockThreadAgent: (
+		threadId: string,
+		_projectId: string,
+		agentName: string
+	) => {
+		ops.push("lockThreadAgent");
+		const row = threads.get(threadId);
+		if (!row) return Promise.resolve(Result.err(new Error("not found")));
+		row.agentName = agentName;
+		row.agentLocked = true;
+		return Promise.resolve(Result.ok({ ...row }));
+	},
 	updateThreadWorktreePath: (threadId: string, worktreePath: string | null) => {
 		ops.push("git");
 		const row = threads.get(threadId);
@@ -272,7 +284,8 @@ describe("startThread", () => {
 
 		const thread = threads.get(started.value.threadId);
 		expect(thread?.sessionId).toBeUndefined();
-		expect(thread?.agentLocked).toBeUndefined();
+		expect(thread?.agentLocked).toBe(true);
+		expect(thread?.agentName).toBe("mock-agent");
 
 		expect(conversations).toHaveLength(3);
 		expect(conversations[0]).toMatchObject({
@@ -374,7 +387,7 @@ describe("startThread", () => {
 		).toBe(false);
 	});
 
-	test("after a mid-flight failure the thread can be ensured and prompted for retry", async () => {
+	test("after a mid-flight failure the thread can be bound and prompted for retry", async () => {
 		sessionCreateError = new Error("session boom");
 		const coordinator = createCoordinator();
 
@@ -390,15 +403,16 @@ describe("startThread", () => {
 		expect(
 			conversations.some((entry) => entry.event.type === "user_message")
 		).toBe(true);
+		expect(threads.get(started.value.threadId)?.agentLocked).toBe(true);
 
 		sessionCreateError = null;
-		const ensured = await coordinator.ensureSession(
+		const bound = await coordinator.bind(
 			started.value.threadId,
 			"project-1",
 			"mock-agent"
 		);
-		expect(ensured.isOk()).toBe(true);
-		if (ensured.isErr()) throw new Error("expected ensureSession to succeed");
+		expect(bound.isOk()).toBe(true);
+		if (bound.isErr()) throw new Error("expected bind to succeed");
 
 		const prompt = await coordinator.prompt(
 			"mock-agent",

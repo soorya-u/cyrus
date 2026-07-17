@@ -1,5 +1,5 @@
 import type { RepositoryError } from "@cyrus/errors/repository";
-import { notFound } from "@cyrus/errors/repository";
+import { notFound, persistFailed } from "@cyrus/errors/repository";
 import type { Thread, TitleSource } from "@cyrus/schemas/rtc/threads";
 import { ThreadSchema } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
@@ -298,19 +298,71 @@ export async function bindThreadAgent(
 	return writeThreadAgent(threadId, projectId, thread.value, data);
 }
 
-const lockThreadAgent = repoArgs(async (threadId: string, current: Thread) => {
-	const updatedAt = nowISO();
-	await connection.db
-		.update(threads)
-		.set({ agentLocked: 1, updatedAt })
-		.where(eq(threads.id, threadId));
+const writeLockedAgent = repoArgs(
+	async (
+		threadId: string,
+		projectId: string,
+		current: Thread,
+		agentName: string
+	) => {
+		const updatedAt = nowISO();
+		await connection.db
+			.update(threads)
+			.set({
+				agentName,
+				agentLocked: 1,
+				updatedAt,
+			})
+			.where(and(eq(threads.id, threadId), eq(threads.projectId, projectId)));
 
-	return ThreadSchema.parse({
-		...current,
-		agentLocked: true,
-		updatedAt,
-	});
-});
+		return ThreadSchema.parse({
+			...current,
+			agentName,
+			agentLocked: true,
+			updatedAt,
+		});
+	}
+);
+
+/** Lock the thread's agent without a session id (e.g. mid-flight start failure). */
+export async function lockThreadAgent(
+	threadId: string,
+	projectId: string,
+	agentName: string
+): Promise<Result<Thread, RepositoryError>> {
+	const thread = await getThread(threadId);
+	if (thread.isErr()) return Result.err(thread.error);
+	if (!thread.value) return Result.err(notFound("thread", threadId));
+	if (thread.value.projectId !== projectId) {
+		return Result.err(notFound("thread", threadId));
+	}
+	if (thread.value.agentLocked && thread.value.agentName === agentName) {
+		return Result.ok(thread.value);
+	}
+	if (thread.value.agentLocked && thread.value.agentName !== agentName) {
+		return Result.err(
+			persistFailed("thread agent is locked to a different agent")
+		);
+	}
+
+	return writeLockedAgent(threadId, projectId, thread.value, agentName);
+}
+
+const lockThreadAgentFlag = repoArgs(
+	async (threadId: string, current: Thread) => {
+		const updatedAt = nowISO();
+		await connection.db
+			.update(threads)
+			.set({ agentLocked: 1, updatedAt })
+			.where(eq(threads.id, threadId));
+
+		return ThreadSchema.parse({
+			...current,
+			agentLocked: true,
+			updatedAt,
+		});
+	}
+);
 
 export async function setAgentLocked(
 	threadId: string
@@ -320,5 +372,5 @@ export async function setAgentLocked(
 	if (!thread.value) return Result.err(notFound("thread", threadId));
 	if (thread.value.agentLocked) return Result.ok(thread.value);
 
-	return lockThreadAgent(threadId, thread.value);
+	return lockThreadAgentFlag(threadId, thread.value);
 }

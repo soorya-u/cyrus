@@ -181,7 +181,7 @@ describe("ThreadCoordinator catalog", () => {
 		expect(result.isErr()).toBe(true);
 	});
 
-	test("catalog set and ensureSession are mutually exclusive under the per-thread lock", async () => {
+	test("catalog set and bind are mutually exclusive under the per-thread lock", async () => {
 		const coordinator = createCoordinator();
 		await coordinator.catalog("thread-1", "model", { type: "get" });
 
@@ -218,10 +218,10 @@ describe("ThreadCoordinator catalog", () => {
 
 		await setEnteredPromise;
 
-		const ensurePromise = coordinator
-			.ensureSession("thread-1", "project-1", "mock-agent")
+		const bindPromise = coordinator
+			.bind("thread-1", "project-1", "mock-agent")
 			.then((result) => {
-				order.push("ensure-done");
+				order.push("bind-done");
 				return result;
 			});
 
@@ -229,13 +229,13 @@ describe("ThreadCoordinator catalog", () => {
 		expect(order).toEqual([]);
 
 		releaseSet();
-		const [setResult, ensureResult] = await Promise.all([
+		const [setResult, bindResult] = await Promise.all([
 			setPromise,
-			ensurePromise,
+			bindPromise,
 		]);
 
 		expect(setResult.isOk()).toBe(true);
-		expect(ensureResult.isOk()).toBe(true);
-		expect(order).toEqual(["set-done", "ensure-done"]);
+		expect(bindResult.isOk()).toBe(true);
+		expect(order).toEqual(["set-done", "bind-done"]);
 	});
 });

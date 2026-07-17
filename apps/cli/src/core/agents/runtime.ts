@@ -121,6 +121,21 @@ export class AgentRuntime {
 		return await this.sessions.createBoundSession(threadId, projectId, cwd);
 	}
 
+	/** Resume a cold persisted session into memory (Bind). */
+	async resumeBoundSession(
+		threadId: string,
+		projectId: string,
+		cwd: string,
+		sessionId: string
+	): Promise<RuntimeSession> {
+		return await this.sessions.requireSession(
+			threadId,
+			projectId,
+			cwd,
+			sessionId
+		);
+	}
+
 	/**
 	 * Short-lived session at `cwd` to capture a draft catalog preview.
 	 * Never attached to a thread; always closed before returning.

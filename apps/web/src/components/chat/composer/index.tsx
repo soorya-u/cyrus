@@ -287,8 +287,7 @@ export function Composer({
 		setHasContent(false);
 		clearDraft();
 		try {
-			const prepared = await catalog.prepareDraftSend();
-			if (prepared.isErr()) {
+			if (!catalog.displayAgent) {
 				editorRef.current?.setMessage(message);
 				setHasContent(true);
 				setDraft(message);
@@ -302,7 +301,7 @@ export function Composer({
 		} finally {
 			setSending(false);
 		}
-	}, [catalog.prepareDraftSend, clearDraft, onSend, setDraft]);
+	}, [catalog.displayAgent, clearDraft, onSend, setDraft]);
 
 	const handleMentionKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {

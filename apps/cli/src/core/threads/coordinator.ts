@@ -11,10 +11,11 @@ import type { AgentPool } from "@/core/acp/pool";
 import type { CatalogField } from "@/core/agents/runtime";
 import { AgentRuntime } from "@/core/agents/runtime";
 import {
-	ensureSessionLocked,
+	bindLocked,
 	findLiveBinding,
 	resolveBoundThread as resolveBoundThreadFn,
 	resolveCwd as resolveCwdFn,
+	sessionBindingState as sessionBindingStateFn,
 } from "./binding";
 import {
 	type DraftCatalog,
@@ -114,15 +115,24 @@ export class ThreadCoordinator implements CoordinatorHost {
 		return resolveBoundThreadFn(this, threadId, projectId);
 	}
 
-	/** Live/cold resolve, or create+lock a session for unbound mid-flight retries. */
-	async ensureSession(
+	/**
+	 * Bind: make the thread's session live (resume cold, or create+lock when
+	 * the agent is locked without a session).
+	 */
+	async bind(
 		threadId: string,
 		projectId: string,
 		agentName: string
 	): Promise<Result<BoundThread, CoordinatorError>> {
 		return await this.withThreadLock(threadId, () =>
-			ensureSessionLocked(this, threadId, projectId, agentName)
+			bindLocked(this, threadId, projectId, agentName)
 		);
+	}
+
+	sessionBindingState(
+		threadId: string
+	): Promise<Result<"live" | "cold" | "unbound", CoordinatorError>> {
+		return sessionBindingStateFn(this, threadId);
 	}
 
 	catalog(
