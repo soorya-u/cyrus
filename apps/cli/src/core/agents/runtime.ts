@@ -1,6 +1,6 @@
 import type { RuntimeSession } from "@acp-kit/core";
 import type { AvailableCommand } from "@agentclientprotocol/sdk";
-import type { BindAgentOutput } from "@cyrus/schemas/rtc/catalog";
+import type { GetDraftCatalogOutput } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
@@ -28,7 +28,7 @@ export type { CatalogField, CatalogFieldValue } from "./catalog-ops";
 
 export function catalogSnapshotFromSession(
 	session: RuntimeSession
-): Pick<BindAgentOutput, "models" | "modes" | "efforts" | "personas"> {
+): Pick<GetDraftCatalogOutput, "models" | "modes" | "efforts" | "personas"> {
 	return {
 		models: modelsFromSession(session),
 		modes: modesFromSession(session),
@@ -121,6 +121,21 @@ export class AgentRuntime {
 		return await this.sessions.createBoundSession(threadId, projectId, cwd);
 	}
 
+	/** Resume a cold persisted session into memory (Bind). */
+	async resumeBoundSession(
+		threadId: string,
+		projectId: string,
+		cwd: string,
+		sessionId: string
+	): Promise<RuntimeSession> {
+		return await this.sessions.requireSession(
+			threadId,
+			projectId,
+			cwd,
+			sessionId
+		);
+	}
+
 	/**
 	 * Short-lived session at `cwd` to capture a draft catalog preview.
 	 * Never attached to a thread; always closed before returning.
@@ -129,7 +144,7 @@ export class AgentRuntime {
 		cwd: string
 	): Promise<
 		Pick<
-			BindAgentOutput,
+			GetDraftCatalogOutput,
 			"capabilities" | "models" | "modes" | "efforts" | "personas" | "commands"
 		>
 	> {

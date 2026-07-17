@@ -102,22 +102,50 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 		const row = threads.get(threadId);
 		return Promise.resolve(Result.ok(row ? { ...row } : undefined));
 	},
-	bindThreadAgent: (
+	bindAndLockThreadAgent: (
 		threadId: string,
-		_projectId: string,
+		projectId: string,
 		data: { agentName: string; sessionId: string }
 	) => {
-		ops.push("bindThreadAgent");
+		ops.push("bindAndLockThreadAgent");
 		const row = threads.get(threadId);
 		if (!row) return Promise.resolve(Result.err(new Error("not found")));
+		if (row.projectId !== projectId) {
+			return Promise.resolve(Result.err(new Error("not found")));
+		}
+		if (row.agentLocked && row.agentName !== data.agentName) {
+			return Promise.resolve(
+				Result.err(new Error("thread agent is locked to a different agent"))
+			);
+		}
 		row.agentName = data.agentName;
 		row.sessionId = data.sessionId;
+		row.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...row }));
 	},
 	setAgentLocked: (threadId: string) => {
 		ops.push("setAgentLocked");
 		const row = threads.get(threadId);
 		if (!row) return Promise.resolve(Result.err(new Error("not found")));
+		row.agentLocked = true;
+		return Promise.resolve(Result.ok({ ...row }));
+	},
+	lockThreadAgent: (threadId: string, projectId: string, agentName: string) => {
+		ops.push("lockThreadAgent");
+		const row = threads.get(threadId);
+		if (!row) return Promise.resolve(Result.err(new Error("not found")));
+		if (row.projectId !== projectId) {
+			return Promise.resolve(Result.err(new Error("not found")));
+		}
+		if (row.agentLocked && row.agentName === agentName) {
+			return Promise.resolve(Result.ok({ ...row }));
+		}
+		if (row.agentLocked && row.agentName !== agentName) {
+			return Promise.resolve(
+				Result.err(new Error("thread agent is locked to a different agent"))
+			);
+		}
+		row.agentName = agentName;
 		row.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...row }));
 	},
@@ -128,7 +156,6 @@ mock.module("@cyrus/database/repositories/threads", () => ({
 		row.worktreePath = worktreePath;
 		return Promise.resolve(Result.ok({ ...row }));
 	},
-	clearThreadDraftBinding: () => Promise.resolve(Result.ok(undefined)),
 }));
 
 mock.module("@cyrus/database/repositories/conversations", () => ({
@@ -231,8 +258,7 @@ describe("startThread", () => {
 			"git",
 			"createBoundSession",
 			"preferences",
-			"bindThreadAgent",
-			"setAgentLocked",
+			"bindAndLockThreadAgent",
 		]);
 
 		const thread = threads.get(started.value.threadId);
@@ -273,7 +299,8 @@ describe("startThread", () => {
 
 		const thread = threads.get(started.value.threadId);
 		expect(thread?.sessionId).toBeUndefined();
-		expect(thread?.agentLocked).toBeUndefined();
+		expect(thread?.agentLocked).toBe(true);
+		expect(thread?.agentName).toBe("mock-agent");
 
 		expect(conversations).toHaveLength(3);
 		expect(conversations[0]).toMatchObject({
@@ -391,22 +418,16 @@ describe("startThread", () => {
 		expect(
 			conversations.some((entry) => entry.event.type === "user_message")
 		).toBe(true);
+		expect(threads.get(started.value.threadId)?.agentLocked).toBe(true);
 
 		sessionCreateError = null;
-		const rebound = await coordinator.bindAgent(
+		const bound = await coordinator.bind(
 			started.value.threadId,
 			"project-1",
 			"mock-agent"
 		);
-		expect(rebound.isOk()).toBe(true);
-		if (rebound.isErr()) throw new Error("expected bind to succeed");
-
-		const persisted = await coordinator.persistBoundSession(
-			started.value.threadId,
-			"project-1",
-			"mock-agent"
-		);
-		expect(persisted.isOk()).toBe(true);
+		expect(bound.isOk()).toBe(true);
+		if (bound.isErr()) throw new Error("expected bind to succeed");
 
 		const prompt = await coordinator.prompt(
 			"mock-agent",
@@ -421,5 +442,28 @@ describe("startThread", () => {
 			/* drain */
 		}
 		expect(sessions[0]?.prompt).toHaveBeenCalledWith("retry me");
+	});
+
+	test("rejects binding a different agent onto a locked thread", async () => {
+		sessionCreateError = new Error("session boom");
+		const coordinator = createCoordinator();
+
+		const started = await coordinator.startThread({
+			projectId: "project-1",
+			agentName: "mock-agent",
+			message: [{ type: "text", text: "locked" }],
+			turnId: "turn-lock",
+		});
+		expect(started.isOk()).toBe(true);
+		if (started.isErr()) throw new Error("expected ok");
+		expect(threads.get(started.value.threadId)?.agentLocked).toBe(true);
+
+		sessionCreateError = null;
+		const rebound = await coordinator.bind(
+			started.value.threadId,
+			"project-1",
+			"other-agent"
+		);
+		expect(rebound.isErr()).toBe(true);
 	});
 });

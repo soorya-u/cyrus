@@ -1,10 +1,11 @@
 import { resolveThreadGitCwd } from "@cyrus/database/repositories/git";
 import {
-	bindThreadAgent,
+	bindAndLockThreadAgent,
 	getThread,
 } from "@cyrus/database/repositories/threads";
 import {
 	type CoordinatorError,
+	coordinatorAgentLocked,
 	coordinatorAgentMismatch,
 	coordinatorAgentNotBound,
 	coordinatorNotFound,
@@ -13,6 +14,9 @@ import {
 import { Result } from "better-result";
 import type { AgentRuntime } from "@/core/agents/runtime";
 import type { BoundThread, CoordinatorHost } from "./types";
+
+/** Session presence on the worker: live in memory, or cold (persisted id only). */
+export type SessionBindingState = "live" | "cold" | "unbound";
 
 export function findLiveBinding(
 	agents: Map<string, AgentRuntime>,
@@ -32,6 +36,32 @@ export function findLiveBinding(
 	return null;
 }
 
+/**
+ * Two-arm session predicate for a thread: live if the ACP session is in
+ * memory, cold if only a persisted session id exists, unbound otherwise.
+ */
+export async function sessionBindingState(
+	host: Pick<CoordinatorHost, "findLiveBinding">,
+	threadId: string
+): Promise<Result<SessionBindingState, CoordinatorError>> {
+	if (host.findLiveBinding(threadId)) return Result.ok("live");
+
+	const thread = await getThread(threadId);
+	if (thread.isErr()) {
+		return Result.err(coordinatorRepositoryError(thread.error));
+	}
+	if (!thread.value) return Result.err(coordinatorNotFound("thread", threadId));
+
+	if (
+		thread.value.agentLocked &&
+		thread.value.sessionId &&
+		thread.value.agentName
+	) {
+		return Result.ok("cold");
+	}
+	return Result.ok("unbound");
+}
+
 export async function resolveCwd(
 	threadId: string
 ): Promise<Result<string, CoordinatorError>> {
@@ -42,6 +72,25 @@ export async function resolveCwd(
 	return Result.ok(result.value);
 }
 
+async function coldBoundFromThread(
+	host: Pick<CoordinatorHost, "resolveCwd">,
+	threadId: string,
+	projectId: string,
+	agentName: string,
+	sessionId: string
+): Promise<Result<BoundThread, CoordinatorError>> {
+	const cwd = await host.resolveCwd(threadId);
+	if (cwd.isErr()) return Result.err(cwd.error);
+	return Result.ok({
+		threadId,
+		projectId,
+		agentName,
+		sessionId,
+		cwd: cwd.value,
+	});
+}
+
+/** Resolve a thread's session: live if present, otherwise cold from DB. */
 export async function resolveBoundThread(
 	host: Pick<CoordinatorHost, "findLiveBinding" | "resolveCwd">,
 	threadId: string,
@@ -66,7 +115,6 @@ export async function resolveBoundThread(
 		return Result.err(coordinatorNotFound("thread", threadId));
 	}
 
-	// Only resume sessions that were committed by a first user message.
 	if (
 		!(
 			thread.value.agentLocked &&
@@ -77,31 +125,98 @@ export async function resolveBoundThread(
 		return Result.err(coordinatorAgentNotBound());
 	}
 
+	return coldBoundFromThread(
+		host,
+		threadId,
+		thread.value.projectId,
+		thread.value.agentName,
+		thread.value.sessionId
+	);
+}
+
+async function resumeColdBinding(
+	host: CoordinatorHost,
+	threadId: string,
+	projectId: string,
+	agentName: string,
+	sessionId: string
+): Promise<Result<BoundThread, CoordinatorError>> {
+	const cold = await coldBoundFromThread(
+		host,
+		threadId,
+		projectId,
+		agentName,
+		sessionId
+	);
+	if (cold.isErr()) return Result.err(cold.error);
+
+	const resumed = await host.withRuntime(() =>
+		host
+			.getAgent(agentName)
+			.resumeBoundSession(threadId, projectId, cold.value.cwd, sessionId)
+	);
+	if (resumed.isErr()) return Result.err(resumed.error);
+
+	return Result.ok({
+		...cold.value,
+		sessionId: resumed.value.sessionId,
+	});
+}
+
+async function createAndPersistBinding(
+	host: CoordinatorHost,
+	threadId: string,
+	projectId: string,
+	agentName: string
+): Promise<Result<BoundThread, CoordinatorError>> {
 	const cwd = await host.resolveCwd(threadId);
 	if (cwd.isErr()) return Result.err(cwd.error);
 
+	const session = await host.withRuntime(() =>
+		host.getAgent(agentName).createBoundSession(threadId, projectId, cwd.value)
+	);
+	if (session.isErr()) return Result.err(session.error);
+
+	const persisted = await bindAndLockThreadAgent(threadId, projectId, {
+		agentName,
+		sessionId: session.value.sessionId,
+	});
+	if (persisted.isErr()) {
+		await host.withRuntime(() =>
+			host.getAgent(agentName).closeSession(session.value.sessionId, threadId)
+		);
+		return Result.err(coordinatorRepositoryError(persisted.error));
+	}
+
 	return Result.ok({
 		threadId,
-		projectId: thread.value.projectId,
-		agentName: thread.value.agentName,
-		sessionId: thread.value.sessionId,
+		projectId,
+		agentName,
+		sessionId: session.value.sessionId,
 		cwd: cwd.value,
 	});
 }
 
-export async function persistBoundSessionLocked(
+/**
+ * Bind: make a thread's session live — resume a cold persisted session, or
+ * create and lock one when the thread has an agent but no session yet (e.g.
+ * mid-flight startThread failure).
+ */
+export async function bindLocked(
 	host: CoordinatorHost,
 	threadId: string,
 	projectId: string,
-	expectedAgentName?: string
+	agentName: string
 ): Promise<Result<BoundThread, CoordinatorError>> {
-	const bound = await host.resolveBoundThread(threadId, projectId);
-	if (bound.isErr()) return Result.err(bound.error);
-
-	if (expectedAgentName && bound.value.agentName !== expectedAgentName) {
-		return Result.err(
-			coordinatorAgentMismatch(bound.value.agentName, expectedAgentName)
-		);
+	const live = host.findLiveBinding(threadId);
+	if (live) {
+		if (live.projectId !== projectId) {
+			return Result.err(coordinatorNotFound("thread", threadId));
+		}
+		if (live.agentName !== agentName) {
+			return Result.err(coordinatorAgentMismatch(live.agentName, agentName));
+		}
+		return Result.ok(live);
 	}
 
 	const thread = await getThread(threadId);
@@ -112,20 +227,23 @@ export async function persistBoundSessionLocked(
 		return Result.err(coordinatorNotFound("thread", threadId));
 	}
 
+	if (thread.value.agentLocked && thread.value.agentName !== agentName) {
+		return Result.err(coordinatorAgentLocked());
+	}
+
 	if (
-		thread.value.agentName === bound.value.agentName &&
-		thread.value.sessionId === bound.value.sessionId
+		thread.value.agentLocked &&
+		thread.value.sessionId &&
+		thread.value.agentName
 	) {
-		return Result.ok(bound.value);
+		return resumeColdBinding(
+			host,
+			threadId,
+			projectId,
+			thread.value.agentName,
+			thread.value.sessionId
+		);
 	}
 
-	const persisted = await bindThreadAgent(threadId, projectId, {
-		agentName: bound.value.agentName,
-		sessionId: bound.value.sessionId,
-	});
-	if (persisted.isErr()) {
-		return Result.err(coordinatorRepositoryError(persisted.error));
-	}
-
-	return Result.ok(bound.value);
+	return createAndPersistBinding(host, threadId, projectId, agentName);
 }

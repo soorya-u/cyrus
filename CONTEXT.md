@@ -47,6 +47,10 @@ _Avoid_: draft thread
 The worker-internal act of making a thread's persisted session live — creating it at the thread's first message or resuming it on demand — yielding that session's catalog.
 _Avoid_: attach, connect
 
+**Session binding**:
+Whether a thread's ACP session is **live** (in worker memory), **cold** (only its persisted session id remains), or **unbound** (no live or persisted session). Cold sessions are resumed lazily on Bind.
+_Avoid_: attached, connected, warm
+
 **Turn**:
 One prompt–response cycle within a thread. A turn is running, complete, or interrupted.
 _Avoid_: exchange, round

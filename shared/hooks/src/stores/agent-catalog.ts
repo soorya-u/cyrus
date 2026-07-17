@@ -23,7 +23,6 @@ type AgentCatalogState = {
 	contextUsageByThread: Record<string, ContextUsage | null>;
 	pendingAgentByThread: Record<string, string | undefined>;
 	liveBindingByThread: Record<string, LiveThreadBinding | undefined>;
-	resumeBindRequestedByThread: Record<string, boolean>;
 	setModel: (threadId: string, modelId: string) => void;
 	setMode: (threadId: string, modeId: string) => void;
 	setEffort: (threadId: string, effortId: string) => void;
@@ -38,8 +37,6 @@ type AgentCatalogState = {
 	clearPendingAgent: (threadId: string) => void;
 	setLiveBinding: (threadId: string, binding: LiveThreadBinding) => void;
 	clearLiveBinding: (threadId: string) => void;
-	markResumeBindRequested: (threadId: string) => void;
-	clearResumeBindRequested: (threadId: string) => void;
 };
 
 function patchSelection(
@@ -62,7 +59,6 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 	contextUsageByThread: {},
 	pendingAgentByThread: {},
 	liveBindingByThread: {},
-	resumeBindRequestedByThread: {},
 	setModel: (threadId, modelId) =>
 		set((state) => {
 			if (state.selectionByThread[threadId]?.modelId === modelId) {
@@ -160,19 +156,6 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 			const { [threadId]: _removed, ...liveBindingByThread } =
 				state.liveBindingByThread;
 			return { liveBindingByThread };
-		}),
-	markResumeBindRequested: (threadId) =>
-		set((state) => ({
-			resumeBindRequestedByThread: {
-				...state.resumeBindRequestedByThread,
-				[threadId]: true,
-			},
-		})),
-	clearResumeBindRequested: (threadId) =>
-		set((state) => {
-			const { [threadId]: _removed, ...resumeBindRequestedByThread } =
-				state.resumeBindRequestedByThread;
-			return { resumeBindRequestedByThread };
 		}),
 }));
 

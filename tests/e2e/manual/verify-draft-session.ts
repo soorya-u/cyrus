@@ -1,4 +1,10 @@
-import { writeFile } from "node:fs/promises";
+/**
+ * Verifies draft → startThread lifecycle: probe leaves no thread row,
+ * startThread births exactly one locked thread.
+ *
+ * Usage:
+ *   DATABASE_URL=... CYRUS_E2E=1 bun tests/e2e/manual/verify-draft-session.ts
+ */
 import { join } from "node:path";
 import { YAML } from "bun";
 import { seedCliAccessToken } from "../harness/auth";
@@ -76,85 +82,53 @@ try {
 	const agentName = agents.agents[0]?.id;
 	if (!agentName) throw new Error("no healthy agents");
 
-	console.log("2. create project/thread");
+	console.log("2. create project");
 	const project = await client.createProject({
 		name: "Manual Draft",
 		cwd: REPO_ROOT,
 	});
-	const thread = await client.createThread({ projectId: project.project.id });
+	const projectId = project.project.id;
 
-	console.log("3. bindAgent (memory-only)");
-	const bound = await client.bindAgent({
-		threadId: thread.thread.id,
-		projectId: project.project.id,
-		agentName,
-	});
-	console.log("   sessionId:", bound.sessionId);
-	console.log("   models:", bound.models.length);
-	const afterBind = await client.listThreads({
-		projectId: project.project.id,
-	});
-	const draftRow = afterBind.threads.find((t) => t.id === thread.thread.id);
-	if (draftRow?.sessionId) {
-		throw new Error("bindAgent should not persist sessionId on draft threads");
+	console.log("3. listThreads before first message (must be empty)");
+	const before = await client.listThreads({ projectId });
+	if (before.threads.length !== 0) {
+		throw new Error("expected empty thread list before first message");
 	}
 
-	console.log("4. getModels");
-	const models = await client.getModels({ threadId: thread.thread.id });
-	console.log("   models:", models.models.length);
+	console.log("4. getDraftCatalog probe (must leave no thread)");
+	const catalog = await client.getDraftCatalog({ agentName, projectId });
+	console.log("   models:", catalog.models.length);
+	const afterProbe = await client.listThreads({ projectId });
+	if (afterProbe.threads.length !== 0) {
+		throw new Error("probe must not create a thread row");
+	}
 
-	console.log("5. chat (persists + locks agent)");
-	await client.chat({
-		threadId: thread.thread.id,
-		projectId: project.project.id,
+	console.log("5. startThread");
+	const started = await client.startThread({
+		projectId,
 		agentName,
 		message: [{ type: "text", text: "ping" }],
 	});
+	console.log("   threadId:", started.threadId);
 
-	let locked = false;
-	for (let i = 0; i < 40; i++) {
-		const listed = await client.listThreads({ projectId: project.project.id });
-		const row = listed.threads.find((t) => t.id === thread.thread.id);
-		if (row?.agentLocked && row.sessionId) {
-			locked = true;
-			console.log("   agentLocked: true");
-			console.log("   sessionId persisted:", row.sessionId);
-			break;
-		}
-		await Bun.sleep(500);
+	const listed = await client.listThreads({ projectId });
+	if (listed.threads.length !== 1) {
+		throw new Error(
+			`expected exactly one thread, got ${listed.threads.length}`
+		);
 	}
-	if (!locked) throw new Error("agent did not lock after first message");
-
-	console.log("6. deleteThread");
-	await client.deleteThread({ threadId: thread.thread.id });
-	const afterDelete = await client.listThreads({
-		projectId: project.project.id,
-	});
-	if (afterDelete.threads.some((t) => t.id === thread.thread.id)) {
-		throw new Error("thread still exists after delete");
+	const row = listed.threads[0];
+	if (!(row?.agentLocked && row.sessionId && row.agentName === agentName)) {
+		throw new Error("started thread must be locked with a session");
 	}
-	console.log("   thread deleted");
+	console.log("   agentLocked: true");
 
-	await writeFile(
-		join(import.meta.dir, "../web/state.json"),
-		JSON.stringify({
-			webUrl: E2E_SERVER_URL.replace("8787", "5173"),
-			serverUrl: E2E_SERVER_URL,
-			sessionCookie: auth.sessionCookie.split("=")[1] ?? "",
-			workerName: "Manual Worker",
-		}),
-		"utf8"
-	);
-
-	rtc.close();
-	session.session.close();
-	rtc = undefined;
-	session = undefined;
-
-	console.log("OK: manual RPC verification passed");
-	process.exit(0);
+	console.log("LIFECYCLE_OK");
+} catch (error) {
+	console.error("LIFECYCLE_FAIL", error);
+	process.exitCode = 1;
 } finally {
-	if (rtc) rtc.close();
-	if (session) session.session.close();
+	rtc?.close();
+	session?.session.close();
 	await stopAll(processes);
 }

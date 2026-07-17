@@ -42,18 +42,15 @@ try {
 		name: "Catalog Verify",
 		cwd: REPO_ROOT,
 	});
-	const thread = await client.createThread({ projectId: project.project.id });
-	const threadId = thread.thread.id;
 	const projectId = project.project.id;
 
-	const bound = await client.bindAgent({ threadId, projectId, agentName });
-	console.log("bound session:", bound.sessionId);
-	console.log("catalog snapshot sizes:", {
-		models: bound.models.length,
-		modes: bound.modes.length,
-		efforts: bound.efforts.length,
-		personas: bound.personas.length,
+	const started = await client.startThread({
+		projectId,
+		agentName,
+		message: [{ type: "text", text: "catalog verify" }],
 	});
+	const threadId = started.threadId;
+	console.log("started thread:", threadId);
 
 	const models = await client.getModels({ threadId });
 	if (models.models.length === 0) throw new Error("getModels returned empty");

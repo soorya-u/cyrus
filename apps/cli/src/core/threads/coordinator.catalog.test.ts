@@ -7,10 +7,10 @@ import { ThreadCoordinator } from "./coordinator";
 const threadState = {
 	id: "thread-1",
 	projectId: "project-1",
-	name: "Draft",
-	agentName: undefined as string | undefined,
-	sessionId: undefined as string | undefined,
-	agentLocked: undefined as true | undefined,
+	name: "Thread",
+	agentName: "mock-agent" as string | undefined,
+	sessionId: "persisted-1" as string | undefined,
+	agentLocked: true as true | undefined,
 	createdAt: "2026-07-12T00:00:00.000Z",
 	updatedAt: "2026-07-12T00:00:00.000Z",
 };
@@ -57,24 +57,32 @@ function createMockSession(sessionId: string): RuntimeSession {
 
 const sessions: RuntimeSession[] = [];
 
+mock.module("@acp-kit/core", () => ({
+	openOrCreateRuntimeSession: ({ sessionId }: { sessionId: string }) => {
+		const session = createMockSession(sessionId);
+		sessions.push(session);
+		return Promise.resolve({ session, created: false });
+	},
+}));
+
 mock.module("@cyrus/database/repositories/git", () => ({
 	resolveThreadGitCwd: async () => Result.ok("/tmp/project"),
 }));
 
 mock.module("@cyrus/database/repositories/threads", () => ({
 	getThread: async () => Result.ok({ ...threadState }),
-	bindThreadAgent: (
+	bindAndLockThreadAgent: (
 		_threadId: string,
 		_projectId: string,
 		data: { agentName: string; sessionId: string }
 	) => {
 		threadState.agentName = data.agentName;
 		threadState.sessionId = data.sessionId;
+		threadState.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...threadState }));
 	},
-	clearThreadDraftBinding: () => {
-		threadState.agentName = undefined;
-		threadState.sessionId = undefined;
+	setAgentLocked: () => {
+		threadState.agentLocked = true;
 		return Promise.resolve(Result.ok({ ...threadState }));
 	},
 }));
@@ -101,19 +109,13 @@ function createCoordinator() {
 describe("ThreadCoordinator catalog", () => {
 	beforeEach(() => {
 		sessions.length = 0;
-		threadState.agentName = undefined;
-		threadState.sessionId = undefined;
-		threadState.agentLocked = undefined;
+		threadState.agentName = "mock-agent";
+		threadState.sessionId = "persisted-1";
+		threadState.agentLocked = true;
 	});
 
-	test("catalog get returns models from the bound session", async () => {
+	test("catalog get returns models from the resumed session", async () => {
 		const coordinator = createCoordinator();
-		const bound = await coordinator.bindAgent(
-			"thread-1",
-			"project-1",
-			"mock-agent"
-		);
-		expect(bound.isOk()).toBe(true);
 
 		const models = await coordinator.catalog("thread-1", "model", {
 			type: "get",
@@ -132,7 +134,6 @@ describe("ThreadCoordinator catalog", () => {
 
 	test("catalog get returns modes, efforts, and personas", async () => {
 		const coordinator = createCoordinator();
-		await coordinator.bindAgent("thread-1", "project-1", "mock-agent");
 
 		const modes = await coordinator.catalog("thread-1", "mode", {
 			type: "get",
@@ -160,7 +161,6 @@ describe("ThreadCoordinator catalog", () => {
 
 	test("catalog set applies the model on the bound session", async () => {
 		const coordinator = createCoordinator();
-		await coordinator.bindAgent("thread-1", "project-1", "mock-agent");
 
 		const result = await coordinator.catalog("thread-1", "model", {
 			type: "set",
@@ -172,6 +172,9 @@ describe("ThreadCoordinator catalog", () => {
 	});
 
 	test("catalog get surfaces unbound errors", async () => {
+		threadState.agentName = undefined;
+		threadState.sessionId = undefined;
+		threadState.agentLocked = undefined;
 		const coordinator = createCoordinator();
 		const result = await coordinator.catalog("thread-1", "model", {
 			type: "get",
@@ -179,9 +182,9 @@ describe("ThreadCoordinator catalog", () => {
 		expect(result.isErr()).toBe(true);
 	});
 
-	test("catalog set and bindAgent are mutually exclusive under the per-thread lock", async () => {
+	test("catalog set and bind are mutually exclusive under the per-thread lock", async () => {
 		const coordinator = createCoordinator();
-		await coordinator.bindAgent("thread-1", "project-1", "mock-agent");
+		await coordinator.catalog("thread-1", "model", { type: "get" });
 
 		let releaseSet!: () => void;
 		const setGate = new Promise<void>((resolve) => {
@@ -194,7 +197,7 @@ describe("ThreadCoordinator catalog", () => {
 
 		const originalSetModel = sessions[0]?.setModel;
 		if (!(sessions[0] && originalSetModel)) {
-			throw new Error("expected bound session");
+			throw new Error("expected resumed session");
 		}
 		sessions[0].setModel = mock(async (modelId: string) => {
 			setEntered();
@@ -217,7 +220,7 @@ describe("ThreadCoordinator catalog", () => {
 		await setEnteredPromise;
 
 		const bindPromise = coordinator
-			.bindAgent("thread-1", "project-1", "mock-agent")
+			.bind("thread-1", "project-1", "mock-agent")
 			.then((result) => {
 				order.push("bind-done");
 				return result;

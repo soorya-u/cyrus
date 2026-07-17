@@ -51,7 +51,8 @@ export function createSignalingEvents(
 		close() {
 			active = false;
 			handlers.clear();
-			(stream as AsyncGenerator).return?.(undefined);
+			// Skip stream.return(): oRPC abort-sends race socket.close() and
+			// reject into callers. Socket teardown ends the iterator instead.
 		},
 	};
 }

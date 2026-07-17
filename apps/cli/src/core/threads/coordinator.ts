@@ -2,7 +2,7 @@ import {
 	type CoordinatorError,
 	coordinatorRuntimeError,
 } from "@cyrus/errors/coordinator";
-import type { BindAgentOutput, ModelOption } from "@cyrus/schemas/rtc/catalog";
+import type { ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
 import { Mutex } from "async-mutex";
@@ -10,12 +10,12 @@ import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
 import type { CatalogField } from "@/core/agents/runtime";
 import { AgentRuntime } from "@/core/agents/runtime";
-import { bindAgentLocked } from "./bind";
 import {
+	bindLocked,
 	findLiveBinding,
-	persistBoundSessionLocked,
 	resolveBoundThread as resolveBoundThreadFn,
 	resolveCwd as resolveCwdFn,
+	sessionBindingState as sessionBindingStateFn,
 } from "./binding";
 import {
 	type DraftCatalog,
@@ -115,25 +115,24 @@ export class ThreadCoordinator implements CoordinatorHost {
 		return resolveBoundThreadFn(this, threadId, projectId);
 	}
 
-	async bindAgent(
+	/**
+	 * Bind: make the thread's session live (resume cold, or create+lock when
+	 * the agent is locked without a session).
+	 */
+	async bind(
 		threadId: string,
 		projectId: string,
 		agentName: string
-	): Promise<Result<BindAgentOutput, CoordinatorError>> {
+	): Promise<Result<BoundThread, CoordinatorError>> {
 		return await this.withThreadLock(threadId, () =>
-			bindAgentLocked(this, threadId, projectId, agentName)
+			bindLocked(this, threadId, projectId, agentName)
 		);
 	}
 
-	/** Persist live draft binding on first user message. No-op if already stored. */
-	async persistBoundSession(
-		threadId: string,
-		projectId: string,
-		expectedAgentName?: string
-	): Promise<Result<BoundThread, CoordinatorError>> {
-		return await this.withThreadLock(threadId, () =>
-			persistBoundSessionLocked(this, threadId, projectId, expectedAgentName)
-		);
+	sessionBindingState(
+		threadId: string
+	): Promise<Result<"live" | "cold" | "unbound", CoordinatorError>> {
+		return sessionBindingStateFn(this, threadId);
 	}
 
 	catalog(

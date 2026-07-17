@@ -25,18 +25,18 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 					message: `thread ${threadId} not found`,
 				});
 
-			const persisted = await runtime.threadCoordinator.persistBoundSession(
+			const bound = await runtime.threadCoordinator.bind(
 				threadId,
 				projectId,
 				agentName
 			);
-			if (persisted.isErr()) {
-				if (CoordinatorAgentNotBoundError.is(persisted.error)) {
+			if (bound.isErr()) {
+				if (CoordinatorAgentNotBoundError.is(bound.error)) {
 					throw new ORPCError("BAD_REQUEST", {
-						message: "agent must be bound before chat; call bindAgent first",
+						message: "thread has no agent session; retry or start a new thread",
 					});
 				}
-				throwOrpc(persisted.error);
+				throwOrpc(bound.error);
 			}
 
 			const thread = await ensureThread(threadId, projectId, {
