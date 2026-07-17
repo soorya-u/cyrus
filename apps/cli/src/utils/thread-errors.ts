@@ -3,7 +3,6 @@ import { getThread } from "@cyrus/database/repositories/threads";
 import { isCoordinatorError } from "@cyrus/errors/coordinator";
 import { isTurnError } from "@cyrus/errors/turn";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
-import { randomId } from "@cyrus/utils/identity";
 
 export function coordinatorErrorCode(error: unknown): string | undefined {
 	if (isCoordinatorError(error) || isTurnError(error)) return error._tag;
@@ -45,17 +44,4 @@ export async function persistThreadError(
 	if (entry.isErr()) return;
 
 	return entry.value.chunk.event;
-}
-
-export async function persistCoordinatorThreadError(
-	threadId: string,
-	error: unknown,
-	turnId = randomId()
-): Promise<ChatChunk["event"] | undefined> {
-	return await persistThreadError(
-		threadId,
-		turnId,
-		coordinatorErrorMessage(error),
-		coordinatorErrorCode(error)
-	);
 }
