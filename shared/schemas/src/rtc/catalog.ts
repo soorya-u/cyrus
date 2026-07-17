@@ -44,6 +44,20 @@ export const BindAgentOutputSchema = z.object({
 	commands: z.array(AvailableCommandSchema).optional(),
 });
 
+export const GetDraftCatalogInputSchema = z.object({
+	agentName: z.string(),
+	projectId: z.string(),
+});
+
+export const GetDraftCatalogOutputSchema = z.object({
+	capabilities: AgentCapabilitiesSchema,
+	models: z.array(ModelOptionSchema),
+	modes: z.array(SelectOptionSchema),
+	efforts: z.array(SelectOptionSchema),
+	personas: z.array(SelectOptionSchema),
+	commands: z.array(AvailableCommandSchema).optional(),
+});
+
 export const ListModelsOutputSchema = z.object({
 	models: z.array(ModelOptionSchema),
 });
@@ -82,3 +96,5 @@ export type ContextUsage = z.infer<typeof ContextUsageSchema>;
 export type GetContextUsageOutput = z.infer<typeof GetContextUsageOutputSchema>;
 export type BindAgentInput = z.infer<typeof BindAgentInputSchema>;
 export type BindAgentOutput = z.infer<typeof BindAgentOutputSchema>;
+export type GetDraftCatalogInput = z.infer<typeof GetDraftCatalogInputSchema>;
+export type GetDraftCatalogOutput = z.infer<typeof GetDraftCatalogOutputSchema>;

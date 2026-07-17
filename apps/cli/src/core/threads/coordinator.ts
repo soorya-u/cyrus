@@ -18,6 +18,10 @@ import {
 	resolveCwd as resolveCwdFn,
 } from "./binding";
 import {
+	type DraftCatalog,
+	getDraftCatalog as getDraftCatalogFn,
+} from "./draft-catalog";
+import {
 	cancel as cancelTurn,
 	closeAnyThreadSession,
 	prompt as promptTurn,
@@ -189,6 +193,13 @@ export class ThreadCoordinator implements CoordinatorHost {
 		return Result.ok(
 			this.getAgent(bound.value.agentName).getContextUsage(threadId)
 		);
+	}
+
+	getDraftCatalog(
+		agentName: string,
+		projectId: string
+	): Promise<Result<DraftCatalog, CoordinatorError>> {
+		return getDraftCatalogFn(this, agentName, projectId);
 	}
 
 	prompt(

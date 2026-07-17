@@ -27,6 +27,12 @@ describe("operation keys", () => {
 			"list-threads",
 			"project-1",
 		]);
+		expect(RTC_OPERATION_KEYS.getDraftCatalog("claude", "project-1")).toEqual([
+			"controller",
+			"get-draft-catalog",
+			"claude",
+			"project-1",
+		]);
 		expect(RTC_OPERATION_KEYS.listEntries("/tmp/cyrus", 2)).toEqual([
 			"controller",
 			"list-entries",

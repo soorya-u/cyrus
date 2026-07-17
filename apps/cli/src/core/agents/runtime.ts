@@ -2,6 +2,7 @@ import type { RuntimeSession } from "@acp-kit/core";
 import type { AvailableCommand } from "@agentclientprotocol/sdk";
 import type { BindAgentOutput } from "@cyrus/schemas/rtc/catalog";
 import type { AgentEvent, ChatMessage } from "@cyrus/schemas/rtc/chat";
+import { Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
 import {
 	effortsFromSession,
@@ -118,6 +119,32 @@ export class AgentRuntime {
 		cwd: string
 	): Promise<RuntimeSession> {
 		return await this.sessions.createBoundSession(threadId, projectId, cwd);
+	}
+
+	/**
+	 * Short-lived session at `cwd` to capture a draft catalog preview.
+	 * Never attached to a thread; always closed before returning.
+	 */
+	async probeCatalog(
+		cwd: string
+	): Promise<
+		Pick<
+			BindAgentOutput,
+			"capabilities" | "models" | "modes" | "efforts" | "personas" | "commands"
+		>
+	> {
+		await this.sessions.ensureHealthyPool();
+		const runtime = await this.pool.getRuntime(this.agentName);
+		const session = await runtime.newSession({ cwd });
+		try {
+			return {
+				capabilities: runtime.agentCapabilities ?? {},
+				...catalogSnapshotFromSession(session),
+				commands: commandsFromSession(session),
+			};
+		} finally {
+			await Result.tryPromise(() => session.close());
+		}
 	}
 
 	async *prompt(
