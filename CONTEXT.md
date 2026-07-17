@@ -6,24 +6,28 @@ Cyrus is a cross-platform app for controlling AI coding agents (Claude Code, Cod
 
 ### Topology
 
-**Worker**:
-The per-device Cyrus process (`cyrusd`) that owns local projects and executes agent sessions and git operations.
-_Avoid_: daemon, server, host
-
 **Peer**:
-A connected client instance (web, mobile, desktop, CLI) belonging to the user.
+Any connected instance in the user's room — a worker or a controller.
 _Avoid_: client, device
 
+**Worker**:
+The peer — the per-device Cyrus process (`cyrusd`) — that owns local projects and executes agent sessions and git operations.
+_Avoid_: daemon, server, host
+
+**Controller**:
+A peer that drives workers: the UI apps (web, desktop, mobile).
+_Avoid_: client, frontend
+
 **Room**:
-The single per-user space in which all of a user's peers and workers meet. One room per user.
+The single per-user space in which all of a user's peers meet. One room per user.
 _Avoid_: workspace, org, team
 
 **Signaling**:
 The room-level connection through the sync server that lets peers discover and dial workers.
 
-**Controller**:
-A peer's direct connection to one specific worker, over which all worker RPCs run.
-_Avoid_: RTC connection (as a domain term), channel
+**Control link**:
+A controller's direct connection to one specific worker, over which all worker RPCs run.
+_Avoid_: RTC connection (as a domain term), channel, controller (for the connection)
 
 ### Projects and threads
 
@@ -32,18 +36,15 @@ A directory on a worker's device that threads run against.
 _Avoid_: repo, workspace, folder
 
 **Thread**:
-One conversation with one agent, scoped to a project.
-_Avoid_: session, chat, conversation (as an entity name)
+One conversation with one agent, scoped to a project. A thread exists from its first user message onward; its agent is locked for its lifetime.
+_Avoid_: session, chat, conversation (as an entity name), committed thread
 
-**Draft thread**:
-A thread before its first user message. Its agent binding lives only in worker memory and can still be switched.
-
-**Committed thread**:
-A thread after its first user message. The agent is locked, the session is persisted, and the binding can no longer change.
-_Avoid_: locked thread
+**Draft**:
+Controller-local composer state before a thread exists: the chosen project, branch or worktree choice, agent and preferences, and the unsent message. A draft never leaves the controller.
+_Avoid_: draft thread
 
 **Bind**:
-Associating an agent (and a fresh agent session) with a thread, yielding that session's catalog.
+The worker-internal act of making a thread's persisted session live — creating it at the thread's first message or resuming it on demand — yielding that session's catalog.
 _Avoid_: attach, connect
 
 **Turn**:
@@ -121,6 +122,9 @@ _Avoid_: permission prompt
 
 **Elicitation**:
 A blocking agent request for structured user input — a form or a URL confirmation — answered from the composer.
+
+**Probe session**:
+A short-lived agent session created at a project's directory solely to capture a catalog for drafts, then closed. Never attached to a thread.
 
 **Doctor**:
 The health check that spawns an enabled agent and verifies the ACP handshake completes.
