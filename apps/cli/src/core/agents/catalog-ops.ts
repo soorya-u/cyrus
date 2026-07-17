@@ -1,7 +1,7 @@
 import type { RuntimeSession } from "@acp-kit/core";
 import type { ModelOption } from "@cyrus/schemas/rtc/catalog";
 import type { SelectOption } from "@cyrus/schemas/rtc/common";
-import { Result } from "better-result";
+import { panic, Result } from "better-result";
 import type { AgentPool } from "@/core/acp/pool";
 import {
 	effortsFromSession,
@@ -70,10 +70,8 @@ export async function setCatalogField(
 		case "persona":
 			await setPersona(deps, threadId, projectId, cwd, sessionId, value);
 			return;
-		default: {
-			const _exhaustive: never = field;
-			throw new Error(`unsupported catalog field: ${_exhaustive}`);
-		}
+		default:
+			panic(`unsupported catalog field: ${field satisfies never}`);
 	}
 }
 
@@ -98,10 +96,8 @@ function readField<F extends CatalogField>(
 			return effortsFromSession(session) as CatalogFieldValue[F];
 		case "persona":
 			return personasFromSession(session) as CatalogFieldValue[F];
-		default: {
-			const _exhaustive: never = field;
-			return _exhaustive;
-		}
+		default:
+			panic(`unsupported catalog field: ${field satisfies never}`);
 	}
 }
 
