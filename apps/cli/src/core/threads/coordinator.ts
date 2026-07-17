@@ -28,6 +28,10 @@ import {
 	setPersona,
 } from "./catalog";
 import {
+	type DraftCatalog,
+	getDraftCatalog as getDraftCatalogFn,
+} from "./draft-catalog";
+import {
 	cancel as cancelTurn,
 	closeAnyThreadSession,
 	prompt as promptTurn,
@@ -176,6 +180,13 @@ export class ThreadCoordinator implements CoordinatorHost {
 		Result<{ used?: number; limit?: number } | null, CoordinatorError>
 	> {
 		return getContextUsage(this, threadId);
+	}
+
+	getDraftCatalog(
+		agentName: string,
+		projectId: string
+	): Promise<Result<DraftCatalog, CoordinatorError>> {
+		return getDraftCatalogFn(this, agentName, projectId);
 	}
 
 	prompt(

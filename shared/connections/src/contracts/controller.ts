@@ -3,6 +3,8 @@ import {
 	BindAgentInputSchema,
 	BindAgentOutputSchema,
 	GetContextUsageOutputSchema,
+	GetDraftCatalogInputSchema,
+	GetDraftCatalogOutputSchema,
 	ListEffortsOutputSchema,
 	ListModelsOutputSchema,
 	ListModesOutputSchema,
@@ -66,6 +68,9 @@ import { eventIterator, oc } from "@orpc/contract";
 export const controllerContract = {
 	listAgents: oc.output(ListAgentsOutputSchema),
 	bindAgent: oc.input(BindAgentInputSchema).output(BindAgentOutputSchema),
+	getDraftCatalog: oc
+		.input(GetDraftCatalogInputSchema)
+		.output(GetDraftCatalogOutputSchema),
 	listProjects: oc.output(ListProjectsOutputSchema),
 	createProject: oc
 		.input(CreateProjectInputSchema)

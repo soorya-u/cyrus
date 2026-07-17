@@ -8,6 +8,8 @@ type UseCatalogQueriesOptions = {
 	threadId: string;
 	catalogAgent: string;
 	catalogEnabled: boolean;
+	/** When false, skip context-usage polling (drafts have no session). */
+	contextUsageEnabled: boolean;
 	keys: CatalogQueryKeys;
 };
 
@@ -16,6 +18,7 @@ export function useCatalogQueries({
 	threadId,
 	catalogAgent,
 	catalogEnabled,
+	contextUsageEnabled,
 	keys,
 }: UseCatalogQueriesOptions) {
 	const { orpc: orpcController } = useRtc();
@@ -77,14 +80,14 @@ export function useCatalogQueries({
 			input: { threadId },
 		}),
 		queryKey: keys.contextUsage,
-		enabled: catalogEnabled,
-		refetchInterval: catalogEnabled ? 5000 : false,
+		enabled: contextUsageEnabled,
+		refetchInterval: contextUsageEnabled ? 5000 : false,
 	});
 	useEffect(() => {
-		if (!catalogEnabled) return;
+		if (!contextUsageEnabled) return;
 		setContextUsage(threadId, contextUsageQuery.data?.usage ?? null);
 	}, [
-		catalogEnabled,
+		contextUsageEnabled,
 		contextUsageQuery.data?.usage,
 		setContextUsage,
 		threadId,
