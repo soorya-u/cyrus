@@ -1,9 +1,10 @@
 [tools]
 bun = "1.3"
-"cargo:dotagents" = "0.1.3"
 neonctl = "2.27"
 vercel = "54.16"
 wrangler = "4.104"
+"npm:@soorya-u/dotagents" = "0.1.3"
+"npm:@playwright/cli" = "0.1.17"
 
 [settings]
 npm.package_manager = "bun"
