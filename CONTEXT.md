@@ -48,7 +48,9 @@ The worker-internal act of making a thread's persisted session live — creating
 _Avoid_: attach, connect
 
 **Session binding**:
-Whether a thread's ACP session is **live** (in worker memory), **cold** (only its persisted session id remains), or **unbound** (no live or persisted session). Cold sessions are resumed lazily on Bind.
+Whether a thread's ACP session is **live** (in worker memory) or **cold** (only
+its persisted session id remains). Every thread is born with a persisted
+binding; cold sessions are resumed lazily on Bind.
 _Avoid_: attached, connected, warm
 
 **Turn**:
