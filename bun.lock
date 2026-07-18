@@ -184,6 +184,7 @@
         "@tanstack/react-router": "^1.170.16",
         "@tanstack/react-router-devtools": "^1.167.0",
         "better-auth": "catalog:",
+        "better-result": "catalog:",
         "class-variance-authority": "^0.7.1",
         "cnfast": "^0.0.8",
         "evlog": "catalog:",
