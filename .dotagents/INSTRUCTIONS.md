@@ -2,10 +2,12 @@
 
 Cyrus is a cross-platform app for controlling AI coding agents (Claude Code, Codex, and others) that run across a user's own devices — desktop, mobile, web, laptops, and servers.
 
-## Coding Criterias
+## Coding standards
 
-- This Project is still in development, so no backward compatibility is required.
-- This project highly values "error as values" than exceptions. So always prefer "`better-result` library to get error as values.
+Follow the engineering practices in [`docs/guides/CODING_STANDARDS.md`](docs/guides/CODING_STANDARDS.md).
+Source-file conventions and naming live in [`docs/guides/STYLE_GUIDE.md`](docs/guides/STYLE_GUIDE.md).
+Testing methodology lives in [`docs/guides/TESTING_FRAMEWORK.md`](docs/guides/TESTING_FRAMEWORK.md).
+After making changes, follow [`docs/guides/VERIFY_LOOP.md`](docs/guides/VERIFY_LOOP.md) to verify them at the appropriate depth.
 
 ## Agent skills
 
