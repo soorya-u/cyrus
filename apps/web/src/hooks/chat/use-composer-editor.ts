@@ -84,17 +84,22 @@ export function useComposerEditor({
 	const editorRef = useRef<ComposerPromptEditorHandle | null>(null);
 	const ignoringEmptyDraftWriteRef = useRef(false);
 	const draftRestoreGenerationRef = useRef(0);
+	const threadIdRef = useRef(threadId);
+	threadIdRef.current = threadId;
+	const hasAgentSelected = Boolean(displayAgent);
 	const submitStateRef = useRef({
 		stopping,
 		sending,
 		hasAgents,
 		composerBlocked,
+		hasAgentSelected,
 	});
 	submitStateRef.current = {
 		stopping,
 		sending,
 		hasAgents,
 		composerBlocked,
+		hasAgentSelected,
 	};
 
 	// Arm before Lexical's mount-time empty onChange can clear localStorage.
@@ -179,7 +184,10 @@ export function useComposerEditor({
 	}, [slashFilter, slashMatchesKey]);
 
 	const restoreMessage = useCallback(
-		(message: ChatMessage) => {
+		(message: ChatMessage, originatingThreadId: string) => {
+			// A send that fails after the composer switched threads must not leak
+			// the old message into the new thread's editor.
+			if (originatingThreadId !== threadIdRef.current) return;
 			editorRef.current?.setMessage(message);
 			setHasContent(true);
 			setDraft(message);
@@ -193,31 +201,31 @@ export function useComposerEditor({
 			state.stopping ||
 			state.sending ||
 			!state.hasAgents ||
-			state.composerBlocked
+			state.composerBlocked ||
+			// Drafts start without an agent; block send until one is chosen so the
+			// message is never cleared for a submission that cannot proceed.
+			!state.hasAgentSelected
 		) {
 			return;
 		}
 		const message = editorRef.current?.getMessage() ?? [];
 		if (message.length === 0) return;
 
+		const originatingThreadId = threadIdRef.current;
 		setSending(true);
 		editorRef.current?.clear();
 		setPlainText("");
 		setHasContent(false);
 		clearDraft();
 		try {
-			if (!displayAgent) {
-				restoreMessage(message);
-				return;
-			}
 			const result = await onSend(message);
-			if (result.isErr()) restoreMessage(message);
+			if (result.isErr()) restoreMessage(message, originatingThreadId);
 		} catch {
-			restoreMessage(message);
+			restoreMessage(message, originatingThreadId);
 		} finally {
 			setSending(false);
 		}
-	}, [clearDraft, displayAgent, onSend, restoreMessage]);
+	}, [clearDraft, onSend, restoreMessage]);
 
 	const handleMentionKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {

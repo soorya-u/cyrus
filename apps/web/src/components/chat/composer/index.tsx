@@ -6,7 +6,7 @@ import {
 import { useListAgents } from "@cyrus/hooks/queries/use-list-agents";
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { useComposerDraftHydrated } from "@cyrus/hooks/stores/composer-draft";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileMentionAutocomplete } from "@/components/chat/composer/composer-attachments";
 import { ComposerPendingInteractive } from "@/components/chat/composer/composer-interactive";
 import { ComposerLowerChrome } from "@/components/chat/composer/composer-lower-chrome";
@@ -62,6 +62,11 @@ export function Composer({
 	// Drafts defer project-git until the user opens the branch chrome so opening
 	// a draft performs no worker RPCs beyond ambient listAgents.
 	const [draftGitOpen, setDraftGitOpen] = useState(false);
+	// Keep every draft lazy: a new draft/project identity must re-defer project
+	// git access until its own branch chrome is explicitly opened.
+	useEffect(() => {
+		setDraftGitOpen(false);
+	}, [threadId, projectId]);
 	const threadGitStatus = useGitStatus(localDraft ? undefined : threadId);
 	const projectGitStatus = useProjectGitStatus(
 		localDraft && draftGitOpen ? projectId : undefined
@@ -199,7 +204,11 @@ export function Composer({
 						>
 							<ComposerPrimaryAction
 								busy={busy}
-								canSend={editor.hasContent && !composerBlocked}
+								canSend={
+									editor.hasContent &&
+									!composerBlocked &&
+									Boolean(catalog.displayAgent)
+								}
 								onStop={onStop}
 								sending={editor.sending}
 								stopping={stopping}

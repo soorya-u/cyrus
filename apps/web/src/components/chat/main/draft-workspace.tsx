@@ -64,10 +64,12 @@ export function DraftWorkspace({
 
 		const selection = catalog.selectionByThread[draftId] ?? {};
 		const turnId = randomId();
+
+		let started: Awaited<ReturnType<typeof startThread.mutateAsync>>;
 		try {
 			// mutateAsync rejects with the oRPC/domain error — do not wrap in
 			// Result.tryPromise (that would erase TaggedError into UnhandledException).
-			const started = await startThread.mutateAsync({
+			started = await startThread.mutateAsync({
 				projectId,
 				agentName,
 				message,
@@ -81,22 +83,22 @@ export function DraftWorkspace({
 					personaId: selection.personaId,
 				},
 			});
-
-			clearDraftControllerState(draftId);
-			await navigate({
-				to: "/workers/$workerId/p/$projectId/t/$threadId",
-				params: {
-					workerId,
-					projectId,
-					threadId: started.threadId,
-				},
-			});
-			return Result.ok(undefined);
 		} catch (error) {
 			return Result.err(
 				error instanceof Error ? error : new Error(String(error))
 			);
 		}
+
+		clearDraftControllerState(draftId);
+		await navigate({
+			to: "/workers/$workerId/p/$projectId/t/$threadId",
+			params: {
+				workerId,
+				projectId,
+				threadId: started.threadId,
+			},
+		}).catch(() => undefined);
+		return Result.ok(undefined);
 	}
 
 	return (

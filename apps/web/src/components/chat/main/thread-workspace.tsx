@@ -127,7 +127,7 @@ export function ThreadWorkspace({
 	return (
 		<>
 			<ThreadHeader
-				projectId={projectId}
+				projectId={thread.projectId}
 				threadId={thread.id}
 				title={thread.name}
 				workerId={workerId}
