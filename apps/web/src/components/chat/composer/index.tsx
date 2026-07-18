@@ -5,97 +5,36 @@ import {
 } from "@cyrus/hooks/queries/use-git";
 import { useListAgents } from "@cyrus/hooks/queries/use-list-agents";
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
-import { useSearchEntries } from "@cyrus/hooks/queries/use-search-entries";
-import {
-	useComposerDraft,
-	useComposerDraftHydrated,
-	useComposerDraftStore,
-} from "@cyrus/hooks/stores/composer-draft";
-import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
-import type { Thread } from "@cyrus/schemas/rtc/threads";
-import type {
-	ApprovalView,
-	ElicitationView,
-	ErrorView,
-} from "@cyrus/schemas/view";
-import { inferProjectTitleFromPath } from "@cyrus/utils/path";
-import { cn } from "cnfast";
-import {
-	type ClipboardEvent,
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useComposerDraftHydrated } from "@cyrus/hooks/stores/composer-draft";
+import { useEffect, useState } from "react";
 import { FileMentionAutocomplete } from "@/components/chat/composer/composer-attachments";
-import { ComposerBranchToolbar } from "@/components/chat/composer/composer-branch-toolbar";
 import { ComposerPendingInteractive } from "@/components/chat/composer/composer-interactive";
-import {
-	type ComposerCommandKey,
-	ComposerPromptEditor,
-	type ComposerPromptEditorHandle,
-} from "@/components/chat/composer/composer-prompt-editor";
+import { ComposerLowerChrome } from "@/components/chat/composer/composer-lower-chrome";
+import { ComposerPromptEditor } from "@/components/chat/composer/composer-prompt-editor";
 import { ComposerQueueChips } from "@/components/chat/composer/composer-queue";
-import { COMPOSER_CHIP_PLACEHOLDER } from "@/components/chat/composer/composer-resource-node";
 import { ComposerSkeleton } from "@/components/chat/composer/composer-skeleton";
 import { ComposerUnavailable } from "@/components/chat/composer/composer-unavailable";
-import { ComposerFooterControls } from "@/components/chat/composer/footer-controls";
+import { ComposerFooterColumn } from "@/components/chat/composer/footer-controls";
 import { ComposerPrimaryAction } from "@/components/chat/composer/primary-action";
 import { SlashCommandAutocomplete } from "@/components/chat/composer/slash-command-autocomplete";
-import { filterSlashCommands } from "@/utils/filters";
+import { useComposerEditor } from "@/hooks/chat/use-composer-editor";
+import type { ComposerProps } from "@/types/composer";
 
-const SLASH_TOKEN_PATTERN = /(?:^|\s)\/([\w./-]*)$/;
-const AT_TOKEN_PATTERN = /(?:^|\s)@([\w./-]*)$/;
-const URL_PATTERN = /^https?:\/\/\S+$/i;
-const TRAILING_URL_PATTERN = /(?:^|\s)(https?:\/\/\S+)(\s+)$/i;
-const URL_IN_TEXT_PATTERN = /https?:\/\/\S+/i;
-const EMPTY_APPROVALS: ApprovalView[] = [];
-const EMPTY_ELICITATIONS: ElicitationView[] = [];
-
-function buildComposerPlaceholder(options: {
-	canAttachFiles: boolean;
-	canPasteUrls: boolean;
-	canSlash: boolean;
-}): string {
-	const hints = ["Ask anything"];
-	if (options.canAttachFiles) hints.push("@ files");
-	if (options.canPasteUrls) hints.push("paste URLs");
-	hints.push("$use skills");
-	if (options.canSlash) hints.push("/ for commands");
-	return hints.join(", ");
-}
-
-function textForTriggers(plainText: string): string {
-	return plainText.replaceAll(COMPOSER_CHIP_PLACEHOLDER, "");
-}
+export type { ComposerSubject } from "@/types/composer";
 
 export function Composer({
 	projectId,
 	threadId,
-	thread,
+	subject,
 	onSend,
 	onStop,
 	busy = false,
 	stopping = false,
 	threadError = null,
-	pendingApprovals = EMPTY_APPROVALS,
-	pendingElicitations = EMPTY_ELICITATIONS,
+	pendingApprovals = [],
+	pendingElicitations = [],
 	localDraft = false,
-}: {
-	projectId: string;
-	threadId: string;
-	thread: Thread;
-	onSend: (message: ChatMessage) => void | Promise<void>;
-	onStop?: () => void;
-	busy?: boolean;
-	stopping?: boolean;
-	threadError?: ErrorView | null;
-	pendingApprovals?: ApprovalView[];
-	pendingElicitations?: ElicitationView[];
-	localDraft?: boolean;
-}) {
+}: ComposerProps) {
 	const agentsQuery = useListAgents();
 	const agents = agentsQuery.data?.agents ?? [];
 	const agentsReady = agentsQuery.isSuccess;
@@ -105,7 +44,7 @@ export function Composer({
 	const { projects } = useProjects();
 	const projectCwd =
 		projects.find((project) => project.id === projectId)?.cwd ?? "";
-	const threadCwd = thread.worktreePath ?? projectCwd;
+	const threadCwd = subject.worktreePath ?? projectCwd;
 
 	const catalog = useAgentCatalog({
 		agents,
@@ -120,40 +59,22 @@ export function Composer({
 	const canPasteUrls = supportsEmbeddedContext;
 	const composerBlocked = Boolean(threadError ?? catalog.catalogError);
 
+	// Drafts defer project-git until the user opens the branch chrome so opening
+	// a draft performs no worker RPCs beyond ambient listAgents.
+	const [draftGitOpen, setDraftGitOpen] = useState(false);
+	// Keep every draft lazy: a new draft/project identity must re-defer project
+	// git access until its own branch chrome is explicitly opened.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on identity change
+	useEffect(() => {
+		setDraftGitOpen(false);
+	}, [threadId, projectId]);
 	const threadGitStatus = useGitStatus(localDraft ? undefined : threadId);
 	const projectGitStatus = useProjectGitStatus(
-		localDraft ? projectId : undefined
+		localDraft && draftGitOpen ? projectId : undefined
 	);
 	const isGitRepo =
 		(localDraft ? projectGitStatus : threadGitStatus).data?.isRepo === true;
-	const { setValue: setDraft, clear: clearDraft } = useComposerDraft(threadId);
 	const draftHydrated = useComposerDraftHydrated();
-	const [plainText, setPlainText] = useState("");
-	const [hasContent, setHasContent] = useState(false);
-	const [sending, setSending] = useState(false);
-	const [mentionHighlight, setMentionHighlight] = useState(0);
-	const [slashHighlight, setSlashHighlight] = useState(0);
-	const [mentionDismissed, setMentionDismissed] = useState(false);
-	const [slashDismissed, setSlashDismissed] = useState(false);
-	const editorRef = useRef<ComposerPromptEditorHandle | null>(null);
-	/** Ignore Lexical empty onChange until draft restore finishes for this mount. */
-	const ignoringEmptyDraftWriteRef = useRef(false);
-	const draftRestoreGenerationRef = useRef(0);
-	const submitStateRef = useRef({
-		busy,
-		stopping,
-		sending,
-		hasAgents,
-		composerBlocked,
-	});
-	submitStateRef.current = {
-		busy,
-		stopping,
-		sending,
-		hasAgents,
-		composerBlocked,
-	};
-
 	const activeElicitation =
 		pendingElicitations.find((item) => !item.resolved) ?? null;
 	const activeApproval =
@@ -167,243 +88,19 @@ export function Composer({
 		!(agentsReady && !hasAgents) &&
 		!isInteractivePending;
 
-	// Arm before Lexical's mount-time empty onChange can clear localStorage.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: re-arm on thread switch as well as editorReady
-	useLayoutEffect(() => {
-		if (!editorReady) return;
-		ignoringEmptyDraftWriteRef.current = true;
-	}, [editorReady, threadId]);
-
-	// Restore after the editor is actually mounted (not skeleton / approval UI).
-	useEffect(() => {
-		if (!editorReady) return;
-
-		const generation = ++draftRestoreGenerationRef.current;
-		let cancelled = false;
-		let attempts = 0;
-
-		const restore = () => {
-			if (cancelled || generation !== draftRestoreGenerationRef.current) return;
-			const editor = editorRef.current;
-			if (!editor) {
-				if (attempts++ < 60) requestAnimationFrame(restore);
-				return;
-			}
-
-			const draft = useComposerDraftStore.getState().draftsByThread[threadId];
-			if (draft && draft.length > 0) {
-				editor.setMessage(draft);
-				setHasContent(true);
-			} else {
-				editor.clear();
-				setPlainText("");
-				setHasContent(false);
-			}
-			ignoringEmptyDraftWriteRef.current = false;
-		};
-
-		restore();
-		return () => {
-			cancelled = true;
-		};
-	}, [editorReady, threadId]);
-
-	const triggerText = textForTriggers(plainText);
-
-	const slashFilter = useMemo(() => {
-		const match = triggerText.match(SLASH_TOKEN_PATTERN);
-		return match?.[1] ?? null;
-	}, [triggerText]);
-
-	const slashMatches = useMemo(() => {
-		if (slashFilter === null) return [];
-		return filterSlashCommands(catalog.commands, slashFilter);
-	}, [catalog.commands, slashFilter]);
-
-	const atMention = useMemo(() => {
-		if (!canAttachFiles) return null;
-		const match = triggerText.match(AT_TOKEN_PATTERN);
-		if (!match) return null;
-		return match[1] ?? "";
-	}, [canAttachFiles, triggerText]);
-
-	const filesQuery = useSearchEntries(
+	const editor = useComposerEditor({
+		threadId,
 		threadCwd,
-		atMention ?? "",
-		canAttachFiles && atMention !== null && (atMention?.length ?? 0) > 0
-	);
-	const filePaths = filesQuery.data?.entries.map((entry) => entry.path) ?? [];
-
-	const placeholder = buildComposerPlaceholder({
+		commands: catalog.commands,
+		displayAgent: catalog.displayAgent,
 		canAttachFiles,
 		canPasteUrls,
-		canSlash: catalog.commands.length > 0,
+		editorReady,
+		hasAgents,
+		stopping,
+		composerBlocked,
+		onSend,
 	});
-
-	const filePathsKey = filePaths.join("\0");
-	const slashMatchesKey = slashMatches
-		.map((command) => command.name)
-		.join("\0");
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reset when token/results change
-	useEffect(() => {
-		setMentionHighlight(0);
-		setMentionDismissed(false);
-	}, [atMention, filePathsKey]);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reset when token/results change
-	useEffect(() => {
-		setSlashHighlight(0);
-		setSlashDismissed(false);
-	}, [slashFilter, slashMatchesKey]);
-
-	function insertFileMention(path: string) {
-		editorRef.current?.replaceAtTokenWithResource(
-			path,
-			inferProjectTitleFromPath(path)
-		);
-	}
-
-	function insertSlashCommand(commandName: string) {
-		editorRef.current?.replaceSlashToken(commandName);
-	}
-
-	const submit = useCallback(async () => {
-		const state = submitStateRef.current;
-		if (
-			state.stopping ||
-			state.sending ||
-			!state.hasAgents ||
-			state.composerBlocked
-		) {
-			return;
-		}
-		const message = editorRef.current?.getMessage() ?? [];
-		if (message.length === 0) return;
-
-		setSending(true);
-		editorRef.current?.clear();
-		setPlainText("");
-		setHasContent(false);
-		clearDraft();
-		try {
-			if (!catalog.displayAgent) {
-				editorRef.current?.setMessage(message);
-				setHasContent(true);
-				setDraft(message);
-				return;
-			}
-			await onSend(message);
-		} catch {
-			editorRef.current?.setMessage(message);
-			setHasContent(true);
-			setDraft(message);
-		} finally {
-			setSending(false);
-		}
-	}, [catalog.displayAgent, clearDraft, onSend, setDraft]);
-
-	const handleMentionKeys = useCallback(
-		(key: ComposerCommandKey): boolean => {
-			if (atMention === null || mentionDismissed) return false;
-			if (key === "Escape") {
-				setMentionDismissed(true);
-				return true;
-			}
-			if (filePaths.length === 0) return false;
-			if (key === "ArrowDown") {
-				setMentionHighlight((index) => (index + 1) % filePaths.length);
-				return true;
-			}
-			if (key === "ArrowUp") {
-				setMentionHighlight(
-					(index) => (index - 1 + filePaths.length) % filePaths.length
-				);
-				return true;
-			}
-			if (key === "Enter" || key === "Tab") {
-				const path = filePaths[mentionHighlight] ?? filePaths[0];
-				if (path) {
-					editorRef.current?.replaceAtTokenWithResource(
-						path,
-						inferProjectTitleFromPath(path)
-					);
-				}
-				return true;
-			}
-			return false;
-		},
-		[atMention, filePaths, mentionDismissed, mentionHighlight]
-	);
-
-	const handleSlashKeys = useCallback(
-		(key: ComposerCommandKey): boolean => {
-			if (slashFilter === null || slashDismissed) return false;
-			if (key === "Escape") {
-				setSlashDismissed(true);
-				return true;
-			}
-			if (slashMatches.length === 0) return false;
-			if (key === "ArrowDown") {
-				setSlashHighlight((index) => (index + 1) % slashMatches.length);
-				return true;
-			}
-			if (key === "ArrowUp") {
-				setSlashHighlight(
-					(index) => (index - 1 + slashMatches.length) % slashMatches.length
-				);
-				return true;
-			}
-			if (key === "Enter" || key === "Tab") {
-				const command = slashMatches[slashHighlight] ?? slashMatches[0];
-				if (command) editorRef.current?.replaceSlashToken(command.name);
-				return true;
-			}
-			return false;
-		},
-		[slashDismissed, slashFilter, slashMatches, slashHighlight]
-	);
-
-	const handleCommandKeyDown = useCallback(
-		(key: ComposerCommandKey, _event: KeyboardEvent): boolean => {
-			if (handleMentionKeys(key) || handleSlashKeys(key)) return true;
-			if (key === "Enter") {
-				submit().catch(() => undefined);
-				return true;
-			}
-			return false;
-		},
-		[handleMentionKeys, handleSlashKeys, submit]
-	);
-
-	function handlePlainTextChange(next: string) {
-		setPlainText(next);
-		const message = editorRef.current?.getMessage() ?? [];
-		setHasContent(editorRef.current?.hasContent() ?? false);
-
-		if (message.length === 0 && ignoringEmptyDraftWriteRef.current) {
-			return;
-		}
-		setDraft(message);
-
-		const trigger = textForTriggers(next);
-		if (canPasteUrls && TRAILING_URL_PATTERN.test(trigger)) {
-			queueMicrotask(() => {
-				editorRef.current?.absorbTrailingUrl();
-			});
-		}
-	}
-
-	function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
-		if (!canPasteUrls) return;
-		const pasted = event.clipboardData.getData("text").trim();
-		if (!URL_IN_TEXT_PATTERN.test(pasted)) return;
-
-		if (URL_PATTERN.test(pasted)) {
-			event.preventDefault();
-			editorRef.current?.insertResource(pasted, pasted);
-		}
-	}
 
 	function renderComposerBody() {
 		if (agentsLoading) {
@@ -453,36 +150,38 @@ export function Composer({
 				<div className="chat-composer-glass overflow-visible rounded-4xl border border-border transition-colors duration-200 has-focus-visible:border-ring/45">
 					<div className="relative overflow-visible px-3 pt-3.5 pb-2 sm:px-4 sm:pt-4">
 						<div className="relative overflow-visible">
-							{slashFilter === null || slashDismissed ? null : (
+							{editor.slash.filter === null || editor.slash.dismissed ? null : (
 								<SlashCommandAutocomplete
-									activeIndex={slashHighlight}
+									activeIndex={editor.slash.activeIndex}
 									commands={catalog.commands}
-									filter={slashFilter}
-									onSelect={(command) => insertSlashCommand(command.name)}
+									filter={editor.slash.filter}
+									onSelect={(command) => editor.slash.select(command.name)}
 								/>
 							)}
-							{atMention === null || mentionDismissed ? null : (
+							{editor.mention.filter === null ||
+							editor.mention.dismissed ? null : (
 								<FileMentionAutocomplete
-									activeIndex={mentionHighlight}
-									filter={atMention}
-									isError={filesQuery.isError}
+									activeIndex={editor.mention.activeIndex}
+									filter={editor.mention.filter}
+									isError={editor.mention.filesQuery.isError}
 									isLoading={
-										atMention.length > 0 &&
-										(filesQuery.isFetching || filesQuery.isPending)
+										editor.mention.filter.length > 0 &&
+										(editor.mention.filesQuery.isFetching ||
+											editor.mention.filesQuery.isPending)
 									}
-									needsQuery={atMention.length === 0}
-									onSelect={insertFileMention}
-									paths={filePaths}
-									truncated={filesQuery.data?.truncated === true}
+									needsQuery={editor.mention.filter.length === 0}
+									onSelect={editor.mention.select}
+									paths={editor.mention.paths}
+									truncated={editor.mention.filesQuery.data?.truncated === true}
 								/>
 							)}
 							<ComposerPromptEditor
 								key={threadId}
-								onCommandKeyDown={handleCommandKeyDown}
-								onPaste={handlePaste}
-								onPlainTextChange={handlePlainTextChange}
-								placeholder={placeholder}
-								ref={editorRef}
+								onCommandKeyDown={editor.handlers.commandKeyDown}
+								onPaste={editor.handlers.paste}
+								onPlainTextChange={editor.handlers.plainTextChange}
+								placeholder={editor.placeholder}
+								ref={editor.editorRef}
 							/>
 						</div>
 					</div>
@@ -491,30 +190,28 @@ export function Composer({
 						className="flex min-w-0 flex-nowrap items-center justify-between gap-2 overflow-visible px-2.5 pb-2.5 sm:gap-0 sm:px-3 sm:pb-3"
 						data-chat-composer-footer="true"
 					>
-						<div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-							{catalog.catalogError ? (
-								<div className="flex min-w-0 items-center gap-2 px-1">
-									<p className="min-w-0 truncate text-destructive text-xs">
-										Could not load agent catalog. Select the agent again to
-										retry.
-									</p>
-								</div>
-							) : null}
-							<ComposerFooterControls
-								agents={agents}
-								projectId={projectId}
-								threadId={threadId}
-							/>
-						</div>
+						<ComposerFooterColumn
+							agents={agents}
+							catalogError={catalog.catalogError}
+							displayAgent={catalog.displayAgent}
+							localDraft={localDraft}
+							onRetryAgent={catalog.selectAgent}
+							projectId={projectId}
+							threadId={threadId}
+						/>
 						<div
 							className="flex shrink-0 flex-nowrap items-center justify-end gap-2"
 							data-chat-composer-actions="right"
 						>
 							<ComposerPrimaryAction
 								busy={busy}
-								canSend={hasContent && !composerBlocked}
+								canSend={
+									editor.hasContent &&
+									!composerBlocked &&
+									Boolean(catalog.displayAgent)
+								}
 								onStop={onStop}
-								sending={sending}
+								sending={editor.sending}
 								stopping={stopping}
 							/>
 						</div>
@@ -545,7 +242,7 @@ export function Composer({
 						data-chat-composer-form="true"
 						onSubmit={(event) => {
 							event.preventDefault();
-							submit().catch(() => undefined);
+							editor.submit().catch(() => undefined);
 						}}
 					>
 						{renderComposerBody()}
@@ -553,22 +250,13 @@ export function Composer({
 				</div>
 			</div>
 
-			<div
-				className={cn(
-					"chat-composer-horizontal-inset chat-composer-lower-chrome relative z-10",
-					isGitRepo
-						? "bg-transparent! pb-[calc(env(safe-area-inset-bottom)+0.25rem)] dark:bg-transparent!"
-						: "pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:pb-[calc(env(safe-area-inset-bottom)+1rem)]"
-				)}
-			>
-				{isGitRepo ? (
-					<ComposerBranchToolbar
-						key={thread.id}
-						localDraft={localDraft}
-						thread={thread}
-					/>
-				) : null}
-			</div>
+			<ComposerLowerChrome
+				draftGitOpen={draftGitOpen}
+				isGitRepo={isGitRepo}
+				localDraft={localDraft}
+				onOpenDraftGit={() => setDraftGitOpen(true)}
+				subject={subject}
+			/>
 		</div>
 	);
 }

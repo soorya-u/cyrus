@@ -128,6 +128,15 @@ describe("ThreadCoordinator session binding", () => {
 		expect(coordinator.findLiveBinding("thread-1")).toBeNull();
 	});
 
+	test("sessionBindingState errors when the thread has no persisted session", async () => {
+		const coordinator = createCoordinator();
+		const state = await coordinator.sessionBindingState("thread-1");
+		expect(state.isErr()).toBe(true);
+		if (state.isErr()) {
+			expect(state.error._tag).toBe("coordinator.agent_not_bound");
+		}
+	});
+
 	test("catalog get resumes a cold session from the persisted session id", async () => {
 		seedCold("persisted-1");
 		const coordinator = createCoordinator();

@@ -204,22 +204,17 @@ async function applyPreferences(
 				value
 			)
 		);
-		if (setResult.isErr()) {
-			// Some agents advertise catalog options but do not implement the
-			// matching ACP setter (e.g. session/set_model → Method not found).
-			// Skip that preference so first-send can still bind and prompt.
-			const message = coordinatorErrorMessage(setResult.error);
-			if (message.includes("Method not found")) continue;
-			return Result.err(setResult.error);
-		}
+		if (setResult.isErr()) return Result.err(setResult.error);
 	}
 	return Result.ok(undefined);
 }
 
 /**
- * Compound first-message operation: row → git → session → prefs → binding.
- * On failure after the row exists, persists the user message and a thread_error
- * entry and returns `bound: null` so the controller can navigate and retry.
+ * First-message setup on the coordinator: row → git → session → prefs → binding.
+ * The control-link `startThread` handler launches the prompt via `launchTurn`
+ * when `bound` is set. On failure after the row exists, persists the user
+ * message and a thread_error entry and returns `bound: null` so the controller
+ * can navigate and retry in place.
  */
 export async function startThread(
 	host: CoordinatorHost,

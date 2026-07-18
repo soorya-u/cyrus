@@ -23,6 +23,10 @@ import {
 	removeTurnFromCache,
 } from "./conversation-cache";
 
+function toError(cause: unknown): Error {
+	return cause instanceof Error ? cause : new Error(String(cause));
+}
+
 function listOpenConversationTurnIds(
 	queryClient: ReturnType<typeof useQueryClient>,
 	threadId: string
@@ -104,7 +108,7 @@ export function useThreadTurns() {
 		async (
 			threadId: string,
 			message: ChatMessage
-		): Promise<Result<void, unknown>> => {
+		): Promise<Result<void, Error>> => {
 			if (stoppingThreadIds.has(threadId)) {
 				return Result.err(new Error("thread is stopping"));
 			}
@@ -138,15 +142,17 @@ export function useThreadTurns() {
 				});
 			};
 
-			const chatResult = await Result.tryPromise(() =>
-				workerConnection.client.chat({
-					agentName,
-					message,
-					projectId: thread.projectId,
-					threadId,
-					turnId,
-				})
-			);
+			const chatResult = await Result.tryPromise({
+				try: () =>
+					workerConnection.client.chat({
+						agentName,
+						message,
+						projectId: thread.projectId,
+						threadId,
+						turnId,
+					}),
+				catch: toError,
+			});
 
 			if (chatResult.isErr()) {
 				removeTurnFromCache(queryClient, threadId, turnId);
@@ -220,7 +226,7 @@ export function useThreadTurns() {
 	function sendMessage(
 		threadId: string,
 		message: ChatMessage
-	): Promise<Result<void, unknown>> {
+	): Promise<Result<void, Error>> {
 		if (
 			isThreadActive(threadId) ||
 			listOpenConversationTurnIds(queryClient, threadId).length > 0
@@ -232,7 +238,7 @@ export function useThreadTurns() {
 		return sendMessageNow(threadId, message);
 	}
 
-	async function stopThread(threadId: string): Promise<Result<void, unknown>> {
+	async function stopThread(threadId: string): Promise<Result<void, Error>> {
 		setThreadStopping(threadId, true);
 
 		try {
@@ -243,12 +249,14 @@ export function useThreadTurns() {
 				settleTurnWaiter(threadId, turnId, { type: "turn_interrupted" });
 			}
 
-			const result = await Result.tryPromise(() =>
-				workerConnection.client.cancel({
-					agentName: resolveAgentName(threadId),
-					threadId,
-				})
-			);
+			const result = await Result.tryPromise({
+				try: () =>
+					workerConnection.client.cancel({
+						agentName: resolveAgentName(threadId),
+						threadId,
+					}),
+				catch: toError,
+			});
 
 			if (result.isOk()) {
 				await queryClient.refetchQueries({

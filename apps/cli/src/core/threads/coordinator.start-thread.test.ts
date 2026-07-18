@@ -379,7 +379,7 @@ describe("startThread", () => {
 		expect(sessions[0]?.setModel).toHaveBeenCalledWith("model-1");
 	});
 
-	test("skips unsupported model preference and still binds the session", async () => {
+	test("preference apply failure persists the message and leaves bound null", async () => {
 		setModelError = new Error(
 			'Unhandled exception: "Method not found": session/set_model'
 		);
@@ -390,16 +390,19 @@ describe("startThread", () => {
 			agentName: "mock-agent",
 			message: [{ type: "text", text: "unsupported model" }],
 			preferences: { modelId: "model-1" },
-			turnId: "turn-prefs-skip",
+			turnId: "turn-prefs-fail",
 		});
 
 		expect(started.isOk()).toBe(true);
 		if (started.isErr()) throw new Error("expected ok");
-		expect(started.value.bound).not.toBeNull();
+		expect(started.value.bound).toBeNull();
 		expect(sessions[0]?.setModel).toHaveBeenCalledWith("model-1");
 		expect(
+			conversations.some((entry) => entry.event.type === "user_message")
+		).toBe(true);
+		expect(
 			conversations.some((entry) => entry.event.type === "thread_error")
-		).toBe(false);
+		).toBe(true);
 	});
 
 	test("after a mid-flight failure the thread can be bound and prompted for retry", async () => {

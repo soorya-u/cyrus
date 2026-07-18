@@ -1,4 +1,3 @@
-import { coordinatorRuntimeError } from "@cyrus/errors/coordinator";
 import { useStartThread } from "@cyrus/hooks/queries/use-start-thread";
 import { useAgentCatalogStore } from "@cyrus/hooks/stores/agent-catalog";
 import { useComposerDraftStore } from "@cyrus/hooks/stores/composer-draft";
@@ -7,10 +6,10 @@ import {
 	useLocalDraftStore,
 } from "@cyrus/hooks/stores/local-draft";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
-import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { randomId } from "@cyrus/utils/identity";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { Result } from "better-result";
+import { useEffect } from "react";
 import { Composer } from "@/components/chat/composer";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
@@ -54,49 +53,41 @@ export function DraftWorkspace({
 		[draftId]
 	);
 
-	const draftThread = useMemo<Thread>(
-		() => ({
-			id: draftId,
-			projectId,
-			name: "New thread",
-			agentName: undefined,
-			sessionId: undefined,
-			agentLocked: undefined,
-			titleSource: null,
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString(),
-		}),
-		[draftId, projectId]
-	);
-
-	async function handleSend(message: ChatMessage) {
+	async function handleSend(
+		message: ChatMessage
+	): Promise<Result<void, Error>> {
 		const catalog = useAgentCatalogStore.getState();
-		const agentName =
-			catalog.pendingAgentByThread[draftId] ??
-			catalog.liveBindingByThread[draftId]?.agentName;
+		const agentName = catalog.pendingAgentByThread[draftId];
 		if (!agentName) {
-			// TanStack mutation / composer boundary — throw TaggedError.
-			throw coordinatorRuntimeError("no agent selected");
+			return Result.err(new Error("Select an agent before sending"));
 		}
 
 		const selection = catalog.selectionByThread[draftId] ?? {};
 		const turnId = randomId();
-		// mutateAsync already rejects with the oRPC/domain error — do not wrap
-		// in Result.tryPromise (that would erase the TaggedError into UnhandledException).
-		const started = await startThread.mutateAsync({
-			projectId,
-			agentName,
-			message,
-			turnId,
-			branch: gitChoice?.branch,
-			worktree: gitChoice?.worktree,
-			preferences: {
-				modelId: selection.modelId,
-				modeId: selection.modeId,
-				effortId: selection.effortId,
-				personaId: selection.personaId,
-			},
-		});
+
+		let started: Awaited<ReturnType<typeof startThread.mutateAsync>>;
+		try {
+			// mutateAsync rejects with the oRPC/domain error — do not wrap in
+			// Result.tryPromise (that would erase TaggedError into UnhandledException).
+			started = await startThread.mutateAsync({
+				projectId,
+				agentName,
+				message,
+				turnId,
+				branch: gitChoice?.branch,
+				worktree: gitChoice?.worktree,
+				preferences: {
+					modelId: selection.modelId,
+					modeId: selection.modeId,
+					effortId: selection.effortId,
+					personaId: selection.personaId,
+				},
+			});
+		} catch (error) {
+			return Result.err(
+				error instanceof Error ? error : new Error(String(error))
+			);
+		}
 
 		clearDraftControllerState(draftId);
 		await navigate({
@@ -106,7 +97,8 @@ export function DraftWorkspace({
 				projectId,
 				threadId: started.threadId,
 			},
-		});
+		}).catch(() => undefined);
+		return Result.ok(undefined);
 	}
 
 	return (
@@ -114,7 +106,7 @@ export function DraftWorkspace({
 			<ThreadHeader
 				localDraft
 				projectId={projectId}
-				thread={draftThread}
+				title="New thread"
 				workerId={workerId}
 			/>
 
@@ -130,7 +122,7 @@ export function DraftWorkspace({
 						localDraft
 						onSend={handleSend}
 						projectId={projectId}
-						thread={draftThread}
+						subject={{ id: draftId, projectId }}
 						threadId={draftId}
 					/>
 				</div>

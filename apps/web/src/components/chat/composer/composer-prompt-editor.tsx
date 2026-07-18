@@ -27,8 +27,8 @@ import {
 } from "lexical";
 import {
 	forwardRef,
-	type MutableRefObject,
 	type ClipboardEvent as ReactClipboardEvent,
+	type RefObject,
 	useEffect,
 	useImperativeHandle,
 	useMemo,
@@ -282,7 +282,7 @@ function CommandKeyPlugin({
 function EditorHandlePlugin({
 	handleRef,
 }: {
-	handleRef: MutableRefObject<ComposerPromptEditorHandle | null>;
+	handleRef: RefObject<ComposerPromptEditorHandle | null>;
 }) {
 	const [editor] = useLexicalComposerContext();
 

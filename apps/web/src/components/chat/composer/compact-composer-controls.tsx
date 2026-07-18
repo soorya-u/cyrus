@@ -16,10 +16,12 @@ export function CompactComposerControls({
 	agents,
 	projectId,
 	threadId,
+	localDraft = false,
 }: {
 	agents: RegisteredAgent[];
 	projectId: string;
 	threadId: string;
+	localDraft?: boolean;
 }) {
 	const {
 		displayEffort,
@@ -31,7 +33,7 @@ export function CompactComposerControls({
 		selectEffort,
 		selectMode,
 		selectPersona,
-	} = useAgentCatalog({ agents, projectId, threadId });
+	} = useAgentCatalog({ agents, localDraft, projectId, threadId });
 
 	if (modes.length === 0 && efforts.length === 0 && personas.length === 0)
 		return null;

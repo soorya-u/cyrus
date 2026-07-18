@@ -42,8 +42,8 @@ e2eDescribe("thread lifecycle", () => {
 				const before = await client.listThreads({ projectId });
 				expect(before.threads).toEqual([]);
 
-				// Probe catalog for a draft — no thread row should appear afterward
-				// (probe session is closed; controller-visible worker state stays empty).
+				// Probe leaves no thread row (session close is covered at the
+				// coordinator seam: draft-catalog-probe.test.ts).
 				const catalog = await client.getDraftCatalog({
 					agentName,
 					projectId,
