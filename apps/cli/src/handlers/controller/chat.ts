@@ -73,6 +73,8 @@ export function chatHandlers({ os, runtime }: ControllerDeps) {
 
 			const { threadId, bound } = started.value;
 
+			// Compound startThread includes the prompt: setup returns a live
+			// binding, then launchTurn starts the first turn asynchronously.
 			if (bound)
 				launchTurn({
 					agentName: input.agentName,

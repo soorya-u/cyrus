@@ -41,10 +41,12 @@ export function AgentModelPicker({
 	agents,
 	projectId,
 	threadId,
+	localDraft = false,
 }: {
 	agents: RegisteredAgent[];
 	projectId: string;
 	threadId: string;
+	localDraft?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
 	const {
@@ -55,7 +57,7 @@ export function AgentModelPicker({
 		modelsLoading,
 		selectAgent,
 		selectModel,
-	} = useAgentCatalog({ agents, projectId, threadId });
+	} = useAgentCatalog({ agents, localDraft, projectId, threadId });
 
 	const activeAgent = agents.find((agent) => agent.id === displayAgent);
 	const activeModel = models.find((model) => model.id === displayModel);

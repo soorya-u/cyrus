@@ -1,10 +1,8 @@
 import {
 	useGitStatus,
 	useInitGitRepository,
-	useProjectGitStatus,
 } from "@cyrus/hooks/queries/use-git";
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
-import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cnfast";
 import { GitBranchPlusIcon } from "lucide-react";
@@ -20,32 +18,34 @@ import { Button } from "@/components/ui/button";
 import { useChatUiStore } from "@/stores/chat-ui";
 
 type ThreadHeaderProps = {
-	thread: Thread;
+	/** Breadcrumb page title (thread name, or "New thread" for a draft). */
+	title: string;
 	workerId: string;
 	projectId: string;
+	/** Committed thread id — omitted for controller-local drafts. */
+	threadId?: string;
 	localDraft?: boolean;
 };
 
 export function ThreadHeader({
-	thread,
+	title,
 	workerId,
 	projectId,
+	threadId,
 	localDraft = false,
 }: ThreadHeaderProps) {
 	const { diffOpen, toggleDiffOpen } = useChatUiStore();
 	const { projects } = useProjects();
 	const project = projects.find((item) => item.id === projectId);
-	const threadGitStatus = useGitStatus(localDraft ? undefined : thread.id);
-	const projectGitStatus = useProjectGitStatus(
-		localDraft ? projectId : undefined
-	);
-	const gitStatus = localDraft ? projectGitStatus : threadGitStatus;
+	// Drafts never fetch git status on open — branch UI lives in the composer
+	// and loads project git only when the user opens it.
+	const gitStatus = useGitStatus(localDraft ? undefined : threadId);
 	const initGitRepository = useInitGitRepository();
 
 	const isRepo = gitStatus.data?.isRepo === true;
 
 	function renderGitAction() {
-		if (localDraft) return null;
+		if (localDraft || !threadId) return null;
 
 		if (isRepo)
 			return (
@@ -70,7 +70,7 @@ export function ThreadHeader({
 					disabled={initGitRepository.isPending}
 					onClick={() => {
 						initGitRepository.reset();
-						initGitRepository.mutate({ threadId: thread.id });
+						initGitRepository.mutate({ threadId });
 					}}
 					size="sm"
 					type="button"
@@ -100,7 +100,7 @@ export function ThreadHeader({
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
-						<BreadcrumbPage>{thread.name}</BreadcrumbPage>
+						<BreadcrumbPage>{title}</BreadcrumbPage>
 					</BreadcrumbItem>
 				</BreadcrumbList>
 			</Breadcrumb>

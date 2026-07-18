@@ -7,7 +7,6 @@ import {
 	useProjectGitStatus,
 } from "@cyrus/hooks/queries/use-git";
 import { useLocalDraftStore } from "@cyrus/hooks/stores/local-draft";
-import type { Thread } from "@cyrus/schemas/rtc/threads";
 import { cn } from "cnfast";
 import {
 	ChevronDownIcon,
@@ -33,12 +32,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import type { ComposerSubject } from "@/types/composer";
 import { filterNamedItems } from "@/utils/filters";
 
 type WorkspaceMode = "local" | "worktree";
 
 type ComposerBranchToolbarProps = {
-	thread: Thread;
+	subject: ComposerSubject;
 	localDraft?: boolean;
 };
 
@@ -108,40 +108,40 @@ function BranchListItems({
 }
 
 export function ComposerBranchToolbar({
-	thread,
+	subject,
 	localDraft = false,
 }: ComposerBranchToolbarProps) {
-	const threadGitStatus = useGitStatus(localDraft ? undefined : thread.id);
+	const threadGitStatus = useGitStatus(localDraft ? undefined : subject.id);
 	const projectGitStatus = useProjectGitStatus(
-		localDraft ? thread.projectId : undefined
+		localDraft ? subject.projectId : undefined
 	);
 	const gitStatus = localDraft ? projectGitStatus : threadGitStatus;
-	const threadGitRefs = useListGitRefs(localDraft ? undefined : thread.id);
+	const threadGitRefs = useListGitRefs(localDraft ? undefined : subject.id);
 	const projectGitRefs = useListProjectGitRefs(
-		localDraft ? thread.projectId : undefined
+		localDraft ? subject.projectId : undefined
 	);
 	const gitRefs = localDraft ? projectGitRefs : threadGitRefs;
 	const checkoutRef = useCheckoutRef();
 	const createWorktree = useCreateWorktree();
-	const draftGit = useLocalDraftStore((state) => state.gitByDraft[thread.id]);
+	const draftGit = useLocalDraftStore((state) => state.gitByDraft[subject.id]);
 	const setDraftBranch = useLocalDraftStore((state) => state.setBranch);
 	const setDraftWorktree = useLocalDraftStore((state) => state.setWorktree);
 
 	const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(() => {
 		if (localDraft) return draftGit?.worktree ? "worktree" : "local";
-		return thread.worktreePath ? "worktree" : "local";
+		return subject.worktreePath ? "worktree" : "local";
 	});
 	const [branchQuery, setBranchQuery] = useState("");
 
 	useEffect(() => {
 		if (localDraft) return;
-		if (thread.worktreePath) setWorkspaceMode("worktree");
-	}, [localDraft, thread.worktreePath]);
+		if (subject.worktreePath) setWorkspaceMode("worktree");
+	}, [localDraft, subject.worktreePath]);
 
 	useEffect(() => {
 		if (!localDraft) return;
-		setDraftWorktree(thread.id, workspaceMode === "worktree");
-	}, [localDraft, setDraftWorktree, thread.id, workspaceMode]);
+		setDraftWorktree(subject.id, workspaceMode === "worktree");
+	}, [localDraft, setDraftWorktree, subject.id, workspaceMode]);
 
 	const isRepo = gitStatus.data?.isRepo === true;
 	const statusRefName =
@@ -149,7 +149,7 @@ export function ComposerBranchToolbar({
 	const refName = localDraft
 		? (draftGit?.branch ?? statusRefName)
 		: statusRefName;
-	const hasWorktree = localDraft ? false : Boolean(thread.worktreePath);
+	const hasWorktree = localDraft ? false : Boolean(subject.worktreePath);
 	const envLocked = hasWorktree;
 	const branchMutationError = localDraft
 		? null
@@ -171,7 +171,7 @@ export function ComposerBranchToolbar({
 		setBranchQuery("");
 
 		if (localDraft) {
-			setDraftBranch(thread.id, name);
+			setDraftBranch(subject.id, name);
 			return;
 		}
 
@@ -179,11 +179,11 @@ export function ComposerBranchToolbar({
 		createWorktree.reset();
 
 		if (workspaceMode === "worktree" && !hasWorktree) {
-			createWorktree.mutate({ threadId: thread.id, refName: name });
+			createWorktree.mutate({ threadId: subject.id, refName: name });
 			return;
 		}
 
-		checkoutRef.mutate({ threadId: thread.id, refName: name });
+		checkoutRef.mutate({ threadId: subject.id, refName: name });
 	}
 
 	const workspaceLabel = resolveWorkspaceLabel(hasWorktree, workspaceMode);

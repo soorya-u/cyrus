@@ -171,7 +171,7 @@ describe("ThreadCoordinator catalog", () => {
 		expect(sessions[0]?.setModel).toHaveBeenCalledWith("model-1");
 	});
 
-	test("catalog get surfaces unbound errors", async () => {
+	test("catalog get surfaces agent-not-bound when the thread has no session", async () => {
 		threadState.agentName = undefined;
 		threadState.sessionId = undefined;
 		threadState.agentLocked = undefined;

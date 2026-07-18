@@ -15,6 +15,7 @@ import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { Result } from "better-result";
 import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 import { Composer } from "@/components/chat/composer";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
@@ -114,17 +115,23 @@ export function ThreadWorkspace({
 		});
 	}, [navigate, projectId, resolvedThreadId, threadProjectId, workerId]);
 
-	async function handleSend(message: ChatMessage) {
-		if (!thread) return;
-		const result = await sendMessage(thread.id, message);
-		if (result.isErr()) throw result.error;
+	async function handleSend(
+		message: ChatMessage
+	): Promise<Result<void, Error>> {
+		if (!thread) return Result.ok(undefined);
+		return await sendMessage(thread.id, message);
 	}
 
 	if (!thread) return null;
 
 	return (
 		<>
-			<ThreadHeader projectId={projectId} thread={thread} workerId={workerId} />
+			<ThreadHeader
+				projectId={projectId}
+				threadId={thread.id}
+				title={thread.name}
+				workerId={workerId}
+			/>
 
 			<div className="flex min-h-0 flex-1">
 				<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
@@ -141,7 +148,11 @@ export function ThreadWorkspace({
 						pendingElicitations={pendingElicitations}
 						projectId={projectId}
 						stopping={stopping}
-						thread={thread}
+						subject={{
+							id: thread.id,
+							projectId: thread.projectId,
+							worktreePath: thread.worktreePath,
+						}}
 						threadError={composerBlockingError}
 						threadId={thread.id}
 					/>

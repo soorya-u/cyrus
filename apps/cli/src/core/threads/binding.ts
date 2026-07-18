@@ -16,7 +16,7 @@ import type { AgentRuntime } from "@/core/agents/runtime";
 import type { BoundThread, CoordinatorHost } from "./types";
 
 /** Session presence on the worker: live in memory, or cold (persisted id only). */
-export type SessionBindingState = "live" | "cold" | "unbound";
+export type SessionBindingState = "live" | "cold";
 
 export function findLiveBinding(
 	agents: Map<string, AgentRuntime>,
@@ -37,8 +37,9 @@ export function findLiveBinding(
 }
 
 /**
- * Two-arm session predicate for a thread: live if the ACP session is in
- * memory, cold if only a persisted session id exists, unbound otherwise.
+ * Two-arm session predicate for a committed thread: live if the ACP session
+ * is in memory, cold if only a persisted session id exists. Threads without a
+ * binding return `agentNotBound` — drafts never reach this path.
  */
 export async function sessionBindingState(
 	host: Pick<CoordinatorHost, "findLiveBinding">,
@@ -59,7 +60,7 @@ export async function sessionBindingState(
 	) {
 		return Result.ok("cold");
 	}
-	return Result.ok("unbound");
+	return Result.err(coordinatorAgentNotBound());
 }
 
 export async function resolveCwd(

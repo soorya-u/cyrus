@@ -131,7 +131,7 @@ export class ThreadCoordinator implements CoordinatorHost {
 
 	sessionBindingState(
 		threadId: string
-	): Promise<Result<"live" | "cold" | "unbound", CoordinatorError>> {
+	): Promise<Result<"live" | "cold", CoordinatorError>> {
 		return sessionBindingStateFn(this, threadId);
 	}
 
