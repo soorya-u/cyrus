@@ -33,12 +33,13 @@ The harness under `tests/e2e/` is the repeatable default. It:
 - starts a worker with an isolated `CYRUS_HOME`; and
 - stops processes and removes temporary auth files afterward.
 
-Authenticate Neon and select the existing `dev` branch:
+Authenticate Neon and select the existing `test` branch for E2E (not `dev` or
+`production`):
 
 ```sh
 neonctl me
-neonctl branches get dev
-export DATABASE_URL="$(neonctl connection-string dev --pooled)"
+neonctl branches get test
+export DATABASE_URL="$(neonctl connection-string test --pooled)"
 ```
 
 If the repository is not linked to the correct Neon project, use
@@ -48,15 +49,16 @@ production branch.
 Run the full suite from the repository root:
 
 ```sh
-bun db:push
+DATABASE_URL="$DATABASE_URL" bun db:push
 DATABASE_URL="$DATABASE_URL" bun test:e2e
 ```
 
-For a faster tracer bullet, run only the nearest scenario:
+For a faster tracer bullet, run only the nearest scenario from the repository
+root:
 
 ```sh
 DATABASE_URL="$DATABASE_URL" CYRUS_E2E=1 \
-  bun test --serial tests/e2e/scenarios/<scenario>.test.ts --timeout 180000
+  bun test tests/e2e/scenarios/<scenario>.test.ts --timeout 180000
 ```
 
 The canonical programmatic authentication flow is implemented in
@@ -83,33 +85,50 @@ Useful database probes:
 
 ```sh
 neonctl psql dev
-neonctl branches schema-diff dev ^parent
+neonctl operations list
 ```
+
+`neonctl branches schema-diff <branch> ^parent` only works when that branch has
+a parent. The shared `dev` branch currently has no parent, so use a branch that
+does (for example `neonctl branches schema-diff test ^parent`) or compare two
+named branches explicitly.
 
 Use unique test users and records so concurrent verification sessions do not
 collide. Do not reset or delete the `dev` branch as part of verification.
 
 ### 2. Signaling server
 
-The server is the Cloudflare Worker in `apps/server/`. Ensure the variables from
-`apps/server/.env.example` are available. For local email/password auth,
-`NODE_ENV` must not be `production`; use `testing` for E2E verification.
+The server is the Cloudflare Worker in `apps/server/`. Local Wrangler loads
+bindings from the repo-root `.dev.vars` symlink (→ `apps/server/.env`). Put the
+variables from `apps/server/.env.example` there. Shell exports alone do not
+configure the Worker; edit that file (or pass Wrangler `--env-file`).
 
-At minimum, local URLs must agree:
+For local email/password auth, `NODE_ENV` must not be `production`. Use
+`development` for interactive manual work; use `testing` when matching the E2E
+harness.
+
+At minimum, local URLs in `apps/server/.env` must agree with the web controller:
 
 ```sh
-export DATABASE_URL="$(neonctl connection-string dev --pooled)"
-export NODE_ENV=testing
-export PRODUCTION_URL=http://localhost:5173
-export WEB_APP_URL=http://localhost:5173
-export ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-bun dev:server
+# apps/server/.env (also used via .dev.vars)
+DATABASE_URL=<neonctl connection-string for the branch you intend>
+NODE_ENV=development
+PRODUCTION_URL=http://localhost:5173
+WEB_APP_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
 Set the remaining Better Auth and OAuth variables from
 `apps/server/.env.example`; local placeholder OAuth values are sufficient when
-the email/password test flow is used. The server should listen on port `8787`.
-Wait for readiness:
+the email/password test flow is used.
+
+Then start the server from the repository root:
+
+```sh
+bun dev:server
+```
+
+Wrangler listens on port `8787` by default. Wait for readiness:
 
 ```sh
 curl -fsS http://localhost:8787/health
@@ -120,10 +139,12 @@ configuration or schema problem.
 
 ### 3. Web controller
 
-The controller is in `apps/web/`. From the repository root:
+The controller is in `apps/web/`. Ensure `apps/web/.env` has
+`VITE_SERVER_URL=http://localhost:8787` (or export the same value). From the
+repository root:
 
 ```sh
-VITE_SERVER_URL=http://localhost:8787 bun dev:web
+bun dev:web
 ```
 
 Vite should serve `http://localhost:5173`. Confirm it responds before continuing:
