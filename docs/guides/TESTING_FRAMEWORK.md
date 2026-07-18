@@ -1,7 +1,6 @@
 # Testing Strategy
 
-Cyrus uses a layered test setup so each part of the system is tested with the
-runtime closest to production.
+Cyrus uses a layered test setup so each part of the system is tested with the runtime closest to production.
 
 ## Runners
 
@@ -11,8 +10,7 @@ runtime closest to production.
 | React hooks, providers, Cloudflare Workers runtime | Vitest | Package-local `vitest.config.ts` |
 | Browser user flows | Playwright | Root `tests/e2e/web/` |
 
-Bun test is the default. Use Vitest when the package needs a browser-like React
-test environment or the Cloudflare Workers test pool.
+Bun test is the default. Use Vitest when the package needs a browser-like React test environment or the Cloudflare Workers test pool.
 
 ## Layout
 
@@ -25,8 +23,7 @@ tests/e2e/web/
 tooling/test/
 ```
 
-Unit tests stay close to the code they cover. Integration tests live under the
-package boundary they exercise. Cross-app tests live at the repo root.
+Unit tests stay close to the code they cover. Integration tests live under the package boundary they exercise. Cross-app tests live at the repo root.
 
 ## CI Levels
 
@@ -38,43 +35,28 @@ package boundary they exercise. Cross-app tests live at the repo root.
 | 3 | main or nightly | Integration and E2E |
 | 4 | deploy | Health and WebSocket smoke |
 
-Phase 1 only adds the unit test foundation. Integration and E2E are introduced
-in later phases.
+Phase 1 only adds the unit test foundation. Integration and E2E are introduced in later phases.
 
 ## Phase 4 notes
 
 - Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`.
-- The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an
-  isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
-- Local E2E runs may use the existing Neon `test` branch. Authenticate and link
-  the repository with `neonctl`, then derive the required connection string:
+- The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
+- Local E2E runs may use the existing Neon `test` branch. Authenticate and link the repository with `neonctl`, then derive the required connection string:
 
   ```sh
   export DATABASE_URL="$(neonctl connection-string test --pooled)"
   ```
 
-  Do not use the development or production branch for E2E runs. Tests may
-  mutate data, so use unique records and do not assume the shared `test` branch
-  is empty.
-- Run `bun db:push` against the branch before the suite; nightly CI should use an
-  isolated branch per run via the `DATABASE_URL` secret in the `testing`
-  environment.
-- Programmatic auth uses Better Auth email sign-in plus the real device-code
-  flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the
-  server runs with `NODE_ENV=testing`.
-- Playwright specs live in `tests/e2e/web/` and reuse the same harness-managed
-  stack.
-- E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch`
-  only). The job uses the GitHub `testing` environment and its `DATABASE_URL`
-  secret.
+  Do not use the development or production branch for E2E runs. Tests may mutate data, so use unique records and do not assume the shared `test` branch is empty.
+- Run `bun db:push` against the branch before the suite; nightly CI should use an isolated branch per run via the `DATABASE_URL` secret in the `testing` environment.
+- Programmatic auth uses Better Auth email sign-in plus the real device-code flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
+- Playwright specs live in `tests/e2e/web/` and reuse the same harness-managed stack.
+- E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch` only). The job uses the GitHub `testing` environment and its `DATABASE_URL` secret.
 
 ## Phase 5 notes
 
-- Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`.
-  Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets enable a
-  signaling WebSocket check in addition to `GET /health`.
-- Nightly also runs build smoke (`build:web`, CLI compile) and real
-  `node-datachannel` checks (`CYRUS_NIGHTLY_WEBRTC=1`).
+- Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`. Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets enable a signaling WebSocket check in addition to `GET /health`.
+- Nightly also runs build smoke (`build:web`, CLI compile) and real `node-datachannel` checks (`CYRUS_NIGHTLY_WEBRTC=1`).
 - `pre-push` now runs `test:unit` locally; integration and E2E stay in CI only.
 
 ## OpenSpec coverage map
@@ -90,8 +72,7 @@ in later phases.
 
 ## Deferred platform tracks
 
-- `@cyrus/desktop` — thin Bun unit tests for `lib/env` and `lib/auth`; browser
-  E2E can reuse the web Playwright suite against built assets.
+- `@cyrus/desktop` — thin Bun unit tests for `lib/env` and `lib/auth`; browser E2E can reuse the web Playwright suite against built assets.
 - `@cyrus/mobile` — Maestro or Detox when the app matures.
 - `@cyrus/styles` — out of scope for unit tests.
 - Visual regression — deferred.
@@ -100,13 +81,8 @@ in later phases.
 
 - ACP prompt mocking lives in `apps/cli/__tests__/helpers/acp-runtime.ts`.
 - CLI integration tests use isolated `CYRUS_HOME` directories and subprocess checks.
-- Hooks tests currently cover the optimistic conversations cache contract used by
-  `use-controller-threads`.
+- Hooks tests currently cover the optimistic conversations cache contract used by `use-controller-threads`.
 
-- `@cyrus/database` integration tests use isolated in-memory Turso databases via
-  `shared/database/__tests__/helpers/turso.ts`.
-- `@cyrus/server` integration tests (issue #31) use a **Neon branch** with the
-  production `neon-http` driver (`@neondatabase/serverless`). Set `DATABASE_URL`
-  to the branch connection string — no alternate driver or Docker Postgres.
-- Create an isolated Neon branch per CI job or nightly run; point
-  `DATABASE_URL` at it and run `bun db:push` before the suite.
+- `@cyrus/database` integration tests use isolated in-memory Turso databases via `shared/database/__tests__/helpers/turso.ts`.
+- `@cyrus/server` integration tests (issue #31) use a **Neon branch** with the production `neon-http` driver (`@neondatabase/serverless`). Set `DATABASE_URL` to the branch connection string — no alternate driver or Docker Postgres.
+- Create an isolated Neon branch per CI job or nightly run; point `DATABASE_URL` at it and run `bun db:push` before the suite.
