@@ -64,6 +64,7 @@ export function Composer({
 	const [draftGitOpen, setDraftGitOpen] = useState(false);
 	// Keep every draft lazy: a new draft/project identity must re-defer project
 	// git access until its own branch chrome is explicitly opened.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on identity change
 	useEffect(() => {
 		setDraftGitOpen(false);
 	}, [threadId, projectId]);
