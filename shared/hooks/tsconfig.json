@@ -3,12 +3,12 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["bun"],
+    "types": ["bun", "@testing-library/jest-dom"],
     "strictNullChecks": true,
     "paths": {
       "@cyrus/providers/*": ["../providers/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.config.ts"],
   "exclude": ["node_modules"]
 }
