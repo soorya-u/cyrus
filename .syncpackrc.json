@@ -30,9 +30,11 @@
         "drizzle-kit",
         "drizzle-orm",
         "evlog",
+        "jsdom",
         "react",
         "react-dom",
         "typescript",
+        "vitest",
         "zod"
       ],
       "dependencyTypes": ["prod", "dev"],

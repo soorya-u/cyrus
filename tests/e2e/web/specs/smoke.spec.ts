@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { loadPlaywrightState } from "../state";
+import { expect } from "@playwright/test";
+import { test } from "../fixtures";
 
 const e2eDescribe =
 	process.env.CYRUS_E2E === "1" ? test.describe : test.describe.skip;
@@ -8,12 +8,13 @@ e2eDescribe("web smoke", () => {
 	test("authenticated workspace shows the connected worker", async ({
 		page,
 		context,
+		auth,
+		cliWorker,
 	}) => {
-		const state = await loadPlaywrightState();
 		await context.addCookies([
 			{
 				name: "better-auth.session_token",
-				value: state.sessionCookie,
+				value: auth.sessionToken,
 				domain: "localhost",
 				path: "/",
 				httpOnly: true,
@@ -28,7 +29,7 @@ e2eDescribe("web smoke", () => {
 		});
 		await page.getByRole("combobox").click();
 		await expect(
-			page.getByRole("option", { name: state.workerName })
+			page.getByRole("option", { name: cliWorker.name })
 		).toBeVisible({
 			timeout: 30_000,
 		});

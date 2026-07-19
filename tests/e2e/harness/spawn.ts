@@ -1,5 +1,7 @@
 import { join } from "node:path";
 import type { Subprocess } from "bun";
+import { CLI_WORKER_COMMAND, CLI_WORKER_DIRECTORY } from "./cli-worker";
+import { WEB_DEV_COMMAND, WRANGLER_DEV_COMMAND } from "./dev-servers";
 
 const REPO_ROOT = join(import.meta.dir, "../../..");
 
@@ -34,23 +36,7 @@ export function spawnServer(
 ): ManagedProcess {
 	return spawnManaged(
 		"server",
-		[
-			"bunx",
-			"wrangler@4.104.0",
-			"dev",
-			"--config",
-			"wrangler.json",
-			"--env-file",
-			envFile,
-			"--port",
-			"8787",
-			"--ip",
-			"127.0.0.1",
-			"--log-level",
-			"warn",
-			"--show-interactive-dev-session",
-			"false",
-		],
+		[...WRANGLER_DEV_COMMAND, "--env-file", envFile],
 		{
 			env: { ...process.env, ...env },
 		}
@@ -58,22 +44,18 @@ export function spawnServer(
 }
 
 export function spawnWeb(env: Record<string, string>): ManagedProcess {
-	return spawnManaged(
-		"web",
-		["bun", "run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"],
-		{
-			cwd: join(REPO_ROOT, "apps/web"),
-			env: { ...process.env, ...env },
-		}
-	);
+	return spawnManaged("web", [...WEB_DEV_COMMAND], {
+		cwd: join(REPO_ROOT, "apps/web"),
+		env: { ...process.env, ...env },
+	});
 }
 
 export function spawnCliWorker(
 	home: string,
 	env: Record<string, string>
 ): ManagedProcess {
-	return spawnManaged("cli-worker", ["bun", "src/cli.ts", "start"], {
-		cwd: join(REPO_ROOT, "apps/cli"),
+	return spawnManaged("cli-worker", [...CLI_WORKER_COMMAND], {
+		cwd: CLI_WORKER_DIRECTORY,
 		env: { ...process.env, ...env, CYRUS_HOME: home, CYRUS_DAEMON: "1" },
 	});
 }

@@ -24,9 +24,11 @@
       "drizzle-kit": "1.0.0-rc.4",
       "drizzle-orm": "1.0.0-rc.4",
       "evlog": "^2.19.2",
+      "jsdom": "^29.1.1",
       "react": "19.2.3",
       "react-dom": "19.2.3",
       "typescript": "^7",
+      "vitest": "^4.1.10",
       "zod": "^4.3.6"
     }
   },

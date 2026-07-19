@@ -5,6 +5,7 @@ const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
 type AuthSession = {
 	sessionCookie: string;
+	sessionToken: string;
 	userId: string;
 };
 
@@ -20,7 +21,10 @@ function authHeaders(
 	};
 }
 
-function parseSessionCookie(setCookie: string | null): string {
+function parseSessionCookie(setCookie: string | null): {
+	sessionCookie: string;
+	sessionToken: string;
+} {
 	if (!setCookie) {
 		throw new Error("Missing session cookie from auth response.");
 	}
@@ -30,7 +34,10 @@ function parseSessionCookie(setCookie: string | null): string {
 		throw new Error("Could not parse better-auth.session_token cookie.");
 	}
 
-	return `better-auth.session_token=${match[1]}`;
+	return {
+		sessionCookie: `better-auth.session_token=${match[1]}`,
+		sessionToken: match[1],
+	};
 }
 
 async function signUpAndSignIn(
@@ -57,13 +64,15 @@ async function signUpAndSignIn(
 	}
 
 	const body = (await signIn.json()) as { user?: { id: string } };
-	const sessionCookie = parseSessionCookie(signIn.headers.get("set-cookie"));
+	const { sessionCookie, sessionToken } = parseSessionCookie(
+		signIn.headers.get("set-cookie")
+	);
 	const userId = body.user?.id;
 	if (!userId) {
 		throw new Error("sign-in response missing user id.");
 	}
 
-	return { sessionCookie, userId };
+	return { sessionCookie, sessionToken, userId };
 }
 
 export async function seedCliAccessToken(
@@ -76,6 +85,7 @@ export async function seedCliAccessToken(
 	token: string;
 	userId: string;
 	sessionCookie: string;
+	sessionToken: string;
 	email: string;
 }> {
 	const session = await signUpAndSignIn(serverUrl, email, password);
@@ -150,6 +160,7 @@ export async function seedCliAccessToken(
 		token: tokenBody.access_token,
 		userId: session.userId,
 		sessionCookie: session.sessionCookie,
+		sessionToken: session.sessionToken,
 		email,
 	};
 }

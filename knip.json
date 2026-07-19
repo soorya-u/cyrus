@@ -25,9 +25,18 @@
       "entry": ["src/index.ts"]
     },
     "apps/web": {
+      "entry": ["src/**/*.test.{ts,tsx}"],
       "ignoreIssues": {
         "src/components/ui/**": ["exports", "types"]
       }
+    },
+    "shared/hooks": {
+      "entry": ["src/**/*.test.{ts,tsx}"],
+      "includeEntryExports": true
+    },
+    "shared/providers": {
+      "entry": ["src/**/*.test.{ts,tsx}"],
+      "includeEntryExports": true
     },
     "shared/*": {
       "includeEntryExports": true
@@ -43,9 +52,10 @@
         "scenarios/**/*.ts",
         "harness/**/*.ts",
         "manual/**/*.ts",
-        "web/global-setup.ts",
-        "web/global-teardown.ts",
-        "web/prepare-playwright.ts"
+        "web/playwright.config.ts",
+        "web/fixtures.ts",
+        "web/prepare-database.ts",
+        "web/specs/**/*.ts"
       ]
     },
     "tooling/test": {
