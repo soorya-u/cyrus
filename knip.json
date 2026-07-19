@@ -52,9 +52,10 @@
         "scenarios/**/*.ts",
         "harness/**/*.ts",
         "manual/**/*.ts",
-        "web/global-setup.ts",
-        "web/global-teardown.ts",
-        "web/prepare-playwright.ts"
+        "web/playwright.config.ts",
+        "web/fixtures.ts",
+        "web/prepare-database.ts",
+        "web/specs/**/*.ts"
       ]
     },
     "tooling/test": {

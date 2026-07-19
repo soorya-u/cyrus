@@ -43,6 +43,12 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 
 - Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
+- The Playwright suite uses Playwright's lifecycle primitives rather than the Bun scenario stack:
+  1. Playwright's `webServer` configuration ensures the database schema exists, then starts the real Wrangler signaling server on `:8787` and Vite controller on `:5173`.
+  2. The worker-scoped `auth` fixture creates a unique account, completes the real device authorization flow, and exposes the session cookie and CLI access token to each spec.
+  3. The worker-scoped `cliWorker` fixture writes that token to an isolated `CYRUS_HOME`, starts the CLI Worker, and waits for its `connected... waiting for message` log line.
+  4. Specs install the fixture's session cookie in the browser and exercise the controller against the connected CLI Worker.
+  5. After the worker's tests finish, Playwright stops the CLI Worker, removes its temporary home, and tears down both `webServer` processes.
 - Local E2E runs may use the existing Neon `test` branch. Authenticate and link the repository with `neonctl`, then derive the required connection string:
 
   ```sh
@@ -50,9 +56,9 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
   ```
 
   Do not use the development or production branch for E2E runs. Tests may mutate data, so use unique records and do not assume the shared `test` branch is empty.
-- Run `bun db:push` against the branch before the suite; nightly CI should use an isolated branch per run via the `DATABASE_URL` secret in the `testing` environment.
+- The Bun harness and Playwright server setup ensure the schema exists before starting their signaling server; nightly CI should use an isolated branch per run via the `DATABASE_URL` secret in the `testing` environment.
 - Programmatic auth uses Better Auth email sign-in plus the real device-code flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
-- Playwright specs live in `tests/e2e/web/` and reuse the same harness-managed stack.
+- Playwright specs and their worker-scoped fixtures live in `tests/e2e/web/`.
 - E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch` only). The job uses the GitHub `testing` environment and its `DATABASE_URL` secret.
 
 ## Phase 5 notes
