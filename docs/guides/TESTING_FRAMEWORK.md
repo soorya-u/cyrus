@@ -39,7 +39,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 
 ## Phase 4 notes
 
-- Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`.
+- Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
 - Local E2E runs may use the existing Neon `test` branch. Authenticate and link the repository with `neonctl`, then derive the required connection string:
 
