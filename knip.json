@@ -22,7 +22,8 @@
       "ignoreDependencies": ["expo-updates", "expo-system-ui"]
     },
     "apps/server": {
-      "entry": ["src/index.ts"]
+      "entry": ["src/index.ts", "src/cloudflare/**/*.test.ts"],
+      "ignoreDependencies": ["cloudflare"]
     },
     "apps/web": {
       "entry": ["src/**/*.test.{ts,tsx}"],
