@@ -6,7 +6,7 @@
     "dev": "wrangler dev",
     "check:types": "tsc --noEmit",
     "test:unit": "bun run test:unit:bun && bun run test:unit:workers",
-    "test:unit:bun": "bun test src",
+    "test:unit:bun": "bun test src --path-ignore-patterns='**/cloudflare/**'",
     "test:unit:workers": "vitest run --max-workers=1 --no-isolate",
     "db:push": "dotenvx run -- drizzle-kit push",
     "db:generate": "dotenvx run -- drizzle-kit generate",

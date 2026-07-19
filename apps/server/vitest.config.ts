@@ -22,7 +22,7 @@ export default defineConfig({
 		}),
 	],
 	test: {
-		include: ["test/cloudflare/**/*.test.ts"],
+		include: ["src/cloudflare/**/*.test.ts"],
 		testTimeout: 15_000,
 	},
 });

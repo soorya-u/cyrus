@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, test } from "vitest";
-import { WS_BASE_PROTOCOL } from "../../src/auth/ws";
+import { WS_BASE_PROTOCOL } from "../auth/ws";
 
 const WS_PROTOCOL_HEADER = "Sec-WebSocket-Protocol";
 
