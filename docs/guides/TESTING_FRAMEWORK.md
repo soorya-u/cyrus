@@ -8,6 +8,8 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | --- | --- | --- |
 | Pure TypeScript, schemas, CLI, database, process tests | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
 | React DOM (components, hooks, providers) | Vitest + jsdom | Package-local `vitest.config.ts` in `apps/web`, `shared/hooks`, `shared/providers`; shared setup in `tooling/test/setup/vitest.shared.ts` |
+| `apps/server` files with a Cloudflare API surface | Vitest with `@cloudflare/vitest-pool-workers` | `apps/server/test/cloudflare/` |
+| `apps/server` files with zero Cloudflare API surface | Bun test | Colocated `*.test.ts` |
 | Browser user flows | Playwright | Root `tests/e2e/web/` |
 
 Bun test is the default. Use Vitest when the package needs a browser-like React test environment or the Cloudflare Workers test pool.
@@ -19,13 +21,14 @@ In `apps/web`, `shared/hooks`, and `shared/providers`, keep pure-logic suites on
 ```text
 <package>/src/**/*.test.ts
 <package>/__tests__/integration/
+apps/server/test/cloudflare/
 tests/e2e/harness/
 tests/e2e/scenarios/
 tests/e2e/web/
 tooling/test/
 ```
 
-Unit tests stay close to the code they cover. Integration tests live under the package boundary they exercise. Cross-app tests live at the repo root.
+Unit tests stay close to the code they cover. The `apps/server/test/cloudflare/` exception keeps workerd tests out of Bun's discovery path. Integration tests live under the package boundary they exercise. Cross-app tests live at the repo root.
 
 ## CI Levels
 
