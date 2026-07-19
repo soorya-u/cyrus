@@ -19,6 +19,7 @@ import {
 	spawnServer,
 	spawnWeb,
 	stopAll,
+	stopManaged,
 } from "./spawn";
 import { waitForHttpOk, waitForLogLine } from "./wait";
 
@@ -39,6 +40,7 @@ export type E2eStack = {
 	cyrusHome: string;
 	auth: Awaited<ReturnType<typeof seedCliAccessToken>>;
 	wranglerEnvFile?: string;
+	restartWorker: () => Promise<void>;
 };
 
 async function waitForWorkerConnected(
@@ -68,6 +70,7 @@ async function createE2eStack(
 	const cyrusHome = await createTempCyrusHome();
 	const processes: ManagedProcess[] = [];
 	let wranglerEnvFile: string | undefined;
+	let cli: ManagedProcess | undefined;
 
 	const stackResult = await Result.tryPromise(async () => {
 		await cleanupDevServerProcesses();
@@ -87,11 +90,34 @@ async function createE2eStack(
 			await waitForHttpOk(E2E_WEB_URL, { timeoutMs: 120_000 });
 		}
 
-		const cli = spawnCliWorker(cyrusHome, buildCliEnv(cyrusHome));
+		cli = spawnCliWorker(cyrusHome, buildCliEnv(cyrusHome));
 		processes.push(cli);
 		await waitForWorkerConnected(cli);
 
-		return { processes, cyrusHome, auth, wranglerEnvFile };
+		const restartWorker = async (): Promise<void> => {
+			if (!cli) {
+				throw new Error("CLI worker is not running.");
+			}
+
+			const previousCli = cli;
+			const processIndex = processes.indexOf(previousCli);
+			if (processIndex === -1) {
+				throw new Error("CLI worker is not managed by the E2E stack.");
+			}
+
+			await stopManaged(previousCli);
+			cli = spawnCliWorker(cyrusHome, buildCliEnv(cyrusHome));
+			processes[processIndex] = cli;
+			await waitForWorkerConnected(cli);
+		};
+
+		return {
+			processes,
+			cyrusHome,
+			auth,
+			wranglerEnvFile,
+			restartWorker,
+		};
 	});
 
 	if (stackResult.isErr()) {

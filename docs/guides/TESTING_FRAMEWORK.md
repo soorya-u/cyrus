@@ -45,6 +45,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 
 - Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
+- Scenarios can call `stack.restartWorker()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.test.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
 - The Playwright suite uses Playwright's lifecycle primitives rather than the Bun scenario stack:
   1. Playwright's `webServer` configuration ensures the database schema exists, then starts the real Wrangler signaling server on `:8787` and Vite controller on `:5173`.
   2. The worker-scoped `auth` fixture creates a unique account, completes the real device authorization flow, and exposes the session cookie and CLI access token to each spec.
