@@ -7,7 +7,8 @@
     "./*": "./src/*"
   },
   "scripts": {
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc --noEmit",
+    "test:unit": "bun test --path-ignore-patterns='**/*.test.tsx' --pass-with-no-tests && vitest run"
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",
@@ -17,9 +18,18 @@
     "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {
+    "@cyrus/test": "workspace:*",
     "@cyrus/typescript": "workspace:*",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "jsdom": "catalog:",
     "react": "catalog:",
-    "typescript": "catalog:"
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

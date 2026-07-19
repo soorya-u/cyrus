@@ -25,9 +25,18 @@
       "entry": ["src/index.ts"]
     },
     "apps/web": {
+      "entry": ["src/**/*.test.{ts,tsx}"],
       "ignoreIssues": {
         "src/components/ui/**": ["exports", "types"]
       }
+    },
+    "shared/hooks": {
+      "entry": ["src/**/*.test.{ts,tsx}"],
+      "includeEntryExports": true
+    },
+    "shared/providers": {
+      "entry": ["src/**/*.test.{ts,tsx}"],
+      "includeEntryExports": true
     },
     "shared/*": {
       "includeEntryExports": true

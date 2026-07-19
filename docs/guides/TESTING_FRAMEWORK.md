@@ -7,10 +7,12 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | Scope | Runner | Location |
 | --- | --- | --- |
 | Pure TypeScript, schemas, CLI, database, process tests | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
-| React hooks, providers, Cloudflare Workers runtime | Vitest | Package-local `vitest.config.ts` |
+| React DOM (components, hooks, providers) | Vitest + jsdom | Package-local `vitest.config.ts` in `apps/web`, `shared/hooks`, `shared/providers`; shared setup in `tooling/test/setup/vitest.shared.ts` |
 | Browser user flows | Playwright | Root `tests/e2e/web/` |
 
 Bun test is the default. Use Vitest when the package needs a browser-like React test environment or the Cloudflare Workers test pool.
+
+In `apps/web`, `shared/hooks`, and `shared/providers`, keep pure-logic suites on Bun as colocated `*.test.ts` files. Put DOM-rendering suites on Vitest as colocated `*.test.tsx` files. Each package's `test:unit` runs Bun (ignoring `*.test.tsx`) then `vitest run`. The shared Vitest setup registers Testing Library jest-dom matchers and cleans up the DOM after each test.
 
 ## Layout
 

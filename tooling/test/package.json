@@ -2,6 +2,10 @@
   "name": "@cyrus/test",
   "private": true,
   "type": "module",
+  "exports": {
+    "./setup/vitest.shared": "./setup/vitest.shared.ts",
+    "./setup/bun.setup": "./setup/bun.setup.ts"
+  },
   "scripts": {
     "smoke:deploy": "bun smoke/deploy.ts"
   },
@@ -10,6 +14,15 @@
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:"
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "jsdom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "vitest": "catalog:"
   }
 }
