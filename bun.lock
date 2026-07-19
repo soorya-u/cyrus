@@ -148,7 +148,7 @@
         "@types/pg": "^8.16.0",
         "drizzle-kit": "catalog:",
         "typescript": "catalog:",
-        "vitest": "^4.1.0",
+        "vitest": "catalog:",
       },
     },
     "apps/web": {
