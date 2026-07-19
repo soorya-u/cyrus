@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "check:types": "tsc --noEmit",
-    "test:unit": "bun test",
+    "test:unit": "bun run test:unit:bun && bun run test:unit:workers",
+    "test:unit:bun": "bun test src --path-ignore-patterns='**/cloudflare/**'",
+    "test:unit:workers": "vitest run --max-workers=1 --no-isolate",
     "db:push": "dotenvx run -- drizzle-kit push",
     "db:generate": "dotenvx run -- drizzle-kit generate",
     "wrangler:types": "wrangler types --cwd src",
@@ -33,10 +35,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.18.6",
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
     "@types/pg": "^8.16.0",
     "drizzle-kit": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
