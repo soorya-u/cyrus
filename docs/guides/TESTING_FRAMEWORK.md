@@ -41,6 +41,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 
 - Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
+- Scenarios can call `stack.restartWorker()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.test.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
 - Local E2E runs may use the existing Neon `test` branch. Authenticate and link the repository with `neonctl`, then derive the required connection string:
 
   ```sh
