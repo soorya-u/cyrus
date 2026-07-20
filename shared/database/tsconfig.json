@@ -6,6 +6,11 @@
     "types": ["bun"],
     "strictNullChecks": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "__tests__/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "__tests__/**/*.ts",
+    "vitest.config.ts"
+  ],
   "exclude": ["node_modules"]
 }

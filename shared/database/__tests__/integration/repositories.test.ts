@@ -1,4 +1,3 @@
-import { describe, expect, test } from "bun:test";
 import {
 	appendConversation,
 	getConversations,
@@ -16,6 +15,7 @@ import {
 	renameThread,
 	threadNameFromPrompt,
 } from "@cyrus/database/repositories/threads";
+import { describe, expect, test } from "vitest";
 import { withTempDatabase } from "../helpers/turso";
 
 describe("database repositories", () => {

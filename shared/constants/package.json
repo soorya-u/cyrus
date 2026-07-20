@@ -8,11 +8,12 @@
   },
   "scripts": {
     "check:types": "tsc --noEmit",
-    "test:unit": "bun test"
+    "test:unit": "vitest run"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
