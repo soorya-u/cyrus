@@ -5,6 +5,7 @@ export default defineConfig({
 		projects: [
 			"apps/web/vitest.config.ts",
 			"apps/server/vitest.config.ts",
+			"apps/server/vitest.node.config.ts",
 			"shared/hooks/vitest.config.ts",
 			"shared/providers/vitest.config.ts",
 		],
