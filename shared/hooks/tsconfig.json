@@ -3,7 +3,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["bun", "@testing-library/jest-dom"],
+    "types": ["@testing-library/jest-dom"],
     "strictNullChecks": true,
     "paths": {
       "@cyrus/providers/*": ["../providers/src/*"]

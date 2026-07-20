@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import { QueryClient } from "@tanstack/react-query";
+import { describe, expect, test } from "vitest";
 import { appendOptimisticUserMessage } from "./conversation-cache";
 
 describe("conversation cache", () => {
