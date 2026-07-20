@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { PATCH_DIFF_OPTIONS } from "@/components/chat/diff/patch-diff-options";
 import { useChatUiStore } from "@/stores/chat-ui";
 import { useProjectOrderStore } from "@/stores/project-order";
