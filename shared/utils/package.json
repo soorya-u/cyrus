@@ -7,7 +7,7 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "test:unit": "bun test"
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@cyrus/errors": "workspace:*",
@@ -20,6 +20,7 @@
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

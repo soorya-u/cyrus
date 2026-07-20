@@ -10,13 +10,14 @@
     "./signaling": "./src/signaling.ts"
   },
   "scripts": {
-    "test:unit": "bun test"
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:"
+    "@types/bun": "catalog:",
+    "vitest": "catalog:"
   }
 }

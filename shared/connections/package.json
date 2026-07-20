@@ -8,7 +8,7 @@
     "./rtc/worker": "./src/rtc/worker/index.ts"
   },
   "scripts": {
-    "test:unit": "bun test"
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@cyrus/errors": "workspace:*",
@@ -24,6 +24,6 @@
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:"
+    "vitest": "catalog:"
   }
 }
