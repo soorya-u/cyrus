@@ -1,11 +1,14 @@
+import { spawn } from "node:child_process";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { waitForExit } from "./process";
 
-const REPO_ROOT = join(import.meta.dir, "../../..");
+const REPO_ROOT = join(fileURLToPath(new URL("../../..", import.meta.url)));
 
 async function databaseHasSchema(databaseUrl: string): Promise<boolean> {
-	const proc = Bun.spawn(
+	const proc = spawn(
+		"bun",
 		[
-			"bun",
 			"-e",
 			`import { neon } from "@neondatabase/serverless";
 const sql = neon(process.env.DATABASE_URL);
@@ -15,11 +18,10 @@ process.exit(rows[0]?.user_table ? 0 : 1);`,
 		{
 			cwd: join(REPO_ROOT, "apps/server"),
 			env: { ...process.env, DATABASE_URL: databaseUrl },
-			stdout: "ignore",
-			stderr: "ignore",
+			stdio: ["ignore", "ignore", "ignore"],
 		}
 	);
-	return (await proc.exited) === 0;
+	return (await waitForExit(proc)) === 0;
 }
 
 export async function ensureDatabaseSchema(
@@ -34,13 +36,12 @@ export async function ensureDatabaseSchema(
 		return;
 	}
 
-	const proc = Bun.spawn(["bunx", "drizzle-kit", "push"], {
+	const proc = spawn("bunx", ["drizzle-kit", "push"], {
 		cwd: join(REPO_ROOT, "apps/server"),
 		env: { ...process.env, ...serverEnv },
-		stdout: "inherit",
-		stderr: "inherit",
+		stdio: "inherit",
 	});
-	const exitCode = await proc.exited;
+	const exitCode = await waitForExit(proc);
 	if (exitCode !== 0) {
 		throw new Error("db:push failed for E2E database.");
 	}
