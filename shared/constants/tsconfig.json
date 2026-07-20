@@ -4,6 +4,6 @@
     "types": ["bun"],
     "strictNullChecks": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "vitest.config.ts"],
   "exclude": ["node_modules"]
 }

@@ -248,7 +248,7 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
-        "@types/bun": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "shared/constants": {
@@ -258,6 +258,7 @@
         "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "shared/database": {
@@ -279,6 +280,7 @@
         "@tursodatabase/database": "^0.6.1",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "shared/errors": {
@@ -357,6 +359,7 @@
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "shared/styles": {
@@ -378,6 +381,7 @@
         "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "tests/e2e": {

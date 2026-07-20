@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import type { ServerEvent } from "@cyrus/schemas/signaling";
+import { describe, expect, test } from "vitest";
 import { createSignalingEvents } from "./peer";
 
 async function* eventStream(events: ServerEvent[]) {

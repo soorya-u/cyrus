@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import { RTCPeerConnection as NodeRTCPeerConnection } from "node-datachannel/polyfill";
+import { describe, expect, test } from "vitest";
 
 const nightlyDescribe =
 	process.env.CYRUS_NIGHTLY_WEBRTC === "1" ? describe : describe.skip;
