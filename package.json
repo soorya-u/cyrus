@@ -19,6 +19,8 @@
       "@types/bun": "^1.3.4",
       "@types/react": "^19.2.15",
       "@types/react-dom": "^19.2.3",
+      "@vitest/coverage-istanbul": "^4.1.10",
+      "@vitest/ui": "^4.1.10",
       "better-auth": "1.6.21",
       "better-result": "^2.9.2",
       "drizzle-kit": "1.0.0-rc.4",
@@ -39,6 +41,7 @@
     "check:types": "turbo check:types",
     "test": "turbo test:unit test:integration",
     "test:unit": "turbo test:unit",
+    "test:unit:ui": "vitest --ui --watch",
     "test:integration": "turbo test:integration",
     "test:e2e": "turbo test:e2e",
     "dev:mobile": "turbo -F @cyrus/mobile dev",
@@ -66,12 +69,15 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
     "@cyrus/typescript": "workspace:*",
+    "@vitest/coverage-istanbul": "catalog:",
+    "@vitest/ui": "catalog:",
     "knip": "^6.27.0",
     "lefthook": "^2.1.9",
     "syncpack": "^15.3.2",
     "turbo": "^2.10.4",
     "typescript": "catalog:",
-    "ultracite": "^7.8.1"
+    "ultracite": "^7.8.1",
+    "vitest": "catalog:"
   },
   "packageManager": "bun@1.3.14",
   "trustedDependencies": [
