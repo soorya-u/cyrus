@@ -1,6 +1,6 @@
 # `apps/server` test runner splits by Cloudflare API surface, not by package
 
-_Decided 2026-07-19._
+_Decided 2026-07-19. Superseded by [0017](./0017-vitest-default-bun-only-cli-desktop.md)._
 
 The repo's default test-runner rule is "pure logic on `bun:test`, Vitest only where DOM or workerd behavior is required" (see `docs/guides/TESTING_FRAMEWORK.md`). Applied literally to `apps/server`, that would put everything except the `Hub` Durable Object class (`apps/server/src/cloudflare/partyserver.ts`, bound in `wrangler.json`) on `bun:test`. We're drawing the line differently within this one package: any file that touches a Cloudflare-specific API — the `Hub` class itself, WebSocket/hibernation handling, the `fetch` handler — runs under `@cloudflare/vitest-pool-workers`; a file stays on `bun:test` only if it has zero Cloudflare API surface.
 
