@@ -11,7 +11,7 @@
     "check:types": "tsc --noEmit",
     "test:unit": "bun test src",
     "test:integration": "bun test __tests__/integration",
-    "build": "./scripts/build-compile.sh"
+    "build": "bun ../../scripts/ci/build-cli.ts"
   },
   "dependencies": {
     "@acp-kit/core": "^0.10.2",
