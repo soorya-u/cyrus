@@ -24,7 +24,6 @@
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
     "vitest": "catalog:"
   }
 }
