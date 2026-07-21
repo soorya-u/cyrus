@@ -55,6 +55,7 @@ tmp
 temp
 *.db
 *.db-wal
+.generated
 
 # Deployments
 .wrangler

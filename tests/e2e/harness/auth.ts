@@ -25,14 +25,11 @@ function parseSessionCookie(setCookie: string | null): {
 	sessionCookie: string;
 	sessionToken: string;
 } {
-	if (!setCookie) {
-		throw new Error("Missing session cookie from auth response.");
-	}
+	if (!setCookie) throw new Error("Missing session cookie from auth response.");
 
 	const match = setCookie.match(SESSION_COOKIE_PATTERN);
-	if (!match?.[1]) {
+	if (!match?.[1])
 		throw new Error("Could not parse better-auth.session_token cookie.");
-	}
 
 	return {
 		sessionCookie: `better-auth.session_token=${match[1]}`,
@@ -50,18 +47,16 @@ async function signUpAndSignIn(
 		headers: authHeaders({ "content-type": "application/json" }),
 		body: JSON.stringify({ email, name: "E2E User", password }),
 	});
-	if (!signUp.ok && signUp.status !== 422) {
+	if (!signUp.ok && signUp.status !== 422)
 		throw new Error(`sign-up failed: ${signUp.status} ${await signUp.text()}`);
-	}
 
 	const signIn = await fetch(`${serverUrl}/api/auth/sign-in/email`, {
 		method: "POST",
 		headers: authHeaders({ "content-type": "application/json" }),
 		body: JSON.stringify({ email, password }),
 	});
-	if (!signIn.ok) {
+	if (!signIn.ok)
 		throw new Error(`sign-in failed: ${signIn.status} ${await signIn.text()}`);
-	}
 
 	const body = (await signIn.json()) as { user?: { id: string } };
 	const { sessionCookie, sessionToken } = parseSessionCookie(

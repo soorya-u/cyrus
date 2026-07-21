@@ -11,7 +11,7 @@
     "check:types": "tsc --noEmit",
     "test:unit": "bun test src",
     "test:integration": "bun test __tests__/integration",
-    "build": "./scripts/build-compile.sh"
+    "build": "bun ./scripts/build.ts"
   },
   "dependencies": {
     "@acp-kit/core": "^0.10.2",
@@ -35,6 +35,7 @@
     "es-git": "^0.7.0",
     "extract-zip": "^2.0.1",
     "evlog": "catalog:",
+    "node-datachannel": "^0.32.3",
     "parse-diff": "^0.11.1",
     "proper-lockfile": "^4.1.2",
     "write-file-atomic": "^7.0.0",
