@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
 import type { ServerEvent } from "@cyrus/schemas/signaling";
 import { encodeHibernationRPCEvent } from "@orpc/server/hibernation";
+import { describe, expect, test } from "vitest";
 import { broadcastSignalingEvent, type SignalingWS } from "./signaling";
 
 function connection(

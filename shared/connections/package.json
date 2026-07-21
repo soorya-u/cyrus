@@ -8,7 +8,7 @@
     "./rtc/worker": "./src/rtc/worker/index.ts"
   },
   "scripts": {
-    "test:unit": "bun test"
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@cyrus/errors": "workspace:*",
@@ -34,8 +34,8 @@
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
     "node-datachannel": "^0.32.3",
-    "react-native-webrtc": "^124.0.7"
+    "react-native-webrtc": "^124.0.7",
+    "vitest": "catalog:"
   }
 }

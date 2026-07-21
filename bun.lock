@@ -222,7 +222,6 @@
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
-        "@types/bun": "catalog:",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@vitejs/plugin-react": "^4.6.0",
@@ -249,9 +248,9 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
-        "@types/bun": "catalog:",
         "node-datachannel": "^0.32.3",
         "react-native-webrtc": "^124.0.7",
+        "vitest": "catalog:",
       },
       "peerDependencies": {
         "node-datachannel": "^0.32.3",
@@ -269,6 +268,7 @@
         "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "shared/database": {
@@ -290,6 +290,7 @@
         "@tursodatabase/database": "^0.6.1",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "shared/errors": {
@@ -325,7 +326,6 @@
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
-        "@types/bun": "catalog:",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "jsdom": "catalog:",
@@ -351,7 +351,6 @@
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
-        "@types/bun": "catalog:",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "jsdom": "catalog:",
@@ -370,6 +369,7 @@
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "shared/styles": {
@@ -391,6 +391,7 @@
         "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "tests/e2e": {

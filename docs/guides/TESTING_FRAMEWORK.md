@@ -7,14 +7,13 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | Scope | Runner | Location |
 | --- | --- | --- |
 | Pure TypeScript, schemas, CLI, database, process tests | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
-| React DOM (components, hooks, providers) | Vitest + jsdom | Package-local `vitest.config.ts` in `apps/web`, `shared/hooks`, `shared/providers`; shared setup in `tooling/test/setup/vitest.shared.ts` |
-| `apps/server` files with a Cloudflare API surface | Vitest with `@cloudflare/vitest-pool-workers` | Colocated `src/cloudflare/**/*.test.ts` |
-| `apps/server` files with zero Cloudflare API surface | Bun test | Colocated `*.test.ts` |
+| `apps/web`, `shared/hooks`, `shared/providers` | Vitest + jsdom | Package-local `vitest.config.ts`; shared setup in `tooling/test/setup/vitest.shared.ts` |
+| `apps/server` | Vitest with `@cloudflare/vitest-pool-workers` | Colocated `src/**/*.test.ts` |
 | Browser user flows | Playwright | Root `tests/e2e/web/` |
 
-Bun test is the default. Use Vitest when the package needs a browser-like React test environment or the Cloudflare Workers test pool.
+Vitest is the default runner (ADR 0017). Bun stays permanently for `apps/cli` and `apps/desktop`; remaining Bun suites elsewhere migrate under #88.
 
-In `apps/web`, `shared/hooks`, and `shared/providers`, keep pure-logic suites on Bun as colocated `*.test.ts` files. Put DOM-rendering suites on Vitest as colocated `*.test.tsx` files. Each package's `test:unit` runs Bun (ignoring `*.test.tsx`) then `vitest run`. The shared Vitest setup registers Testing Library jest-dom matchers and cleans up the DOM after each test.
+In `apps/web`, `shared/hooks`, and `shared/providers`, every colocated `*.test.ts` and `*.test.tsx` suite runs on that package's Vitest + jsdom project. Each package's `test:unit` is `vitest run`. The shared Vitest setup registers Testing Library jest-dom matchers and cleans up the DOM after each test.
 
 ## Layout
 
@@ -27,7 +26,7 @@ tests/e2e/web/
 tooling/test/
 ```
 
-Unit tests stay close to the code they cover. In `apps/server`, tests under `src/cloudflare/` run on the Workers pool via `vitest`, while Bun ignores that path; every other colocated `*.test.ts` stays on Bun. Integration tests live under the package boundary they exercise. Cross-app tests live at the repo root.
+Unit tests stay close to the code they cover. In `apps/server`, every colocated `*.test.ts` runs on the Cloudflare Workers pool via `vitest`. Integration tests live under the package boundary they exercise. Cross-app tests live at the repo root.
 
 ## CI Levels
 

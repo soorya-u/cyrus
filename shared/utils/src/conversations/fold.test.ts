@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
 import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
 import type { ConversationEntry } from "@cyrus/schemas/rtc/threads";
+import { describe, expect, test } from "vitest";
 import { fold } from "./fold";
 
 function entry(

@@ -7,6 +7,6 @@ export default defineConfig({
 	test: {
 		environment: "jsdom",
 		setupFiles: ["@cyrus/test/setup/vitest.shared"],
-		include: ["src/**/*.test.tsx"],
+		include: ["src/**/*.test.{ts,tsx}"],
 	},
 });

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { usePromptQueueStore } from "./prompt-queue";
 
 const textMessage = (text: string) => [{ type: "text" as const, text }];

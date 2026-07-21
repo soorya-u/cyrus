@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { formatElapsedTimer, formatElapsedTimerNow } from "./timer";
 
 describe("timer helpers", () => {

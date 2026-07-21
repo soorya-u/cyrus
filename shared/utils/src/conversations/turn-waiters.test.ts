@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import { isTurnInterruptedError, turnWaitFailed } from "@cyrus/errors/turn";
+import { describe, expect, test } from "vitest";
 import {
 	rejectTurnWaiter,
 	settleTurnWaiter,
