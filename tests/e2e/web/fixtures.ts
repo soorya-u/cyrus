@@ -3,9 +3,10 @@ import { rm } from "node:fs/promises";
 import { test as base } from "@playwright/test";
 import { seedCliAccessToken } from "../harness/auth";
 import {
+	buildCompiledCliBinaryOnce,
 	CLI_CONNECTED_PATTERN,
 	CLI_WORKER_COMMAND,
-	CLI_WORKER_DIRECTORY,
+	CLI_WORKER_RUNTIME_DIRECTORY,
 	E2E_CLI_WORKER_NAME,
 	writeCliWorkerState,
 } from "../harness/cli-worker";
@@ -104,13 +105,14 @@ export const test = base.extend<object, WorkerFixtures>({
 	],
 	cliWorker: [
 		async ({ auth }, use) => {
+			await buildCompiledCliBinaryOnce();
 			const cyrusHome = await createTempCyrusHome();
 			await writeCliWorkerState(cyrusHome, auth.token);
 			const cliWorkerProcess = spawn(
 				CLI_WORKER_COMMAND[0],
 				[...CLI_WORKER_COMMAND.slice(1)],
 				{
-					cwd: CLI_WORKER_DIRECTORY,
+					cwd: CLI_WORKER_RUNTIME_DIRECTORY,
 					env: buildCliEnv(cyrusHome),
 					stdio: "pipe",
 				}

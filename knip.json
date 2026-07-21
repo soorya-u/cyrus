@@ -39,6 +39,12 @@
       "entry": ["src/**/*.test.{ts,tsx}"],
       "includeEntryExports": true
     },
+    "shared/connections": {
+      "includeEntryExports": true,
+      "ignoreIssues": {
+        "package.json": ["optionalPeerDependencies"]
+      }
+    },
     "shared/*": {
       "includeEntryExports": true
     },

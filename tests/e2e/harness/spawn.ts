@@ -1,12 +1,18 @@
+import {
+	type ChildProcess,
+	type SpawnOptions,
+	spawn,
+} from "node:child_process";
 import { join } from "node:path";
-import type { Subprocess } from "bun";
-import { CLI_WORKER_COMMAND, CLI_WORKER_DIRECTORY } from "./cli-worker";
+import { fileURLToPath } from "node:url";
+import { CLI_WORKER_COMMAND, CLI_WORKER_RUNTIME_DIRECTORY } from "./cli-worker";
 import { WEB_DEV_COMMAND, WRANGLER_DEV_COMMAND } from "./dev-servers";
+import { waitForExit } from "./process";
 
-const REPO_ROOT = join(import.meta.dir, "../../..");
+const REPO_ROOT = join(fileURLToPath(new URL("../../..", import.meta.url)));
 
 export type ManagedProcess = {
-	proc: Subprocess;
+	proc: ChildProcess;
 	name: string;
 };
 
@@ -16,17 +22,22 @@ export function spawnManaged(
 	options: {
 		cwd?: string;
 		env?: Record<string, string | undefined>;
-		stdout?: "pipe" | "inherit";
-		stderr?: "pipe" | "inherit";
+		stdout?: "pipe" | "inherit" | "ignore";
+		stderr?: "pipe" | "inherit" | "ignore";
 	} = {}
 ): ManagedProcess {
-	const proc = Bun.spawn(command, {
+	const [bin, ...args] = command;
+	if (!bin) {
+		throw new Error(`spawnManaged(${name}): command must not be empty`);
+	}
+
+	const spawnOptions: SpawnOptions = {
 		cwd: options.cwd ?? REPO_ROOT,
 		env: options.env,
-		stdout: options.stdout ?? "pipe",
-		stderr: options.stderr ?? "pipe",
-	});
+		stdio: ["ignore", options.stdout ?? "pipe", options.stderr ?? "pipe"],
+	};
 
+	const proc = spawn(bin, args, spawnOptions);
 	return { proc, name };
 }
 
@@ -55,7 +66,7 @@ export function spawnCliWorker(
 	env: Record<string, string>
 ): ManagedProcess {
 	return spawnManaged("cli-worker", [...CLI_WORKER_COMMAND], {
-		cwd: CLI_WORKER_DIRECTORY,
+		cwd: CLI_WORKER_RUNTIME_DIRECTORY,
 		env: { ...process.env, ...env, CYRUS_HOME: home, CYRUS_DAEMON: "1" },
 	});
 }
@@ -66,7 +77,7 @@ export async function stopManaged(process: ManagedProcess): Promise<void> {
 	}
 
 	process.proc.kill();
-	await process.proc.exited.catch(() => undefined);
+	await waitForExit(process.proc);
 }
 
 export async function stopAll(processes: ManagedProcess[]): Promise<void> {
@@ -81,7 +92,13 @@ export async function cleanupDevServerProcesses(): Promise<void> {
 		["pkill", "-f", "--host localhost --port 5173"],
 	];
 	for (const command of commands) {
-		const proc = Bun.spawn(command, { stdout: "ignore", stderr: "ignore" });
-		await proc.exited.catch(() => undefined);
+		const [bin, ...args] = command;
+		if (!bin) {
+			continue;
+		}
+		const proc = spawn(bin, args, {
+			stdio: ["ignore", "ignore", "ignore"],
+		});
+		await waitForExit(proc);
 	}
 }

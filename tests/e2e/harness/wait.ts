@@ -1,3 +1,6 @@
+import type { Readable } from "node:stream";
+import { setTimeout as sleep } from "node:timers/promises";
+
 export async function waitForHttpOk(
 	url: string,
 	{
@@ -16,71 +19,124 @@ export async function waitForHttpOk(
 		} catch {
 			// retry until timeout
 		}
-		await Bun.sleep(intervalMs);
+		await sleep(intervalMs);
 	}
 
 	throw new Error(`Timed out waiting for ${url}`);
 }
 
 async function readUntilMatch(
-	stream: ReadableStream<Uint8Array>,
+	stream: Readable,
 	pattern: RegExp,
-	timeoutMs: number
+	timeoutMs: number,
+	signal: AbortSignal
 ): Promise<string> {
-	const reader = stream.getReader();
 	const decoder = new TextDecoder();
 	let buffer = "";
 	const deadline = Date.now() + timeoutMs;
 
-	try {
-		while (Date.now() < deadline) {
-			const { done, value } = await reader.read();
-			if (value) {
-				buffer += decoder.decode(value, { stream: true });
-				const match = buffer.match(pattern);
-				if (match) {
-					return match[0];
-				}
+	return await new Promise<string>((resolve, reject) => {
+		const onData = (chunk: Buffer | string) => {
+			const bytes = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+			buffer += decoder.decode(bytes, { stream: true });
+			const match = buffer.match(pattern);
+			if (match) {
+				cleanup();
+				resolve(match[0]);
 			}
+		};
+		const onEnd = () => {
+			cleanup();
+			reject(
+				new Error(
+					`Stream ended before matching ${pattern}. Recent output: ${buffer.slice(-500)}`
+				)
+			);
+		};
+		const onError = (error: Error) => {
+			cleanup();
+			reject(error);
+		};
+		const onAbort = () => {
+			cleanup();
+			reject(Object.assign(new Error("Aborted"), { name: "AbortError" }));
+		};
+		const timer = setTimeout(
+			() => {
+				cleanup();
+				reject(
+					new Error(
+						`Timed out waiting for log line ${pattern}. Recent output: ${buffer.slice(-500)}`
+					)
+				);
+			},
+			Math.max(0, deadline - Date.now())
+		);
 
-			if (done) {
-				break;
-			}
+		const cleanup = () => {
+			clearTimeout(timer);
+			stream.off("data", onData);
+			stream.off("end", onEnd);
+			stream.off("error", onError);
+			signal.removeEventListener("abort", onAbort);
+		};
+
+		if (signal.aborted) {
+			onAbort();
+			return;
 		}
-	} finally {
-		await reader.cancel().catch(() => undefined);
-	}
 
-	throw new Error(
-		`Timed out waiting for log line ${pattern}. Recent output: ${buffer.slice(-500)}`
-	);
+		signal.addEventListener("abort", onAbort);
+		stream.on("data", onData);
+		stream.once("end", onEnd);
+		stream.once("error", onError);
+	});
+}
+
+function isAbortError(error: unknown): boolean {
+	return error instanceof Error && error.name === "AbortError";
 }
 
 export async function waitForLogLine(
-	stdout: ReadableStream<Uint8Array>,
-	stderr: ReadableStream<Uint8Array>,
+	stdout: Readable,
+	stderr: Readable,
 	pattern: RegExp,
 	timeoutMs = 120_000
 ): Promise<string> {
 	return await new Promise((resolve, reject) => {
+		const ac = new AbortController();
+		let settled = false;
 		const timer = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			ac.abort();
 			reject(new Error(`Timed out waiting for log line ${pattern}`));
 		}, timeoutMs);
 		let failures = 0;
 
 		const succeed = (match: string) => {
+			if (settled) return;
+			settled = true;
 			clearTimeout(timer);
+			ac.abort();
 			resolve(match);
 		};
 		const fail = (error: unknown) => {
+			if (settled || isAbortError(error)) return;
 			failures += 1;
 			if (failures === 2) {
+				settled = true;
 				clearTimeout(timer);
+				ac.abort();
 				reject(error);
 			}
 		};
 
-		readUntilMatch(stdout, pattern, timeoutMs).then(succeed).catch(fail);
-		readUntilMatch(stderr, pattern, timeoutMs).then(succeed).catch(fail);
+		readUntilMatch(stdout, pattern, timeoutMs, ac.signal)
+			.then(succeed)
+			.catch(fail);
+		readUntilMatch(stderr, pattern, timeoutMs, ac.signal)
+			.then(succeed)
+			.catch(fail);
 	});
 }

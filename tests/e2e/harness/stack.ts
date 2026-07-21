@@ -1,6 +1,10 @@
 import { Result } from "better-result";
 import { seedCliAccessToken } from "./auth";
-import { CLI_CONNECTED_PATTERN, writeCliWorkerState } from "./cli-worker";
+import {
+	buildCompiledCliBinaryOnce,
+	CLI_CONNECTED_PATTERN,
+	writeCliWorkerState,
+} from "./cli-worker";
 import { ensureDatabaseSchema } from "./database";
 import {
 	buildCliEnv,
@@ -48,7 +52,7 @@ async function waitForWorkerConnected(
 	timeoutMs = 120_000
 ): Promise<void> {
 	const { stderr, stdout } = cli.proc;
-	if (!(stdout instanceof ReadableStream && stderr instanceof ReadableStream)) {
+	if (!(stdout && stderr)) {
 		throw new Error(
 			"CLI worker stdout/stderr must be piped for E2E readiness."
 		);
@@ -73,6 +77,7 @@ async function createE2eStack(
 	let cli: ManagedProcess | undefined;
 
 	const stackResult = await Result.tryPromise(async () => {
+		await buildCompiledCliBinaryOnce();
 		await cleanupDevServerProcesses();
 		await ensureDatabaseSchema(serverEnv);
 
