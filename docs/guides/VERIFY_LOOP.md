@@ -47,7 +47,7 @@ For a faster tracer bullet, run only the nearest scenario from the repository ro
 
 ```sh
 DATABASE_URL="$DATABASE_URL" CYRUS_E2E=1 \
-  bun test tests/e2e/scenarios/<scenario>.test.ts --timeout 180000
+  vitest run --config tests/e2e/vitest.config.ts scenarios/<scenario>.test.ts
 ```
 
 The canonical programmatic authentication flow is implemented in `tests/e2e/harness/auth.ts`. Reuse it instead of inventing test-only auth bypasses.

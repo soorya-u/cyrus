@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { E2E_SERVER_URL, isE2eEnabled, requireE2e } from "../harness/env";
 import { connectE2eController } from "../harness/signaling";
 import { runE2eScenario } from "../harness/stack";

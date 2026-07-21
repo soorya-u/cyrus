@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import {
 	type ConnectSignalingOptions,
 	connectSignaling,
@@ -14,7 +15,7 @@ async function closeSignalingSession(
 	}
 
 	Result.try(() => session.close());
-	await Bun.sleep(50);
+	await sleep(50);
 }
 
 export type E2eControllerSession = {
@@ -47,7 +48,7 @@ export async function connectE2eController(
 		lastError = result.error;
 		await closeSignalingSession(session);
 		attempt += 1;
-		await Bun.sleep(Math.min(1000, 250 * attempt));
+		await sleep(Math.min(1000, 250 * attempt));
 	}
 
 	throw (

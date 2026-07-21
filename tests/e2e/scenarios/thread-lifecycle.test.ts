@@ -1,12 +1,12 @@
-import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
+import { describe, expect, test } from "vitest";
 import { connectE2eControllerRtc } from "../harness/controller";
 import { E2E_SERVER_URL, isE2eEnabled, requireE2e } from "../harness/env";
 import { connectE2eController } from "../harness/signaling";
 import { runE2eScenario } from "../harness/stack";
 import { wsTicketProtocols } from "../harness/ws-ticket";
 
-const REPO_ROOT = join(import.meta.dir, "../../..");
+const REPO_ROOT = join(import.meta.dirname, "../../..");
 const e2eDescribe = isE2eEnabled() ? describe : describe.skip;
 
 e2eDescribe("thread lifecycle", () => {

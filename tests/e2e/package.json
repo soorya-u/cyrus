@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:e2e": "CYRUS_E2E=1 bun test scenarios --timeout 180000 && CYRUS_E2E=1 playwright test --config web/playwright.config.ts"
+    "test:e2e": "CYRUS_E2E=1 vitest run --config vitest.config.ts && CYRUS_E2E=1 playwright test --config web/playwright.config.ts"
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",
@@ -13,6 +13,7 @@
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@playwright/test": "^1.61.1",
-    "@types/bun": "catalog:"
+    "@types/bun": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -5,5 +5,10 @@
     "moduleResolution": "Bundler",
     "noEmit": true
   },
-  "include": ["harness/**/*.ts", "scenarios/**/*.ts", "web/**/*.ts"]
+  "include": [
+    "harness/**/*.ts",
+    "scenarios/**/*.ts",
+    "web/**/*.ts",
+    "vitest.config.ts"
+  ]
 }

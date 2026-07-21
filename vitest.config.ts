@@ -12,6 +12,7 @@ export default defineConfig({
 			"shared/providers/vitest.config.ts",
 			"shared/schemas/vitest.config.ts",
 			"shared/utils/vitest.config.ts",
+			"tests/e2e/vitest.config.ts",
 		],
 		coverage: {
 			provider: "istanbul",
