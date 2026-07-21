@@ -250,6 +250,8 @@
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
         "@types/bun": "catalog:",
+        "node-datachannel": "^0.32.3",
+        "react-native-webrtc": "^124.0.7",
       },
       "peerDependencies": {
         "node-datachannel": "^0.32.3",
