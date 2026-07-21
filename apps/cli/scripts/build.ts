@@ -79,7 +79,11 @@ function rewriteNativeAddonRequires(
 				if (!args.path.includes("node-datachannel")) return;
 
 				const source = await Bun.file(args.path).text();
-				if (!source.includes(relativeNdc)) return;
+				if (!source.includes(relativeNdc)) {
+					throw new Error(
+						`node-datachannel loader at ${args.path} is missing the expected require target "${relativeNdc}"; native embedding would silently fail.`
+					);
+				}
 
 				return {
 					contents: source
@@ -98,7 +102,11 @@ function rewriteNativeAddonRequires(
 				if (!isTursoLoader) return;
 
 				const source = await Bun.file(args.path).text();
-				if (!source.includes(relativeTurso)) return;
+				if (!source.includes(relativeTurso)) {
+					throw new Error(
+						`Turso loader at ${args.path} is missing the expected require target "${relativeTurso}"; native embedding would silently fail.`
+					);
+				}
 
 				// Replace only quoted require targets. A bare replaceAll of the
 				// platform package id would also rewrite that substring inside

@@ -28,7 +28,8 @@ export async function waitForHttpOk(
 async function readUntilMatch(
 	stream: Readable,
 	pattern: RegExp,
-	timeoutMs: number
+	timeoutMs: number,
+	signal: AbortSignal
 ): Promise<string> {
 	const decoder = new TextDecoder();
 	let buffer = "";
@@ -56,6 +57,10 @@ async function readUntilMatch(
 			cleanup();
 			reject(error);
 		};
+		const onAbort = () => {
+			cleanup();
+			reject(Object.assign(new Error("Aborted"), { name: "AbortError" }));
+		};
 		const timer = setTimeout(
 			() => {
 				cleanup();
@@ -73,12 +78,23 @@ async function readUntilMatch(
 			stream.off("data", onData);
 			stream.off("end", onEnd);
 			stream.off("error", onError);
+			signal.removeEventListener("abort", onAbort);
 		};
 
+		if (signal.aborted) {
+			onAbort();
+			return;
+		}
+
+		signal.addEventListener("abort", onAbort);
 		stream.on("data", onData);
 		stream.once("end", onEnd);
 		stream.once("error", onError);
 	});
+}
+
+function isAbortError(error: unknown): boolean {
+	return error instanceof Error && error.name === "AbortError";
 }
 
 export async function waitForLogLine(
@@ -88,24 +104,39 @@ export async function waitForLogLine(
 	timeoutMs = 120_000
 ): Promise<string> {
 	return await new Promise((resolve, reject) => {
+		const ac = new AbortController();
+		let settled = false;
 		const timer = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			ac.abort();
 			reject(new Error(`Timed out waiting for log line ${pattern}`));
 		}, timeoutMs);
 		let failures = 0;
 
 		const succeed = (match: string) => {
+			if (settled) return;
+			settled = true;
 			clearTimeout(timer);
+			ac.abort();
 			resolve(match);
 		};
 		const fail = (error: unknown) => {
+			if (settled || isAbortError(error)) return;
 			failures += 1;
 			if (failures === 2) {
+				settled = true;
 				clearTimeout(timer);
+				ac.abort();
 				reject(error);
 			}
 		};
 
-		readUntilMatch(stdout, pattern, timeoutMs).then(succeed).catch(fail);
-		readUntilMatch(stderr, pattern, timeoutMs).then(succeed).catch(fail);
+		readUntilMatch(stdout, pattern, timeoutMs, ac.signal)
+			.then(succeed)
+			.catch(fail);
+		readUntilMatch(stderr, pattern, timeoutMs, ac.signal)
+			.then(succeed)
+			.catch(fail);
 	});
 }
