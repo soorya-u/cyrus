@@ -2,27 +2,24 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { initRepository } from "es-git";
 import { getGitPatch } from "@/git/patch";
 import { defaultWorktreePath, sanitizeBranchDirName } from "@/git/paths";
 import { getGitStatus } from "@/git/status";
 
 async function initRepo(dir: string) {
-	const proc = Bun.spawn(["git", "init", "-b", "main"], { cwd: dir });
-	await proc.exited;
-	await Bun.spawn(["git", "config", "user.email", "test@example.com"], {
-		cwd: dir,
-	}).exited;
-	await Bun.spawn(["git", "config", "user.name", "Test"], { cwd: dir }).exited;
+	const repo = await initRepository(dir, { initialHead: "main" });
 	await writeFile(join(dir, "README.md"), "hello\n");
-	await Bun.spawn(["git", "add", "README.md"], { cwd: dir }).exited;
-	const commit = Bun.spawn(
-		["git", "-c", "commit.gpgsign=false", "commit", "-m", "init"],
-		{ cwd: dir }
-	);
-	await commit.exited;
-	if (commit.exitCode !== 0) {
-		throw new Error("Failed to create initial commit in test repo");
-	}
+	const index = repo.index();
+	index.addPath("README.md");
+	index.write();
+	const tree = repo.getTree(index.writeTree());
+	const signature = { name: "Test", email: "test@example.com" };
+	repo.commit(tree, "init", {
+		author: signature,
+		committer: signature,
+		updateRef: "HEAD",
+	});
 }
 
 describe("git paths", () => {
