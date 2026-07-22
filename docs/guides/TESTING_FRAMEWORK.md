@@ -9,6 +9,7 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | Pure TypeScript, schemas, CLI, database, process tests | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
 | `apps/web`, `shared/hooks`, `shared/providers` | Vitest + jsdom | Package-local `vitest.config.ts`; shared setup in `tooling/test/setup/vitest.shared.ts` |
 | `apps/server` | Vitest with `@cloudflare/vitest-pool-workers` | Colocated `src/**/*.test.ts` |
+| Harness-driven E2E scenarios | Vitest + node | Root `tests/e2e/scenarios/` |
 | Browser user flows | Playwright | Root `tests/e2e/web/` |
 
 Vitest is the default runner (ADR 0017). Bun stays permanently for `apps/cli` and `apps/desktop`; remaining Bun suites elsewhere migrate under #88.
@@ -42,7 +43,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 
 ## Phase 4 notes
 
-- Root Bun scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
+- Root Vitest scenarios live in `tests/e2e/scenarios/` behind `NODE_ENV=testing`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
 - Scenarios can call `stack.restartWorker()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.test.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
 - The Playwright suite uses Playwright's lifecycle primitives rather than the Bun scenario stack:
@@ -58,7 +59,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
   ```
 
   Do not use the development or production branch for E2E runs. Tests may mutate data, so use unique records and do not assume the shared `test` branch is empty.
-- The Bun harness and Playwright server setup ensure the schema exists before starting their signaling server; nightly CI should use an isolated branch per run via the `DATABASE_URL` secret in the `testing` environment.
+- The Vitest harness and Playwright server setup ensure the schema exists before starting their signaling server; nightly CI should use an isolated branch per run via the `DATABASE_URL` secret in the `testing` environment.
 - Programmatic auth uses Better Auth email sign-in plus the real device-code flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
 - Playwright specs and their worker-scoped fixtures live in `tests/e2e/web/`.
 - E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch` only). The job uses the GitHub `testing` environment and its `DATABASE_URL` secret.

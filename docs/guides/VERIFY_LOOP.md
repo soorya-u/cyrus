@@ -46,8 +46,8 @@ DATABASE_URL="$DATABASE_URL" bun test:e2e
 For a faster tracer bullet, run only the nearest scenario from the repository root:
 
 ```sh
-DATABASE_URL="$DATABASE_URL" CYRUS_E2E=1 \
-  bun test tests/e2e/scenarios/<scenario>.test.ts --timeout 180000
+DATABASE_URL="$DATABASE_URL" NODE_ENV=testing \
+  vitest run --root tests/e2e scenarios/<scenario>.test.ts
 ```
 
 The canonical programmatic authentication flow is implemented in `tests/e2e/harness/auth.ts`. Reuse it instead of inventing test-only auth bypasses.

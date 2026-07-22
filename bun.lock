@@ -405,6 +405,7 @@
         "@cyrus/typescript": "workspace:*",
         "@playwright/test": "^1.61.1",
         "@types/bun": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "tooling/github": {
