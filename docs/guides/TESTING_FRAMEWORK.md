@@ -8,12 +8,12 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | --- | --- | --- |
 | `apps/cli`, `apps/desktop` | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
 | Vitest workspace packages (`apps/web`, `apps/server`, `shared/*`) | Root Vitest Projects | `vitest.config.ts` at the repo root; shared DOM setup in `tooling/test/setup/vitest.shared.ts` |
-| Harness-driven E2E scenarios | Vitest + node | Root `tests/e2e/scenarios/` (workspace project `@cyrus/e2e`) |
+| Harness-driven E2E scenarios | Vitest + node | Root `tests/e2e/scenarios/` (workspace project `e2e`) |
 | Browser user flows | Playwright | Root `tests/e2e/web/` |
 
 Vitest is the default runner (ADR 0017). Bun stays permanently for `apps/cli` and `apps/desktop`.
 
-Root `bun test:unit` runs the Vitest workspace unit projects (every project except `@cyrus/e2e` and `@cyrus/database-integration`) plus `apps/cli`'s Bun unit suite. Use `vitest run --project <name>` to scope a single project. DOM packages (`apps/web`, `shared/hooks`, `shared/providers`) share Testing Library jest-dom matchers and DOM cleanup via `@cyrus/test/setup/vitest.shared`.
+Root `bun test:unit` runs `vitest run --project='@cyrus/*'` (every unit project; `e2e` and `database-integration` sit outside that glob) plus `apps/cli`'s Bun unit suite. Use `vitest run --project <name>` to scope a single project. DOM packages (`apps/web`, `shared/hooks`, `shared/providers`) share Testing Library jest-dom matchers and DOM cleanup via `@cyrus/test/setup/vitest.shared`.
 
 ## Layout
 

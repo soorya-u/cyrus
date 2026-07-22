@@ -78,7 +78,8 @@ export default defineConfig({
 			{
 				root: packageRoot("shared/database"),
 				test: {
-					name: "@cyrus/database-integration",
+					// Outside the `@cyrus/*` unit glob so root test:unit / test:unit:ui skip it.
+					name: "database-integration",
 					environment: "node",
 					include: ["__tests__/integration/**/*.test.ts"],
 				},
@@ -120,7 +121,8 @@ export default defineConfig({
 			{
 				root: packageRoot("tests/e2e"),
 				test: {
-					name: "@cyrus/e2e",
+					// Outside the `@cyrus/*` unit glob so root test:unit / test:unit:ui skip it.
+					name: "e2e",
 					environment: "node",
 					include: ["scenarios/**/*.test.ts"],
 					testTimeout: 180_000,
