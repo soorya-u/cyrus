@@ -76,6 +76,6 @@ jobs:
       - uses: ./tooling/github/setup
 
       - name: node-datachannel integration
-        run: bun -F @cyrus/connections test:unit
+        run: bunx vitest run --project @cyrus/connections
         env:
           CYRUS_NIGHTLY_WEBRTC: "1"

@@ -10,8 +10,7 @@
     "check:types": "tsc --noEmit",
     "db:push": "dotenvx run -- drizzle-kit push",
     "db:studio": "dotenvx run -- drizzle-kit studio",
-    "test:unit": "vitest run src",
-    "test:integration": "vitest run __tests__/integration"
+    "test:integration": "vitest run --config ../../vitest.config.ts --project @cyrus/database-integration"
   },
   "dependencies": {
     "@cyrus/errors": "workspace:*",

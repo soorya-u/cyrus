@@ -9,6 +9,6 @@
       "@cyrus/providers/*": ["../providers/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"]
 }
