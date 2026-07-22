@@ -2,15 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { initRepository } from "es-git";
 import { listFiles, searchFiles } from "./fs";
 
 async function initGitRepo(cwd: string): Promise<void> {
-	const exitCode = await Bun.spawn(["git", "init"], {
-		cwd,
-		stdout: "ignore",
-		stderr: "ignore",
-	}).exited;
-	if (exitCode !== 0) throw new Error("git init failed");
+	await initRepository(cwd);
 }
 
 describe("listFiles", () => {

@@ -9,9 +9,6 @@
     "./rtc/*": "./src/rtc/*.ts",
     "./signaling": "./src/signaling.ts"
   },
-  "scripts": {
-    "test:unit": "vitest run"
-  },
   "dependencies": {
     "zod": "catalog:"
   },

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:e2e": "NODE_ENV=testing vitest run --config vitest.config.ts && NODE_ENV=testing playwright test --config web/playwright.config.ts"
+    "test:e2e": "NODE_ENV=testing vitest run --config ../../vitest.config.ts --project e2e && NODE_ENV=testing playwright test --config web/playwright.config.ts"
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",

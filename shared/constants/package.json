@@ -7,8 +7,7 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "check:types": "tsc --noEmit",
-    "test:unit": "vitest run"
+    "check:types": "tsc --noEmit"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",

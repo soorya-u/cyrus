@@ -6,9 +6,6 @@
   "exports": {
     "./*": "./src/*.ts"
   },
-  "scripts": {
-    "test:unit": "vitest run"
-  },
   "dependencies": {
     "@cyrus/errors": "workspace:*",
     "@cyrus/schemas": "workspace:*",

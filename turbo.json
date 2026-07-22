@@ -22,11 +22,6 @@
     "check:types": {
       "dependsOn": ["^check:types"]
     },
-    "test:unit": {
-      "dependsOn": ["^test:unit"],
-      "inputs": ["$TURBO_DEFAULT$", "src/**/*.test.ts", "src/**/*.test.tsx"],
-      "outputs": []
-    },
     "test:integration": {
       "dependsOn": ["^build"],
       "cache": false

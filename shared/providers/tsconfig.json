@@ -6,6 +6,6 @@
     "types": ["@testing-library/jest-dom"],
     "strictNullChecks": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"]
 }
