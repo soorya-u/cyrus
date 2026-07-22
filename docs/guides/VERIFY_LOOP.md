@@ -46,7 +46,7 @@ DATABASE_URL="$DATABASE_URL" bun test:e2e
 For a faster tracer bullet, run only the nearest scenario from the repository root:
 
 ```sh
-DATABASE_URL="$DATABASE_URL" CYRUS_E2E=1 \
+DATABASE_URL="$DATABASE_URL" NODE_ENV=testing \
   vitest run --config tests/e2e/vitest.config.ts scenarios/<scenario>.test.ts
 ```
 

@@ -13,7 +13,7 @@ permissions:
 
 env:
   TURBO_TELEMETRY_DISABLED: 1
-  CYRUS_E2E: "1"
+  NODE_ENV: "testing"
 
 jobs:
   test-e2e:
@@ -45,7 +45,7 @@ jobs:
         run: bun test:e2e
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          CYRUS_E2E: "1"
+          NODE_ENV: "testing"
 
   build-smoke:
     name: Build Smoke

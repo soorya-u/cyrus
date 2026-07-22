@@ -7,7 +7,7 @@
     "WEB_APP_URL",
     "CORS_ORIGIN",
     "CLI_PUBLIC_SERVER_URL",
-    "CYRUS_E2E",
+    "NODE_ENV",
     "CYRUS_NIGHTLY_WEBRTC"
   ],
   "tasks": {

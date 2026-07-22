@@ -7,12 +7,12 @@ export const E2E_SERVER_URL = "http://localhost:8787";
 export const E2E_WEB_URL = "http://localhost:5173";
 
 export function isE2eEnabled(): boolean {
-	return process.env.CYRUS_E2E === "1";
+	return process.env.NODE_ENV === "testing";
 }
 
 export function requireE2e(): void {
 	if (!isE2eEnabled()) {
-		throw new Error("Set CYRUS_E2E=1 to run end-to-end tests.");
+		throw new Error("Set NODE_ENV=testing to run end-to-end tests.");
 	}
 }
 

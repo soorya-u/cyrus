@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { test } from "../fixtures";
 
 const e2eDescribe =
-	process.env.CYRUS_E2E === "1" ? test.describe : test.describe.skip;
+	process.env.NODE_ENV === "testing" ? test.describe : test.describe.skip;
 
 e2eDescribe("web smoke", () => {
 	test("authenticated workspace shows the connected worker", async ({

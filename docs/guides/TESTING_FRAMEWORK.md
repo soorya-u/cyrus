@@ -43,7 +43,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 
 ## Phase 4 notes
 
-- Root Vitest scenarios live in `tests/e2e/scenarios/` behind `CYRUS_E2E=1`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
+- Root Vitest scenarios live in `tests/e2e/scenarios/` behind `NODE_ENV=testing`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
 - Scenarios can call `stack.restartWorker()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.test.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
 - The Playwright suite uses Playwright's lifecycle primitives rather than the Bun scenario stack:
