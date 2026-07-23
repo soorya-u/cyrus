@@ -10,12 +10,12 @@
     "check:types": "tsc --noEmit"
   },
   "dependencies": {
-    "@orpc/server": "catalog:",
-    "better-result": "catalog:"
+    "@orpc/server": "catalog:rpc",
+    "better-result": "catalog:core"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "@types/bun": "catalog:core",
+    "typescript": "catalog:core"
   }
 }

@@ -9,15 +9,15 @@
   "dependencies": {
     "@cyrus/errors": "workspace:*",
     "@cyrus/schemas": "workspace:*",
-    "better-result": "catalog:",
+    "better-result": "catalog:core",
     "date-fns": "^4.4.0",
     "random-word-slugs": "^0.1.7",
-    "zod": "catalog:"
+    "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/bun": "catalog:core",
+    "typescript": "catalog:core",
+    "vitest": "catalog:testing"
   }
 }

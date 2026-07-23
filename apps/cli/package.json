@@ -23,31 +23,31 @@
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
     "@ff-labs/fff-node": "^0.9.6",
-    "@orpc/server": "catalog:",
-    "@t3-oss/env-core": "catalog:",
+    "@orpc/server": "catalog:rpc",
+    "@t3-oss/env-core": "catalog:env",
     "@tursodatabase/database": "^0.6.1",
-    "@soorya-u/better-auth-ws-ticket": "catalog:",
+    "@soorya-u/better-auth-ws-ticket": "catalog:auth",
     "async-mutex": "^0.5.0",
-    "better-auth": "catalog:",
-    "better-result": "catalog:",
+    "better-auth": "catalog:auth",
+    "better-result": "catalog:core",
     "commander": "^15.0.0",
     "diff": "^7.0.0",
     "es-git": "^0.7.0",
     "extract-zip": "^2.0.1",
-    "evlog": "catalog:",
+    "evlog": "catalog:observability",
     "node-datachannel": "^0.32.3",
     "parse-diff": "^0.11.1",
     "proper-lockfile": "^4.1.2",
     "write-file-atomic": "^7.0.0",
     "yocto-spinner": "^1.2.1",
-    "zod": "catalog:"
+    "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
+    "@types/bun": "catalog:core",
     "@types/diff": "^7.0.0",
     "@types/proper-lockfile": "^4.1.4",
     "@types/write-file-atomic": "^4.0.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:core"
   }
 }

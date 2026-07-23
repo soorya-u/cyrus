@@ -13,30 +13,30 @@
     "auth:generate": "dotenvx run -- bun x @better-auth/cli generate -y --config src/auth/index.ts --output src/db/models/auth.ts"
   },
   "dependencies": {
-    "@better-auth/expo": "catalog:",
+    "@better-auth/expo": "catalog:auth",
     "@cyrus/connections": "workspace:*",
     "@cyrus/schemas": "workspace:*",
-    "@dotenvx/dotenvx": "catalog:",
+    "@dotenvx/dotenvx": "catalog:env",
     "@neondatabase/serverless": "^1.1.0",
-    "@orpc/server": "catalog:",
-    "@soorya-u/better-auth-desktop": "catalog:",
-    "@soorya-u/better-auth-ws-ticket": "catalog:",
-    "@t3-oss/env-core": "catalog:",
-    "better-auth": "catalog:",
-    "better-result": "catalog:",
-    "drizzle-orm": "catalog:",
-    "evlog": "catalog:",
+    "@orpc/server": "catalog:rpc",
+    "@soorya-u/better-auth-desktop": "catalog:auth",
+    "@soorya-u/better-auth-ws-ticket": "catalog:auth",
+    "@t3-oss/env-core": "catalog:env",
+    "better-auth": "catalog:auth",
+    "better-result": "catalog:core",
+    "drizzle-orm": "catalog:database",
+    "evlog": "catalog:observability",
     "hono": "^4.12.27",
     "partyserver": "^0.5.8",
     "pg": "^8.17.1",
-    "zod": "catalog:"
+    "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
+    "@types/bun": "catalog:core",
     "@types/pg": "^8.16.0",
-    "drizzle-kit": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "drizzle-kit": "catalog:database",
+    "typescript": "catalog:core",
+    "vitest": "catalog:testing"
   }
 }

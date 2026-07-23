@@ -7,13 +7,13 @@
   },
   "dependencies": {
     "@cyrus/connections": "workspace:*",
-    "better-result": "catalog:",
+    "better-result": "catalog:core",
     "node-datachannel": "^0.32.3"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@playwright/test": "^1.61.1",
-    "@types/bun": "catalog:",
-    "vitest": "catalog:"
+    "@types/bun": "catalog:core",
+    "vitest": "catalog:testing"
   }
 }

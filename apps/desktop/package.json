@@ -13,18 +13,18 @@
     "check:types": "tsc --noEmit"
   },
   "dependencies": {
-    "@soorya-u/better-auth-desktop": "catalog:",
-    "@t3-oss/env-core": "catalog:",
-    "better-auth": "catalog:",
+    "@soorya-u/better-auth-desktop": "catalog:auth",
+    "@t3-oss/env-core": "catalog:env",
+    "better-auth": "catalog:auth",
     "electrobun": "^1.18.1",
-    "evlog": "catalog:",
-    "zod": "catalog:"
+    "evlog": "catalog:observability",
+    "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
+    "@types/bun": "catalog:core",
     "@types/three": "^0.184.1",
     "concurrently": "^9.1.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:core"
   }
 }
