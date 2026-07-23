@@ -9,17 +9,17 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
-    "@better-auth/expo": "catalog:",
+    "@better-auth/expo": "catalog:auth",
     "@cyrus/connections": "workspace:*",
     "@cyrus/hooks": "workspace:*",
     "@cyrus/providers": "workspace:*",
     "@cyrus/utils": "workspace:*",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@orpc/tanstack-query": "^1.14.6",
-    "@soorya-u/better-auth-ws-ticket": "catalog:",
-    "@t3-oss/env-core": "catalog:",
-    "better-auth": "catalog:",
-    "evlog": "catalog:",
+    "@soorya-u/better-auth-ws-ticket": "catalog:auth",
+    "@t3-oss/env-core": "catalog:env",
+    "better-auth": "catalog:auth",
+    "evlog": "catalog:observability",
     "expo": "^57.0.6",
     "expo-constants": "~57.0.5",
     "expo-font": "~57.0.1",
@@ -27,7 +27,7 @@
     "expo-router": "~57.0.6",
     "expo-secure-store": "~57.0.1",
     "heroui-native": "^1.0.5",
-    "react": "catalog:",
+    "react": "catalog:react",
     "react-native": "0.86.0",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-keyboard-controller": "1.21.9",
@@ -41,12 +41,12 @@
     "tailwind-variants": "^3.2.2",
     "tailwindcss": "^4.3.2",
     "uniwind": "^1.10.0",
-    "zod": "catalog:"
+    "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
-    "@types/react": "catalog:",
-    "typescript": "catalog:"
+    "@types/bun": "catalog:core",
+    "@types/react": "catalog:react",
+    "typescript": "catalog:core"
   }
 }

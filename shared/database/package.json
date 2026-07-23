@@ -17,17 +17,17 @@
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
     "@tursodatabase/database-common": "^0.6.1",
-    "better-result": "catalog:",
-    "drizzle-kit": "catalog:",
-    "drizzle-orm": "catalog:",
-    "evlog": "catalog:",
-    "zod": "catalog:"
+    "better-result": "catalog:core",
+    "drizzle-kit": "catalog:database",
+    "drizzle-orm": "catalog:database",
+    "evlog": "catalog:observability",
+    "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@tursodatabase/database": "^0.6.1",
-    "@types/bun": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/bun": "catalog:core",
+    "typescript": "catalog:core",
+    "vitest": "catalog:testing"
   }
 }

@@ -10,11 +10,11 @@
     "./signaling": "./src/signaling.ts"
   },
   "dependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
-    "@types/bun": "catalog:",
-    "vitest": "catalog:"
+    "@types/bun": "catalog:core",
+    "vitest": "catalog:testing"
   }
 }

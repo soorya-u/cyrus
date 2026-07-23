@@ -8,30 +8,46 @@
       "tooling/*",
       "tests/e2e"
     ],
-    "catalog": {
-      "@better-auth/expo": "1.6.21",
-      "@dotenvx/dotenvx": "^1.71.3",
-      "@orpc/server": "^1.14.6",
-      "@soorya-u/better-auth-desktop": "^0.1.1",
-      "@soorya-u/better-auth-ws-ticket": "v0.1.0",
-      "@t3-oss/env-core": "^0.13.1",
-      "@tanstack/react-query": "^5.101.1",
-      "@types/bun": "^1.3.4",
-      "@types/react": "^19.2.15",
-      "@types/react-dom": "^19.2.3",
-      "@vitest/coverage-istanbul": "^4.1.10",
-      "@vitest/ui": "^4.1.10",
-      "better-auth": "1.6.21",
-      "better-result": "^2.9.2",
-      "drizzle-kit": "1.0.0-rc.4",
-      "drizzle-orm": "1.0.0-rc.4",
-      "evlog": "^2.19.2",
-      "jsdom": "^29.1.1",
-      "react": "19.2.3",
-      "react-dom": "19.2.3",
-      "typescript": "^7",
-      "vitest": "^4.1.10",
-      "zod": "^4.3.6"
+    "catalogs": {
+      "auth": {
+        "@better-auth/expo": "1.6.21",
+        "@soorya-u/better-auth-desktop": "^0.1.1",
+        "@soorya-u/better-auth-ws-ticket": "v0.1.0",
+        "better-auth": "1.6.21"
+      },
+      "database": {
+        "drizzle-kit": "1.0.0-rc.4",
+        "drizzle-orm": "1.0.0-rc.4"
+      },
+      "react": {
+        "@types/react": "^19.2.15",
+        "@types/react-dom": "^19.2.3",
+        "react": "19.2.3",
+        "react-dom": "19.2.3"
+      },
+      "rpc": {
+        "@orpc/server": "^1.14.6",
+        "@tanstack/react-query": "^5.101.1",
+        "zod": "^4.3.6"
+      },
+      "testing": {
+        "@vitest/coverage-istanbul": "^4.1.10",
+        "@vitest/ui": "^4.1.10",
+        "jsdom": "^29.1.1",
+        "vitest": "^4.1.10"
+      },
+      "env": {
+        "@dotenvx/dotenvx": "^1.71.3",
+        "@t3-oss/env-core": "^0.13.1"
+      },
+      "observability": {
+        "evlog": "^2.19.2"
+      },
+      "core": {
+        "@types/bun": "^1.3.4",
+        "better-result": "^2.9.2",
+        "typescript": "^7"
+      }
     }
   },
   "type": "module",
@@ -72,17 +88,17 @@
     "@cyrus/test": "workspace:*",
     "@cyrus/typescript": "workspace:*",
     "@vitejs/plugin-react": "^4.6.0",
-    "@vitest/coverage-istanbul": "catalog:",
-    "@vitest/ui": "catalog:",
-    "jsdom": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:testing",
+    "@vitest/ui": "catalog:testing",
+    "jsdom": "catalog:testing",
     "knip": "^6.27.0",
     "lefthook": "^2.1.9",
     "syncpack": "^15.3.2",
     "turbo": "^2.10.4",
-    "typescript": "catalog:",
+    "typescript": "catalog:core",
     "ultracite": "^7.8.1",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "catalog:"
+    "vitest": "catalog:testing"
   },
   "packageManager": "bun@1.3.14",
   "trustedDependencies": [

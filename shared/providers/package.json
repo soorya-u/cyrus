@@ -14,19 +14,19 @@
     "@cyrus/constants": "workspace:*",
     "@orpc/contract": "^1.14.6",
     "@orpc/tanstack-query": "^1.14.6",
-    "@tanstack/react-query": "catalog:"
+    "@tanstack/react-query": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "jsdom": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/react": "catalog:react",
+    "@types/react-dom": "catalog:react",
+    "jsdom": "catalog:testing",
+    "react": "catalog:react",
+    "react-dom": "catalog:react",
+    "typescript": "catalog:core",
+    "vitest": "catalog:testing"
   }
 }
