@@ -21,13 +21,13 @@
         "better-auth"
       ],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:auth"
     },
     {
       "label": "Database deps must use catalog:database",
       "dependencies": ["drizzle-kit", "drizzle-orm"],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:database"
     },
     {
       "label": "React deps must use catalog:react",
@@ -38,13 +38,13 @@
         "react-dom"
       ],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:react"
     },
     {
       "label": "RPC deps must use catalog:rpc",
       "dependencies": ["@orpc/server", "@tanstack/react-query", "zod"],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:rpc"
     },
     {
       "label": "Testing deps must use catalog:testing",
@@ -55,25 +55,25 @@
         "vitest"
       ],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:testing"
     },
     {
       "label": "Env deps must use catalog:env",
       "dependencies": ["@dotenvx/dotenvx", "@t3-oss/env-core"],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:env"
     },
     {
       "label": "Observability deps must use catalog:observability",
       "dependencies": ["evlog"],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:observability"
     },
     {
       "label": "Core deps must use catalog:core",
       "dependencies": ["@types/bun", "better-result", "typescript"],
       "dependencyTypes": ["prod", "dev"],
-      "policy": "catalog"
+      "pinVersion": "catalog:core"
     }
   ]
 }
