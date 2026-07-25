@@ -133,7 +133,7 @@
     "apps/server": {
       "name": "@cyrus/server",
       "dependencies": {
-        "@better-auth/drizzle-adapter": "catalog:auth",
+        "@better-auth/drizzle-adapter": "1.6.21",
         "@better-auth/expo": "catalog:auth",
         "@cyrus/connections": "workspace:*",
         "@cyrus/schemas": "workspace:*",
@@ -144,7 +144,7 @@
         "@soorya-u/better-auth-ws-ticket": "catalog:auth",
         "@t3-oss/env-core": "catalog:env",
         "better-auth": "catalog:auth",
-        "better-auth-cloudflare": "catalog:auth",
+        "better-auth-cloudflare": "0.3.1",
         "better-result": "catalog:core",
         "drizzle-orm": "catalog:database",
         "evlog": "catalog:observability",
@@ -443,12 +443,10 @@
   ],
   "catalogs": {
     "auth": {
-      "@better-auth/drizzle-adapter": "1.6.21",
       "@better-auth/expo": "1.6.21",
       "@soorya-u/better-auth-desktop": "^0.1.1",
       "@soorya-u/better-auth-ws-ticket": "v0.1.0",
       "better-auth": "1.6.21",
-      "better-auth-cloudflare": "0.3.1",
     },
     "core": {
       "@types/bun": "^1.3.4",

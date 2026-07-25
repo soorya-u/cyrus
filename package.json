@@ -10,12 +10,10 @@
     ],
     "catalogs": {
       "auth": {
-        "@better-auth/drizzle-adapter": "1.6.21",
         "@better-auth/expo": "1.6.21",
         "@soorya-u/better-auth-desktop": "^0.1.1",
         "@soorya-u/better-auth-ws-ticket": "v0.1.0",
-        "better-auth": "1.6.21",
-        "better-auth-cloudflare": "0.3.1"
+        "better-auth": "1.6.21"
       },
       "database": {
         "drizzle-kit": "1.0.0-rc.4",

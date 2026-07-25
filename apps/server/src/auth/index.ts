@@ -1,7 +1,7 @@
 import { expo } from "@better-auth/expo";
 import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
 import { wsTicketPlugin } from "@soorya-u/better-auth-ws-ticket/server";
-import { betterAuth } from "better-auth";
+import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
 import { withCloudflare } from "better-auth-cloudflare";
 import { drizzle } from "drizzle-orm/d1";
@@ -35,7 +35,7 @@ const authOptions = {
 	baseURL: env.WEB_APP_URL,
 	advanced: {
 		defaultCookieAttributes: {
-			sameSite: "lax" as const,
+			sameSite: "lax",
 			httpOnly: true,
 			secure: env.NODE_ENV === "production",
 		},
@@ -62,7 +62,7 @@ const authOptions = {
 		bearer(),
 		wsTicketPlugin(),
 	],
-};
+} satisfies BetterAuthOptions;
 
 type AuthInstance = ReturnType<typeof createAuth>;
 
