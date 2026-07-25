@@ -124,7 +124,7 @@ export default defineConfig({
 					// Outside the `@cyrus/*` unit glob so root test:unit / test:unit:ui skip it.
 					name: "e2e",
 					environment: "node",
-					include: ["scenarios/**/*.test.ts"],
+					include: ["scenarios/**/*.test.ts", "harness/**/*.test.ts"],
 					testTimeout: 180_000,
 					// Scenarios spin up real dev servers on fixed ports (8787, 5173);
 					// running files in parallel would clash on those ports.

@@ -4,6 +4,7 @@ import { LOG_PATH, PID_PATH } from "@/constants/paths";
 import { env } from "@/lib/env";
 import { ensureDir } from "@/utils/fs";
 import {
+	clearOwnHealthSync,
 	clearPid,
 	isAlive,
 	runningPid,
@@ -21,6 +22,7 @@ async function runWorker(): Promise<void> {
 			const stored = Number.parseInt(readFileSync(PID_PATH, "utf8").trim(), 10);
 			if (stored === ownPid) unlinkSync(PID_PATH);
 		});
+		clearOwnHealthSync(ownPid);
 	});
 	const { worker } = await import("./worker");
 	await worker();
