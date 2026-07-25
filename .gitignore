@@ -55,6 +55,10 @@ tmp
 temp
 *.db
 *.db-wal
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.local
 .generated
 
 # Deployments

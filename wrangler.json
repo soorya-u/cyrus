@@ -12,6 +12,15 @@
       }
     ]
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cyrus",
+      "database_id": "772d7fee-548f-49a4-8c1e-55d0e78c1494",
+      "migrations_dir": "apps/server/src/db/migrations",
+      "migrations_pattern": "apps/server/src/db/migrations/*/migration.sql"
+    }
+  ],
   "migrations": [
     {
       "tag": "v1",
