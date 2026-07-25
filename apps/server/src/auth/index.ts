@@ -20,7 +20,7 @@ const emailAndPassword =
 				},
 			};
 
-const authOptions = {
+const authOptions: BetterAuthOptions = {
 	appName: "Cyrus",
 	basePath: "/api/auth",
 	...emailAndPassword,
@@ -41,11 +41,8 @@ const authOptions = {
 		},
 	},
 	logger: {
-		log: (
-			level: "debug" | "info" | "warn" | "error",
-			message: string,
-			...args: unknown[]
-		) => log[level]({ message, ...args }),
+		log: (level, message: string, ...args: unknown[]) =>
+			log[level]({ message, ...args }),
 		level: env.LOG_LEVEL,
 	},
 	plugins: [
@@ -62,11 +59,11 @@ const authOptions = {
 		bearer(),
 		wsTicketPlugin(),
 	],
-} satisfies BetterAuthOptions;
+};
 
 type AuthInstance = ReturnType<typeof createAuth>;
 
-const authByDb = new WeakMap<D1Database, AuthInstance>();
+let authInstance: AuthInstance | undefined;
 
 /** Runtime auth bound to the Worker's D1 binding via withCloudflare + Drizzle. */
 function createAuth(d1: D1Database) {
@@ -97,14 +94,12 @@ function createAuth(d1: D1Database) {
 	});
 }
 
-/** Cached per-isolate auth instance for the given D1 binding. */
+/** Lazily cached auth instance for the Worker's single D1 binding. */
 export function getAuth(d1: D1Database) {
-	const cached = authByDb.get(d1);
-	if (cached) return cached;
-
-	const instance = createAuth(d1);
-	authByDb.set(d1, instance);
-	return instance;
+	if (!authInstance) {
+		authInstance = createAuth(d1);
+	}
+	return authInstance;
 }
 
 /**
