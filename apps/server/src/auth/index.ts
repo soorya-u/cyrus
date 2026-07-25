@@ -7,8 +7,9 @@ import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
 import { log } from "evlog";
 import { env } from "../config/env";
 import { db } from "../db";
+// Neon path (expand): keep the Postgres schema until D1 cutover (#110 / #112).
 // biome-ignore lint/performance/noNamespaceImport: drizzle adapter requires schema as namespace
-import * as schema from "../db/models";
+import * as schema from "../db/neon/schema";
 
 const emailAndPassword =
 	env.NODE_ENV === "production"

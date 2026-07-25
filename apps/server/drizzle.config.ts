@@ -1,12 +1,25 @@
 import { defineConfig } from "drizzle-kit";
 
-// Read DATABASE_URL directly (not full server env) so migrate/push stay lightweight.
-// Fallback keeps the file loadable for tools that import the config (e.g. Knip).
+// D1 tooling config. Runtime still uses Neon until cutover (#109 / #110 / #112).
+// `generate` needs only the sqlite dialect. `push`/`studio` use the D1 HTTP driver
+// when Cloudflare credentials are set; otherwise a local sqlite file so the
+// commands still work without a Cloudflare account.
+const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+const databaseId = process.env.CLOUDFLARE_DATABASE_ID;
+const token = process.env.CLOUDFLARE_D1_TOKEN;
+
 export default defineConfig({
-	schema: "./src/db/models",
+	schema: "./src/db/models/index.ts",
 	out: "./src/db/migrations",
-	dialect: "postgresql",
-	dbCredentials: {
-		url: process.env.DATABASE_URL ?? "postgresql://localhost/unused",
-	},
+	dialect: "sqlite",
+	...(accountId && databaseId && token
+		? {
+				driver: "d1-http" as const,
+				dbCredentials: { accountId, databaseId, token },
+			}
+		: {
+				dbCredentials: {
+					url: process.env.D1_LOCAL_DB ?? "file:./.local/d1/cyrus.sqlite",
+				},
+			}),
 });
