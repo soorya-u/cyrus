@@ -6,8 +6,8 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
 import { log } from "evlog";
 import { env } from "../config/env";
-import { db } from "../db";
-// Neon path (expand): keep the Postgres schema until D1 cutover (#110 / #112).
+// Neon path (expand): keep Postgres until auth D1 cutover (#110 / #112).
+import { db } from "../db/neon";
 // biome-ignore lint/performance/noNamespaceImport: drizzle adapter requires schema as namespace
 import * as schema from "../db/neon/schema";
 

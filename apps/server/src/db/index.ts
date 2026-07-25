@@ -1,8 +1,8 @@
-import { drizzle } from "drizzle-orm/neon-http";
+import { env } from "cloudflare:workers";
+import { drizzle } from "drizzle-orm/d1";
 import { log } from "evlog";
-import { env } from "../config/env";
 
-export const db = drizzle(env.DATABASE_URL, {
+export const db = drizzle(env.DB, {
 	logger: {
 		logQuery: (query, params) =>
 			log.debug({

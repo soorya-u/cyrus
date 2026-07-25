@@ -1,5 +1,5 @@
-// Neon/Postgres schema kept for the expand period so the Neon-backed auth path
-// keeps working until cutover (#110 / #112). Canonical schema is auth.ts (SQLite/D1).
+// Neon/Postgres schema kept for better-auth until cutover (#110 / #112).
+// Canonical schema is models/auth.ts (SQLite/D1).
 import { relations } from "drizzle-orm/_relations";
 import {
 	boolean,

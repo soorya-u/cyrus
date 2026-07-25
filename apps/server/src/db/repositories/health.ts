@@ -4,7 +4,7 @@ import { log } from "evlog";
 import { db } from "../index";
 
 export const checkHealth = async () =>
-	(await Result.tryPromise(() => db.execute(sql`SELECT 1`))).match({
+	(await Result.tryPromise(() => db.run(sql`SELECT 1`))).match({
 		ok: () => true,
 		err: (error) => {
 			log.error({ action: "database-health-check-failed", error });
