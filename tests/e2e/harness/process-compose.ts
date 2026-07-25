@@ -1,11 +1,13 @@
-import { type ChildProcess, execFileSync, spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { createServer } from "node:net";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { waitForExit } from "./process";
 
 const REPO_ROOT = join(fileURLToPath(new URL("../../..", import.meta.url)));
+const PROCESS_COMPOSE_NAME = "process-compose";
 
 export type ProcessComposeState = {
 	name: string;
@@ -35,26 +37,41 @@ export type StartProcessComposeOptions = {
 	readyTimeoutMs?: number;
 };
 
+function findOnPath(binary: string): string | undefined {
+	const pathEnv = process.env.PATH ?? "";
+	for (const dir of pathEnv.split(delimiter)) {
+		if (!dir) continue;
+		const candidate = join(dir, binary);
+		if (existsSync(candidate)) {
+			return candidate;
+		}
+	}
+}
+
 function processComposeBin(): string {
 	if (process.env.PROCESS_COMPOSE_BIN) {
 		return process.env.PROCESS_COMPOSE_BIN;
 	}
-	try {
-		return execFileSync("mise", ["which", "process-compose"], {
-			encoding: "utf8",
-			cwd: REPO_ROOT,
-		}).trim();
-	} catch {
-		try {
-			return execFileSync("which", ["process-compose"], {
-				encoding: "utf8",
-			}).trim();
-		} catch {
-			throw new Error(
-				"process-compose not found. Install via `mise install` (see mise.toml) or set PROCESS_COMPOSE_BIN."
-			);
+
+	const onPath = findOnPath(PROCESS_COMPOSE_NAME);
+	if (onPath) {
+		return onPath;
+	}
+
+	const home = process.env.HOME;
+	if (home) {
+		const miseCandidate = join(
+			home,
+			".local/share/mise/installs/process-compose/1.120.0/process-compose"
+		);
+		if (existsSync(miseCandidate)) {
+			return miseCandidate;
 		}
 	}
+
+	throw new Error(
+		"process-compose not found. Install via `mise install` (see mise.toml) or set PROCESS_COMPOSE_BIN."
+	);
 }
 
 async function reserveApiPort(): Promise<number> {
