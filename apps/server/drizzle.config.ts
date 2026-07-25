@@ -1,6 +1,7 @@
 import { defineConfig } from "drizzle-kit";
 
-// D1 tooling config. Runtime still uses Neon until cutover (#109 / #110 / #112).
+// D1 tooling config. Application repositories use the Worker D1 binding (#109);
+// better-auth remains on Neon until cutover (#110 / #112).
 // `generate` needs only the sqlite dialect. `push`/`studio` use the D1 HTTP driver
 // when Cloudflare credentials are set; otherwise a local sqlite file so the
 // commands still work without a Cloudflare account.
