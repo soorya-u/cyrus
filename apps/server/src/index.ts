@@ -1,6 +1,6 @@
 import "./config/log";
 import { type ExecutionContext, Hono } from "hono";
-import { auth } from "./auth";
+import { getAuth } from "./auth";
 import { checkHealth } from "./db/repositories/health";
 import { type Env, middlewares } from "./middleware";
 
@@ -12,7 +12,9 @@ app.get("/health", async (c) => {
 });
 
 app.use("*", middlewares);
-app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+app.on(["GET", "POST"], "/api/auth/*", (c) =>
+	getAuth(c.env.DB).handler(c.req.raw)
+);
 
 export default {
 	fetch: async (

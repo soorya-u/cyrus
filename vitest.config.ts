@@ -1,6 +1,10 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cloudflareTest } from "@cloudflare/vitest-pool-workers";
+import {
+	cloudflareTest,
+	type D1Migration,
+} from "@cloudflare/vitest-pool-workers";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
@@ -10,6 +14,37 @@ const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 function packageRoot(...segments: string[]): string {
 	return path.join(repoRoot, ...segments);
 }
+
+/** Drizzle emits `migrations/<id>/migration.sql`; vitest's reader expects flat `*.sql`. */
+async function readDrizzleD1Migrations(
+	migrationsDir: string
+): Promise<D1Migration[]> {
+	const entries = await fs.readdir(migrationsDir, { withFileTypes: true });
+	const dirs = entries
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name)
+		.sort();
+
+	return Promise.all(
+		dirs.map(async (name) => {
+			const sql = await fs.readFile(
+				path.join(migrationsDir, name, "migration.sql"),
+				"utf8"
+			);
+			return {
+				name,
+				queries: sql
+					.split("--> statement-breakpoint")
+					.map((query) => query.trim())
+					.filter(Boolean),
+			};
+		})
+	);
+}
+
+const serverD1Migrations = await readDrizzleD1Migrations(
+	packageRoot("apps/server/src/db/migrations")
+);
 
 export default defineConfig({
 	test: {
@@ -40,6 +75,7 @@ export default defineConfig({
 								OAUTH_GITHUB_CLIENT_SECRET: "test-client-secret",
 								OAUTH_PROXY_SECRET: "test-oauth-proxy-secret",
 								PRODUCTION_URL: "https://example.com",
+								TEST_MIGRATIONS: serverD1Migrations,
 								WEB_APP_URL: "https://example.com",
 							},
 						},
@@ -48,6 +84,7 @@ export default defineConfig({
 				test: {
 					name: "@cyrus/server",
 					include: ["src/**/*.test.ts"],
+					setupFiles: ["./src/db/apply-migrations.ts"],
 					testTimeout: 15_000,
 				},
 			},
