@@ -3,6 +3,7 @@
   "ignoreExportsUsedInFile": true,
   "ignoreBinaries": ["wrangler", "dotenvx"],
   "ignoreDependencies": ["@cyrus/typescript", "@biomejs/biome"],
+  "ignoreUnresolved": ["./src/db/apply-migrations.ts"],
   "ignoreIssues": {
     "apps/web/src/components/ui/**": ["exports", "types"]
   },
@@ -22,7 +23,11 @@
       "ignoreDependencies": ["expo-updates", "expo-system-ui"]
     },
     "apps/server": {
-      "entry": ["src/index.ts", "src/cloudflare/**/*.test.ts"],
+      "entry": [
+        "src/index.ts",
+        "src/**/*.test.ts",
+        "src/db/apply-migrations.ts"
+      ],
       "ignoreDependencies": ["cloudflare"]
     },
     "apps/web": {

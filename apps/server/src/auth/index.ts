@@ -110,6 +110,8 @@ export function getAuth(d1: D1Database) {
 /**
  * CLI schema generation (`auth:generate`) — no D1 binding available.
  * Runtime callers must use `getAuth(env.DB)`.
+ *
+ * @public
  */
 export const auth = betterAuth({
 	...withCloudflare(
