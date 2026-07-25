@@ -1,9 +1,10 @@
 import { defineConfig } from "drizzle-kit";
 
-// D1 tooling config. Auth runtime uses D1 (#110); application data / health still
-// use Neon until #109 / #112. `generate` needs only the sqlite dialect.
-// `push`/`studio` use the D1 HTTP driver when Cloudflare credentials are set;
-// otherwise a local sqlite file so the commands still work without an account.
+// D1 tooling config. Auth (#110) and application repositories (#109) both use
+// the Worker D1 binding; Neon removal is #112. `generate` needs only the sqlite
+// dialect. `push`/`studio` use the D1 HTTP driver when Cloudflare credentials
+// are set; otherwise a local sqlite file so the commands still work without an
+// account.
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 const databaseId = process.env.CLOUDFLARE_DATABASE_ID;
 const token = process.env.CLOUDFLARE_D1_TOKEN;
