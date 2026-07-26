@@ -5,7 +5,6 @@ import { env as dbEnv } from "../db/env";
 export const env = createEnv({
 	server: {
 		WEB_APP_URL: z.url(),
-		DATABASE_URL: z.string(),
 		BETTER_AUTH_SECRET: z.string().min(32),
 		OAUTH_GITHUB_CLIENT_ID: z.string(),
 		OAUTH_GITHUB_CLIENT_SECRET: z.string(),

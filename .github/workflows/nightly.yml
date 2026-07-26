@@ -32,19 +32,9 @@ jobs:
         run: bunx playwright install --with-deps chromium
         working-directory: tests/e2e
 
-      - name: Require database URL
-        run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "DATABASE_URL is not configured in the testing environment."
-            exit 1
-          fi
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
       - name: End-to-end tests
         run: bun test:e2e
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NODE_ENV: "testing"
 
   build-smoke:

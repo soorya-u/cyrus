@@ -79,7 +79,7 @@ async function createE2eStack(
 	const stackResult = await Result.tryPromise(async () => {
 		await buildCompiledCliBinaryOnce();
 		await cleanupDevServerProcesses();
-		await ensureDatabaseSchema(serverEnv);
+		await ensureDatabaseSchema();
 
 		wranglerEnvFile = await writeWranglerEnvFile(serverEnv);
 		const server = spawnServer(serverEnv, wranglerEnvFile);
