@@ -1,5 +1,4 @@
-// biome-ignore lint/performance/noBarrelFile: Drizzle ORM schema re-exports are intentional
-export {
+import {
 	account,
 	accountRelations,
 	deviceCode,
@@ -9,3 +8,14 @@ export {
 	userRelations,
 	verification,
 } from "./auth";
+
+export const models = {
+	account,
+	accountRelations,
+	deviceCode,
+	session,
+	sessionRelations,
+	user,
+	userRelations,
+	verification,
+};

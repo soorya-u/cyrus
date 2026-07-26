@@ -10,9 +10,10 @@
     "wrangler:types": "wrangler types --cwd src",
     "db:studio": "dotenvx run -- drizzle-kit studio",
     "db:migrate": "dotenvx run -- drizzle-kit migrate",
-    "auth:generate": "dotenvx run -- bun x @better-auth/cli generate -y --config src/auth/index.ts --output src/db/neon/schema.ts"
+    "auth:generate": "dotenvx run -- bun x @better-auth/cli generate -y --config src/auth/cli.ts --output src/db/models/auth.ts"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "1.6.21",
     "@better-auth/expo": "catalog:auth",
     "@cyrus/connections": "workspace:*",
     "@cyrus/schemas": "workspace:*",
@@ -23,6 +24,7 @@
     "@soorya-u/better-auth-ws-ticket": "catalog:auth",
     "@t3-oss/env-core": "catalog:env",
     "better-auth": "catalog:auth",
+    "better-auth-cloudflare": "0.3.1",
     "better-result": "catalog:core",
     "drizzle-orm": "catalog:database",
     "evlog": "catalog:observability",

@@ -31,7 +31,7 @@ export default defineConfig({
 						wrangler: { configPath: packageRoot("wrangler.json") },
 						miniflare: {
 							bindings: {
-								ALLOWED_ORIGINS: "https://example.com",
+								ALLOWED_ORIGINS: "https://cyrus.soorya-u.dev",
 								BETTER_AUTH_SECRET:
 									"test-secret-that-is-at-least-thirty-two-characters",
 								DATABASE_URL: "postgresql://test:test@localhost:5432/test",
@@ -39,8 +39,8 @@ export default defineConfig({
 								OAUTH_GITHUB_CLIENT_ID: "test-client-id",
 								OAUTH_GITHUB_CLIENT_SECRET: "test-client-secret",
 								OAUTH_PROXY_SECRET: "test-oauth-proxy-secret",
-								PRODUCTION_URL: "https://example.com",
-								WEB_APP_URL: "https://example.com",
+								PRODUCTION_URL: "https://cyrus.soorya-u.dev",
+								WEB_APP_URL: "https://cyrus.soorya-u.dev",
 							},
 						},
 					}),
@@ -48,6 +48,7 @@ export default defineConfig({
 				test: {
 					name: "@cyrus/server",
 					include: ["src/**/*.test.ts"],
+					setupFiles: ["./src/db/migrations/apply.ts"],
 					testTimeout: 15_000,
 				},
 			},
@@ -78,7 +79,6 @@ export default defineConfig({
 			{
 				root: packageRoot("shared/database"),
 				test: {
-					// Outside the `@cyrus/*` unit glob so root test:unit / test:unit:ui skip it.
 					name: "database-integration",
 					environment: "node",
 					include: ["__tests__/integration/**/*.test.ts"],
@@ -121,19 +121,14 @@ export default defineConfig({
 			{
 				root: packageRoot("tests/e2e"),
 				test: {
-					// Outside the `@cyrus/*` unit glob so root test:unit / test:unit:ui skip it.
 					name: "e2e",
 					environment: "node",
 					include: ["scenarios/**/*.test.ts"],
 					testTimeout: 180_000,
-					// Scenarios spin up real dev servers on fixed ports (8787, 5173);
-					// running files in parallel would clash on those ports.
 					fileParallelism: false,
 				},
 			},
 		],
-		coverage: {
-			provider: "istanbul",
-		},
+		coverage: { provider: "istanbul" },
 	},
 });

@@ -1,63 +1,23 @@
-import { expo } from "@better-auth/expo";
-import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
-import { wsTicketPlugin } from "@soorya-u/better-auth-ws-ticket/server";
+import { env } from "cloudflare:workers";
 import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
-import { log } from "evlog";
-import { env } from "../config/env";
-// Neon path (expand): keep Postgres until auth D1 cutover (#110 / #112).
-import { db } from "../db/neon";
-// biome-ignore lint/performance/noNamespaceImport: drizzle adapter requires schema as namespace
-import * as schema from "../db/neon/schema";
+import { withCloudflare } from "better-auth-cloudflare";
+import { drizzle } from "drizzle-orm/d1";
+import { models as schema } from "../db/models";
+import { authOptions } from "./options";
 
-const emailAndPassword =
-	env.NODE_ENV === "production"
-		? {}
-		: {
-				emailAndPassword: {
-					enabled: true,
-					autoSignIn: true,
-				},
-			};
+const db = drizzle(env.DB);
 
 export const auth = betterAuth({
-	appName: "Cyrus",
-	basePath: "/api/auth",
-	database: drizzleAdapter(db, { provider: "pg", schema }),
-	...emailAndPassword,
-	trustedOrigins: [...env.ALLOWED_ORIGINS, env.PRODUCTION_URL],
-	socialProviders: {
-		github: {
-			clientId: env.OAUTH_GITHUB_CLIENT_ID,
-			clientSecret: env.OAUTH_GITHUB_CLIENT_SECRET,
+	...withCloudflare(
+		{
+			autoDetectIpAddress: true,
+			geolocationTracking: false,
+			cf: {},
+			d1: {
+				db: db as never,
+				options: { schema },
+			},
 		},
-	},
-	secret: env.BETTER_AUTH_SECRET,
-	baseURL: env.WEB_APP_URL,
-	advanced: {
-		defaultCookieAttributes: {
-			sameSite: "lax",
-			httpOnly: true,
-			secure: env.NODE_ENV === "production",
-		},
-	},
-	logger: {
-		log: (level, message, ...args) => log[level]({ message, ...args }),
-		level: env.LOG_LEVEL,
-	},
-	plugins: [
-		expo(),
-		betterAuthDesktop({
-			clientID: "cyrus-desktop",
-			webCallbackUrl: `${env.WEB_APP_URL}/auth/callback`,
-		}),
-		oAuthProxy({
-			productionURL: env.PRODUCTION_URL,
-			secret: env.OAUTH_PROXY_SECRET,
-		}),
-		deviceAuthorization({ verificationUri: `${env.WEB_APP_URL}/auth/device` }),
-		bearer(),
-		wsTicketPlugin(),
-	],
+		authOptions
+	),
 });
