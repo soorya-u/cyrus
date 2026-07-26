@@ -41,7 +41,7 @@ export const authOptions = {
 			level: "debug" | "info" | "warn" | "error",
 			message: string,
 			...args: unknown[]
-		) => log[level]({ message, ...args }),
+		) => log[level]({ message, args }),
 		level: env.LOG_LEVEL,
 	},
 	plugins: [

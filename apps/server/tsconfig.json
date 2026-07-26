@@ -4,7 +4,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "strictNullChecks": true,
-    "types": ["bun", "@cloudflare/vitest-pool-workers/types"]
+    "types": ["@cloudflare/vitest-pool-workers/types"]
   },
   "include": ["src"]
 }

@@ -3,13 +3,13 @@
   "ignoreExportsUsedInFile": true,
   "ignoreBinaries": ["wrangler", "dotenvx"],
   "ignoreDependencies": ["@cyrus/typescript", "@biomejs/biome"],
-  "ignoreUnresolved": ["./src/db/migrations/apply.ts"],
   "ignoreIssues": {
     "apps/web/src/components/ui/**": ["exports", "types"]
   },
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.{ts,sh}", "wrangler.json"]
+      "entry": ["scripts/**/*.{ts,sh}", "wrangler.json"],
+      "ignoreUnresolved": ["./src/db/migrations/apply.ts"]
     },
     "apps/cli": {
       "entry": ["src/**/*.test.ts", "__tests__/**/*.ts"]
