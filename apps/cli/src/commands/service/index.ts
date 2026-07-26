@@ -12,7 +12,7 @@ export function registerWorkerCommands(program: Command) {
 
 	program
 		.command("status")
-		.description("Check whether the worker is running")
+		.description("Check whether the worker is running and healthy")
 		.action(async () => {
 			const { status } = await import("./status");
 			await status();

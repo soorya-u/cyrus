@@ -4,7 +4,6 @@ import { test as base } from "@playwright/test";
 import { seedCliAccessToken } from "../harness/auth";
 import {
 	buildCompiledCliBinaryOnce,
-	CLI_CONNECTED_PATTERN,
 	CLI_WORKER_COMMAND,
 	CLI_WORKER_RUNTIME_DIRECTORY,
 	E2E_CLI_WORKER_NAME,
@@ -16,6 +15,7 @@ import {
 	E2E_SERVER_URL,
 	requireE2e,
 } from "../harness/env";
+import { waitForHealthy } from "../harness/wait";
 
 export type AuthFixture = Awaited<ReturnType<typeof seedCliAccessToken>>;
 
@@ -27,56 +27,6 @@ type WorkerFixtures = {
 	auth: AuthFixture;
 	cliWorker: CliWorkerFixture;
 };
-
-function waitForCliWorker(
-	cliWorkerProcess: ChildProcessWithoutNullStreams
-): Promise<void> {
-	return new Promise((resolve, reject) => {
-		let output = "";
-		const timeout = setTimeout(() => {
-			cleanup();
-			reject(
-				new Error(
-					`Timed out waiting for CLI Worker readiness. Recent output: ${output.slice(-500)}`
-				)
-			);
-		}, 120_000);
-
-		const handleOutput = (chunk: Buffer) => {
-			output = `${output}${chunk.toString()}`.slice(-2000);
-			if (CLI_CONNECTED_PATTERN.test(output)) {
-				cleanup();
-				cliWorkerProcess.stdout.resume();
-				cliWorkerProcess.stderr.resume();
-				resolve();
-			}
-		};
-		const handleError = (error: Error) => {
-			cleanup();
-			reject(error);
-		};
-		const handleExit = (code: number | null) => {
-			cleanup();
-			reject(
-				new Error(
-					`CLI Worker exited with code ${code} before becoming ready. Recent output: ${output.slice(-500)}`
-				)
-			);
-		};
-		const cleanup = () => {
-			clearTimeout(timeout);
-			cliWorkerProcess.stdout.off("data", handleOutput);
-			cliWorkerProcess.stderr.off("data", handleOutput);
-			cliWorkerProcess.off("error", handleError);
-			cliWorkerProcess.off("exit", handleExit);
-		};
-
-		cliWorkerProcess.stdout.on("data", handleOutput);
-		cliWorkerProcess.stderr.on("data", handleOutput);
-		cliWorkerProcess.once("error", handleError);
-		cliWorkerProcess.once("exit", handleExit);
-	});
-}
 
 async function stopCliWorker(
 	cliWorkerProcess: ChildProcessWithoutNullStreams
@@ -119,7 +69,7 @@ export const test = base.extend<object, WorkerFixtures>({
 			);
 
 			try {
-				await waitForCliWorker(cliWorkerProcess);
+				await waitForHealthy(cyrusHome);
 				await use({ name: E2E_CLI_WORKER_NAME });
 			} finally {
 				await stopCliWorker(cliWorkerProcess);

@@ -1,0 +1,87 @@
+version: "0.5"
+
+processes:
+  # Apply local D1 migrations before wrangler dev binds env.DB.
+  prepare-database:
+    command: "bun tests/e2e/web/prepare-database.ts"
+    availability:
+      restart: "no"
+
+  server:
+    command: "bunx wrangler@4.104.0 dev --config wrangler.json --port 8787 --ip 127.0.0.1 --log-level warn --show-interactive-dev-session false --env-file ${WRANGLER_ENV_FILE}"
+    depends_on:
+      prepare-database:
+        condition: process_completed_successfully
+    readiness_probe:
+      http_get:
+        host: "127.0.0.1"
+        port: 8787
+        path: "/health"
+      initial_delay_seconds: 1
+      period_seconds: 2
+      timeout_seconds: 2
+      failure_threshold: 60
+    availability:
+      restart: "no"
+    shutdown:
+      signal: 15
+      timeout_seconds: 10
+
+  seed:
+    command: "bun tests/e2e/harness/seed-worker.ts"
+    depends_on:
+      server:
+        condition: process_healthy
+    availability:
+      restart: "no"
+    environment:
+      - "CYRUS_HOME=${CYRUS_HOME}"
+
+  web:
+    command: "bun run dev -- --host 127.0.0.1 --port 5173"
+    working_dir: "apps/web"
+    depends_on:
+      server:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: "127.0.0.1"
+        port: 5173
+        path: "/"
+      initial_delay_seconds: 1
+      period_seconds: 2
+      timeout_seconds: 2
+      failure_threshold: 60
+    environment:
+      - "VITE_SERVER_URL=http://localhost:8787"
+    availability:
+      restart: "no"
+    shutdown:
+      signal: 15
+      timeout_seconds: 10
+
+  worker:
+    command: "${CYRUS_WORKER_BIN} start"
+    working_dir: "${CYRUS_WORKER_CWD}"
+    depends_on:
+      seed:
+        condition: process_completed_successfully
+      server:
+        condition: process_healthy
+    readiness_probe:
+      exec:
+        command: "cd \"${CYRUS_WORKER_CWD}\" && CYRUS_HOME=\"${CYRUS_HOME}\" CLI_PUBLIC_SERVER_URL=http://localhost:8787 \"${CYRUS_WORKER_BIN}\" status"
+      initial_delay_seconds: 1
+      period_seconds: 2
+      timeout_seconds: 5
+      failure_threshold: 60
+    environment:
+      - "CYRUS_HOME=${CYRUS_HOME}"
+      - "CYRUS_DAEMON=1"
+      - "CLI_PUBLIC_SERVER_URL=http://localhost:8787"
+    availability:
+      restart: "no"
+      backoff_seconds: 1
+    shutdown:
+      signal: 15
+      timeout_seconds: 10

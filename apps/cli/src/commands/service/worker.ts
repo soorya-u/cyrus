@@ -10,6 +10,13 @@ import { env } from "@/lib/env";
 import { createThreadEventBus } from "@/queue/bus";
 import { get, getOrCreate } from "@/store/config";
 import { initDatabase } from "@/store/database";
+import {
+	clearHealth,
+	HEALTH_HEARTBEAT_INTERVAL_MS,
+	markHealthReady,
+	markHealthStarting,
+	touchHeartbeat,
+} from "@/store/health";
 import { unwrapOrExit } from "@/utils/result";
 import { print } from "@/utils/style";
 
@@ -35,6 +42,7 @@ export async function worker(): Promise<void> {
 	unwrapOrExit(await initDatabase());
 
 	print.dim`worker "${name}" joining hub`;
+	await markHealthStarting({ pid: process.pid });
 
 	const signalingSession = unwrapOrExit(
 		await connectSignaling({
@@ -60,7 +68,17 @@ export async function worker(): Promise<void> {
 		},
 	});
 
+	await markHealthReady({ pid: process.pid });
+	const heartbeat = setInterval(() => {
+		touchHeartbeat().catch(() => {
+			// best-effort heartbeat refresh
+		});
+	}, HEALTH_HEARTBEAT_INTERVAL_MS);
+	heartbeat.unref?.();
+
 	const shutdown = async () => {
+		clearInterval(heartbeat);
+		await clearHealth();
 		await runtime.agentPool.shutdown();
 		device.close();
 		signalingSession.close();

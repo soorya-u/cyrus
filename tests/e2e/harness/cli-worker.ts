@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { waitForExit } from "./process";
 
-export const CLI_CONNECTED_PATTERN = /connected.*waiting for message/i;
 export const E2E_CLI_WORKER_ID = "e2e-worker-1";
 export const E2E_CLI_WORKER_NAME = "E2E Worker";
 export const CLI_WORKER_DIRECTORY = fileURLToPath(

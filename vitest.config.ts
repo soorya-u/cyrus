@@ -122,7 +122,7 @@ export default defineConfig({
 				test: {
 					name: "e2e",
 					environment: "node",
-					include: ["scenarios/**/*.test.ts"],
+					include: ["scenarios/**/*.test.ts", "harness/**/*.test.ts"],
 					testTimeout: 180_000,
 					fileParallelism: false,
 				},
