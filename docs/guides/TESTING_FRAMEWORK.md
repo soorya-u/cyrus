@@ -9,6 +9,7 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | `apps/cli`, `apps/desktop` | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
 | Vitest workspace packages (`apps/web`, `apps/server`, `shared/*`) | Root Vitest Projects | `vitest.config.ts` at the repo root; shared DOM setup in `tooling/test/setup/vitest.shared.ts` |
 | Harness-driven E2E scenarios | Vitest + node | Root `tests/e2e/scenarios/` (workspace project `e2e`) |
+| Worker CLI terminal tier | Vitest + shell-use (PTY) | Root `tests/e2e/harness/*-terminal.test.ts` |
 | Browser user flows | Playwright | Root `tests/e2e/web/` |
 
 Vitest is the default runner (ADR 0017). Bun stays permanently for `apps/cli` and `apps/desktop`.
@@ -51,6 +52,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
   3. The worker-scoped `cliWorker` fixture writes that token to an isolated `CYRUS_HOME`, starts the CLI Worker, and waits for its `connected... waiting for message` log line.
   4. Specs install the fixture's session cookie in the browser and exercise the controller against the connected CLI Worker.
   5. After the worker's tests finish, Playwright stops the CLI Worker, removes its temporary home, and tears down both `webServer` processes.
+- The Worker CLI terminal tier (`tests/e2e/harness/*-terminal.test.ts`) drives the compiled `cyrusd` binary through a shell-use PTY with fixed columns/rows, asserting on rendered output (including ANSI colors) and exit codes. Nightly CI installs the matching `shell-use` binary via mise (`github:microsoft/shell-use`).
 - Local E2E runs do not need an external database URL. Wrangler local D1 is enough. Broader per-run D1 isolation for CI is tracked in #119.
 - The Vitest harness and Playwright server setup ensure the schema exists before starting their signaling server.
 - Programmatic auth uses Better Auth email sign-in plus the real device-code flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
@@ -69,7 +71,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 | --- | --- |
 | `conversation-view` | `shared/utils/src/fold.test.ts` |
 | `wire-schemas` | `shared/schemas/src/**/*.test.ts` |
-| `acp-provider-cli` | `apps/cli/src/core/acp/events.test.ts`, `run-turn.test.ts` |
+| `acp-provider-cli` | `apps/cli/src/core/acp/events.test.ts`, `run-turn.test.ts`; Worker CLI terminal tier `tests/e2e/harness/cli-login-terminal.test.ts` |
 | `acp-session-router` | `apps/cli/__tests__/integration/wiring.test.ts` |
 | `connection-providers` | `shared/connections/src/rtc/session.test.ts` |
 | `conversation-persistence` | `shared/database/__tests__/integration/repositories.test.ts` |

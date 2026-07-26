@@ -48,6 +48,65 @@ url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-windows-
 checksum = "sha256:538f9c846355d9e847b2671bc00c47da4229a0befb24df3282b739770f3b475f"
 url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-windows-x64-baseline.zip"
 
+[[tools."github:microsoft/shell-use"]]
+version = "0.0.1-beta.5"
+backend = "github:microsoft/shell-use"
+
+[tools."github:microsoft/shell-use"."platforms.linux-arm64"]
+checksum = "sha256:6c754a19efe8f5974ee8f9d9d7ef206267c7c332cb04bdd2b7c16edf1cf214c9"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633875"
+
+[tools."github:microsoft/shell-use"."platforms.linux-arm64-musl"]
+checksum = "sha256:c9426154a9e83c11c2f6a32145891504cf1a8ecf87d640f5c63af742d47db737"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633876"
+
+[tools."github:microsoft/shell-use"."platforms.linux-x64"]
+checksum = "sha256:2510334dd1e1562897aec2ec22bf9acb35b75181cefccef4374c98182991637f"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633884"
+
+[tools."github:microsoft/shell-use"."platforms.linux-x64-baseline"]
+checksum = "sha256:2510334dd1e1562897aec2ec22bf9acb35b75181cefccef4374c98182991637f"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633884"
+
+[tools."github:microsoft/shell-use"."platforms.linux-x64-musl"]
+checksum = "sha256:0d2baa11bfde7a0b118a6b8836c829b87a31194d714484d36955ee65dbcf1dc2"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633885"
+
+[tools."github:microsoft/shell-use"."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:2510334dd1e1562897aec2ec22bf9acb35b75181cefccef4374c98182991637f"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633884"
+
+[tools."github:microsoft/shell-use"."platforms.macos-arm64"]
+checksum = "sha256:75c0a4ff9fb7dc2f92d9579862156e2f5bba371cd93267e27f4a0d18b9a41127"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633879"
+
+[tools."github:microsoft/shell-use"."platforms.macos-x64"]
+checksum = "sha256:35a13ff4ae2487a548b4f3918de70cfaafba7e50f4a9b49fbe36fa4d00dcabef"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633877"
+
+[tools."github:microsoft/shell-use"."platforms.macos-x64-baseline"]
+checksum = "sha256:35a13ff4ae2487a548b4f3918de70cfaafba7e50f4a9b49fbe36fa4d00dcabef"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633877"
+
+[tools."github:microsoft/shell-use"."platforms.windows-x64"]
+checksum = "sha256:2583cdece04b81871789dd42abc12cc8a3756e14abff39b22bc899e08d6be25a"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633883"
+
+[tools."github:microsoft/shell-use"."platforms.windows-x64-baseline"]
+checksum = "sha256:2583cdece04b81871789dd42abc12cc8a3756e14abff39b22bc899e08d6be25a"
+url = "https://github.com/microsoft/shell-use/releases/download/v0.0.1-beta.5/shell-use-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/microsoft/shell-use/releases/assets/480633883"
+
 [[tools."npm:@playwright/cli"]]
 version = "0.1.17"
 backend = "npm:@playwright/cli"
