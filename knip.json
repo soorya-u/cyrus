@@ -3,7 +3,7 @@
   "ignoreExportsUsedInFile": true,
   "ignoreBinaries": ["wrangler", "dotenvx"],
   "ignoreDependencies": ["@cyrus/typescript", "@biomejs/biome"],
-  "ignoreUnresolved": ["./src/db/apply-migrations.ts"],
+  "ignoreUnresolved": ["./src/db/migrations/apply.ts"],
   "ignoreIssues": {
     "apps/web/src/components/ui/**": ["exports", "types"]
   },
@@ -26,7 +26,7 @@
       "entry": [
         "src/index.ts",
         "src/**/*.test.ts",
-        "src/db/apply-migrations.ts",
+        "src/db/migrations/apply.ts",
         "src/auth/cli.ts"
       ],
       "ignoreDependencies": ["cloudflare"]

@@ -2,11 +2,7 @@ import { betterAuth } from "better-auth";
 import { withCloudflare } from "better-auth-cloudflare";
 import { authOptions } from "./options";
 
-/**
- * CLI schema generation (`auth:generate`) — no D1 binding outside the Worker.
- *
- * @public
- */
+// This if for CLI schema generation (`auth:generate`)
 export const auth = betterAuth({
 	...withCloudflare(
 		{
