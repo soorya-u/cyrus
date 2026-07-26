@@ -51,7 +51,7 @@ Wrangler provisions a local D1 instance for the `cyrus` binding declared in `wra
 wrangler d1 migrations apply cyrus --local --config wrangler.json
 ```
 
-Day-to-day schema work uses the D1-targeted package scripts (`bun db:push`, `bun db:generate`, `bun db:migrate`, `bun db:studio`). See `docs/guides/D1_PRODUCTION_CUTOVER.md` for remote cutover and rollback.
+Day-to-day schema work uses the D1-targeted package scripts (`bun db:push`, `bun db:generate`, `bun db:migrate`, `bun db:studio`). Remote applies in deploy use `wrangler d1 migrations apply cyrus --remote`.
 
 Useful database probes:
 
