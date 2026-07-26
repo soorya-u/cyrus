@@ -214,7 +214,7 @@ wrangler d1 execute cyrus --remote --command "SELECT name FROM sqlite_master WHE
 wrangler d1 migrations list cyrus --remote --config wrangler.json
 ```
 
-Use D1 inspection for schema drift or data-level root cause analysis. Prefer local reproduction with `--local` before touching remote. Production cutover and rollback steps live in `docs/guides/D1_PRODUCTION_CUTOVER.md`.
+Use D1 inspection for schema drift or data-level root cause analysis. Prefer local reproduction with `--local` before touching remote.
 
 ### GitHub Actions
 
