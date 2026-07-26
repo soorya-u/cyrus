@@ -1,9 +1,7 @@
 name: Nightly
 
+# Cron disabled for now — manual runs only via workflow_dispatch.
 on:
-  schedule:
-    # 06:00 UTC daily — catches cross-peer regressions without waiting for a manual run.
-    - cron: "0 6 * * *"
   workflow_dispatch:
 
 concurrency:

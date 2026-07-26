@@ -34,10 +34,10 @@ Unit tests stay close to the code they cover. In `apps/server`, every colocated 
 | 0 | pre-commit | Ultracite only |
 | 1 | pre-push | Typecheck and unit tests |
 | 2 | pull request / push to `main` | Lint, typecheck, unit tests, integration |
-| 3 | nightly (cron + `workflow_dispatch`) | E2E (Playwright cross-peer + Worker CLI terminal tier), build smoke, real WebRTC |
+| 3 | nightly (`workflow_dispatch` only) | E2E (Playwright cross-peer + Worker CLI terminal tier), build smoke, real WebRTC |
 | 4 | deploy | Health and WebSocket smoke |
 
-No E2E subset runs on pull requests. The suite needs Playwright browsers, process-compose, a compiled `cyrusd` binary, and a PTY (shell-use); that cost belongs on the nightly schedule now that local D1 removed the old Neon branch provisioning. Promote a PR smoke slice only after the cron job has a stable pass history.
+No E2E subset runs on pull requests. The suite needs Playwright browsers, process-compose, a compiled `cyrusd` binary, and a PTY (shell-use); keep that cost off PR CI now that local D1 removed the old Neon branch provisioning. Nightly stays manual-only for now (cron deferred until the suite has a stable pass history).
 
 ## Phase 4 notes
 
@@ -56,7 +56,7 @@ No E2E subset runs on pull requests. The suite needs Playwright browsers, proces
 - Playwright server setup ensures the schema exists before starting the signaling server.
 - Programmatic session creation for tests uses Better Auth email sign-in (`tests/e2e/harness/auth.ts`); device approval goes through the real `/auth/device` UI (`tests/e2e/web/device-auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
 - Playwright specs and their worker-scoped fixtures live in `tests/e2e/web/`.
-- E2E runs via `.github/workflows/nightly.yml` on a daily cron (`0 6 * * *` UTC) and on `workflow_dispatch`.
+- E2E runs via `.github/workflows/nightly.yml` (`workflow_dispatch` only; cron deferred).
 
 ## Phase 5 notes
 
