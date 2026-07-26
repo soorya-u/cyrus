@@ -80,6 +80,44 @@ export async function createE2eAuthSession(
 }
 
 /**
+ * Approves a device user code for an already-signed-in session (claim + approve).
+ * Used when the Worker CLI has already started the device-code flow itself.
+ */
+export async function approveDeviceUserCode(
+	serverUrl: string,
+	sessionCookie: string,
+	userCode: string
+): Promise<void> {
+	const formattedUserCode = userCode.replace(/-/g, "");
+
+	const claim = await fetch(
+		`${serverUrl}/api/auth/device?user_code=${encodeURIComponent(formattedUserCode)}`,
+		{
+			headers: authHeaders({ cookie: sessionCookie }),
+		}
+	);
+	if (!claim.ok) {
+		throw new Error(
+			`device claim failed: ${claim.status} ${await claim.text()}`
+		);
+	}
+
+	const approve = await fetch(`${serverUrl}/api/auth/device/approve`, {
+		method: "POST",
+		headers: authHeaders({
+			"content-type": "application/json",
+			cookie: sessionCookie,
+		}),
+		body: JSON.stringify({ userCode: formattedUserCode }),
+	});
+	if (!approve.ok) {
+		throw new Error(
+			`device approve failed: ${approve.status} ${await approve.text()}`
+		);
+	}
+}
+
+/**
  * Seeds a CLI access token via the device-code HTTP endpoints.
  * Used by the Vitest/process-compose harness until those scenarios move onto
  * the Playwright device-UI fixture (#115).
@@ -111,33 +149,12 @@ export async function seedCliAccessToken(
 		device_code: string;
 		user_code: string;
 	};
-	const formattedUserCode = codeBody.user_code.replace(/-/g, "");
 
-	const claim = await fetch(
-		`${serverUrl}/api/auth/device?user_code=${encodeURIComponent(formattedUserCode)}`,
-		{
-			headers: authHeaders({ cookie: session.sessionCookie }),
-		}
+	await approveDeviceUserCode(
+		serverUrl,
+		session.sessionCookie,
+		codeBody.user_code
 	);
-	if (!claim.ok) {
-		throw new Error(
-			`device claim failed: ${claim.status} ${await claim.text()}`
-		);
-	}
-
-	const approve = await fetch(`${serverUrl}/api/auth/device/approve`, {
-		method: "POST",
-		headers: authHeaders({
-			"content-type": "application/json",
-			cookie: session.sessionCookie,
-		}),
-		body: JSON.stringify({ userCode: formattedUserCode }),
-	});
-	if (!approve.ok) {
-		throw new Error(
-			`device approve failed: ${approve.status} ${await approve.text()}`
-		);
-	}
 
 	const tokenResponse = await fetch(`${serverUrl}/api/auth/device/token`, {
 		method: "POST",

@@ -404,6 +404,7 @@
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
+        "@microsoft/shell-use": "0.0.1-beta.5",
         "@playwright/test": "^1.61.1",
         "@types/bun": "catalog:core",
         "vitest": "catalog:testing",
@@ -1086,6 +1087,8 @@
     "@malept/cross-spawn-promise": ["@malept/cross-spawn-promise@1.1.1", "", { "dependencies": { "cross-spawn": "^7.0.1" } }, "sha512-RTBGWL5FWQcg9orDOCcp4LvItNzUPcyEU9bwaeJX0rJ1IQxzucC48Y0/sQLp/g6t99IQgAlGIaesJS+gTn7tVQ=="],
 
     "@mantine/hooks": ["@mantine/hooks@9.4.1", "", { "peerDependencies": { "react": "^19.2.0" } }, "sha512-eTI8wmzPx3r98zgKIEuvukmoGTHBhmtI6+9E6o2DbTmEU2eM1bCdjE2vFdf0op2AlRO0KEYEcZhNQi4T/SJk0A=="],
+
+    "@microsoft/shell-use": ["@microsoft/shell-use@0.0.1-beta.5", "", {}, "sha512-vDdV1niyhc6NGLNofQAQFaQB3gLgbnZMUFiRCLEpTDn5LMxsF0B24J+FfagozmlF7ErjKCe+yjVdsP10WAbH7A=="],
 
     "@mikkelscheike/email-provider-links": ["@mikkelscheike/email-provider-links@5.1.8", "", {}, "sha512-I499oaqSgwpzIE8zkAJaKvenUm2au4SVCnrBNxScuPYTFsVvxsJ4kYrkWs23zg1czwDTaN9C+4k8eDHmIONeFw=="],
 

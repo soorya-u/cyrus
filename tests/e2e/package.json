@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
+    "@microsoft/shell-use": "0.0.1-beta.5",
     "@playwright/test": "^1.61.1",
     "@types/bun": "catalog:core",
     "vitest": "catalog:testing"
