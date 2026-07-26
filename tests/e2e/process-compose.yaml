@@ -27,16 +27,6 @@ processes:
       signal: 15
       timeout_seconds: 10
 
-  seed:
-    command: "bun tests/e2e/harness/seed-worker.ts"
-    depends_on:
-      server:
-        condition: process_healthy
-    availability:
-      restart: "no"
-    environment:
-      - "CYRUS_HOME=${CYRUS_HOME}"
-
   web:
     command: "bun run dev -- --host 127.0.0.1 --port 5173"
     working_dir: "apps/web"

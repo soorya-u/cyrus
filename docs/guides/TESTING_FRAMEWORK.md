@@ -8,7 +8,6 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | --- | --- | --- |
 | `apps/cli`, `apps/desktop` | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
 | Vitest workspace packages (`apps/web`, `apps/server`, `shared/*`) | Root Vitest Projects | `vitest.config.ts` at the repo root; shared DOM setup in `tooling/test/setup/vitest.shared.ts` |
-| Harness-driven E2E scenarios (legacy Node controller) | Vitest + node | Root `tests/e2e/scenarios/` (workspace project `e2e`; retiring in #118) |
 | Worker CLI terminal tier | Vitest + shell-use (PTY) | Root `tests/e2e/harness/*-terminal.test.ts` |
 | Cross-peer + browser user flows | Playwright | Root `tests/e2e/web/` (process-compose lifecycle) |
 
@@ -22,7 +21,6 @@ Root `bun test:unit` runs `vitest run --project='@cyrus/*'` (every unit project;
 <package>/src/**/*.test.ts
 <package>/__tests__/integration/
 tests/e2e/harness/
-tests/e2e/scenarios/
 tests/e2e/web/
 tooling/test/
 ```
@@ -43,20 +41,19 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 
 ## Phase 4 notes
 
-- Root Vitest scenarios live in `tests/e2e/scenarios/` behind `NODE_ENV=testing`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
-- The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against **local D1** (migrations applied via `wrangler d1 migrations apply cyrus --local`).
-- Scenarios can call `stack.restartWorker()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.test.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
-- The Playwright suite shares process-compose with the Vitest harness for peer lifecycle:
+- Cross-peer scenarios live under `tests/e2e/web/specs/` (`worker-connects`, `catalog`, `thread-lifecycle`, `thread-sync`, `cold-resume`) and run on Playwright with a real browser as the Controller.
+- The harness in `tests/e2e/harness/` plus `tests/e2e/process-compose.yaml` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against **local D1** (migrations applied via `wrangler d1 migrations apply cyrus --local`).
+- Specs can call `cliWorker.restart()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.spec.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
+- The Playwright suite uses process-compose for peer lifecycle:
   1. The worker-scoped `stack` fixture starts sync server + Controller web via `tests/e2e/process-compose.yaml` (D1 migrations applied by the `prepare-database` process).
   2. The worker-scoped `auth` fixture creates a unique account and drives the real device-authorization page (`/auth/device`) via compiled `cyrusd login`, then writes the token into the stack's `CYRUS_HOME`.
   3. The worker-scoped `cliWorker` fixture starts the Worker process through process-compose and exposes `restart()` for mid-scenario Worker-only restarts (cold-resume).
   4. Specs install the fixture's session cookie in the browser and exercise the real Controller UI against the connected Worker.
   5. After the worker's tests finish, process-compose tears down all managed peers and the temporary `CYRUS_HOME` is removed.
-  6. Migrated cross-peer scenarios live alongside smoke under `tests/e2e/web/specs/` (`worker-connects`, `catalog`, `thread-lifecycle`, `thread-sync`, `cold-resume`).
 - The Worker CLI terminal tier (`tests/e2e/harness/*-terminal.test.ts`) drives the compiled `cyrusd` binary through a shell-use PTY with fixed columns/rows, asserting on rendered output (including ANSI colors) and exit codes. Nightly CI installs the matching `shell-use` binary via mise (`github:microsoft/shell-use`).
 - Local E2E runs do not need an external database URL. Wrangler local D1 is enough. Broader per-run D1 isolation for CI is tracked in #119.
-- The Vitest harness and Playwright server setup ensure the schema exists before starting their signaling server.
-- Programmatic auth uses Better Auth email sign-in plus the real device-code flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
+- Playwright server setup ensures the schema exists before starting the signaling server.
+- Programmatic session creation for tests uses Better Auth email sign-in (`tests/e2e/harness/auth.ts`); device approval goes through the real `/auth/device` UI (`tests/e2e/web/device-auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
 - Playwright specs and their worker-scoped fixtures live in `tests/e2e/web/`.
 - E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch` only).
 

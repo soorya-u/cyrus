@@ -35,12 +35,6 @@ export function buildServerEnv(): Record<string, string> {
 	};
 }
 
-export function buildWebEnv(): Record<string, string> {
-	return {
-		VITE_SERVER_URL: E2E_SERVER_URL,
-	};
-}
-
 export function buildCliEnv(home: string): Record<string, string> {
 	return {
 		...process.env,
