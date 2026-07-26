@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vitest";
-import { seedCliAccessToken } from "./auth";
+import { approveDeviceUserCode, createE2eAuthSession } from "./auth";
+import { readAccessTokenFromHome, startCliLogin } from "./cli-login";
 import {
 	buildCompiledCliBinaryOnce,
 	CLI_WORKER_BINARY,
@@ -32,13 +34,13 @@ import {
 	TERMINAL_ROWS,
 	withTerminalSession,
 } from "./shell-use";
-import { waitForHealthy } from "./wait";
 
 /** Bun.color("green", "ansi-256") index used by print.success. */
 const GREEN_FG = 28;
 
 const NOT_RUNNING_PATTERN = /Not running/;
 const E2E_WORKER_PATTERN = /E2E Worker/;
+const RUNNING_PID_PATTERN = /Running \(pid/;
 
 const REPO_ROOT = join(fileURLToPath(new URL("../../..", import.meta.url)));
 const PROCESS_COMPOSE_CONFIG = join(
@@ -65,6 +67,56 @@ async function stopWorkerBestEffort(home: string): Promise<void> {
 		stdio: "ignore",
 	});
 	await waitForExit(proc);
+}
+
+async function workerStatusExitCode(home: string): Promise<number | null> {
+	const proc = spawn(CLI_WORKER_BINARY, ["status"], {
+		cwd: CLI_WORKER_RUNTIME_DIRECTORY,
+		env: {
+			...process.env,
+			CYRUS_HOME: home,
+			CLI_PUBLIC_SERVER_URL: E2E_SERVER_URL,
+		},
+		stdio: ["ignore", "ignore", "ignore"],
+	});
+	return await waitForExit(proc);
+}
+
+/** Polls `cyrusd status` until exit 0 (ready + fresh heartbeat + live pid). */
+async function waitForHealthy(
+	home: string,
+	{
+		timeoutMs = 120_000,
+		intervalMs = 500,
+	}: { timeoutMs?: number; intervalMs?: number } = {}
+): Promise<void> {
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		if ((await workerStatusExitCode(home)) === 0) {
+			return;
+		}
+		await sleep(intervalMs);
+	}
+	throw new Error(`Timed out waiting for healthy worker in ${home}.`);
+}
+
+async function seedWorkerHome(home: string): Promise<void> {
+	const email = `e2e-service-${crypto.randomUUID()}@cyrus.test`;
+	const password = "e2e-test-password-32chars-min";
+	const session = await createE2eAuthSession(E2E_SERVER_URL, email, password);
+	const login = await startCliLogin(home);
+	try {
+		await approveDeviceUserCode(
+			E2E_SERVER_URL,
+			session.sessionCookie,
+			login.prompt.userCode
+		);
+		await login.waitUntilDone();
+	} catch (error) {
+		login.kill();
+		throw error;
+	}
+	await writeCliWorkerState(home, await readAccessTokenFromHome(home));
 }
 
 e2eDescribe("cyrusd service terminal tier", () => {
@@ -138,8 +190,7 @@ e2eDescribe("cyrusd service terminal tier", () => {
 			},
 		});
 
-		const auth = await seedCliAccessToken(E2E_SERVER_URL);
-		await writeCliWorkerState(cyrusHome, auth.token);
+		await seedWorkerHome(cyrusHome);
 		const cliEnv = buildServiceCliEnv(cyrusHome);
 
 		await withTerminalSession(async (su) => {
@@ -177,6 +228,7 @@ e2eDescribe("cyrusd service terminal tier", () => {
 			await su.waitExit({ timeout: 15_000 });
 			expect((await su.state()).exited).toBe(0);
 			expect((await su.state()).text).toMatch(E2E_WORKER_PATTERN);
+			expect((await su.state()).text).toMatch(RUNNING_PID_PATTERN);
 		});
 
 		await withTerminalSession(async (su) => {
