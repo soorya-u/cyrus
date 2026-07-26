@@ -13,6 +13,10 @@ import {
 	writeCliWorkerState,
 } from "./cli-worker";
 import {
+	createTempWranglerPersistDir,
+	WRANGLER_PERSIST_TO_ENV,
+} from "./database";
+import {
 	buildCliEnv,
 	buildServerEnv,
 	createTempCyrusHome,
@@ -122,6 +126,7 @@ async function seedWorkerHome(home: string): Promise<void> {
 e2eDescribe("cyrusd service terminal tier", () => {
 	let compose: ProcessComposeHandle | undefined;
 	let wranglerEnvFile: string | undefined;
+	let wranglerPersistDir: string | undefined;
 	let cyrusHome: string | undefined;
 
 	afterEach(async () => {
@@ -139,6 +144,12 @@ e2eDescribe("cyrusd service terminal tier", () => {
 				() => undefined
 			);
 			cyrusHome = undefined;
+		}
+		if (wranglerPersistDir) {
+			await rm(wranglerPersistDir, { recursive: true, force: true }).catch(
+				() => undefined
+			);
+			wranglerPersistDir = undefined;
 		}
 	});
 
@@ -175,6 +186,7 @@ e2eDescribe("cyrusd service terminal tier", () => {
 
 		const serverEnv = buildServerEnv();
 		cyrusHome = await createTempCyrusHome();
+		wranglerPersistDir = await createTempWranglerPersistDir();
 		wranglerEnvFile = await writeWranglerEnvFile(serverEnv);
 
 		compose = await startProcessCompose({
@@ -186,6 +198,7 @@ e2eDescribe("cyrusd service terminal tier", () => {
 				...process.env,
 				...serverEnv,
 				WRANGLER_ENV_FILE: wranglerEnvFile,
+				[WRANGLER_PERSIST_TO_ENV]: wranglerPersistDir,
 				NODE_ENV: "testing",
 			},
 		});

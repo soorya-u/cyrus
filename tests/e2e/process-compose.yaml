@@ -8,7 +8,7 @@ processes:
       restart: "no"
 
   server:
-    command: "bunx wrangler@4.104.0 dev --config wrangler.json --port 8787 --ip 127.0.0.1 --log-level warn --show-interactive-dev-session false --env-file ${WRANGLER_ENV_FILE}"
+    command: "bunx wrangler@4.104.0 dev --config wrangler.json --port 8787 --ip 127.0.0.1 --log-level warn --show-interactive-dev-session false --env-file ${WRANGLER_ENV_FILE} --persist-to ${WRANGLER_PERSIST_TO}"
     depends_on:
       prepare-database:
         condition: process_completed_successfully

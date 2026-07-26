@@ -8,6 +8,10 @@ import {
 	CLI_WORKER_RUNTIME_DIRECTORY,
 } from "./cli-worker";
 import {
+	createTempWranglerPersistDir,
+	WRANGLER_PERSIST_TO_ENV,
+} from "./database";
+import {
 	buildServerEnv,
 	createTempCyrusHome,
 	removeWranglerEnvFile,
@@ -30,6 +34,7 @@ const PROCESS_COMPOSE_CONFIG = join(
 /** process-compose stack for Playwright: server+web first, worker on demand. */
 export type PlaywrightE2eStack = {
 	cyrusHome: string;
+	wranglerPersistDir: string;
 	wranglerEnvFile?: string;
 	compose: ProcessComposeHandle;
 	startWorker: () => Promise<void>;
@@ -39,6 +44,7 @@ export type PlaywrightE2eStack = {
 function composeEnv(
 	cyrusHome: string,
 	wranglerEnvFile: string,
+	wranglerPersistDir: string,
 	serverEnv: Record<string, string>
 ): Record<string, string | undefined> {
 	return {
@@ -46,6 +52,7 @@ function composeEnv(
 		...serverEnv,
 		CYRUS_HOME: cyrusHome,
 		WRANGLER_ENV_FILE: wranglerEnvFile,
+		[WRANGLER_PERSIST_TO_ENV]: wranglerPersistDir,
 		CYRUS_WORKER_BIN: CLI_WORKER_BINARY,
 		CYRUS_WORKER_CWD: CLI_WORKER_RUNTIME_DIRECTORY,
 		NODE_ENV: "testing",
@@ -59,6 +66,7 @@ function composeEnv(
 export async function startPlaywrightE2eStack(): Promise<PlaywrightE2eStack> {
 	const serverEnv = buildServerEnv();
 	const cyrusHome = await createTempCyrusHome();
+	const wranglerPersistDir = await createTempWranglerPersistDir();
 	let wranglerEnvFile: string | undefined;
 	let compose: ProcessComposeHandle | undefined;
 
@@ -72,7 +80,7 @@ export async function startPlaywrightE2eStack(): Promise<PlaywrightE2eStack> {
 			cwd: REPO_ROOT,
 			processes: ["web"],
 			readyProcesses: ["server", "web"],
-			env: composeEnv(cyrusHome, envFile, serverEnv),
+			env: composeEnv(cyrusHome, envFile, wranglerPersistDir, serverEnv),
 		});
 
 		let workerStarted = false;
@@ -97,6 +105,7 @@ export async function startPlaywrightE2eStack(): Promise<PlaywrightE2eStack> {
 
 		return {
 			cyrusHome,
+			wranglerPersistDir,
 			wranglerEnvFile,
 			compose,
 			startWorker,
@@ -117,6 +126,9 @@ export async function startPlaywrightE2eStack(): Promise<PlaywrightE2eStack> {
 		await rm(cyrusHome, { recursive: true, force: true }).catch(
 			() => undefined
 		);
+		await rm(wranglerPersistDir, { recursive: true, force: true }).catch(
+			() => undefined
+		);
 	}
 
 	return stackResult.unwrap();
@@ -128,6 +140,9 @@ export async function stopPlaywrightE2eStack(
 	await stopProcessCompose(stack.compose);
 	await removeWranglerEnvFile(stack.wranglerEnvFile);
 	await rm(stack.cyrusHome, { recursive: true, force: true }).catch(
+		() => undefined
+	);
+	await rm(stack.wranglerPersistDir, { recursive: true, force: true }).catch(
 		() => undefined
 	);
 }
