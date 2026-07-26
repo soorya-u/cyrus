@@ -30,3 +30,17 @@ function readDrizzleD1Migrations(): D1Migration[] {
 }
 
 await applyD1Migrations(env.DB, readDrizzleD1Migrations());
+
+declare global {
+	// biome-ignore lint/style/useConsistentTypeDefinitions: must interface-merge ImportMeta
+	interface ImportMeta {
+		glob(
+			pattern: string,
+			options: {
+				query: string;
+				import: string;
+				eager: true;
+			}
+		): Record<string, string>;
+	}
+}
