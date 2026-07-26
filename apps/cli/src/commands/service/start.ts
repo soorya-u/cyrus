@@ -44,7 +44,12 @@ export async function start(opts: StartOptions): Promise<void> {
 		if (opts.bg) {
 			await ensureDir();
 			const log = openSync(LOG_PATH, "a");
-			const child = Bun.spawn([Bun.main, "start"], {
+			// Compiled executables live under /$bunfs/ and cannot be posix_spawn'd;
+			// re-exec the real binary path instead (see Bun compile docs).
+			const workerArgv = Bun.main.startsWith("/$bunfs/")
+				? [process.execPath, "start"]
+				: [Bun.main, "start"];
+			const child = Bun.spawn(workerArgv, {
 				detached: true,
 				stdio: ["ignore", log, log],
 				env: { ...process.env, CYRUS_DAEMON: "1" },
