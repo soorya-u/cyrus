@@ -1,7 +1,8 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { daemonStop, ShellUse } from "@microsoft/shell-use";
 
 /** Fixed PTY size so terminal assertions stay stable across local and CI. */
@@ -9,8 +10,25 @@ export const TERMINAL_COLS = 80;
 export const TERMINAL_ROWS = 24;
 
 const SHELL_USE_NAME = "shell-use";
-/** Pinned version from mise.toml / @microsoft/shell-use. */
-const SHELL_USE_VERSION = "0.0.1-beta.5";
+
+function readPinnedShellUseVersion(): string {
+	const packagePath = fileURLToPath(
+		new URL("../package.json", import.meta.url)
+	);
+	const pkg = JSON.parse(readFileSync(packagePath, "utf8")) as {
+		devDependencies?: Record<string, string>;
+	};
+	const version = pkg.devDependencies?.["@microsoft/shell-use"];
+	if (!version) {
+		throw new Error(
+			"@microsoft/shell-use is missing from tests/e2e/package.json devDependencies."
+		);
+	}
+	return version;
+}
+
+/** Keep in lockstep with `@microsoft/shell-use` in `tests/e2e/package.json`. */
+const SHELL_USE_VERSION = readPinnedShellUseVersion();
 
 function findOnPath(binary: string): string | undefined {
 	const pathEnv = process.env.PATH ?? "";
@@ -24,45 +42,26 @@ function findOnPath(binary: string): string | undefined {
 }
 
 function findMiseShellUseBinary(home: string): string | undefined {
-	const installRoot = join(
+	const pinned = join(
 		home,
-		".local/share/mise/installs/github-microsoft-shell-use"
+		".local/share/mise/installs/github-microsoft-shell-use",
+		SHELL_USE_VERSION,
+		SHELL_USE_NAME
 	);
-	if (!existsSync(installRoot)) {
-		return;
-	}
-
-	let versions: string[];
-	try {
-		versions = readdirSync(installRoot);
-	} catch {
-		return;
-	}
-
-	const ordered = versions.includes(SHELL_USE_VERSION)
-		? [SHELL_USE_VERSION, ...versions.filter((v) => v !== SHELL_USE_VERSION)]
-		: versions;
-
-	for (const version of ordered) {
-		const candidate = join(installRoot, version, SHELL_USE_NAME);
-		if (existsSync(candidate)) {
-			return candidate;
-		}
+	if (existsSync(pinned)) {
+		return pinned;
 	}
 }
 
 /**
  * Resolves the `shell-use` native binary. The npm package is only the client;
  * the binary must match `@microsoft/shell-use`'s version (see mise.toml).
+ *
+ * Preference order: `SHELL_USE_BIN` → mise-pinned install → PATH → `~/.local/bin`.
  */
 export function resolveShellUseBinary(): string {
 	if (process.env.SHELL_USE_BIN) {
 		return process.env.SHELL_USE_BIN;
-	}
-
-	const onPath = findOnPath(SHELL_USE_NAME);
-	if (onPath) {
-		return onPath;
 	}
 
 	const home = process.env.HOME;
@@ -71,6 +70,14 @@ export function resolveShellUseBinary(): string {
 		if (fromMise) {
 			return fromMise;
 		}
+	}
+
+	const onPath = findOnPath(SHELL_USE_NAME);
+	if (onPath) {
+		return onPath;
+	}
+
+	if (home) {
 		const localBin = join(home, ".local/bin/shell-use");
 		if (existsSync(localBin)) {
 			return localBin;
@@ -78,13 +85,24 @@ export function resolveShellUseBinary(): string {
 	}
 
 	throw new Error(
-		"shell-use binary not found. Install via `mise install` (see mise.toml) or set SHELL_USE_BIN."
+		`shell-use binary not found (need ${SHELL_USE_VERSION}). Install via \`mise install\` (see mise.toml) or set SHELL_USE_BIN.`
 	);
 }
 
 export type TerminalSessionOptions = {
 	session?: string;
 };
+
+function restoreEnvVar(
+	key: "NO_COLOR" | "FORCE_COLOR" | "TERM",
+	previous: string | undefined
+): void {
+	if (previous === undefined) {
+		delete process.env[key];
+	} else {
+		process.env[key] = previous;
+	}
+}
 
 /**
  * Opens an isolated shell-use session (unique daemon home), runs `fn`, then
@@ -97,9 +115,9 @@ export async function withTerminalSession(
 	fn: (su: ShellUse) => Promise<void>,
 	options: TerminalSessionOptions = {}
 ): Promise<void> {
+	const binary = resolveShellUseBinary();
 	const home = await mkdtemp(join(tmpdir(), "cyrus-shell-use-"));
 	const session = options.session ?? `cyrus-${crypto.randomUUID()}`;
-	const binary = resolveShellUseBinary();
 	const previousNoColor = process.env.NO_COLOR;
 	const previousForceColor = process.env.FORCE_COLOR;
 	const previousTerm = process.env.TERM;
@@ -109,31 +127,19 @@ export async function withTerminalSession(
 	process.env.TERM = "xterm-256color";
 
 	const clientOpts = { binary, home };
-	await daemonStop(session, clientOpts).catch(() => undefined);
-
-	const su = new ShellUse(session, clientOpts);
+	let su: ShellUse | undefined;
 
 	try {
+		su = new ShellUse(session, clientOpts);
+		await daemonStop(session, clientOpts).catch(() => undefined);
 		await fn(su);
 	} finally {
-		await su.close().catch(() => undefined);
+		await su?.close().catch(() => undefined);
 		await daemonStop(session, clientOpts).catch(() => undefined);
 		await rm(home, { recursive: true, force: true }).catch(() => undefined);
-		if (previousNoColor === undefined) {
-			delete process.env.NO_COLOR;
-		} else {
-			process.env.NO_COLOR = previousNoColor;
-		}
-		if (previousForceColor === undefined) {
-			delete process.env.FORCE_COLOR;
-		} else {
-			process.env.FORCE_COLOR = previousForceColor;
-		}
-		if (previousTerm === undefined) {
-			delete process.env.TERM;
-		} else {
-			process.env.TERM = previousTerm;
-		}
+		restoreEnvVar("NO_COLOR", previousNoColor);
+		restoreEnvVar("FORCE_COLOR", previousForceColor);
+		restoreEnvVar("TERM", previousTerm);
 	}
 }
 

@@ -32,8 +32,8 @@ import {
 } from "./shell-use";
 
 /** Bun.color("cyan"/"blue", "ansi-256") indexes used by the CLI style helpers. */
-const CYAN_FG = "51";
-const BLUE_FG = "21";
+const CYAN_FG = 51;
+const BLUE_FG = 21;
 const LOGGED_IN_PATTERN = /Logged in/;
 
 const REPO_ROOT = join(fileURLToPath(new URL("../../..", import.meta.url)));
@@ -106,12 +106,15 @@ e2eDescribe("cyrusd login terminal tier", () => {
 			const prompt = parseCliLoginPrompt(await su.text({ full: true }));
 
 			// URL is blue; the code also appears in the query string, so match path only.
-			await su.expectText("/auth/device", { fg: BLUE_FG, strict: false });
+			await su.expectText("/auth/device", {
+				fg: String(BLUE_FG),
+				strict: false,
+			});
 
 			// User code on the "enter the code" line is cyan (ansi-256 51) + bold.
 			const cells = await su.cells(0, 0, TERMINAL_COLS, TERMINAL_ROWS);
 			const cyanRun = cells
-				.filter((cell) => cell.fg === 51 || cell.fg === CYAN_FG)
+				.filter((cell) => cell.fg === CYAN_FG)
 				.map((cell) => cell.char)
 				.join("");
 			expect(cyanRun).toContain(prompt.userCode);
@@ -119,7 +122,7 @@ e2eDescribe("cyrusd login terminal tier", () => {
 				cells.some(
 					(cell) =>
 						cell.bold &&
-						(cell.fg === 51 || cell.fg === CYAN_FG) &&
+						cell.fg === CYAN_FG &&
 						prompt.userCode.includes(cell.char)
 				)
 			).toBe(true);
