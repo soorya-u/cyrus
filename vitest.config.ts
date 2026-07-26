@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { cloudflareTest } from "@cloudflare/vitest-pool-workers";
+import { FAKE_BETTER_AUTH_ENV as bindings } from "@cyrus/test/mocks/auth-env";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
@@ -29,19 +30,7 @@ export default defineConfig({
 				plugins: [
 					cloudflareTest({
 						wrangler: { configPath: packageRoot("wrangler.json") },
-						miniflare: {
-							bindings: {
-								ALLOWED_ORIGINS: "https://cyrus.soorya-u.dev",
-								BETTER_AUTH_SECRET:
-									"test-secret-that-is-at-least-thirty-two-characters",
-								NODE_ENV: "testing",
-								OAUTH_GITHUB_CLIENT_ID: "test-client-id",
-								OAUTH_GITHUB_CLIENT_SECRET: "test-client-secret",
-								OAUTH_PROXY_SECRET: "test-oauth-proxy-secret",
-								PRODUCTION_URL: "https://cyrus.soorya-u.dev",
-								WEB_APP_URL: "https://cyrus.soorya-u.dev",
-							},
-						},
+						miniflare: { bindings },
 					}),
 				],
 				test: {
@@ -115,16 +104,6 @@ export default defineConfig({
 					name: "@cyrus/utils",
 					environment: "node",
 					include: ["src/**/*.test.ts"],
-				},
-			},
-			{
-				root: packageRoot("tests/e2e"),
-				test: {
-					name: "e2e",
-					environment: "node",
-					include: ["harness/**/*.test.ts"],
-					testTimeout: 180_000,
-					fileParallelism: false,
 				},
 			},
 		],

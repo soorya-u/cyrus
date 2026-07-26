@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { tempCyrusHomeFixture } from "@cyrus/test/fixtures/cyrus-home";
 import {
 	clearHealth,
 	DEFAULT_HEALTH_STALE_MS,
@@ -12,19 +10,7 @@ import {
 	touchHeartbeat,
 } from "@/store/health";
 
-const homes: string[] = [];
-
-async function tempHome(): Promise<string> {
-	const home = await mkdtemp(join(tmpdir(), "cyrus-health-"));
-	homes.push(home);
-	return home;
-}
-
-afterEach(async () => {
-	await Promise.all(
-		homes.splice(0).map((home) => rm(home, { recursive: true, force: true }))
-	);
-});
+const tempHome = tempCyrusHomeFixture(afterEach, "cyrus-health-");
 
 describe("worker health file", () => {
 	test("isHealthy is false when no health file exists", async () => {

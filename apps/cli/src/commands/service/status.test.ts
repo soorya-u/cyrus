@@ -1,17 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { tempCyrusHomeFixture } from "@cyrus/test/fixtures/cyrus-home";
 import { markHealthReady, markHealthStarting } from "@/store/health";
 
 const CLI = join(import.meta.dir, "../../cli.ts");
-const homes: string[] = [];
-
-async function tempHome(): Promise<string> {
-	const home = await mkdtemp(join(tmpdir(), "cyrus-status-"));
-	homes.push(home);
-	return home;
-}
+const tempHome = tempCyrusHomeFixture(afterEach, "cyrus-status-");
 
 async function runStatus(home: string): Promise<{
 	exitCode: number;
@@ -36,12 +29,6 @@ async function runStatus(home: string): Promise<{
 	]);
 	return { exitCode, stdout, stderr };
 }
-
-afterEach(async () => {
-	await Promise.all(
-		homes.splice(0).map((home) => rm(home, { recursive: true, force: true }))
-	);
-});
 
 describe("cyrusd status", () => {
 	test("exits 1 when the worker is not running", async () => {

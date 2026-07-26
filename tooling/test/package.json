@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     "./setup/vitest.shared": "./setup/vitest.shared.ts",
-    "./setup/bun.setup": "./setup/bun.setup.ts"
+    "./fixtures/cyrus-home": "./fixtures/cyrus-home.ts",
+    "./mocks/auth-env": "./mocks/auth-env.ts"
   },
   "scripts": {
     "smoke:deploy": "bun smoke/deploy.ts"
