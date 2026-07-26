@@ -3,6 +3,14 @@ import { E2E_WEB_URL } from "./env";
 const CLIENT_ID = "cyrusd";
 const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
+export type E2eAuth = {
+	token: string;
+	userId: string;
+	sessionCookie: string;
+	sessionToken: string;
+	email: string;
+};
+
 type AuthSession = {
 	sessionCookie: string;
 	sessionToken: string;
@@ -37,7 +45,8 @@ function parseSessionCookie(setCookie: string | null): {
 	};
 }
 
-async function signUpAndSignIn(
+/** Creates a unique email/password account via the auth API (testing-only). */
+export async function createE2eAuthSession(
 	serverUrl: string,
 	email: string,
 	password: string
@@ -70,20 +79,19 @@ async function signUpAndSignIn(
 	return { sessionCookie, sessionToken, userId };
 }
 
+/**
+ * Seeds a CLI access token via the device-code HTTP endpoints.
+ * Used by the Vitest/process-compose harness until those scenarios move onto
+ * the Playwright device-UI fixture (#115).
+ */
 export async function seedCliAccessToken(
 	serverUrl: string,
 	{
 		email = `e2e-${crypto.randomUUID()}@cyrus.test`,
 		password = "e2e-test-password-32chars-min",
 	}: { email?: string; password?: string } = {}
-): Promise<{
-	token: string;
-	userId: string;
-	sessionCookie: string;
-	sessionToken: string;
-	email: string;
-}> {
-	const session = await signUpAndSignIn(serverUrl, email, password);
+): Promise<E2eAuth> {
+	const session = await createE2eAuthSession(serverUrl, email, password);
 
 	const codeResponse = await fetch(`${serverUrl}/api/auth/device/code`, {
 		method: "POST",
