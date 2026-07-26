@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 export const E2E_SERVER_URL = "http://localhost:8787";
 export const E2E_WEB_URL = "http://localhost:5173";
+export const E2E_AUTH_FILE = "e2e-auth.json";
 
 export function isE2eEnabled(): boolean {
 	return process.env.NODE_ENV === "testing";

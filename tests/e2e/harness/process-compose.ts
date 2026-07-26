@@ -245,6 +245,86 @@ export async function startProcessCompose(
 	}
 }
 
+export async function startManagedProcess(
+	handle: ProcessComposeHandle,
+	name: string,
+	{
+		waitUntil = "ready",
+		timeoutMs = 120_000,
+	}: {
+		waitUntil?: "ready" | "completed";
+		timeoutMs?: number;
+	} = {}
+): Promise<ProcessComposeState> {
+	const { stderr, exitCode } = await runProcessCompose(
+		["process", "start", name, "-p", String(handle.apiPort)],
+		{ apiPort: handle.apiPort, cwd: handle.cwd }
+	);
+	if (exitCode !== 0) {
+		throw new Error(
+			`process-compose start ${name} failed (${exitCode}): ${stderr}`
+		);
+	}
+	if (waitUntil === "completed") {
+		return await waitForProcessCompleted(handle, name, { timeoutMs });
+	}
+	return await waitForProcessReady(handle, name, { timeoutMs });
+}
+
+export async function waitForProcessCompleted(
+	handle: ProcessComposeHandle,
+	name: string,
+	{ timeoutMs = 120_000 }: { timeoutMs?: number } = {}
+): Promise<ProcessComposeState> {
+	const deadline = Date.now() + timeoutMs;
+	let lastError: unknown;
+	let lastState: ProcessComposeState | undefined;
+
+	while (Date.now() < deadline) {
+		try {
+			const state = await getProcessState(handle, name);
+			lastState = state;
+			const status = state.status.toLowerCase();
+			const completed =
+				!state.is_running &&
+				(status.includes("completed") ||
+					status.includes("finished") ||
+					status.includes("done"));
+			if (completed) {
+				return state;
+			}
+			const failed =
+				!state.is_running &&
+				(status.includes("error") ||
+					status.includes("failed") ||
+					status.includes("terminated"));
+			if (failed) {
+				throw new ProcessComposeProcessFailedError(name, state.status);
+			}
+			lastError = undefined;
+		} catch (error) {
+			if (error instanceof ProcessComposeProcessFailedError) {
+				throw error;
+			}
+			lastError = error;
+		}
+		await sleep(250);
+	}
+
+	throw new Error(
+		`Timed out waiting for process-compose process "${name}" to complete.${
+			lastState ? ` Last status: ${lastState.status}.` : ""
+		}${lastError ? ` Last error: ${String(lastError)}` : ""}`
+	);
+}
+
+class ProcessComposeProcessFailedError extends Error {
+	constructor(name: string, status: string) {
+		super(`process-compose process "${name}" ended unsuccessfully: ${status}`);
+		this.name = "ProcessComposeProcessFailedError";
+	}
+}
+
 export async function restartManagedProcess(
 	handle: ProcessComposeHandle,
 	name: string

@@ -8,9 +8,9 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | --- | --- | --- |
 | `apps/cli`, `apps/desktop` | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
 | Vitest workspace packages (`apps/web`, `apps/server`, `shared/*`) | Root Vitest Projects | `vitest.config.ts` at the repo root; shared DOM setup in `tooling/test/setup/vitest.shared.ts` |
-| Harness-driven E2E scenarios | Vitest + node | Root `tests/e2e/scenarios/` (workspace project `e2e`) |
+| Harness-driven E2E scenarios (legacy Node controller) | Vitest + node | Root `tests/e2e/scenarios/` (workspace project `e2e`; retiring in #118) |
 | Worker CLI terminal tier | Vitest + shell-use (PTY) | Root `tests/e2e/harness/*-terminal.test.ts` |
-| Browser user flows | Playwright | Root `tests/e2e/web/` |
+| Cross-peer + browser user flows | Playwright | Root `tests/e2e/web/` (process-compose lifecycle) |
 
 Vitest is the default runner (ADR 0017). Bun stays permanently for `apps/cli` and `apps/desktop`.
 
@@ -46,12 +46,13 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 - Root Vitest scenarios live in `tests/e2e/scenarios/` behind `NODE_ENV=testing`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
 - The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against **local D1** (migrations applied via `wrangler d1 migrations apply cyrus --local`).
 - Scenarios can call `stack.restartWorker()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.test.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
-- The Playwright suite uses Playwright's lifecycle primitives rather than the Bun scenario stack:
-  1. Playwright's `webServer` configuration ensures the database schema exists, then starts the real Wrangler signaling server on `:8787` and Vite controller on `:5173`.
-  2. The worker-scoped `auth` fixture creates a unique account, completes the real device authorization flow, and exposes the session cookie and CLI access token to each spec.
-  3. The worker-scoped `cliWorker` fixture writes that token to an isolated `CYRUS_HOME`, starts the CLI Worker, and waits for its `connected... waiting for message` log line.
-  4. Specs install the fixture's session cookie in the browser and exercise the controller against the connected CLI Worker.
-  5. After the worker's tests finish, Playwright stops the CLI Worker, removes its temporary home, and tears down both `webServer` processes.
+- The Playwright suite shares process-compose with the Vitest harness for peer lifecycle:
+  1. The worker-scoped `stack` fixture starts sync server + Controller web via `tests/e2e/process-compose.yaml` (D1 migrations applied by the `prepare-database` process).
+  2. The worker-scoped `auth` fixture creates a unique account and drives the real device-authorization page (`/auth/device`) via compiled `cyrusd login`, then writes the token into the stack's `CYRUS_HOME`.
+  3. The worker-scoped `cliWorker` fixture starts the Worker process through process-compose and exposes `restart()` for mid-scenario Worker-only restarts (cold-resume).
+  4. Specs install the fixture's session cookie in the browser and exercise the real Controller UI against the connected Worker.
+  5. After the worker's tests finish, process-compose tears down all managed peers and the temporary `CYRUS_HOME` is removed.
+  6. Migrated cross-peer scenarios live alongside smoke under `tests/e2e/web/specs/` (`worker-connects`, `catalog`, `thread-lifecycle`, `thread-sync`, `cold-resume`).
 - The Worker CLI terminal tier (`tests/e2e/harness/*-terminal.test.ts`) drives the compiled `cyrusd` binary through a shell-use PTY with fixed columns/rows, asserting on rendered output (including ANSI colors) and exit codes. Nightly CI installs the matching `shell-use` binary via mise (`github:microsoft/shell-use`).
 - Local E2E runs do not need an external database URL. Wrangler local D1 is enough. Broader per-run D1 isolation for CI is tracked in #119.
 - The Vitest harness and Playwright server setup ensure the schema exists before starting their signaling server.
