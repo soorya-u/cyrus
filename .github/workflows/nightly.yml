@@ -30,7 +30,7 @@ jobs:
 
       - uses: jdx/mise-action@v3
         with:
-          install_args: process-compose
+          install_args: process-compose github:microsoft/shell-use
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Playwright browsers
