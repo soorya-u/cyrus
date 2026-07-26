@@ -2,7 +2,7 @@ import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Result } from "better-result";
-import type { seedCliAccessToken } from "./auth";
+import type { E2eAuth } from "./auth";
 import {
 	buildCompiledCliBinaryOnce,
 	CLI_WORKER_BINARY,
@@ -40,11 +40,9 @@ async function withIgnoredRejections<T>(run: () => Promise<T>): Promise<T> {
 	}
 }
 
-type SeededAuth = Awaited<ReturnType<typeof seedCliAccessToken>>;
-
 export type E2eStack = {
 	cyrusHome: string;
-	auth: SeededAuth;
+	auth: E2eAuth;
 	wranglerEnvFile?: string;
 	compose: ProcessComposeHandle;
 	restartWorker: () => Promise<void>;
@@ -54,7 +52,7 @@ export type StartE2eStackOptions = {
 	withWeb?: boolean;
 };
 
-async function readSeededAuth(home: string): Promise<SeededAuth> {
+async function readE2eAuth(home: string): Promise<E2eAuth> {
 	const raw = await readFile(join(home, E2E_AUTH_FILE), "utf8");
 	const parsed: unknown = JSON.parse(raw);
 	if (
@@ -67,7 +65,7 @@ async function readSeededAuth(home: string): Promise<SeededAuth> {
 	) {
 		throw new Error(`Invalid ${E2E_AUTH_FILE} written by seed-worker.`);
 	}
-	return parsed as SeededAuth;
+	return parsed as E2eAuth;
 }
 
 async function createE2eStack(
@@ -104,7 +102,7 @@ async function createE2eStack(
 			},
 		});
 
-		const auth = await readSeededAuth(cyrusHome);
+		const auth = await readE2eAuth(cyrusHome);
 
 		const restartWorker = async (): Promise<void> => {
 			if (!compose) {

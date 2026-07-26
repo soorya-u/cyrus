@@ -1,48 +1,32 @@
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { WRANGLER_PACKAGE } from "./dev-servers";
 import { waitForExit } from "./process";
 
 const REPO_ROOT = join(fileURLToPath(new URL("../../..", import.meta.url)));
 
-async function databaseHasSchema(databaseUrl: string): Promise<boolean> {
+/**
+ * Applies pending local D1 migrations so wrangler-dev auth/app tables exist.
+ * Neon schema push is obsolete after the D1 cutover (#106); #112 removes the
+ * remaining DATABASE_URL requirement.
+ */
+export async function ensureDatabaseSchema(
+	_serverEnv: Record<string, string>
+): Promise<void> {
 	const proc = spawn(
-		"bun",
-		[
-			"-e",
-			`import { neon } from "@neondatabase/serverless";
-const sql = neon(process.env.DATABASE_URL);
-const rows = await sql\`SELECT to_regclass('public.user') AS user_table\`;
-process.exit(rows[0]?.user_table ? 0 : 1);`,
-		],
+		"bunx",
+		[WRANGLER_PACKAGE, "d1", "migrations", "apply", "cyrus", "--local"],
 		{
-			cwd: join(REPO_ROOT, "apps/server"),
-			env: { ...process.env, DATABASE_URL: databaseUrl },
-			stdio: ["ignore", "ignore", "ignore"],
+			cwd: REPO_ROOT,
+			env: process.env,
+			stdio: "inherit",
 		}
 	);
-	return (await waitForExit(proc)) === 0;
-}
-
-export async function ensureDatabaseSchema(
-	serverEnv: Record<string, string>
-): Promise<void> {
-	const databaseUrl = serverEnv.DATABASE_URL;
-	if (!databaseUrl) {
-		throw new Error("DATABASE_URL is required for E2E database setup.");
-	}
-
-	if (await databaseHasSchema(databaseUrl)) {
-		return;
-	}
-
-	const proc = spawn("bunx", ["drizzle-kit", "push"], {
-		cwd: join(REPO_ROOT, "apps/server"),
-		env: { ...process.env, ...serverEnv },
-		stdio: "inherit",
-	});
 	const exitCode = await waitForExit(proc);
 	if (exitCode !== 0) {
-		throw new Error("db:push failed for E2E database.");
+		throw new Error(
+			`wrangler d1 migrations apply --local failed with exit code ${exitCode ?? "null"}`
+		);
 	}
 }

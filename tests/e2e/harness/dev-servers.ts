@@ -1,6 +1,9 @@
+export const WRANGLER_VERSION = "4.104.0";
+export const WRANGLER_PACKAGE = `wrangler@${WRANGLER_VERSION}`;
+
 export const WRANGLER_DEV_COMMAND = [
 	"bunx",
-	"wrangler@4.104.0",
+	WRANGLER_PACKAGE,
 	"dev",
 	"--config",
 	"wrangler.json",

@@ -403,6 +403,7 @@
         "@cyrus/connections": "workspace:*",
         "better-result": "catalog:core",
         "node-datachannel": "^0.32.3",
+        "yaml": "2.9.0",
       },
       "devDependencies": {
         "@cyrus/typescript": "workspace:*",
