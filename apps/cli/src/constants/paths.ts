@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 export const CONFIG_FILE = "config.yml";
 export const AGENTS_FILE = "agents.yml";
 export const WORKER_PID = "worker.pid";
+export const WORKER_HEALTH = "health.json";
 export const WORKER_LOCK = "worker.lock";
 export const WORKER_LOG = "worker.log";
 export const DATABASE_FILE = "store.db";
@@ -16,6 +17,7 @@ export const CONFIG_PATH = join(env.CYRUS_HOME, CONFIG_FILE);
 export const AGENTS_PATH = join(env.CYRUS_HOME, AGENTS_FILE);
 export const STORE_DB_PATH = join(env.CYRUS_HOME, DATABASE_FILE);
 export const PID_PATH = join(env.CYRUS_HOME, WORKER_PID);
+export const HEALTH_PATH = join(env.CYRUS_HOME, WORKER_HEALTH);
 export const WORKER_LOCK_PATH = join(env.CYRUS_HOME, WORKER_LOCK);
 export const LOG_PATH = join(env.CYRUS_HOME, WORKER_LOG);
 

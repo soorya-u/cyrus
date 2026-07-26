@@ -1,31 +1,32 @@
+import { readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Result } from "better-result";
-import { seedCliAccessToken } from "./auth";
+import type { seedCliAccessToken } from "./auth";
 import {
 	buildCompiledCliBinaryOnce,
-	CLI_CONNECTED_PATTERN,
-	writeCliWorkerState,
+	CLI_WORKER_BINARY,
+	CLI_WORKER_RUNTIME_DIRECTORY,
 } from "./cli-worker";
-import { ensureDatabaseSchema } from "./database";
 import {
-	buildCliEnv,
 	buildServerEnv,
-	buildWebEnv,
 	createTempCyrusHome,
-	E2E_SERVER_URL,
-	E2E_WEB_URL,
 	removeWranglerEnvFile,
 	writeWranglerEnvFile,
 } from "./env";
 import {
-	cleanupDevServerProcesses,
-	type ManagedProcess,
-	spawnCliWorker,
-	spawnServer,
-	spawnWeb,
-	stopAll,
-	stopManaged,
-} from "./spawn";
-import { waitForHttpOk, waitForLogLine } from "./wait";
+	type ProcessComposeHandle,
+	restartManagedProcess,
+	startProcessCompose,
+	stopProcessCompose,
+} from "./process-compose";
+
+const REPO_ROOT = join(fileURLToPath(new URL("../../..", import.meta.url)));
+const PROCESS_COMPOSE_CONFIG = join(
+	REPO_ROOT,
+	"tests/e2e/process-compose.yaml"
+);
+const E2E_AUTH_FILE = "e2e-auth.json";
 
 async function withIgnoredRejections<T>(run: () => Promise<T>): Promise<T> {
 	const onRejection = () => {
@@ -39,102 +40,100 @@ async function withIgnoredRejections<T>(run: () => Promise<T>): Promise<T> {
 	}
 }
 
+type SeededAuth = Awaited<ReturnType<typeof seedCliAccessToken>>;
+
 export type E2eStack = {
-	processes: ManagedProcess[];
 	cyrusHome: string;
-	auth: Awaited<ReturnType<typeof seedCliAccessToken>>;
+	auth: SeededAuth;
 	wranglerEnvFile?: string;
+	compose: ProcessComposeHandle;
 	restartWorker: () => Promise<void>;
 };
-
-async function waitForWorkerConnected(
-	cli: ManagedProcess,
-	timeoutMs = 120_000
-): Promise<void> {
-	const { stderr, stdout } = cli.proc;
-	if (!(stdout && stderr)) {
-		throw new Error(
-			"CLI worker stdout/stderr must be piped for E2E readiness."
-		);
-	}
-
-	await waitForLogLine(stdout, stderr, CLI_CONNECTED_PATTERN, timeoutMs);
-}
 
 export type StartE2eStackOptions = {
 	withWeb?: boolean;
 };
+
+async function readSeededAuth(home: string): Promise<SeededAuth> {
+	const raw = await readFile(join(home, E2E_AUTH_FILE), "utf8");
+	const parsed: unknown = JSON.parse(raw);
+	if (
+		!parsed ||
+		typeof parsed !== "object" ||
+		typeof (parsed as { token?: unknown }).token !== "string" ||
+		typeof (parsed as { userId?: unknown }).userId !== "string" ||
+		typeof (parsed as { sessionCookie?: unknown }).sessionCookie !== "string" ||
+		typeof (parsed as { sessionToken?: unknown }).sessionToken !== "string"
+	) {
+		throw new Error(`Invalid ${E2E_AUTH_FILE} written by seed-worker.`);
+	}
+	return parsed as SeededAuth;
+}
 
 async function createE2eStack(
 	options: StartE2eStackOptions = {}
 ): Promise<E2eStack> {
 	const { withWeb = false } = options;
 	const serverEnv = buildServerEnv();
-	const webEnv = buildWebEnv();
 	const cyrusHome = await createTempCyrusHome();
-	const processes: ManagedProcess[] = [];
 	let wranglerEnvFile: string | undefined;
-	let cli: ManagedProcess | undefined;
+	let compose: ProcessComposeHandle | undefined;
 
 	const stackResult = await Result.tryPromise(async () => {
 		await buildCompiledCliBinaryOnce();
-		await cleanupDevServerProcesses();
-		await ensureDatabaseSchema(serverEnv);
-
 		wranglerEnvFile = await writeWranglerEnvFile(serverEnv);
-		const server = spawnServer(serverEnv, wranglerEnvFile);
-		processes.push(server);
-		await waitForHttpOk(`${E2E_SERVER_URL}/health`, { timeoutMs: 120_000 });
 
-		const auth = await seedCliAccessToken(E2E_SERVER_URL);
-		await writeCliWorkerState(cyrusHome, auth.token);
+		const readyProcesses = withWeb
+			? ["server", "web", "worker"]
+			: ["server", "worker"];
+		const processes = withWeb ? ["web", "worker"] : ["worker"];
 
-		if (withWeb) {
-			const web = spawnWeb(webEnv);
-			processes.push(web);
-			await waitForHttpOk(E2E_WEB_URL, { timeoutMs: 120_000 });
-		}
+		compose = await startProcessCompose({
+			configPath: PROCESS_COMPOSE_CONFIG,
+			cwd: REPO_ROOT,
+			processes,
+			readyProcesses,
+			env: {
+				...process.env,
+				...serverEnv,
+				CYRUS_HOME: cyrusHome,
+				WRANGLER_ENV_FILE: wranglerEnvFile,
+				CYRUS_WORKER_BIN: CLI_WORKER_BINARY,
+				CYRUS_WORKER_CWD: CLI_WORKER_RUNTIME_DIRECTORY,
+				NODE_ENV: "testing",
+			},
+		});
 
-		cli = spawnCliWorker(cyrusHome, buildCliEnv(cyrusHome));
-		processes.push(cli);
-		await waitForWorkerConnected(cli);
+		const auth = await readSeededAuth(cyrusHome);
 
 		const restartWorker = async (): Promise<void> => {
-			if (!cli) {
-				throw new Error("CLI worker is not running.");
+			if (!compose) {
+				throw new Error("process-compose stack is not running.");
 			}
-
-			const previousCli = cli;
-			const processIndex = processes.indexOf(previousCli);
-			if (processIndex === -1) {
-				throw new Error("CLI worker is not managed by the E2E stack.");
-			}
-
-			await stopManaged(previousCli);
-			cli = spawnCliWorker(cyrusHome, buildCliEnv(cyrusHome));
-			processes[processIndex] = cli;
-			await waitForWorkerConnected(cli);
+			await restartManagedProcess(compose, "worker");
 		};
 
 		return {
-			processes,
 			cyrusHome,
 			auth,
 			wranglerEnvFile,
+			compose,
 			restartWorker,
 		};
 	});
 
 	if (stackResult.isErr()) {
-		(await Result.tryPromise(() => stopAll(processes))).tapError(() => {
-			// best-effort cleanup after partial stack startup
-		});
-		(await Result.tryPromise(() => cleanupDevServerProcesses())).tapError(
-			() => {
-				// best-effort cleanup after partial stack startup
-			}
-		);
+		if (compose) {
+			(await Result.tryPromise(() => stopProcessCompose(compose))).tapError(
+				() => {
+					// best-effort cleanup after partial stack startup
+				}
+			);
+		}
 		await removeWranglerEnvFile(wranglerEnvFile);
+		await rm(cyrusHome, { recursive: true, force: true }).catch(
+			() => undefined
+		);
 	}
 
 	return stackResult.unwrap();
@@ -147,9 +146,11 @@ export function startE2eStack(
 }
 
 export async function stopE2eStack(stack: E2eStack): Promise<void> {
-	await stopAll(stack.processes);
-	await cleanupDevServerProcesses();
+	await stopProcessCompose(stack.compose);
 	await removeWranglerEnvFile(stack.wranglerEnvFile);
+	await rm(stack.cyrusHome, { recursive: true, force: true }).catch(
+		() => undefined
+	);
 }
 
 export async function runE2eScenario(

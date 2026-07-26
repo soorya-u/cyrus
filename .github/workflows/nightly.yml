@@ -28,6 +28,11 @@ jobs:
           persist-credentials: false
       - uses: ./tooling/github/setup
 
+      - uses: jdx/mise-action@v3
+        with:
+          install_args: process-compose
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
         working-directory: tests/e2e
