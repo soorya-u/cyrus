@@ -10,6 +10,10 @@ import {
 	CLI_WORKER_RUNTIME_DIRECTORY,
 } from "./cli-worker";
 import {
+	createTempWranglerPersistDir,
+	WRANGLER_PERSIST_TO_ENV,
+} from "./database";
+import {
 	buildCliEnv,
 	buildServerEnv,
 	createTempCyrusHome,
@@ -47,6 +51,7 @@ const e2eDescribe = isE2eEnabled() ? describe : describe.skip;
 e2eDescribe("cyrusd login terminal tier", () => {
 	let compose: ProcessComposeHandle | undefined;
 	let wranglerEnvFile: string | undefined;
+	let wranglerPersistDir: string | undefined;
 	let cyrusHome: string | undefined;
 
 	afterEach(async () => {
@@ -62,6 +67,12 @@ e2eDescribe("cyrusd login terminal tier", () => {
 			);
 			cyrusHome = undefined;
 		}
+		if (wranglerPersistDir) {
+			await rm(wranglerPersistDir, { recursive: true, force: true }).catch(
+				() => undefined
+			);
+			wranglerPersistDir = undefined;
+		}
 	});
 
 	test("prints the device code and URL, then completes after approval", async () => {
@@ -70,6 +81,7 @@ e2eDescribe("cyrusd login terminal tier", () => {
 
 		const serverEnv = buildServerEnv();
 		cyrusHome = await createTempCyrusHome();
+		wranglerPersistDir = await createTempWranglerPersistDir();
 		wranglerEnvFile = await writeWranglerEnvFile(serverEnv);
 
 		compose = await startProcessCompose({
@@ -81,6 +93,7 @@ e2eDescribe("cyrusd login terminal tier", () => {
 				...process.env,
 				...serverEnv,
 				WRANGLER_ENV_FILE: wranglerEnvFile,
+				[WRANGLER_PERSIST_TO_ENV]: wranglerPersistDir,
 				NODE_ENV: "testing",
 			},
 		});

@@ -1,6 +1,6 @@
 name: Nightly
 
-# Disabled for now — manual runs only via workflow_dispatch.
+# Cron disabled for now — manual runs only via workflow_dispatch.
 on:
   workflow_dispatch:
 

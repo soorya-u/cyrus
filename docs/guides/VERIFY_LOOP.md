@@ -17,13 +17,14 @@ Do not run the full stack for documentation-only changes. Do not claim an E2E pa
 
 The harness under `tests/e2e/` is the repeatable default. It:
 
-- applies local D1 migrations for the `cyrus` database;
-- starts the signaling server on `127.0.0.1:8787` (`wrangler dev` with local D1);
+- creates a run-scoped Wrangler `--persist-to` directory for local D1/Miniflare state;
+- applies local D1 migrations for the `cyrus` database into that directory;
+- starts the signaling server on `127.0.0.1:8787` (`wrangler dev` with the same `--persist-to`);
 - starts the web controller on `127.0.0.1:5173` when required;
 - creates a unique email/password account;
 - completes the real CLI device authorization flow;
 - starts a worker with an isolated `CYRUS_HOME`; and
-- stops processes and removes temporary auth files afterward.
+- stops processes and removes temporary auth files, `CYRUS_HOME`, and the Wrangler persist directory afterward.
 
 Run the full suite from the repository root:
 
@@ -66,7 +67,7 @@ wrangler d1 execute cyrus --local --command "SELECT name FROM sqlite_master WHER
 wrangler d1 info cyrus
 ```
 
-Use unique test users and records so concurrent verification sessions do not collide.
+Use unique test users and records so concurrent verification sessions do not collide. Managed E2E runs isolate D1 via a temporary `--persist-to` directory; bare `wrangler dev` / `wrangler d1 … --local` without `--persist-to` still share `.wrangler/state`.
 
 ### 2. Signaling server
 
