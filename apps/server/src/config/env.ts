@@ -1,6 +1,5 @@
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
-import { env as dbEnv } from "../db/env";
 
 export const env = createEnv({
 	server: {
@@ -26,7 +25,6 @@ export const env = createEnv({
 					: []
 			),
 	},
-	extends: [dbEnv],
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,
 });
