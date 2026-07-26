@@ -1,8 +1,5 @@
 import { E2E_WEB_URL } from "./env";
 
-const CLIENT_ID = "cyrusd";
-const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
-
 export type E2eAuth = {
 	token: string;
 	userId: string;
@@ -115,72 +112,4 @@ export async function approveDeviceUserCode(
 			`device approve failed: ${approve.status} ${await approve.text()}`
 		);
 	}
-}
-
-/**
- * Seeds a CLI access token via the device-code HTTP endpoints.
- * Used by the Vitest/process-compose seed process until #118 retires that
- * harness. Playwright scenarios use `seedCliAccessTokenViaDeviceUi` instead.
- */
-export async function seedCliAccessToken(
-	serverUrl: string,
-	{
-		email = `e2e-${crypto.randomUUID()}@cyrus.test`,
-		password = "e2e-test-password-32chars-min",
-	}: { email?: string; password?: string } = {}
-): Promise<E2eAuth> {
-	const session = await createE2eAuthSession(serverUrl, email, password);
-
-	const codeResponse = await fetch(`${serverUrl}/api/auth/device/code`, {
-		method: "POST",
-		headers: authHeaders({ "content-type": "application/json" }),
-		body: JSON.stringify({
-			client_id: CLIENT_ID,
-			scope: "openid profile email",
-		}),
-	});
-	if (!codeResponse.ok) {
-		throw new Error(
-			`device code failed: ${codeResponse.status} ${await codeResponse.text()}`
-		);
-	}
-
-	const codeBody = (await codeResponse.json()) as {
-		device_code: string;
-		user_code: string;
-	};
-
-	await approveDeviceUserCode(
-		serverUrl,
-		session.sessionCookie,
-		codeBody.user_code
-	);
-
-	const tokenResponse = await fetch(`${serverUrl}/api/auth/device/token`, {
-		method: "POST",
-		headers: authHeaders({ "content-type": "application/json" }),
-		body: JSON.stringify({
-			grant_type: GRANT_TYPE,
-			device_code: codeBody.device_code,
-			client_id: CLIENT_ID,
-		}),
-	});
-	if (!tokenResponse.ok) {
-		throw new Error(
-			`device token failed: ${tokenResponse.status} ${await tokenResponse.text()}`
-		);
-	}
-
-	const tokenBody = (await tokenResponse.json()) as { access_token?: string };
-	if (!tokenBody.access_token) {
-		throw new Error("device token response missing access_token.");
-	}
-
-	return {
-		token: tokenBody.access_token,
-		userId: session.userId,
-		sessionCookie: session.sessionCookie,
-		sessionToken: session.sessionToken,
-		email,
-	};
 }

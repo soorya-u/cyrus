@@ -62,7 +62,6 @@
     },
     "tests/e2e": {
       "entry": [
-        "scenarios/**/*.ts",
         "harness/**/*.ts",
         "manual/**/*.ts",
         "web/playwright.config.ts",
