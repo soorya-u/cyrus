@@ -37,7 +37,13 @@ For a faster tracer bullet, run only the nearest scenario from the repository ro
 NODE_ENV=testing vitest run --project e2e scenarios/<scenario>.test.ts
 ```
 
-The canonical programmatic authentication flow is implemented in `tests/e2e/harness/auth.ts`. Reuse it instead of inventing test-only auth bypasses.
+Or a single Playwright cross-peer spec (from `tests/e2e/`):
+
+```sh
+NODE_ENV=testing bunx playwright test --config web/playwright.config.ts web/specs/<scenario>.spec.ts
+```
+
+The canonical programmatic authentication flow is implemented in `tests/e2e/harness/auth.ts`. Reuse it instead of inventing test-only auth bypasses. Playwright scenarios use the device-UI fixture in `tests/e2e/web/device-auth.ts`.
 
 ## Manual full-stack loop
 

@@ -81,8 +81,8 @@ export async function createE2eAuthSession(
 
 /**
  * Seeds a CLI access token via the device-code HTTP endpoints.
- * Used by the Vitest/process-compose harness until those scenarios move onto
- * the Playwright device-UI fixture (#115).
+ * Used by the Vitest/process-compose seed process until #118 retires that
+ * harness. Playwright scenarios use `seedCliAccessTokenViaDeviceUi` instead.
  */
 export async function seedCliAccessToken(
 	serverUrl: string,

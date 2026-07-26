@@ -5,8 +5,8 @@ import { openConnectedController } from "../helpers";
 const e2eDescribe =
 	process.env.NODE_ENV === "testing" ? test.describe : test.describe.skip;
 
-e2eDescribe("web smoke", () => {
-	test("authenticated workspace shows the connected worker", async ({
+e2eDescribe("thread metadata sync", () => {
+	test("controller sees worker metadata after hub join", async ({
 		page,
 		context,
 		auth,

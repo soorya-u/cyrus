@@ -64,8 +64,6 @@ processes:
     command: "${CYRUS_WORKER_BIN} start"
     working_dir: "${CYRUS_WORKER_CWD}"
     depends_on:
-      seed:
-        condition: process_completed_successfully
       server:
         condition: process_healthy
     readiness_probe:
