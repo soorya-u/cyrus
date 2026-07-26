@@ -16,23 +16,12 @@ export function requireE2e(): void {
 	}
 }
 
-export function resolveDatabaseUrl(): string {
-	const databaseUrl = process.env.DATABASE_URL;
-	if (!databaseUrl) {
-		throw new Error(
-			"Set DATABASE_URL to a Neon branch connection string for E2E tests."
-		);
-	}
-	return databaseUrl;
-}
-
 export function createTempCyrusHome(): Promise<string> {
 	return mkdtemp(join(tmpdir(), "cyrus-e2e-home-"));
 }
 
 export function buildServerEnv(): Record<string, string> {
 	return {
-		DATABASE_URL: resolveDatabaseUrl(),
 		BETTER_AUTH_SECRET: "e2e-test-secret-minimum-32-characters",
 		PRODUCTION_URL: E2E_WEB_URL,
 		WEB_APP_URL: E2E_WEB_URL,

@@ -1,7 +1,7 @@
 version: "0.5"
 
 processes:
-  # TODO: Remove after migrating to Cloudflare D1
+  # Apply local D1 migrations before wrangler dev binds env.DB.
   prepare-database:
     command: "bun tests/e2e/web/prepare-database.ts"
     availability:

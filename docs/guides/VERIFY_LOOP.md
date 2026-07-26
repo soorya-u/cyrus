@@ -17,37 +17,24 @@ Do not run the full stack for documentation-only changes. Do not claim an E2E pa
 
 The harness under `tests/e2e/` is the repeatable default. It:
 
-- uses a Neon database from `DATABASE_URL`;
-- pushes the schema when needed;
-- starts the signaling server on `127.0.0.1:8787`;
+- applies local D1 migrations for the `cyrus` database;
+- starts the signaling server on `127.0.0.1:8787` (`wrangler dev` with local D1);
 - starts the web controller on `127.0.0.1:5173` when required;
 - creates a unique email/password account;
 - completes the real CLI device authorization flow;
 - starts a worker with an isolated `CYRUS_HOME`; and
 - stops processes and removes temporary auth files afterward.
 
-Authenticate Neon and select the existing `test` branch for E2E (not `dev` or `production`):
-
-```sh
-neonctl me
-neonctl branches get test
-export DATABASE_URL="$(neonctl connection-string test --pooled)"
-```
-
-If the repository is not linked to the correct Neon project, use `neonctl link` first. Never guess a project id and never point verification at a production branch.
-
 Run the full suite from the repository root:
 
 ```sh
-DATABASE_URL="$DATABASE_URL" bun db:push
-DATABASE_URL="$DATABASE_URL" bun test:e2e
+bun test:e2e
 ```
 
 For a faster tracer bullet, run only the nearest scenario from the repository root:
 
 ```sh
-DATABASE_URL="$DATABASE_URL" NODE_ENV=testing \
-  vitest run --project e2e scenarios/<scenario>.test.ts
+NODE_ENV=testing vitest run --project e2e scenarios/<scenario>.test.ts
 ```
 
 The canonical programmatic authentication flow is implemented in `tests/e2e/harness/auth.ts`. Reuse it instead of inventing test-only auth bypasses.
@@ -56,30 +43,28 @@ The canonical programmatic authentication flow is implemented in `tests/e2e/harn
 
 Use the manual loop when developing interactively or diagnosing a failing E2E scenario. Start each long-running process in its own terminal and preserve its logs.
 
-### 1. Neon database
+### 1. Local D1
 
-Use the shared development branch:
+Wrangler provisions a local D1 instance for the `cyrus` binding declared in `wrangler.json`. Apply migrations before starting the server:
 
 ```sh
-neonctl branches get dev
-export DATABASE_URL="$(neonctl connection-string dev --pooled)"
-DATABASE_URL="$DATABASE_URL" bun db:push
+wrangler d1 migrations apply cyrus --local --config wrangler.json
 ```
+
+Day-to-day schema work uses the D1-targeted package scripts (`bun db:push`, `bun db:generate`, `bun db:migrate`, `bun db:studio`). Remote applies in deploy use `wrangler d1 migrations apply cyrus --remote`.
 
 Useful database probes:
 
 ```sh
-neonctl psql dev
-neonctl operations list
+wrangler d1 execute cyrus --local --command "SELECT name FROM sqlite_master WHERE type='table';"
+wrangler d1 info cyrus
 ```
 
-`neonctl branches schema-diff <branch> ^parent` only works when that branch has a parent. The shared `dev` branch currently has no parent, so use a branch that does (for example `neonctl branches schema-diff test ^parent`) or compare two named branches explicitly.
-
-Use unique test users and records so concurrent verification sessions do not collide. Do not reset or delete the `dev` branch as part of verification.
+Use unique test users and records so concurrent verification sessions do not collide.
 
 ### 2. Signaling server
 
-The server is the Cloudflare Worker in `apps/server/`. Local Wrangler loads bindings from the repo-root `.dev.vars` symlink (→ `apps/server/.env`). Put the variables from `apps/server/.env.example` there. Shell exports alone do not configure the Worker; edit that file (or pass Wrangler `--env-file`).
+The server is the Cloudflare Worker in `apps/server/`. Local Wrangler loads bindings from the repo-root `.dev.vars` symlink (→ `apps/server/.env`). Put the variables from `apps/server/.env.example` there. Shell exports alone do not configure the Worker; edit that file (or pass Wrangler `--env-file`). Persistence uses the `DB` D1 binding — there is no `DATABASE_URL`.
 
 For local email/password auth, `NODE_ENV` must not be `production`. Use `development` for interactive manual work; use `testing` when matching the E2E harness.
 
@@ -87,7 +72,6 @@ At minimum, local URLs in `apps/server/.env` must agree with the web controller:
 
 ```sh
 # apps/server/.env (also used via .dev.vars)
-DATABASE_URL=<neonctl connection-string for the branch you intend>
 NODE_ENV=development
 PRODUCTION_URL=http://localhost:5173
 WEB_APP_URL=http://localhost:5173
@@ -222,6 +206,16 @@ wrangler tail cyrus --config wrangler.json
 
 Use these for Worker deployment state, exceptions, Durable Object behavior, and live signaling logs. Do not deploy or rollback unless the task explicitly authorizes it.
 
+### D1
+
+```sh
+wrangler d1 info cyrus
+wrangler d1 execute cyrus --remote --command "SELECT name FROM sqlite_master WHERE type='table';"
+wrangler d1 migrations list cyrus --remote --config wrangler.json
+```
+
+Use D1 inspection for schema drift or data-level root cause analysis. Prefer local reproduction with `--local` before touching remote.
+
 ### GitHub Actions
 
 ```sh
@@ -232,16 +226,6 @@ gh run watch <run-id>
 ```
 
 Inspect the first failing job and its logs before rerunning anything. Do not rerun or cancel workflows unless requested.
-
-### Neon
-
-```sh
-neonctl branches get dev
-neonctl operations list
-neonctl psql dev
-```
-
-Use Neon inspection for schema drift, failed operations, or data-level root cause analysis. Avoid destructive branch operations during verification.
 
 ## Cleanup and evidence
 

@@ -34,7 +34,6 @@ export default defineConfig({
 								ALLOWED_ORIGINS: "https://cyrus.soorya-u.dev",
 								BETTER_AUTH_SECRET:
 									"test-secret-that-is-at-least-thirty-two-characters",
-								DATABASE_URL: "postgresql://test:test@localhost:5432/test",
 								NODE_ENV: "testing",
 								OAUTH_GITHUB_CLIENT_ID: "test-client-id",
 								OAUTH_GITHUB_CLIENT_SECRET: "test-client-secret",

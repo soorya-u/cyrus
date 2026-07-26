@@ -16,14 +16,13 @@ export const env = createEnv({
 			const databaseId = raw.CLOUDFLARE_DATABASE_ID;
 			const token = raw.CLOUDFLARE_D1_TOKEN;
 
-			if (accountId && databaseId && token) {
+			if (accountId && databaseId && token)
 				return {
-					DB_TYPE: "remote" as const,
-					CLOUDFLARE_ACCOUNT_ID: accountId,
-					CLOUDFLARE_DATABASE_ID: databaseId,
-					CLOUDFLARE_D1_TOKEN: token,
+					driver: "d1-http" as const,
+					accountId,
+					databaseId,
+					token,
 				};
-			}
 
 			if (accountId || databaseId || token) {
 				ctx.addIssue({
@@ -35,8 +34,7 @@ export const env = createEnv({
 			}
 
 			return {
-				DB_TYPE: "local" as const,
-				D1_LOCAL_DB: raw.D1_LOCAL_DB,
+				url: raw.D1_LOCAL_DB,
 			};
 		}),
 });

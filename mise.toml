@@ -1,6 +1,5 @@
 [tools]
 bun = "1.3"
-neonctl = "2.27"
 vercel = "54.16"
 wrangler = "4.104"
 process-compose = "1.120.0"
