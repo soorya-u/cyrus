@@ -43,7 +43,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 ## Phase 4 notes
 
 - Root Vitest scenarios live in `tests/e2e/scenarios/` behind `NODE_ENV=testing`. The thread lifecycle scenario replaces the old draft manual check, and catalog RPC checks run automatically as `catalog.test.ts`.
-- The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against a **Neon branch** (`DATABASE_URL`).
+- The harness in `tests/e2e/harness/` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against **local D1** (migrations applied via `wrangler d1 migrations apply cyrus --local`).
 - Scenarios can call `stack.restartWorker()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.test.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
 - The Playwright suite uses Playwright's lifecycle primitives rather than the Bun scenario stack:
   1. Playwright's `webServer` configuration ensures the database schema exists, then starts the real Wrangler signaling server on `:8787` and Vite controller on `:5173`.
@@ -51,17 +51,11 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
   3. The worker-scoped `cliWorker` fixture writes that token to an isolated `CYRUS_HOME`, starts the CLI Worker, and waits for its `connected... waiting for message` log line.
   4. Specs install the fixture's session cookie in the browser and exercise the controller against the connected CLI Worker.
   5. After the worker's tests finish, Playwright stops the CLI Worker, removes its temporary home, and tears down both `webServer` processes.
-- Local E2E runs may use the existing Neon `test` branch. Authenticate and link the repository with `neonctl`, then derive the required connection string:
-
-  ```sh
-  export DATABASE_URL="$(neonctl connection-string test --pooled)"
-  ```
-
-  Do not use the development or production branch for E2E runs. Tests may mutate data, so use unique records and do not assume the shared `test` branch is empty.
-- The Vitest harness and Playwright server setup ensure the schema exists before starting their signaling server; nightly CI should use an isolated branch per run via the `DATABASE_URL` secret in the `testing` environment.
+- Local E2E runs do not need an external database URL. Wrangler local D1 is enough. Broader per-run D1 isolation for CI is tracked in #119.
+- The Vitest harness and Playwright server setup ensure the schema exists before starting their signaling server.
 - Programmatic auth uses Better Auth email sign-in plus the real device-code flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
 - Playwright specs and their worker-scoped fixtures live in `tests/e2e/web/`.
-- E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch` only). The job uses the GitHub `testing` environment and its `DATABASE_URL` secret.
+- E2E runs manually via `.github/workflows/nightly.yml` (`workflow_dispatch` only).
 
 ## Phase 5 notes
 
@@ -94,5 +88,4 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 - Hooks tests currently cover the optimistic conversations cache contract used by `use-controller-threads`.
 
 - `@cyrus/database` integration tests use isolated in-memory Turso databases via `shared/database/__tests__/helpers/turso.ts`.
-- `@cyrus/server` integration tests (issue #31) use a **Neon branch** with the production `neon-http` driver (`@neondatabase/serverless`). Set `DATABASE_URL` to the branch connection string — no alternate driver or Docker Postgres.
-- Create an isolated Neon branch per CI job or nightly run; point `DATABASE_URL` at it and run `bun db:push` before the suite.
+- `@cyrus/server` Workers-pool tests exercise the real D1 binding (`env.DB`) under `@cloudflare/vitest-pool-workers`, with Drizzle migrations applied in setup. No Neon or Postgres driver is involved.

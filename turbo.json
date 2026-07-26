@@ -2,7 +2,10 @@
   "$schema": "https://v2-10-4.turborepo.dev/schema.json",
   "ui": "stream",
   "globalPassThroughEnv": [
-    "DATABASE_URL",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "CLOUDFLARE_DATABASE_ID",
+    "CLOUDFLARE_D1_TOKEN",
+    "D1_LOCAL_DB",
     "BETTER_AUTH_SECRET",
     "WEB_APP_URL",
     "CORS_ORIGIN",

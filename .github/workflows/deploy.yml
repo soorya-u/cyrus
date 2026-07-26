@@ -21,9 +21,10 @@ jobs:
       - uses: ./tooling/github/setup
 
       - name: Migrate database
-        run: bun db:migrate
+        run: wrangler d1 migrations apply cyrus --remote --config wrangler.json
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
@@ -34,7 +35,6 @@ jobs:
           vars: |
             NODE_ENV
           secrets: |
-            DATABASE_URL
             BETTER_AUTH_SECRET
             PRODUCTION_URL
             OAUTH_GITHUB_CLIENT_ID
@@ -44,7 +44,6 @@ jobs:
             WEB_APP_URL
         env:
           NODE_ENV: production
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
           OAUTH_GITHUB_CLIENT_ID: ${{ secrets.OAUTH_GITHUB_CLIENT_ID }}
