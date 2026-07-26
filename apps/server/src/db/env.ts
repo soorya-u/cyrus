@@ -16,13 +16,13 @@ export const env = createEnv({
 			const databaseId = raw.CLOUDFLARE_DATABASE_ID;
 			const token = raw.CLOUDFLARE_D1_TOKEN;
 
-			if (accountId && databaseId && token) {
+			if (accountId && databaseId && token)
 				return {
+					driver: "d1-http" as const,
 					accountId,
 					databaseId,
 					token,
 				};
-			}
 
 			if (accountId || databaseId || token) {
 				ctx.addIssue({
