@@ -1,7 +1,8 @@
-import { SELF } from "cloudflare:test";
+import { exports } from "cloudflare:workers";
 import { describe, expect, test } from "vitest";
 
-const ORIGIN = "https://example.com";
+const worker = exports.default;
+const ORIGIN = "https://cyrus.soorya-u.dev";
 const CLIENT_ID = "cyrusd";
 const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 const SESSION_COOKIE_PATTERN =
@@ -40,8 +41,8 @@ function sessionCookieFromResponse(response: Response): string {
 }
 
 async function signUpAndSignIn(email: string, password: string) {
-	const signUp = await SELF.fetch(
-		"https://example.com/api/auth/sign-up/email",
+	const signUp = await worker.fetch(
+		"https://cyrus.soorya-u.dev/api/auth/sign-up/email",
 		{
 			method: "POST",
 			headers: authHeaders({ "content-type": "application/json" }),
@@ -50,8 +51,8 @@ async function signUpAndSignIn(email: string, password: string) {
 	);
 	expect(signUp.ok || signUp.status === 422).toBe(true);
 
-	const signIn = await SELF.fetch(
-		"https://example.com/api/auth/sign-in/email",
+	const signIn = await worker.fetch(
+		"https://cyrus.soorya-u.dev/api/auth/sign-in/email",
 		{
 			method: "POST",
 			headers: authHeaders({ "content-type": "application/json" }),
@@ -69,8 +70,8 @@ async function signUpAndSignIn(email: string, password: string) {
 
 	const sessionCookie = sessionCookieFromResponse(signIn);
 
-	const sessionCheck = await SELF.fetch(
-		"https://example.com/api/auth/get-session",
+	const sessionCheck = await worker.fetch(
+		"https://cyrus.soorya-u.dev/api/auth/get-session",
 		{ headers: authHeaders({ cookie: sessionCookie }) }
 	);
 	const sessionBody = (await sessionCheck.json()) as {
@@ -90,8 +91,8 @@ describe("device authorization against D1", () => {
 		const password = "d1-auth-test-password-32chars-min";
 		const session = await signUpAndSignIn(email, password);
 
-		const codeResponse = await SELF.fetch(
-			"https://example.com/api/auth/device/code",
+		const codeResponse = await worker.fetch(
+			"https://cyrus.soorya-u.dev/api/auth/device/code",
 			{
 				method: "POST",
 				headers: authHeaders({ "content-type": "application/json" }),
@@ -112,14 +113,14 @@ describe("device authorization against D1", () => {
 
 		const formattedUserCode = codeBody.user_code.replace(/-/g, "");
 
-		const claim = await SELF.fetch(
-			`https://example.com/api/auth/device?user_code=${encodeURIComponent(formattedUserCode)}`,
+		const claim = await worker.fetch(
+			`https://cyrus.soorya-u.dev/api/auth/device?user_code=${encodeURIComponent(formattedUserCode)}`,
 			{ headers: authHeaders({ cookie: session.sessionCookie }) }
 		);
 		expect(claim.ok).toBe(true);
 
-		const approve = await SELF.fetch(
-			"https://example.com/api/auth/device/approve",
+		const approve = await worker.fetch(
+			"https://cyrus.soorya-u.dev/api/auth/device/approve",
 			{
 				method: "POST",
 				headers: authHeaders({
@@ -131,8 +132,8 @@ describe("device authorization against D1", () => {
 		);
 		expect(approve.ok).toBe(true);
 
-		const tokenResponse = await SELF.fetch(
-			"https://example.com/api/auth/device/token",
+		const tokenResponse = await worker.fetch(
+			"https://cyrus.soorya-u.dev/api/auth/device/token",
 			{
 				method: "POST",
 				headers: authHeaders({ "content-type": "application/json" }),
