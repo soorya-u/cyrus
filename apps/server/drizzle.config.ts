@@ -1,26 +1,25 @@
 import { defineConfig } from "drizzle-kit";
+import { env } from "./src/db/env";
 
-// D1 tooling config. Auth (#110) and application repositories (#109) both use
-// the Worker D1 binding; Neon removal is #112. `generate` needs only the sqlite
-// dialect. `push`/`studio` use the D1 HTTP driver when Cloudflare credentials
-// are set; otherwise a local sqlite file so the commands still work without an
-// account.
-const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-const databaseId = process.env.CLOUDFLARE_DATABASE_ID;
-const token = process.env.CLOUDFLARE_D1_TOKEN;
+const dbConfig =
+	env.DB_TYPE === "remote"
+		? {
+				driver: "d1-http" as const,
+				dbCredentials: {
+					accountId: env.CLOUDFLARE_ACCOUNT_ID,
+					databaseId: env.CLOUDFLARE_DATABASE_ID,
+					token: env.CLOUDFLARE_D1_TOKEN,
+				},
+			}
+		: {
+				dbCredentials: {
+					url: env.D1_LOCAL_DB,
+				},
+			};
 
 export default defineConfig({
 	schema: "./src/db/models/index.ts",
 	out: "./src/db/migrations",
 	dialect: "sqlite",
-	...(accountId && databaseId && token
-		? {
-				driver: "d1-http" as const,
-				dbCredentials: { accountId, databaseId, token },
-			}
-		: {
-				dbCredentials: {
-					url: process.env.D1_LOCAL_DB ?? "file:./.local/d1/cyrus.sqlite",
-				},
-			}),
+	...dbConfig,
 });
