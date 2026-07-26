@@ -10,7 +10,7 @@
     "wrangler:types": "wrangler types --cwd src",
     "db:studio": "dotenvx run -- drizzle-kit studio",
     "db:migrate": "dotenvx run -- drizzle-kit migrate",
-    "auth:generate": "dotenvx run -- bun x @better-auth/cli generate -y --config src/auth/index.ts --output src/db/models/auth.ts"
+    "auth:generate": "dotenvx run -- bun x @better-auth/cli generate -y --config src/auth/cli.ts --output src/db/models/auth.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.6.21",

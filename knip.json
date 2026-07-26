@@ -26,7 +26,8 @@
       "entry": [
         "src/index.ts",
         "src/**/*.test.ts",
-        "src/db/apply-migrations.ts"
+        "src/db/apply-migrations.ts",
+        "src/auth/cli.ts"
       ],
       "ignoreDependencies": ["cloudflare"]
     },
