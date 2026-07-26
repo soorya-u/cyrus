@@ -28,14 +28,10 @@ jobs:
           persist-credentials: false
       - uses: ./tooling/github/setup
 
-      - name: Install process-compose
-        shell: bash
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -fsSL "https://github.com/F1bonacc1/process-compose/releases/download/v1.120.0/process-compose_linux_amd64.tar.gz" \
-            | tar -xz -C "$HOME/.local/bin" process-compose
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          process-compose version
+      - uses: jdx/mise-action@v3
+        with:
+          install_args: process-compose
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium

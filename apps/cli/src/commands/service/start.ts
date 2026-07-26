@@ -2,9 +2,9 @@ import { closeSync, openSync, readFileSync, unlinkSync } from "node:fs";
 import { Result } from "better-result";
 import { LOG_PATH, PID_PATH } from "@/constants/paths";
 import { env } from "@/lib/env";
+import { clearOwnHealthSync } from "@/store/health";
 import { ensureDir } from "@/utils/fs";
 import {
-	clearOwnHealthSync,
 	clearPid,
 	isAlive,
 	runningPid,
@@ -29,7 +29,10 @@ async function runWorker(): Promise<void> {
 }
 
 export async function start(opts: StartOptions): Promise<void> {
-	if (env.CYRUS_DAEMON) return await runWorker();
+	if (env.CYRUS_DAEMON) {
+		await writePid(process.pid);
+		return await runWorker();
+	}
 
 	await withWorkerLock(async () => {
 		const running = await runningPid();

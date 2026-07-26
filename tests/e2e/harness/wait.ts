@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
-import { CLI_WORKER_BINARY } from "./cli-worker";
+import { CLI_WORKER_BINARY, CLI_WORKER_RUNTIME_DIRECTORY } from "./cli-worker";
 import { waitForExit } from "./process";
 
 async function workerStatusExitCode(home: string): Promise<number | null> {
 	const bin = process.env.CYRUS_WORKER_BIN ?? CLI_WORKER_BINARY;
 	const proc = spawn(bin, ["status"], {
+		cwd: CLI_WORKER_RUNTIME_DIRECTORY,
 		env: {
 			...process.env,
 			CYRUS_HOME: home,

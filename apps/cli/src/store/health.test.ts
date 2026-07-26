@@ -10,7 +10,7 @@ import {
 	markHealthStarting,
 	readHealth,
 	touchHeartbeat,
-} from "./process";
+} from "@/store/health";
 
 const homes: string[] = [];
 

@@ -62,7 +62,7 @@ function processComposeBin(): string {
 	if (home) {
 		const miseCandidate = join(
 			home,
-			".local/share/mise/installs/process-compose/1.120.0/process-compose"
+			".local/share/mise/installs/process-compose/1/process-compose"
 		);
 		if (existsSync(miseCandidate)) {
 			return miseCandidate;

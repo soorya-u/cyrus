@@ -16,7 +16,7 @@ import {
 	markHealthReady,
 	markHealthStarting,
 	touchHeartbeat,
-} from "@/utils/process";
+} from "@/store/health";
 import { unwrapOrExit } from "@/utils/result";
 import { print } from "@/utils/style";
 

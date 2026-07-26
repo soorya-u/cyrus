@@ -70,10 +70,10 @@ processes:
         condition: process_healthy
     readiness_probe:
       exec:
-        command: "${CYRUS_WORKER_BIN} status"
+        command: "cd \"${CYRUS_WORKER_CWD}\" && CYRUS_HOME=\"${CYRUS_HOME}\" CLI_PUBLIC_SERVER_URL=http://localhost:8787 \"${CYRUS_WORKER_BIN}\" status"
       initial_delay_seconds: 1
       period_seconds: 2
-      timeout_seconds: 3
+      timeout_seconds: 5
       failure_threshold: 60
     environment:
       - "CYRUS_HOME=${CYRUS_HOME}"
