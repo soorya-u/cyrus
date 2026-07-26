@@ -18,10 +18,9 @@ export const env = createEnv({
 
 			if (accountId && databaseId && token) {
 				return {
-					DB_TYPE: "remote" as const,
-					CLOUDFLARE_ACCOUNT_ID: accountId,
-					CLOUDFLARE_DATABASE_ID: databaseId,
-					CLOUDFLARE_D1_TOKEN: token,
+					accountId,
+					databaseId,
+					token,
 				};
 			}
 
@@ -35,8 +34,7 @@ export const env = createEnv({
 			}
 
 			return {
-				DB_TYPE: "local" as const,
-				D1_LOCAL_DB: raw.D1_LOCAL_DB,
+				url: raw.D1_LOCAL_DB,
 			};
 		}),
 });
