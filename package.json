@@ -5,8 +5,7 @@
     "packages": [
       "apps/*",
       "shared/*",
-      "tooling/*",
-      "tests/e2e"
+      "tooling/*"
     ],
     "catalogs": {
       "auth": {
@@ -59,7 +58,6 @@
     "test:unit": "vitest run --project='@cyrus/*' && bun --filter @cyrus/cli test:unit",
     "test:unit:ui": "vitest --ui --watch --project='@cyrus/*'",
     "test:integration": "turbo test:integration",
-    "test:e2e": "turbo test:e2e",
     "dev:mobile": "turbo -F @cyrus/mobile dev",
     "dev:web": "turbo -F @cyrus/web dev",
     "dev:desktop": "turbo -F @cyrus/desktop dev",

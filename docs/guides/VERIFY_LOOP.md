@@ -11,44 +11,11 @@ Start narrow, then move outward until the changed behavior has been observed:
 3. Run the full local stack for changes that cross the database, signaling server, controller, worker, agent runtime, or browser.
 4. Use deployment and CI tools only when the failure is remote or cannot be reproduced locally.
 
-Do not run the full stack for documentation-only changes. Do not claim an E2E pass unless the browser/controller, server, and worker were connected and the changed user flow was exercised.
+Do not run the full stack for documentation-only changes. Do not claim an end-to-end pass unless the browser/controller, server, and worker were connected and the changed user flow was exercised.
 
-## Preferred: managed E2E harness
+## Full-stack loop
 
-The harness under `tests/e2e/` is the repeatable default. It:
-
-- creates a run-scoped Wrangler `--persist-to` directory for local D1/Miniflare state;
-- applies local D1 migrations for the `cyrus` database into that directory;
-- starts the signaling server on `127.0.0.1:8787` (`wrangler dev` with the same `--persist-to`);
-- starts the web controller on `127.0.0.1:5173` when required;
-- creates a unique email/password account;
-- completes the real CLI device authorization flow;
-- starts a worker with an isolated `CYRUS_HOME`; and
-- stops processes and removes temporary auth files, `CYRUS_HOME`, and the Wrangler persist directory afterward.
-
-Run the full suite from the repository root:
-
-```sh
-bun test:e2e
-```
-
-For a faster tracer bullet, run a single Playwright cross-peer spec (from `tests/e2e/`):
-
-```sh
-NODE_ENV=testing bunx playwright test --config web/playwright.config.ts web/specs/<scenario>.spec.ts
-```
-
-Or a Vitest harness/terminal-tier test from the repository root:
-
-```sh
-NODE_ENV=testing vitest run --project e2e harness/<name>.test.ts
-```
-
-Session creation helpers live in `tests/e2e/harness/auth.ts`. Playwright scenarios drive device approval through the UI fixture in `tests/e2e/web/device-auth.ts` instead of inventing test-only auth bypasses.
-
-## Manual full-stack loop
-
-Use the manual loop when developing interactively or diagnosing a failing E2E scenario. Start each long-running process in its own terminal and preserve its logs.
+There is no automated end-to-end suite (removed; see `docs/guides/TESTING_FRAMEWORK.md`'s "Deferred platform tracks"). Verify cross-process/browser changes by driving the real stack manually. Start each long-running process in its own terminal and preserve its logs.
 
 ### 1. Local D1
 
@@ -67,13 +34,13 @@ wrangler d1 execute cyrus --local --command "SELECT name FROM sqlite_master WHER
 wrangler d1 info cyrus
 ```
 
-Use unique test users and records so concurrent verification sessions do not collide. Managed E2E runs isolate D1 via a temporary `--persist-to` directory; bare `wrangler dev` / `wrangler d1 … --local` without `--persist-to` still share `.wrangler/state`.
+Use unique test users and records so concurrent verification sessions do not collide. Bare `wrangler dev` / `wrangler d1 … --local` without `--persist-to` share `.wrangler/state`.
 
 ### 2. Signaling server
 
 The server is the Cloudflare Worker in `apps/server/`. Local Wrangler loads bindings from the repo-root `.dev.vars` symlink (→ `apps/server/.env`). Put the variables from `apps/server/.env.example` there. Shell exports alone do not configure the Worker; edit that file (or pass Wrangler `--env-file`). Persistence uses the `DB` D1 binding — there is no `DATABASE_URL`.
 
-For local email/password auth, `NODE_ENV` must not be `production`. Use `development` for interactive manual work; use `testing` when matching the E2E harness.
+For local email/password auth, `NODE_ENV` must not be `production`. Use `development` for interactive manual work.
 
 At minimum, local URLs in `apps/server/.env` must agree with the web controller:
 
@@ -117,7 +84,7 @@ curl -fsSI http://localhost:5173
 
 ### 4. Authentication and worker
 
-Use a unique address such as `verify-<uuid>@cyrus.test` and a test-only password. Email/password auth is enabled by the local/test server. The exact sign-up, sign-in, device-code claim, approval, and token exchange sequence lives in `tests/e2e/harness/auth.ts`.
+Use a unique address such as `verify-<uuid>@cyrus.test` and a test-only password. Email/password auth is enabled by the local/test server via Better Auth's sign-up/sign-in and OAuth Device Authorization Grant endpoints (`/api/auth/sign-up/email`, `/api/auth/sign-in/email`, `/api/auth/device`, `/api/auth/device/approve`).
 
 For manual CLI verification, isolate worker state:
 

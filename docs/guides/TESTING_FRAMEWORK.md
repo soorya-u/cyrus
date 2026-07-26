@@ -8,20 +8,16 @@ Cyrus uses a layered test setup so each part of the system is tested with the ru
 | --- | --- | --- |
 | `apps/cli`, `apps/desktop` | Bun test | Colocated `*.test.ts` or package `__tests__/integration/` |
 | Vitest workspace packages (`apps/web`, `apps/server`, `shared/*`) | Root Vitest Projects | `vitest.config.ts` at the repo root; shared DOM setup in `tooling/test/setup/vitest.shared.ts` |
-| Worker CLI terminal tier | Vitest + shell-use (PTY) | Root `tests/e2e/harness/*-terminal.test.ts` |
-| Cross-peer + browser user flows | Playwright | Root `tests/e2e/web/` (process-compose lifecycle) |
 
 Vitest is the default runner (ADR 0017). Bun stays permanently for `apps/cli` and `apps/desktop`.
 
-Root `bun test:unit` runs `vitest run --project='@cyrus/*'` (every unit project; `e2e` and `database-integration` sit outside that glob) plus `apps/cli`'s Bun unit suite. Use `vitest run --project <name>` to scope a single project. DOM packages (`apps/web`, `shared/hooks`, `shared/providers`) share Testing Library jest-dom matchers and DOM cleanup via `@cyrus/test/setup/vitest.shared`.
+Root `bun test:unit` runs `vitest run --project='@cyrus/*'` (every unit project; `database-integration` sits outside that glob) plus `apps/cli`'s Bun unit suite. Use `vitest run --project <name>` to scope a single project. DOM packages (`apps/web`, `shared/hooks`, `shared/providers`) share Testing Library jest-dom matchers and DOM cleanup via `@cyrus/test/setup/vitest.shared`.
 
 ## Layout
 
 ```text
 <package>/src/**/*.test.ts
 <package>/__tests__/integration/
-tests/e2e/harness/
-tests/e2e/web/
 tooling/test/
 ```
 
@@ -34,53 +30,28 @@ Unit tests stay close to the code they cover. In `apps/server`, every colocated 
 | 0 | pre-commit | Ultracite only |
 | 1 | pre-push | Typecheck and unit tests |
 | 2 | pull request / push to `main` | Lint, typecheck, unit tests, integration |
-| 3 | nightly (`workflow_dispatch` only) | E2E (Playwright cross-peer + Worker CLI terminal tier), build smoke, real WebRTC |
-| 4 | deploy | Health and WebSocket smoke |
+| 3 | deploy | Health and WebSocket smoke |
 
-No E2E subset runs on pull requests. The suite needs Playwright browsers, process-compose, a compiled `cyrusd` binary, and a PTY (shell-use); keep that cost off PR CI now that local D1 removed the old Neon branch provisioning. Nightly stays manual-only for now (cron deferred until the suite has a stable pass history).
-
-## Phase 4 notes
-
-- Cross-peer scenarios live under `tests/e2e/web/specs/` (`worker-connects`, `catalog`, `thread-lifecycle`, `thread-sync`, `cold-resume`) and run on Playwright with a real browser as the Controller.
-- The harness in `tests/e2e/harness/` plus `tests/e2e/process-compose.yaml` starts `wrangler dev`, `vite`, and an isolated `CYRUS_HOME` CLI worker against **local D1** (migrations applied via `wrangler d1 migrations apply cyrus --local --persist-to <run-dir>`).
-- Specs can call `cliWorker.restart()` to replace only the CLI worker while preserving the server, authentication, and isolated `CYRUS_HOME`. `cold-resume.spec.ts` uses this to verify a thread resumes with its persisted session after a worker restart.
-- The Playwright suite uses process-compose for peer lifecycle:
-  1. The worker-scoped `stack` fixture starts sync server + Controller web via `tests/e2e/process-compose.yaml` (D1 migrations applied by the `prepare-database` process).
-  2. The worker-scoped `auth` fixture creates a unique account and drives the real device-authorization page (`/auth/device`) via compiled `cyrusd login`, then writes the token into the stack's `CYRUS_HOME`.
-  3. The worker-scoped `cliWorker` fixture starts the Worker process through process-compose and exposes `restart()` for mid-scenario Worker-only restarts (cold-resume).
-  4. Specs install the fixture's session cookie in the browser and exercise the real Controller UI against the connected Worker.
-  5. After the worker's tests finish, process-compose tears down all managed peers and the temporary `CYRUS_HOME` and Wrangler persist directory are removed.
-- The Worker CLI terminal tier (`tests/e2e/harness/*-terminal.test.ts`) drives the compiled `cyrusd` binary through a shell-use PTY with fixed columns/rows, asserting on rendered output (including ANSI colors) and exit codes. Covered commands: `login`, `start`/`stop`/`status`, and `agents doctor`. Non-interactive commands keep their existing in-process coverage. Nightly CI installs the matching `shell-use` binary via mise (`github:microsoft/shell-use`).
-- **Per-run D1 isolation:** each E2E stack creates a temporary Wrangler `--persist-to` directory (`WRANGLER_PERSIST_TO`) and passes it to both `prepare-database` (migrations) and `wrangler dev`. That replaces the old shared Neon `test` branch: concurrent or repeated local/CI runs do not share Miniflare/D1 state under `.wrangler/state`. Unique auth emails remain as defense in depth. Manual interactive `wrangler dev` without the harness still uses the default `.wrangler` path and is outside this isolation contract.
-- Local E2E runs do not need an external database URL. Wrangler local D1 with a run-scoped `--persist-to` directory is enough.
-- Playwright server setup ensures the schema exists before starting the signaling server.
-- Programmatic session creation for tests uses Better Auth email sign-in (`tests/e2e/harness/auth.ts`); device approval goes through the real `/auth/device` UI (`tests/e2e/web/device-auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
-- Playwright specs and their worker-scoped fixtures live in `tests/e2e/web/`.
-- E2E runs via `.github/workflows/nightly.yml` (`workflow_dispatch` only; cron deferred).
-
-## Phase 5 notes
-
-- Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`. Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets enable a signaling WebSocket check in addition to `GET /health`.
-- Nightly also runs build smoke (`build:web`, CLI compile) and real `node-datachannel` checks (`CYRUS_NIGHTLY_WEBRTC=1`).
-- `pre-push` now runs `test:unit` locally; integration and E2E stay in CI only.
+`pre-push` runs `test:unit` locally; integration stays in CI only.
 
 ## OpenSpec coverage map
 
 | OpenSpec | Nearest automated tests |
 | --- | --- |
-| `conversation-view` | `shared/utils/src/fold.test.ts`; Playwright `tests/e2e/web/specs/thread-lifecycle.spec.ts` |
+| `conversation-view` | `shared/utils/src/fold.test.ts` |
 | `wire-schemas` | `shared/schemas/src/**/*.test.ts` |
-| `acp-provider-cli` | `apps/cli/src/core/acp/events.test.ts`, `run-turn.test.ts`; Worker CLI terminal tier `tests/e2e/harness/cli-login-terminal.test.ts`, `cli-service-terminal.test.ts`, `cli-doctor-terminal.test.ts`; Playwright `tests/e2e/web/specs/catalog.spec.ts` |
-| `acp-session-router` | `apps/cli/__tests__/integration/wiring.test.ts`; Playwright `tests/e2e/web/specs/cold-resume.spec.ts` |
-| `connection-providers` | `shared/connections/src/rtc/session.test.ts`; Playwright `tests/e2e/web/specs/worker-connects.spec.ts`, `thread-sync.spec.ts` |
-| `conversation-persistence` | `shared/database/__tests__/integration/repositories.test.ts`; Playwright `tests/e2e/web/specs/thread-lifecycle.spec.ts`, `cold-resume.spec.ts` |
+| `acp-provider-cli` | `apps/cli/src/core/acp/events.test.ts`, `run-turn.test.ts` |
+| `acp-session-router` | `apps/cli/__tests__/integration/wiring.test.ts` |
+| `connection-providers` | `shared/connections/src/rtc/session.test.ts` |
+| `conversation-persistence` | `shared/database/__tests__/integration/repositories.test.ts` |
 
 ## Deferred platform tracks
 
-- `@cyrus/desktop` — thin Bun unit tests for `lib/env` and `lib/auth`; browser E2E can reuse the web Playwright suite against built assets.
+- `@cyrus/desktop` — thin Bun unit tests for `lib/env` and `lib/auth`.
 - `@cyrus/mobile` — Maestro or Detox when the app matures.
 - `@cyrus/styles` — out of scope for unit tests.
 - Visual regression — deferred.
+- End-to-end (Playwright cross-peer flows, Worker CLI terminal tier) — removed; revisit if a future need justifies the process-compose/Playwright/PTY infrastructure cost.
 
 ## Phase 3 notes
 
@@ -90,3 +61,7 @@ No E2E subset runs on pull requests. The suite needs Playwright browsers, proces
 
 - `@cyrus/database` integration tests use isolated in-memory Turso databases via `shared/database/__tests__/helpers/turso.ts`.
 - `@cyrus/server` Workers-pool tests exercise the real D1 binding (`env.DB`) under `@cloudflare/vitest-pool-workers`, with Drizzle migrations applied in setup. No Neon or Postgres driver is involved.
+
+## Phase 5 notes
+
+- Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`. Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets enable a signaling WebSocket check in addition to `GET /health`.

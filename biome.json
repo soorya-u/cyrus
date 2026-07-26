@@ -161,6 +161,8 @@
                       "!@cyrus/errors/**",
                       "!@cyrus/schemas",
                       "!@cyrus/schemas/**",
+                      "!@cyrus/test",
+                      "!@cyrus/test/**",
                       "!@cyrus/utils",
                       "!@cyrus/utils/**"
                     ],

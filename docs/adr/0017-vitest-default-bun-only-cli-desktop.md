@@ -1,6 +1,6 @@
 # Vitest is the default test runner; Bun stays only for `apps/cli` and `apps/desktop`
 
-_Decided 2026-07-20. Supersedes [0016](./0016-server-test-runner-split-by-cloudflare-api-surface.md)._
+_Decided 2026-07-20. Supersedes [0016](./0016-server-test-runner-split-by-cloudflare-api-surface.md). Its `tests/e2e` claims (paragraphs 3–4) are superseded by [0019](./0019-remove-end-to-end-test-suite.md)._
 
 The repo's test-runner rule flips: Vitest is now the default everywhere, and `bun:test` is kept only where the app itself must keep running on Bun at runtime — `apps/cli` and `apps/desktop`. This is permanent, not transitional: there is no Vitest execution environment or pool for Bun or Deno (no `vitest-environment-bun`, no `@vitest/pool-bun`, no Deno equivalent — Vitest's only documented Bun awareness is being invoked via `bun run test` as a package-manager convenience), so if `apps/cli` later moves off Bun onto Deno, its tests migrate with it into whatever Deno's own tooling is, not into this Vitest setup. Every other package moves to Vitest specifically to shrink what has to be touched when that migration happens — including the `shared/*` packages `apps/cli` itself depends on (`connections`, `database`, `schemas`, `utils`), since a package's test-runner choice is independent of which runtime later imports it, and none of them have Bun-specific runtime code today; their only Bun coupling was the `bun:test` import itself.
 

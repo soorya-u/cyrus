@@ -43,6 +43,7 @@
     "zod": "catalog:rpc"
   },
   "devDependencies": {
+    "@cyrus/test": "workspace:*",
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:core",
     "@types/diff": "^7.0.0",

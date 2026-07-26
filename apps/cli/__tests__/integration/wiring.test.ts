@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
+import { createTempCyrusHome } from "@cyrus/test/fixtures/cyrus-home";
 import { Result } from "better-result";
 import { runTurn } from "../../src/utils/run-turn";
 import { createMockPromptStream } from "../helpers/acp-runtime";
@@ -87,7 +87,7 @@ describe("acp mock runtime", () => {
 
 describe("cli process integration", () => {
 	test("exits when start is invoked without a login token", async () => {
-		const home = await mkdtemp(join(tmpdir(), "cyrus-cli-test-"));
+		const home = await createTempCyrusHome("cyrus-cli-test-");
 
 		try {
 			const proc = Bun.spawn(["bun", "src/cli.ts", "start"], {

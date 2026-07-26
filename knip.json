@@ -60,18 +60,13 @@
         "src/**": ["types"]
       }
     },
-    "tests/e2e": {
-      "entry": [
-        "harness/**/*.ts",
-        "manual/**/*.ts",
-        "web/playwright.config.ts",
-        "web/fixtures.ts",
-        "web/prepare-database.ts",
-        "web/specs/**/*.ts"
-      ]
-    },
     "tooling/test": {
-      "entry": ["setup/**/*.ts", "mocks/**/*.ts", "smoke/**/*.ts"]
+      "entry": [
+        "setup/**/*.ts",
+        "mocks/**/*.ts",
+        "fixtures/**/*.ts",
+        "smoke/**/*.ts"
+      ]
     },
     "tooling/typescript": {
       "entry": ["tsconfig.base.json"]

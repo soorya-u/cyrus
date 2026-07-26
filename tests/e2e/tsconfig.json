@@ -1,9 +1,0 @@
-{
-  "extends": "@cyrus/typescript/tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["bun"],
-    "moduleResolution": "Bundler",
-    "noEmit": true
-  },
-  "include": ["harness/**/*.ts", "web/**/*.ts"]
-}

@@ -2,8 +2,6 @@
 bun = "1.3"
 vercel = "54.16"
 wrangler = "4.104"
-process-compose = "1.120.0"
-"github:microsoft/shell-use" = "0.0.1-beta.5"
 "npm:@soorya-u/dotagents" = "0.1.3"
 "npm:@playwright/cli" = "0.1.17"
 
