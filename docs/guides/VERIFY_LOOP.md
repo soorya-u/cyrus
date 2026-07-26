@@ -95,7 +95,7 @@ export CLI_PUBLIC_SERVER_URL=http://localhost:8787
 bun dev login
 ```
 
-Open the printed device URL in an authenticated browser and approve the code. The visible device page offers GitHub sign-in. For an email/password test account, use the canonical harness flow described above; it creates the account, establishes the session, claims the device code, and approves it without adding a test-only product path. Then verify and prepare an agent:
+Open the printed device URL in an authenticated browser and approve the code. The visible device page offers GitHub sign-in; for an email/password test account, sign up and sign in first via the endpoints described above, then open the device URL in that authenticated session and approve. Then verify and prepare an agent:
 
 ```sh
 bun dev whoami --email

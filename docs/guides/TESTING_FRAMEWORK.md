@@ -64,4 +64,4 @@ Unit tests stay close to the code they cover. In `apps/server`, every colocated 
 
 ## Phase 5 notes
 
-- Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`. Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets enable a signaling WebSocket check in addition to `GET /health`.
+- Deploy smoke runs after every server deploy via `tooling/test/smoke/deploy.ts`. Optional `DEPLOY_SMOKE_TOKEN` and `DEPLOY_SMOKE_ROOM_ID` secrets (mapped to `SMOKE_BEARER_TOKEN`/`SMOKE_ROOM_ID` in `.github/workflows/deploy.yml`) enable a signaling WebSocket check in addition to `GET /health`.
