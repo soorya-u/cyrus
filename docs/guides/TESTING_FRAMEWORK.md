@@ -53,7 +53,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
   4. Specs install the fixture's session cookie in the browser and exercise the real Controller UI against the connected Worker.
   5. After the worker's tests finish, process-compose tears down all managed peers and the temporary `CYRUS_HOME` is removed.
   6. Migrated cross-peer scenarios live alongside smoke under `tests/e2e/web/specs/` (`worker-connects`, `catalog`, `thread-lifecycle`, `thread-sync`, `cold-resume`).
-- The Worker CLI terminal tier (`tests/e2e/harness/*-terminal.test.ts`) drives the compiled `cyrusd` binary through a shell-use PTY with fixed columns/rows, asserting on rendered output (including ANSI colors) and exit codes. Nightly CI installs the matching `shell-use` binary via mise (`github:microsoft/shell-use`).
+- The Worker CLI terminal tier (`tests/e2e/harness/*-terminal.test.ts`) drives the compiled `cyrusd` binary through a shell-use PTY with fixed columns/rows, asserting on rendered output (including ANSI colors) and exit codes. Covered commands: `login`, `start`/`stop`/`status`, and `agents doctor`. Non-interactive commands keep their existing in-process coverage. Nightly CI installs the matching `shell-use` binary via mise (`github:microsoft/shell-use`).
 - Local E2E runs do not need an external database URL. Wrangler local D1 is enough. Broader per-run D1 isolation for CI is tracked in #119.
 - The Vitest harness and Playwright server setup ensure the schema exists before starting their signaling server.
 - Programmatic auth uses Better Auth email sign-in plus the real device-code flow (`tests/e2e/harness/auth.ts`). Email/password auth is enabled when the server runs with `NODE_ENV=testing`.
@@ -72,7 +72,7 @@ Phase 1 only adds the unit test foundation. Integration and E2E are introduced i
 | --- | --- |
 | `conversation-view` | `shared/utils/src/fold.test.ts` |
 | `wire-schemas` | `shared/schemas/src/**/*.test.ts` |
-| `acp-provider-cli` | `apps/cli/src/core/acp/events.test.ts`, `run-turn.test.ts`; Worker CLI terminal tier `tests/e2e/harness/cli-login-terminal.test.ts` |
+| `acp-provider-cli` | `apps/cli/src/core/acp/events.test.ts`, `run-turn.test.ts`; Worker CLI terminal tier `tests/e2e/harness/cli-login-terminal.test.ts`, `cli-service-terminal.test.ts`, `cli-doctor-terminal.test.ts` |
 | `acp-session-router` | `apps/cli/__tests__/integration/wiring.test.ts` |
 | `connection-providers` | `shared/connections/src/rtc/session.test.ts` |
 | `conversation-persistence` | `shared/database/__tests__/integration/repositories.test.ts` |
