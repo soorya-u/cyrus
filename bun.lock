@@ -171,7 +171,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@base-ui/react": "^1.6.0",
-        "@better-auth-ui/core": "^1.6.39",
+        "@better-auth-ui/core": "catalog:auth",
         "@better-auth-ui/react": "catalog:auth",
         "@cyrus/connections": "workspace:*",
         "@cyrus/constants": "workspace:*",
@@ -434,6 +434,7 @@
   ],
   "catalogs": {
     "auth": {
+      "@better-auth-ui/core": "^1.6.40",
       "@better-auth-ui/react": "^1.6.40",
       "@better-auth/expo": "1.6.21",
       "@soorya-u/better-auth-desktop": "^0.1.1",
@@ -639,7 +640,7 @@
 
     "@base-ui/utils": ["@base-ui/utils@0.3.1", "", { "dependencies": { "@babel/runtime": "^7.29.2", "@floating-ui/utils": "^0.2.11", "reselect": "^5.2.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "@types/react": "^17 || ^18 || ^19", "react": "^17 || ^18 || ^19", "react-dom": "^17 || ^18 || ^19" }, "optionalPeers": ["@types/react"] }, "sha512-gFFiltORVmW/N6IILTGxizP3PBpVpysqML1ALY5Vk0mH+7faVkCknOU31goYHN5Aoek2dkjxva1XOD2Ce9WuIg=="],
 
-    "@better-auth-ui/core": ["@better-auth-ui/core@1.6.39", "", { "dependencies": { "uqr": "^0.1.3" }, "peerDependencies": { "@mikkelscheike/email-provider-links": ">=5.1.8", "better-auth": ">=1.6.19" } }, "sha512-L95SAJuT0/YXL3SEHD5/qFr/tGh05sk6frhVeIUE4MvjeF61YvMKj1GKEOU7GPgvBGxx9gKcJpttea6o1uPNHQ=="],
+    "@better-auth-ui/core": ["@better-auth-ui/core@1.6.40", "", { "dependencies": { "uqr": "^0.1.3" }, "peerDependencies": { "@mikkelscheike/email-provider-links": ">=5.1.8", "better-auth": ">=1.6.19" } }, "sha512-aB6juSuDlnFbHRLQMh0/QeJwyn5m08ikdzMmlp2hQQOZ0mswi6T15JfFftlnn2mfGEZEt0ugumNL569ub0CSOw=="],
 
     "@better-auth-ui/react": ["@better-auth-ui/react@1.6.40", "", { "peerDependencies": { "@better-auth-ui/core": "*", "@better-auth/api-key": ">=1.6.19", "@better-auth/oauth-provider": ">=1.6.19", "@better-auth/passkey": ">=1.6.19", "@tanstack/query-core": ">=5.100.14", "@tanstack/react-query": ">=5.100.14", "better-auth": ">=1.6.19", "clsx": ">=2.0.0", "react": ">=19.2.6", "react-dom": ">=19.2.6", "react-email": ">=6.0.0", "tailwind-merge": ">=3.5.0", "tailwindcss": ">=4.3.1", "zod": ">=4.4.3" }, "optionalPeers": ["react-email"] }, "sha512-ShuIHX0Oz7ypAlqBXXKPTlIdVkXBBcbqxgfxbL2i8F08iS400CYJ9CkvGQJLMTwBoZCZT8TxOESh3MEAoQnKCw=="],
 
