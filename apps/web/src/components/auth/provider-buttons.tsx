@@ -1,0 +1,69 @@
+"use client";
+
+import type { AuthView } from "@better-auth-ui/core";
+import { useAuth } from "@better-auth-ui/react";
+import { cn } from "cnfast";
+import { useMemo } from "react";
+import { ProviderButton } from "./provider-button";
+
+export type ProviderButtonsProps = {
+	socialLayout?: SocialLayout;
+	view?: AuthView;
+};
+
+export type SocialLayout = "auto" | "horizontal" | "vertical" | "grid";
+
+const DISPLAY_BY_LAYOUT: Record<
+	Exclude<SocialLayout, "auto">,
+	"full" | "name" | "icon"
+> = {
+	vertical: "full",
+	grid: "name",
+	horizontal: "icon",
+};
+
+/**
+ * Render sign-in buttons for configured social providers. Each button owns its own sign-in mutation
+ * and reads the shared sign-in pending state from React Query.
+ *
+ * @param socialLayout - Preferred layout for the provider buttons; `"auto"` chooses based on the number of providers.
+ */
+export function ProviderButtons({
+	socialLayout = "auto",
+	view = "signIn",
+}: ProviderButtonsProps) {
+	const { socialProviders } = useAuth();
+
+	const resolvedSocialLayout = useMemo(() => {
+		if (socialLayout === "auto") {
+			if (socialProviders?.length && socialProviders.length >= 4) {
+				return "horizontal";
+			}
+
+			return "vertical";
+		}
+
+		return socialLayout;
+	}, [socialLayout, socialProviders?.length]);
+
+	return (
+		<div
+			className={cn(
+				"gap-3",
+				resolvedSocialLayout === "grid" && "grid grid-cols-2",
+				resolvedSocialLayout === "vertical" && "flex flex-col",
+				resolvedSocialLayout === "horizontal" && "flex flex-row flex-wrap"
+			)}
+		>
+			{socialProviders?.map((provider) => (
+				<ProviderButton
+					className={cn(resolvedSocialLayout === "horizontal" && "flex-1")}
+					display={DISPLAY_BY_LAYOUT[resolvedSocialLayout]}
+					key={provider}
+					provider={provider}
+					view={view}
+				/>
+			))}
+		</div>
+	);
+}
