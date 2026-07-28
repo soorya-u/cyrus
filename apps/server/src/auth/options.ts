@@ -1,6 +1,6 @@
 import { expo } from "@better-auth/expo";
 import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
-import { wsTicketPlugin } from "@soorya-u/better-auth-ws-ticket/server";
+import { wsTicketPlugin as wsTicket } from "@soorya-u/better-auth-ws-ticket/server";
 import type { BetterAuthOptions } from "better-auth";
 import {
 	bearer,
@@ -10,17 +10,10 @@ import {
 } from "better-auth/plugins";
 import { log } from "evlog";
 import { env } from "../config/env";
-import { sendMagicLinkEmail } from "../emails/magic-email";
+import { sendMagicLinkEmail as sendMagicLink } from "../emails/magic-email";
 
 const emailAndPassword =
-	env.NODE_ENV === "production"
-		? {}
-		: {
-				emailAndPassword: {
-					enabled: true,
-					autoSignIn: true,
-				},
-			};
+	env.NODE_ENV === "production" ? {} : { emailAndPassword: { enabled: true } };
 
 export const authOptions = {
 	appName: "Cyrus",
@@ -66,15 +59,10 @@ export const authOptions = {
 		}),
 		magicLink({
 			disableSignUp: false,
-			sendMagicLink: async ({ email, url }) =>
-				sendMagicLinkEmail({
-					fromEmail: env.RESEND_FROM_EMAIL,
-					toEmail: email,
-					signInUrl: url,
-				}),
+			sendMagicLink,
 		}),
 		deviceAuthorization({ verificationUri: `${env.WEB_APP_URL}/auth/device` }),
 		bearer(),
-		wsTicketPlugin(),
+		wsTicket(),
 	],
 } satisfies BetterAuthOptions;

@@ -1,37 +1,30 @@
 import { MagicLinkEmail } from "@better-auth-ui/react/email";
 import { render } from "@react-email/render";
 import { createElement } from "react";
+import { env } from "../config/env";
 import { resend } from "./index";
 
-function magicLinkElement({
-	email,
-	signInUrl,
-}: {
+type EmailParams = {
 	email: string;
-	signInUrl: string;
-}) {
+	url: string;
+};
+
+function magicLinkElement(params: EmailParams) {
 	return createElement(MagicLinkEmail, {
 		appName: "Cyrus",
 		darkMode: true,
-		email,
 		expirationMinutes: 5,
 		poweredBy: true,
-		url: signInUrl,
+		...params,
 	});
 }
 
-export async function buildMagicLinkEmail({
-	email,
-	signInUrl,
-}: {
-	email: string;
-	signInUrl: string;
-}): Promise<{
+export async function buildMagicLinkEmail(params: EmailParams): Promise<{
 	subject: string;
 	html: string;
 	text: string;
 }> {
-	const element = magicLinkElement({ email, signInUrl });
+	const element = magicLinkElement(params);
 	const [html, text] = await Promise.all([
 		render(element),
 		render(element, { plainText: true }),
@@ -44,22 +37,11 @@ export async function buildMagicLinkEmail({
 	};
 }
 
-export async function sendMagicLinkEmail({
-	fromEmail,
-	toEmail,
-	signInUrl,
-}: {
-	fromEmail: string;
-	toEmail: string;
-	signInUrl: string;
-}): Promise<void> {
-	const template = await buildMagicLinkEmail({
-		email: toEmail,
-		signInUrl,
-	});
+export async function sendMagicLinkEmail(params: EmailParams): Promise<void> {
+	const template = await buildMagicLinkEmail(params);
 	await resend.emails.send({
-		from: fromEmail,
-		to: [toEmail],
+		from: env.RESEND_FROM_EMAIL,
+		to: [params.email],
 		...template,
 	});
 }
