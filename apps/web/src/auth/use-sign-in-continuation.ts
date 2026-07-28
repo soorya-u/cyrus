@@ -1,5 +1,6 @@
 import { useAuth } from "@better-auth-ui/react";
 import { useCallback } from "react";
+import { resolvePostSignInRedirect } from "./post-sign-in-redirect";
 import {
 	isTwoFactorRedirect,
 	storeTwoFactorMethods,
@@ -34,16 +35,21 @@ export function useSignInContinuation() {
 
 	return useCallback(
 		(data: unknown) => {
+			const redirectTarget = resolvePostSignInRedirect(
+				window.location.search,
+				redirectTo
+			);
+
 			if (twoFactorPath && isTwoFactorRedirect(data)) {
 				storeTwoFactorMethods(data.twoFactorMethods);
 
 				navigate({
-					to: `${basePaths.auth}/${twoFactorPath}?redirectTo=${encodeURIComponent(redirectTo)}`,
+					to: `${basePaths.auth}/${twoFactorPath}?redirectTo=${encodeURIComponent(redirectTarget)}`,
 				});
 				return;
 			}
 
-			navigate({ to: redirectTo });
+			navigate({ to: redirectTarget });
 		},
 		[basePaths.auth, navigate, redirectTo, twoFactorPath]
 	);

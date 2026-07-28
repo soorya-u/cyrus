@@ -1,5 +1,11 @@
 import { exports } from "cloudflare:workers";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+
+const sendMagicLinkEmailMock = vi.fn();
+
+vi.mock("./send-magic-link-email", () => ({
+	sendMagicLinkEmail: sendMagicLinkEmailMock,
+}));
 
 const worker = exports.default;
 const ORIGIN = "https://cyrus.soorya-u.dev";
@@ -150,5 +156,40 @@ describe("device authorization against D1", () => {
 			access_token?: string;
 		};
 		expect(tokenBody.access_token).toBeTruthy();
+	});
+
+	test("requests a magic link and captures a verifiable token URL", async () => {
+		const email = `magic-link-${crypto.randomUUID()}@cyrus.test`;
+		let verificationUrl: string | null = null;
+		sendMagicLinkEmailMock.mockImplementation(({ signInUrl }) => {
+			verificationUrl = signInUrl;
+			return Promise.resolve();
+		});
+
+		try {
+			const requestMagicLink = await worker.fetch(
+				"https://cyrus.soorya-u.dev/api/auth/sign-in/magic-link",
+				{
+					method: "POST",
+					headers: authHeaders({ "content-type": "application/json" }),
+					body: JSON.stringify({
+						email,
+						callbackURL: "https://cyrus.soorya-u.dev/workers",
+					}),
+				}
+			);
+			expect(requestMagicLink.ok).toBe(true);
+			expect(verificationUrl).toBeTruthy();
+			if (!verificationUrl) {
+				throw new Error("missing magic link verification URL");
+			}
+			expect(verificationUrl).toContain("/api/auth/magic-link/verify");
+			expect(verificationUrl).toContain("token=");
+			expect(verificationUrl).toContain(
+				`callbackURL=${encodeURIComponent("https://cyrus.soorya-u.dev/workers")}`
+			);
+		} finally {
+			sendMagicLinkEmailMock.mockReset();
+		}
 	});
 });

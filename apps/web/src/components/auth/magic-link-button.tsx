@@ -34,6 +34,7 @@ export function MagicLinkButton({ view }: MagicLinkButtonProps) {
 		useAuthPlugin(magicLinkPlugin);
 
 	const isMagicLinkView = view === "magicLink";
+	const searchSuffix = window.location.search;
 
 	// On the magic-link view this button switches back to password sign-in.
 	// With password auth disabled there's nowhere to switch to, so hide it.
@@ -49,7 +50,7 @@ export function MagicLinkButton({ view }: MagicLinkButtonProps) {
 				"w-full",
 				isPending && "pointer-events-none opacity-50"
 			)}
-			href={`${basePaths.auth}/${isMagicLinkView ? viewPaths.auth.signIn : magicLinkViewPaths.auth.magicLink}`}
+			href={`${basePaths.auth}/${isMagicLinkView ? viewPaths.auth.signIn : magicLinkViewPaths.auth.magicLink}${searchSuffix}`}
 			onClick={(event) => {
 				if (isPending) event.preventDefault();
 			}}

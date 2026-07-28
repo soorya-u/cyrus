@@ -9,6 +9,7 @@ import { ProviderButton } from "./provider-button";
 export type ProviderButtonsProps = {
 	socialLayout?: SocialLayout;
 	view?: AuthView;
+	callbackUrl?: string;
 };
 
 export type SocialLayout = "auto" | "horizontal" | "vertical" | "grid";
@@ -31,6 +32,7 @@ const DISPLAY_BY_LAYOUT: Record<
 export function ProviderButtons({
 	socialLayout = "auto",
 	view = "signIn",
+	callbackUrl,
 }: ProviderButtonsProps) {
 	const { socialProviders } = useAuth();
 
@@ -57,6 +59,7 @@ export function ProviderButtons({
 		>
 			{socialProviders?.map((provider) => (
 				<ProviderButton
+					callbackUrl={callbackUrl}
 					className={cn(resolvedSocialLayout === "horizontal" && "flex-1")}
 					display={DISPLAY_BY_LAYOUT[resolvedSocialLayout]}
 					key={provider}

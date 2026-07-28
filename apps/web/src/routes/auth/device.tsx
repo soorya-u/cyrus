@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { ProviderButton } from "@/components/auth/provider-button";
+import { buildDeviceCallbackPath } from "@/auth/device-callback";
 import { Button } from "@/components/ui/button";
 import {
 	InputOTP,
@@ -15,6 +15,17 @@ import { authClient } from "@/lib/auth";
 
 export const Route = createFileRoute("/auth/device")({
 	validateSearch: z.object({ user_code: z.string().optional() }),
+	beforeLoad: async ({ search }) => {
+		const { data } = await authClient.getSession();
+		if (data?.user) {
+			return;
+		}
+
+		throw redirect({
+			to: "/auth",
+			search: { callbackUrl: buildDeviceCallbackPath(search.user_code) },
+		});
+	},
 	component: DevicePage,
 });
 
@@ -29,23 +40,7 @@ function DevicePage() {
 	const { outcome, decide, isDeciding } = useAuthDevice();
 
 	if (isPending) return <Spinner />;
-
-	if (!session?.user) {
-		const callbackUrl = `${window.location.origin}/auth/device${
-			code ? `?user_code=${encodeURIComponent(code)}` : ""
-		}`;
-		return (
-			<>
-				<h1 className="font-medium text-2xl tracking-tight">
-					Authorize device
-				</h1>
-				<p className="max-w-sm text-center text-muted-foreground text-sm">
-					Sign in to connect a device to your Cyrus account.
-				</p>
-				<ProviderButton callbackUrl={callbackUrl} provider="github" />
-			</>
-		);
-	}
+	if (!session?.user) return <Spinner />;
 
 	if (outcome === "approved")
 		return (

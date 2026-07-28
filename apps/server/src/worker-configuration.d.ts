@@ -9,7 +9,11 @@ interface __BaseEnv_Env {
 	WEB_APP_URL: string;
 	OAUTH_GITHUB_CLIENT_ID: string;
 	OAUTH_GITHUB_CLIENT_SECRET: string;
+	OAUTH_GOOGLE_CLIENT_ID: string;
+	OAUTH_GOOGLE_CLIENT_SECRET: string;
 	OAUTH_PROXY_SECRET: string;
+	RESEND_API_KEY: string;
+	RESEND_FROM_EMAIL: string;
 	ALLOWED_ORIGINS: string;
 	HUB: DurableObjectNamespace<import("./index").Hub>;
 }
@@ -25,7 +29,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_SECRET" | "NODE_ENV" | "PRODUCTION_URL" | "WEB_APP_URL" | "OAUTH_GITHUB_CLIENT_ID" | "OAUTH_GITHUB_CLIENT_SECRET" | "OAUTH_PROXY_SECRET" | "ALLOWED_ORIGINS">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_SECRET" | "NODE_ENV" | "PRODUCTION_URL" | "WEB_APP_URL" | "OAUTH_GITHUB_CLIENT_ID" | "OAUTH_GITHUB_CLIENT_SECRET" | "OAUTH_GOOGLE_CLIENT_ID" | "OAUTH_GOOGLE_CLIENT_SECRET" | "OAUTH_PROXY_SECRET" | "RESEND_API_KEY" | "RESEND_FROM_EMAIL" | "ALLOWED_ORIGINS">> {}
 }
 
 // Begin runtime types

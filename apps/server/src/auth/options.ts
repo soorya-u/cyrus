@@ -2,9 +2,16 @@ import { expo } from "@better-auth/expo";
 import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
 import { wsTicketPlugin } from "@soorya-u/better-auth-ws-ticket/server";
 import type { BetterAuthOptions } from "better-auth";
-import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
+import {
+	bearer,
+	deviceAuthorization,
+	magicLink,
+	oAuthProxy,
+} from "better-auth/plugins";
 import { log } from "evlog";
+import { Resend } from "resend";
 import { env } from "../config/env";
+import { sendMagicLinkEmail } from "./send-magic-link-email";
 
 const emailAndPassword =
 	env.NODE_ENV === "production"
@@ -16,6 +23,8 @@ const emailAndPassword =
 				},
 			};
 
+const resend = new Resend(env.RESEND_API_KEY);
+
 export const authOptions = {
 	appName: "Cyrus",
 	basePath: "/api/auth",
@@ -25,6 +34,10 @@ export const authOptions = {
 		github: {
 			clientId: env.OAUTH_GITHUB_CLIENT_ID,
 			clientSecret: env.OAUTH_GITHUB_CLIENT_SECRET,
+		},
+		google: {
+			clientId: env.OAUTH_GOOGLE_CLIENT_ID,
+			clientSecret: env.OAUTH_GOOGLE_CLIENT_SECRET,
 		},
 	},
 	secret: env.BETTER_AUTH_SECRET,
@@ -53,6 +66,16 @@ export const authOptions = {
 		oAuthProxy({
 			productionURL: env.PRODUCTION_URL,
 			secret: env.OAUTH_PROXY_SECRET,
+		}),
+		magicLink({
+			disableSignUp: false,
+			sendMagicLink: async ({ email, url }) =>
+				sendMagicLinkEmail({
+					resendClient: resend,
+					fromEmail: env.RESEND_FROM_EMAIL,
+					toEmail: email,
+					signInUrl: url,
+				}),
 		}),
 		deviceAuthorization({ verificationUri: `${env.WEB_APP_URL}/auth/device` }),
 		bearer(),

@@ -29,6 +29,7 @@
     "evlog": "catalog:observability",
     "hono": "^4.12.27",
     "partyserver": "^0.5.8",
+    "resend": "^6.18.0",
     "zod": "catalog:rpc"
   },
   "devDependencies": {

@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Field,
-	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
@@ -28,6 +27,7 @@ export type MagicLinkProps = {
 	className?: string;
 	socialLayout?: SocialLayout;
 	socialPosition?: "top" | "bottom";
+	callbackUrl?: string;
 };
 
 /**
@@ -42,19 +42,17 @@ export function MagicLink({
 	className,
 	socialLayout,
 	socialPosition = "bottom",
+	callbackUrl,
 }: MagicLinkProps) {
 	const {
 		authClient,
 		basePaths,
 		baseURL,
-		emailAndPassword,
 		localization,
 		navigate,
 		plugins,
 		redirectTo,
 		socialProviders,
-		viewPaths,
-		Link,
 	} = useAuth();
 	const { localization: magicLinkLocalization, viewPaths: magicLinkViewPaths } =
 		useAuthPlugin(magicLinkPlugin);
@@ -85,7 +83,10 @@ export function MagicLink({
 
 	const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		signInMagicLink({ email, callbackURL: `${baseURL}${redirectTo}` });
+		signInMagicLink({
+			email,
+			callbackURL: callbackUrl ?? `${baseURL}${redirectTo}`,
+		});
 	};
 
 	const showSeparator = socialProviders && socialProviders.length > 0;
@@ -101,7 +102,11 @@ export function MagicLink({
 					{socialPosition === "top" && (
 						<>
 							{socialProviders && socialProviders.length > 0 && (
-								<ProviderButtons socialLayout={socialLayout} view="magicLink" />
+								<ProviderButtons
+									callbackUrl={callbackUrl}
+									socialLayout={socialLayout}
+									view="magicLink"
+								/>
 							)}
 
 							{showSeparator && (
@@ -178,25 +183,15 @@ export function MagicLink({
 							)}
 
 							{socialProviders && socialProviders.length > 0 && (
-								<ProviderButtons socialLayout={socialLayout} view="magicLink" />
+								<ProviderButtons
+									callbackUrl={callbackUrl}
+									socialLayout={socialLayout}
+									view="magicLink"
+								/>
 							)}
 						</>
 					)}
 				</div>
-
-				{emailAndPassword?.enabled && (
-					<div className="mt-4 flex w-full flex-col items-center gap-3">
-						<FieldDescription className="text-center">
-							{localization.auth.needToCreateAnAccount}{" "}
-							<Link
-								className="underline underline-offset-4"
-								href={`${basePaths.auth}/${viewPaths.auth.signUp}`}
-							>
-								{localization.auth.signUp}
-							</Link>
-						</FieldDescription>
-					</div>
-				)}
 			</CardContent>
 		</Card>
 	);

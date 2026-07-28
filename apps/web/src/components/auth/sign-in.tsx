@@ -15,7 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Field,
-	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
@@ -36,7 +35,16 @@ export type SignInProps = {
 	className?: string;
 	socialLayout?: SocialLayout;
 	socialPosition?: "top" | "bottom";
+	callbackUrl?: string;
+	showEmailAndPassword?: boolean;
 };
+
+export function shouldShowEmailAndPassword(
+	showEmailAndPassword: boolean,
+	isEmailAndPasswordEnabled: boolean | undefined
+): boolean {
+	return showEmailAndPassword && Boolean(isEmailAndPasswordEnabled);
+}
 
 /**
  * Render the sign-in form UI with email/password, magic link, and social provider options.
@@ -50,6 +58,8 @@ export function SignIn({
 	className,
 	socialLayout,
 	socialPosition = "bottom",
+	callbackUrl,
+	showEmailAndPassword = true,
 }: SignInProps) {
 	const {
 		authClient,
@@ -60,7 +70,6 @@ export function SignIn({
 		socialProviders,
 		viewPaths,
 		navigate,
-		Link,
 	} = useAuth();
 
 	const { fetchOptions, resetFetchOptions } = useFetchOptions();
@@ -121,8 +130,13 @@ export function SignIn({
 		});
 	};
 
+	const canUseEmailAndPassword = shouldShowEmailAndPassword(
+		showEmailAndPassword,
+		emailAndPassword?.enabled
+	);
+
 	const showSeparator =
-		emailAndPassword?.enabled && socialProviders && socialProviders.length > 0;
+		canUseEmailAndPassword && socialProviders && socialProviders.length > 0;
 
 	return (
 		<Card className={cn("w-full max-w-sm", className)}>
@@ -138,7 +152,11 @@ export function SignIn({
 					{socialPosition === "top" && (
 						<>
 							{socialProviders && socialProviders.length > 0 && (
-								<ProviderButtons socialLayout={socialLayout} view="signIn" />
+								<ProviderButtons
+									callbackUrl={callbackUrl}
+									socialLayout={socialLayout}
+									view="signIn"
+								/>
 							)}
 
 							{showSeparator && (
@@ -149,7 +167,7 @@ export function SignIn({
 						</>
 					)}
 
-					{emailAndPassword?.enabled && (
+					{canUseEmailAndPassword && (
 						<form onSubmit={handleSubmit}>
 							<FieldGroup>
 								<Field data-invalid={!!fieldErrors.email}>
@@ -324,32 +342,13 @@ export function SignIn({
 							)}
 
 							{socialProviders && socialProviders.length > 0 && (
-								<ProviderButtons socialLayout={socialLayout} view="signIn" />
+								<ProviderButtons
+									callbackUrl={callbackUrl}
+									socialLayout={socialLayout}
+									view="signIn"
+								/>
 							)}
 						</>
-					)}
-				</div>
-
-				<div className="mt-4 flex w-full flex-col items-center gap-3">
-					{emailAndPassword?.enabled && emailAndPassword?.forgotPassword && (
-						<Link
-							className="self-center text-sm underline-offset-4 hover:underline"
-							href={`${basePaths.auth}/${viewPaths.auth.forgotPassword}`}
-						>
-							{localization.auth.forgotPasswordLink}
-						</Link>
-					)}
-
-					{emailAndPassword?.enabled && (
-						<FieldDescription className="text-center">
-							{localization.auth.needToCreateAnAccount}{" "}
-							<Link
-								className="underline underline-offset-4"
-								href={`${basePaths.auth}/${viewPaths.auth.signUp}`}
-							>
-								{localization.auth.signUp}
-							</Link>
-						</FieldDescription>
 					)}
 				</div>
 			</CardContent>
