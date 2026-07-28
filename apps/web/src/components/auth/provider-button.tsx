@@ -16,6 +16,8 @@ export type ProviderButtonProps = {
 	provider: SocialProvider;
 	display?: "full" | "name" | "icon";
 	view?: AuthView;
+	/** Overrides `AuthProvider`'s app-wide `redirectTo` for this sign-in, e.g. to return to a specific flow (device authorization) instead of the default landing page. */
+	callbackUrl?: string;
 } & Omit<ComponentProps<typeof Button>, "onClick" | "children" | "disabled">;
 
 /**
@@ -23,6 +25,7 @@ export type ProviderButtonProps = {
  *
  * @param provider - Provider to sign in with.
  * @param display - `"full"` (e.g. "Continue with Google"), `"name"` (just the provider name), or `"icon"` (icon only).
+ * @param callbackUrl - Per-call redirect override; defaults to `AuthProvider`'s `redirectTo`.
  */
 export function ProviderButton({
 	provider,
@@ -30,11 +33,12 @@ export function ProviderButton({
 	view = "signIn",
 	variant = "outline",
 	className,
+	callbackUrl,
 	...props
 }: ProviderButtonProps) {
 	const { authClient, baseURL, localization, redirectTo } = useAuth();
 
-	const callbackURL = `${baseURL}${redirectTo}`;
+	const callbackURL = callbackUrl ?? `${baseURL}${redirectTo}`;
 
 	const { mutate: signInSocial, isPending: signInSocialPending } =
 		useSignInSocial(authClient);
