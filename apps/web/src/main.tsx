@@ -67,6 +67,7 @@ function WebQueryShell({
 				authClient={authClient}
 				navigate={({ to, replace }) => router.navigate({ to, replace })}
 				queryClient={queryClient}
+				redirectTo="/workers"
 			>
 				{children}
 			</AuthProvider>
