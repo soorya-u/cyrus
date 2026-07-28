@@ -9,7 +9,6 @@ import { useIsMutating } from "@tanstack/react-query";
 import { cn } from "cnfast";
 import { Eye, EyeOff } from "lucide-react";
 import { type SyntheticEvent, useState } from "react";
-import { useSignInContinuation } from "@/auth/use-sign-in-continuation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,6 +27,7 @@ import {
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
+import { useSignInContinuation } from "@/hooks/auth/use-sign-in-continuation";
 import { LastUsedBadge } from "./last-login-method/last-used-badge";
 import { ProviderButtons, type SocialLayout } from "./provider-buttons";
 

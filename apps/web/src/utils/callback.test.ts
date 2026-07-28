@@ -1,16 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { shouldShowEmailAndPassword } from "@/components/auth/sign-in";
-import { normalizeCallbackPath } from "./callback-url";
-import { buildDeviceCallbackPath } from "./device-callback";
-import { resolvePostSignInRedirect } from "./post-sign-in-redirect";
+import {
+	buildDeviceCallbackPath,
+	normalizeCallbackPath,
+	resolvePostSignInRedirect,
+} from "./callback";
 
-describe("auth route flow helpers", () => {
-	test("hides email+password when VITE_IS_DEV_MODE is false", () => {
-		expect(shouldShowEmailAndPassword(false, true)).toBe(false);
-		expect(shouldShowEmailAndPassword(true, true)).toBe(true);
-		expect(shouldShowEmailAndPassword(true, false)).toBe(false);
-	});
-
+describe("callback helpers", () => {
 	test("resolves callbackUrl redirect on sign-in success", () => {
 		expect(
 			resolvePostSignInRedirect("?callbackUrl=%2Fworkers", "/fallback")

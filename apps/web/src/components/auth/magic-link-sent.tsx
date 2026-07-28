@@ -1,10 +1,10 @@
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react";
 import { cn } from "cnfast";
 import { useState } from "react";
-import { magicLinkPlugin } from "@/auth/magic-link-plugin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldDescription } from "@/components/ui/field";
-import { MAGIC_LINK_SENT_STORAGE_KEY } from "@/constants/storage-keys";
+import { MAGIC_LINK_SENT } from "@/constants/storage-keys";
+import { magicLinkPlugin } from "@/lib/auth/plugins/magic-link-plugin";
 import { OpenEmailButton } from "./open-email-button";
 
 export type MagicLinkSentProps = {
@@ -28,9 +28,7 @@ export function MagicLinkSent({ className }: MagicLinkSentProps) {
 	const { localization: magicLinkLocalization } =
 		useAuthPlugin(magicLinkPlugin);
 
-	const [email] = useState(
-		() => sessionStorage.getItem(MAGIC_LINK_SENT_STORAGE_KEY) ?? ""
-	);
+	const [email] = useState(() => sessionStorage.getItem(MAGIC_LINK_SENT) ?? "");
 
 	return (
 		<Card className={cn("w-full max-w-sm", className)}>

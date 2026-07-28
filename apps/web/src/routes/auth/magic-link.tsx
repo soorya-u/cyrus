@@ -1,10 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import {
-	normalizeCallbackPath,
-	toAbsoluteCallbackUrl,
-} from "@/auth/callback-url";
 import { MagicLink } from "@/components/auth/magic-link";
+import { normalizeCallbackPath, toAbsoluteCallbackUrl } from "@/utils/callback";
 
 const searchSchema = z.object({
 	callbackUrl: z.string().optional(),

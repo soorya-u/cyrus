@@ -8,7 +8,6 @@ import {
 import { useIsMutating } from "@tanstack/react-query";
 import { cn } from "cnfast";
 import { type SyntheticEvent, useState } from "react";
-import { magicLinkPlugin } from "@/auth/magic-link-plugin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,7 +19,8 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { MAGIC_LINK_SENT_STORAGE_KEY } from "@/constants/storage-keys";
+import { MAGIC_LINK_SENT } from "@/constants/storage-keys";
+import { magicLinkPlugin } from "@/lib/auth/plugins/magic-link-plugin";
 import { ProviderButtons, type SocialLayout } from "./provider-buttons";
 
 export type MagicLinkProps = {
@@ -62,7 +62,7 @@ export function MagicLink({
 	const { mutate: signInMagicLink, isPending: signInMagicLinkPending } =
 		useSignInMagicLink(authClient as MagicLinkAuthClient, {
 			onSuccess: (_data, variables) => {
-				sessionStorage.setItem(MAGIC_LINK_SENT_STORAGE_KEY, variables.email);
+				sessionStorage.setItem(MAGIC_LINK_SENT, variables.email);
 				navigate({
 					to: `${basePaths.auth}/${magicLinkViewPaths.auth.magicLinkSent}`,
 				});

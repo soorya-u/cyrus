@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { buildDeviceCallbackPath } from "@/auth/device-callback";
 import { Button } from "@/components/ui/button";
 import {
 	InputOTP,
@@ -12,6 +11,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { useAuthDevice } from "@/hooks/auth/use-device";
 import { authClient } from "@/lib/auth";
+import { buildDeviceCallbackPath } from "@/utils/callback";
 
 export const Route = createFileRoute("/auth/device")({
 	validateSearch: z.object({ user_code: z.string().optional() }),
