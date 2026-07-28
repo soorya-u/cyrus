@@ -9,6 +9,7 @@
     ],
     "catalogs": {
       "auth": {
+        "@better-auth-ui/react": "^1.6.40",
         "@better-auth/expo": "1.6.21",
         "@soorya-u/better-auth-desktop": "^0.1.1",
         "@soorya-u/better-auth-ws-ticket": "v0.1.0",

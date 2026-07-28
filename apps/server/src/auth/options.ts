@@ -9,9 +9,8 @@ import {
 	oAuthProxy,
 } from "better-auth/plugins";
 import { log } from "evlog";
-import { Resend } from "resend";
 import { env } from "../config/env";
-import { sendMagicLinkEmail } from "./send-magic-link-email";
+import { sendMagicLinkEmail } from "../emails/magic-email";
 
 const emailAndPassword =
 	env.NODE_ENV === "production"
@@ -22,8 +21,6 @@ const emailAndPassword =
 					autoSignIn: true,
 				},
 			};
-
-const resend = new Resend(env.RESEND_API_KEY);
 
 export const authOptions = {
 	appName: "Cyrus",
@@ -71,7 +68,6 @@ export const authOptions = {
 			disableSignUp: false,
 			sendMagicLink: async ({ email, url }) =>
 				sendMagicLinkEmail({
-					resendClient: resend,
 					fromEmail: env.RESEND_FROM_EMAIL,
 					toEmail: email,
 					signInUrl: url,
