@@ -32,7 +32,11 @@
       "ignoreDependencies": ["cloudflare"]
     },
     "apps/web": {
-      "entry": ["src/**/*.test.{ts,tsx}"],
+      "entry": [
+        "src/**/*.test.{ts,tsx}",
+        "src/auth/**/*.ts",
+        "src/components/auth/**/*.tsx"
+      ],
       "ignoreIssues": {
         "src/components/ui/**": ["exports", "types"]
       }
