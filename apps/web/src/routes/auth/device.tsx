@@ -30,7 +30,10 @@ function DevicePage() {
 
 	if (isPending) return <Spinner />;
 
-	if (!session?.user)
+	if (!session?.user) {
+		const callbackUrl = `${window.location.origin}/auth/device${
+			code ? `?user_code=${encodeURIComponent(code)}` : ""
+		}`;
 		return (
 			<>
 				<h1 className="font-medium text-2xl tracking-tight">
@@ -39,9 +42,10 @@ function DevicePage() {
 				<p className="max-w-sm text-center text-muted-foreground text-sm">
 					Sign in to connect a device to your Cyrus account.
 				</p>
-				<ProviderButton provider="github" />
+				<ProviderButton callbackUrl={callbackUrl} provider="github" />
 			</>
 		);
+	}
 
 	if (outcome === "approved")
 		return (

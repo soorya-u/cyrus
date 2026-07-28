@@ -99,7 +99,12 @@ export function LinkedAccount({ account, provider }: LinkedAccountProps) {
 							providerName
 						)}
 						disabled={isUnlinking}
-						onClick={() => unlinkAccount({ providerId: account.providerId })}
+						onClick={() =>
+							unlinkAccount({
+								providerId: account.providerId,
+								accountId: account.accountId,
+							})
+						}
 						size="sm"
 						variant="outline"
 					>

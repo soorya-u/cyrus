@@ -37,9 +37,9 @@ export function parseTwoFactorMethods(methods?: unknown): TwoFactorMethod[] {
 
 /** Persist the enabled method names without blocking sign-in on storage errors. */
 export function storeTwoFactorMethods(methods?: unknown) {
-	if (typeof sessionStorage === "undefined") return;
-
 	try {
+		if (typeof sessionStorage === "undefined") return;
+
 		sessionStorage.setItem(
 			TWO_FACTOR_METHODS_STORAGE_KEY,
 			JSON.stringify(parseTwoFactorMethods(methods))
@@ -51,9 +51,9 @@ export function storeTwoFactorMethods(methods?: unknown) {
 
 /** Read the stored methods, falling back to every supported challenge. */
 export function readTwoFactorMethods(): TwoFactorMethod[] {
-	if (typeof sessionStorage === "undefined") return TWO_FACTOR_METHODS;
-
 	try {
+		if (typeof sessionStorage === "undefined") return TWO_FACTOR_METHODS;
+
 		const stored = sessionStorage.getItem(TWO_FACTOR_METHODS_STORAGE_KEY);
 		if (!stored) return TWO_FACTOR_METHODS;
 
@@ -66,9 +66,9 @@ export function readTwoFactorMethods(): TwoFactorMethod[] {
 
 /** Clear stored method hints after the challenge finishes or is abandoned. */
 export function clearTwoFactorMethods() {
-	if (typeof sessionStorage === "undefined") return;
-
 	try {
+		if (typeof sessionStorage === "undefined") return;
+
 		sessionStorage.removeItem(TWO_FACTOR_METHODS_STORAGE_KEY);
 	} catch {
 		// Stale method hints are harmless and must not block navigation.

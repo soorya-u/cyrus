@@ -6,11 +6,9 @@ import { Separator } from "@/components/ui/separator";
 
 function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: generic item grouping wrapper from shadcn, not a literal <ul>/<ol>
 		<div
 			className={cn("group/item-group flex flex-col", className)}
 			data-slot="item-group"
-			role="list"
 			{...props}
 		/>
 	);
