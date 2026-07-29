@@ -11,6 +11,10 @@ import { SETTINGS_NAV_ITEMS } from "@/constants/settings-nav";
 import { SidebarSectionLayout } from "@/layouts/sidebar-section-layout";
 import { useWorkerStore } from "@/stores/worker";
 
+const VISIBLE_SETTINGS_NAV_ITEMS = SETTINGS_NAV_ITEMS.filter(
+	(item) => item.enabled !== false
+);
+
 export function SettingsSidebar() {
 	const navigate = useNavigate();
 	const { isMobile, setOpenMobile } = useSidebar();
@@ -50,7 +54,7 @@ export function SettingsSidebar() {
 		>
 			<SidebarGroup className="px-2 py-3">
 				<SidebarMenu>
-					{SETTINGS_NAV_ITEMS.map((item) => {
+					{VISIBLE_SETTINGS_NAV_ITEMS.map((item) => {
 						const Icon = item.icon;
 						const isActive = activeSection === item.id;
 						return (
