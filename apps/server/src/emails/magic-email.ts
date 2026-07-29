@@ -39,9 +39,12 @@ export async function buildMagicLinkEmail(params: EmailParams): Promise<{
 
 export async function sendMagicLinkEmail(params: EmailParams): Promise<void> {
 	const template = await buildMagicLinkEmail(params);
-	await resend.emails.send({
+	const { error } = await resend.emails.send({
 		from: env.RESEND_FROM_EMAIL,
 		to: [params.email],
 		...template,
 	});
+	if (error) {
+		throw error;
+	}
 }

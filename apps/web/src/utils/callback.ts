@@ -2,7 +2,15 @@ export function normalizeCallbackPath(
 	callbackUrl: string | undefined
 ): string | null {
 	if (!callbackUrl) return null;
-	if (!callbackUrl.startsWith("/") || callbackUrl.startsWith("//")) return null;
+	// Reject protocol-relative and backslash authority bypasses
+	// (`/\evil.example` → `https://evil.example/` under WHATWG URL rules).
+	if (
+		!callbackUrl.startsWith("/") ||
+		callbackUrl.startsWith("//") ||
+		callbackUrl.includes("\\")
+	) {
+		return null;
+	}
 
 	return callbackUrl;
 }

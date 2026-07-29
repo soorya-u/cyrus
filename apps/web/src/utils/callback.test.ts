@@ -28,6 +28,7 @@ describe("callback helpers", () => {
 	test("accepts only internal callback paths", () => {
 		expect(normalizeCallbackPath("/workers")).toBe("/workers");
 		expect(normalizeCallbackPath("//evil.example")).toBeNull();
+		expect(normalizeCallbackPath("/\\evil.example")).toBeNull();
 		expect(normalizeCallbackPath("https://evil.example/path")).toBeNull();
 	});
 });

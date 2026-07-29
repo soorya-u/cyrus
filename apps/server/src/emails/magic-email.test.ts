@@ -16,11 +16,11 @@ describe("magic email", () => {
 
 	test("sends Cyrus-branded payload through Resend", async () => {
 		const { sendMagicLinkEmail } = await import("./magic-email");
-		const sendSpy = vi
-			.spyOn(resend.emails, "send")
-			.mockImplementation(
-				async () => ({}) as Awaited<ReturnType<typeof resend.emails.send>>
-			);
+		const sendSpy = vi.spyOn(resend.emails, "send").mockResolvedValue({
+			data: { id: "email_test" },
+			error: null,
+			headers: null,
+		});
 		const url =
 			"https://cyrus.soorya-u.dev/api/auth/magic-link/verify?token=123";
 
@@ -41,6 +41,31 @@ describe("magic email", () => {
 				})
 			);
 			expect(sendSpy.mock.calls[0]?.[0]?.html).toContain("person@cyrus.test");
+		} finally {
+			sendSpy.mockRestore();
+		}
+	});
+
+	test("throws when Resend returns an API error", async () => {
+		const { sendMagicLinkEmail } = await import("./magic-email");
+		const apiError = {
+			name: "validation_error" as const,
+			message: "Invalid from address",
+			statusCode: 403 as const,
+		};
+		const sendSpy = vi.spyOn(resend.emails, "send").mockResolvedValue({
+			data: null,
+			error: apiError,
+			headers: null,
+		});
+
+		try {
+			await expect(
+				sendMagicLinkEmail({
+					email: "person@cyrus.test",
+					url: "https://example.com/sign-in",
+				})
+			).rejects.toEqual(apiError);
 		} finally {
 			sendSpy.mockRestore();
 		}
