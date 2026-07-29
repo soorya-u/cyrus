@@ -26,6 +26,7 @@ import { Route as WorkspaceSettingsProvidersRouteImport } from './routes/_worksp
 import { Route as WorkspaceSettingsKeybindingsRouteImport } from './routes/_workspace/settings/keybindings'
 import { Route as WorkspaceSettingsConnectionsRouteImport } from './routes/_workspace/settings/connections'
 import { Route as WorkspaceSettingsArchivedRouteImport } from './routes/_workspace/settings/archived'
+import { Route as WorkspaceSettingsAccountsRouteImport } from './routes/_workspace/settings/accounts'
 import { Route as WorkspaceWorkersWorkerIdRouteRouteImport } from './routes/_workspace/workers/$workerId/route'
 import { Route as WorkspaceWorkersWorkerIdIndexRouteImport } from './routes/_workspace/workers/$workerId/index'
 import { Route as WorkspaceWorkersWorkerIdPIndexRouteImport } from './routes/_workspace/workers/$workerId/p/index'
@@ -123,6 +124,12 @@ const WorkspaceSettingsArchivedRoute =
     path: '/archived',
     getParentRoute: () => WorkspaceSettingsRouteRoute,
   } as any)
+const WorkspaceSettingsAccountsRoute =
+  WorkspaceSettingsAccountsRouteImport.update({
+    id: '/accounts',
+    path: '/accounts',
+    getParentRoute: () => WorkspaceSettingsRouteRoute,
+  } as any)
 const WorkspaceWorkersWorkerIdRouteRoute =
   WorkspaceWorkersWorkerIdRouteRouteImport.update({
     id: '/workers/$workerId',
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/auth/success': typeof AuthSuccessRoute
   '/auth/': typeof AuthIndexRoute
   '/workers/$workerId': typeof WorkspaceWorkersWorkerIdRouteRouteWithChildren
+  '/settings/accounts': typeof WorkspaceSettingsAccountsRoute
   '/settings/archived': typeof WorkspaceSettingsArchivedRoute
   '/settings/connections': typeof WorkspaceSettingsConnectionsRoute
   '/settings/keybindings': typeof WorkspaceSettingsKeybindingsRoute
@@ -199,6 +207,7 @@ export interface FileRoutesByTo {
   '/auth/magic-link': typeof AuthMagicLinkRoute
   '/auth/success': typeof AuthSuccessRoute
   '/auth': typeof AuthIndexRoute
+  '/settings/accounts': typeof WorkspaceSettingsAccountsRoute
   '/settings/archived': typeof WorkspaceSettingsArchivedRoute
   '/settings/connections': typeof WorkspaceSettingsConnectionsRoute
   '/settings/keybindings': typeof WorkspaceSettingsKeybindingsRoute
@@ -226,6 +235,7 @@ export interface FileRoutesById {
   '/auth/success': typeof AuthSuccessRoute
   '/auth/': typeof AuthIndexRoute
   '/_workspace/workers/$workerId': typeof WorkspaceWorkersWorkerIdRouteRouteWithChildren
+  '/_workspace/settings/accounts': typeof WorkspaceSettingsAccountsRoute
   '/_workspace/settings/archived': typeof WorkspaceSettingsArchivedRoute
   '/_workspace/settings/connections': typeof WorkspaceSettingsConnectionsRoute
   '/_workspace/settings/keybindings': typeof WorkspaceSettingsKeybindingsRoute
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/auth/success'
     | '/auth/'
     | '/workers/$workerId'
+    | '/settings/accounts'
     | '/settings/archived'
     | '/settings/connections'
     | '/settings/keybindings'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/auth/magic-link'
     | '/auth/success'
     | '/auth'
+    | '/settings/accounts'
     | '/settings/archived'
     | '/settings/connections'
     | '/settings/keybindings'
@@ -301,6 +313,7 @@ export interface FileRouteTypes {
     | '/auth/success'
     | '/auth/'
     | '/_workspace/workers/$workerId'
+    | '/_workspace/settings/accounts'
     | '/_workspace/settings/archived'
     | '/_workspace/settings/connections'
     | '/_workspace/settings/keybindings'
@@ -443,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceSettingsArchivedRouteImport
       parentRoute: typeof WorkspaceSettingsRouteRoute
     }
+    '/_workspace/settings/accounts': {
+      id: '/_workspace/settings/accounts'
+      path: '/accounts'
+      fullPath: '/settings/accounts'
+      preLoaderRoute: typeof WorkspaceSettingsAccountsRouteImport
+      parentRoute: typeof WorkspaceSettingsRouteRoute
+    }
     '/_workspace/workers/$workerId': {
       id: '/_workspace/workers/$workerId'
       path: '/workers/$workerId'
@@ -496,6 +516,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface WorkspaceSettingsRouteRouteChildren {
+  WorkspaceSettingsAccountsRoute: typeof WorkspaceSettingsAccountsRoute
   WorkspaceSettingsArchivedRoute: typeof WorkspaceSettingsArchivedRoute
   WorkspaceSettingsConnectionsRoute: typeof WorkspaceSettingsConnectionsRoute
   WorkspaceSettingsKeybindingsRoute: typeof WorkspaceSettingsKeybindingsRoute
@@ -506,6 +527,7 @@ interface WorkspaceSettingsRouteRouteChildren {
 
 const WorkspaceSettingsRouteRouteChildren: WorkspaceSettingsRouteRouteChildren =
   {
+    WorkspaceSettingsAccountsRoute: WorkspaceSettingsAccountsRoute,
     WorkspaceSettingsArchivedRoute: WorkspaceSettingsArchivedRoute,
     WorkspaceSettingsConnectionsRoute: WorkspaceSettingsConnectionsRoute,
     WorkspaceSettingsKeybindingsRoute: WorkspaceSettingsKeybindingsRoute,

@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ActiveSessions } from "@/components/auth/settings/security/active-sessions";
+import { LinkedAccounts } from "@/components/auth/settings/security/linked-accounts";
 
-export const Route = createFileRoute("/_workspace/settings/connections")({
-	component: SettingsConnectionsPage,
+export const Route = createFileRoute("/_workspace/settings/accounts")({
+	component: SettingsAccountsPage,
 });
 
-function SettingsConnectionsPage() {
+function SettingsAccountsPage() {
 	return (
 		<>
 			<div className="surface-subheader">
@@ -13,7 +13,7 @@ function SettingsConnectionsPage() {
 			</div>
 
 			<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-6">
-				<ActiveSessions />
+				<LinkedAccounts />
 			</div>
 		</>
 	);
