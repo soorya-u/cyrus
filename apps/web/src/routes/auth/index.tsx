@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { MagicLink } from "@/components/auth/magic-link";
 import { SignIn } from "@/components/auth/sign-in";
 import { env } from "@/lib/env";
 import { normalizeCallbackPath, toAbsoluteCallbackUrl } from "@/utils/callback";
@@ -20,10 +21,7 @@ function AuthPage() {
 		? toAbsoluteCallbackUrl(callbackPath)
 		: undefined;
 
-	return (
-		<SignIn
-			callbackUrl={absoluteCallbackUrl}
-			showEmailAndPassword={env.VITE_IS_DEV_MODE}
-		/>
-	);
+	const Page = env.VITE_IS_DEV_MODE ? SignIn : MagicLink;
+
+	return <Page callbackUrl={absoluteCallbackUrl} />;
 }

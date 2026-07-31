@@ -11,17 +11,6 @@ export type MagicLinkSentProps = {
 	className?: string;
 };
 
-/**
- * Render a card confirming that a magic-link email was sent, with a button
- * to open the user's email provider.
- *
- * The target email is read from `sessionStorage` (set when the magic-link
- * form redirects here); the OpenEmail button is only shown when an email is
- * stored and resolves to a known provider.
- *
- * @param className - Additional CSS classes applied to the card
- * @returns The magic-link-sent card React element
- */
 export function MagicLinkSent({ className }: MagicLinkSentProps) {
 	const { basePaths, emailAndPassword, localization, viewPaths, Link } =
 		useAuth();
@@ -31,7 +20,12 @@ export function MagicLinkSent({ className }: MagicLinkSentProps) {
 	const [email] = useState(() => sessionStorage.getItem(MAGIC_LINK_SENT) ?? "");
 
 	return (
-		<Card className={cn("w-full max-w-sm", className)}>
+		<Card
+			className={cn(
+				"w-full max-w-sm gap-3 bg-transparent py-5 shadow-none backdrop-blur-xs",
+				className
+			)}
+		>
 			<CardHeader>
 				<CardTitle className="font-semibold text-xl">
 					{localization.auth.checkYourEmailTitle}
@@ -50,21 +44,20 @@ export function MagicLinkSent({ className }: MagicLinkSentProps) {
 					</FieldDescription>
 
 					{email && <OpenEmailButton email={email} />}
-				</div>
 
-				{emailAndPassword?.enabled && (
 					<div className="mt-4 flex w-full flex-col items-center gap-3">
-						<FieldDescription className="text-center">
-							{localization.auth.needToCreateAnAccount}{" "}
-							<Link
-								className="underline underline-offset-4"
-								href={`${basePaths.auth}/${viewPaths.auth.signUp}`}
-							>
-								{localization.auth.signUp}
-							</Link>
-						</FieldDescription>
+						{emailAndPassword?.enabled && (
+							<div className="flex justify-center gap-2 text-sm">
+								<Link
+									className="text-foreground underline"
+									href={`${basePaths.auth}/${viewPaths.auth.signUp}`}
+								>
+									{localization.auth.signUp}
+								</Link>
+							</div>
+						)}
 					</div>
-				)}
+				</div>
 			</CardContent>
 		</Card>
 	);

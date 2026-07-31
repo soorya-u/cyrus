@@ -14,6 +14,7 @@ import { Route as WorkspaceRouteRouteImport } from './routes/_workspace/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSuccessRouteImport } from './routes/auth/success'
+import { Route as AuthMagicLinkSentRouteImport } from './routes/auth/magic-link-sent'
 import { Route as AuthMagicLinkRouteImport } from './routes/auth/magic-link'
 import { Route as AuthDeviceRouteImport } from './routes/auth/device'
 import { Route as AuthDesktopRouteImport } from './routes/auth/desktop'
@@ -57,6 +58,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
 const AuthSuccessRoute = AuthSuccessRouteImport.update({
   id: '/success',
   path: '/success',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthMagicLinkSentRoute = AuthMagicLinkSentRouteImport.update({
+  id: '/magic-link-sent',
+  path: '/magic-link-sent',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthMagicLinkRoute = AuthMagicLinkRouteImport.update({
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
   '/auth/magic-link': typeof AuthMagicLinkRoute
+  '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
   '/auth/': typeof AuthIndexRoute
   '/workers/$workerId': typeof WorkspaceWorkersWorkerIdRouteRouteWithChildren
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
   '/auth/magic-link': typeof AuthMagicLinkRoute
+  '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
   '/auth': typeof AuthIndexRoute
   '/settings/accounts': typeof WorkspaceSettingsAccountsRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
   '/auth/magic-link': typeof AuthMagicLinkRoute
+  '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
   '/auth/': typeof AuthIndexRoute
   '/_workspace/workers/$workerId': typeof WorkspaceWorkersWorkerIdRouteRouteWithChildren
@@ -260,6 +269,7 @@ export interface FileRouteTypes {
     | '/auth/desktop'
     | '/auth/device'
     | '/auth/magic-link'
+    | '/auth/magic-link-sent'
     | '/auth/success'
     | '/auth/'
     | '/workers/$workerId'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/auth/desktop'
     | '/auth/device'
     | '/auth/magic-link'
+    | '/auth/magic-link-sent'
     | '/auth/success'
     | '/auth'
     | '/settings/accounts'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/auth/desktop'
     | '/auth/device'
     | '/auth/magic-link'
+    | '/auth/magic-link-sent'
     | '/auth/success'
     | '/auth/'
     | '/_workspace/workers/$workerId'
@@ -370,6 +382,13 @@ declare module '@tanstack/react-router' {
       path: '/success'
       fullPath: '/auth/success'
       preLoaderRoute: typeof AuthSuccessRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/auth/magic-link-sent': {
+      id: '/auth/magic-link-sent'
+      path: '/magic-link-sent'
+      fullPath: '/auth/magic-link-sent'
+      preLoaderRoute: typeof AuthMagicLinkSentRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/magic-link': {
@@ -591,6 +610,7 @@ interface AuthRouteRouteChildren {
   AuthDesktopRoute: typeof AuthDesktopRoute
   AuthDeviceRoute: typeof AuthDeviceRoute
   AuthMagicLinkRoute: typeof AuthMagicLinkRoute
+  AuthMagicLinkSentRoute: typeof AuthMagicLinkSentRoute
   AuthSuccessRoute: typeof AuthSuccessRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
@@ -600,6 +620,7 @@ const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthDesktopRoute: AuthDesktopRoute,
   AuthDeviceRoute: AuthDeviceRoute,
   AuthMagicLinkRoute: AuthMagicLinkRoute,
+  AuthMagicLinkSentRoute: AuthMagicLinkSentRoute,
   AuthSuccessRoute: AuthSuccessRoute,
   AuthIndexRoute: AuthIndexRoute,
 }

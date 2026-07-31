@@ -145,6 +145,7 @@ function InputGroupInput({
 				className
 			)}
 			data-slot="input-group-control"
+			unstyled
 			{...props}
 		/>
 	);

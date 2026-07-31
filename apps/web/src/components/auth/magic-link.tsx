@@ -7,6 +7,7 @@ import {
 } from "@better-auth-ui/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { cn } from "cnfast";
+import { Mail } from "lucide-react";
 import { type SyntheticEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,7 +93,12 @@ export function MagicLink({
 	const showSeparator = socialProviders && socialProviders.length > 0;
 
 	return (
-		<Card className={cn("w-full max-w-sm", className)}>
+		<Card
+			className={cn(
+				"w-full max-w-sm gap-3 bg-transparent py-5 shadow-none backdrop-blur-xs",
+				className
+			)}
+		>
 			<CardHeader>
 				<CardTitle className="text-xl">{localization.auth.signIn}</CardTitle>
 			</CardHeader>
@@ -110,7 +116,7 @@ export function MagicLink({
 							)}
 
 							{showSeparator && (
-								<FieldSeparator className="m-0 flex items-center text-xs *:data-[slot=field-separator-content]:bg-card">
+								<FieldSeparator className="m-0 flex items-center text-xs *:data-[slot=field-separator-content]:bg-transparent">
 									{localization.auth.or}
 								</FieldSeparator>
 							)}
@@ -156,10 +162,17 @@ export function MagicLink({
 							</Field>
 
 							<div className="flex flex-col gap-3">
-								<Button disabled={isPending} type="submit">
-									{signInMagicLinkPending && <Spinner />}
+								<Button
+									className="bg-foreground text-background hover:bg-white hover:text-background"
+									disabled={isPending}
+									type="submit"
+								>
+									{signInMagicLinkPending ? <Spinner /> : <Mail />}
 
-									{magicLinkLocalization.sendMagicLink}
+									{localization.auth.continueWith.replace(
+										"{{provider}}",
+										magicLinkLocalization.magicLink
+									)}
 								</Button>
 
 								{plugins.flatMap((plugin) =>
@@ -177,7 +190,7 @@ export function MagicLink({
 					{socialPosition === "bottom" && (
 						<>
 							{showSeparator && (
-								<FieldSeparator className="flex items-center text-xs *:data-[slot=field-separator-content]:bg-card">
+								<FieldSeparator className="flex items-center text-xs *:data-[slot=field-separator-content]:bg-transparent">
 									{localization.auth.or}
 								</FieldSeparator>
 							)}

@@ -80,7 +80,7 @@ export function Hero() {
 
 				<div className="mb-14 flex flex-col items-center gap-4">
 					<Link
-						className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-[10px] bg-foreground px-5.5 py-3.5 font-semibold text-[15px] text-background transition-transform hover:-translate-y-px hover:bg-white active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+						className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-foreground px-4 font-semibold text-[15px] text-background transition-transform hover:-translate-y-px hover:bg-white active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
 						search={{ callbackUrl: "/workers" }}
 						to="/auth"
 					>
