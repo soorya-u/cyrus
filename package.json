@@ -94,7 +94,7 @@
     "knip": "^6.27.0",
     "lefthook": "^2.1.9",
     "syncpack": "^15.3.2",
-    "turbo": "^2.10.4",
+    "turbo": "^2.10.8",
     "typescript": "catalog:core",
     "ultracite": "^7.8.1",
     "vite-tsconfig-paths": "^5.1.4",

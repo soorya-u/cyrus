@@ -95,7 +95,7 @@ export function MagicLink({
 	return (
 		<Card
 			className={cn(
-				"w-full max-w-sm gap-3 bg-transparent py-5 shadow-none backdrop-blur-xs",
+				"w-full max-w-sm gap-3 overflow-hidden bg-transparent py-5 shadow-none",
 				className
 			)}
 		>
@@ -133,6 +133,7 @@ export function MagicLink({
 								<Input
 									aria-invalid={!!fieldErrors.email}
 									autoComplete="email"
+									className="bg-black/75 dark:bg-black/75"
 									disabled={isPending}
 									id="email"
 									name="email"

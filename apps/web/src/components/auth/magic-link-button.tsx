@@ -47,7 +47,7 @@ export function MagicLinkButton({ view }: MagicLinkButtonProps) {
 			aria-disabled={isPending || undefined}
 			className={cn(
 				buttonVariants({ variant: "outline" }),
-				"w-full",
+				"w-full bg-white/8 hover:border-primary hover:bg-white/12 dark:bg-white/8 dark:hover:bg-white/12",
 				isPending && "pointer-events-none opacity-50"
 			)}
 			href={`${basePaths.auth}/${isMagicLinkView ? viewPaths.auth.signIn : magicLinkViewPaths.auth.magicLink}${searchSuffix}`}

@@ -22,7 +22,7 @@ export function MagicLinkSent({ className }: MagicLinkSentProps) {
 	return (
 		<Card
 			className={cn(
-				"w-full max-w-sm gap-3 bg-transparent py-5 shadow-none backdrop-blur-xs",
+				"w-full max-w-sm gap-3 bg-transparent py-5 shadow-none",
 				className
 			)}
 		>

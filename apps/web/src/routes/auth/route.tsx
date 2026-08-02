@@ -21,7 +21,7 @@ function AuthLayout() {
 						"radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
 				}}
 			/>
-			<div className="relative z-1 flex w-full max-w-sm flex-col items-center gap-5">
+			<div className="relative z-1 flex w-full max-w-sm flex-col items-center gap-5 md:max-w-4xl">
 				<Outlet />
 			</div>
 		</div>

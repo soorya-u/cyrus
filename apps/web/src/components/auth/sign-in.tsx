@@ -136,7 +136,7 @@ export function SignIn({
 	return (
 		<Card
 			className={cn(
-				"w-full max-w-sm gap-3 bg-transparent py-5 shadow-none backdrop-blur-xs",
+				"w-full max-w-sm gap-3 overflow-hidden bg-transparent py-5 shadow-none",
 				className
 			)}
 		>
@@ -180,6 +180,7 @@ export function SignIn({
 											<Input
 												aria-invalid={!!fieldErrors.email}
 												autoComplete="email"
+												className="bg-black/75 dark:bg-black/75"
 												disabled={isPending}
 												id="email"
 												name="email"
@@ -214,7 +215,7 @@ export function SignIn({
 												{localization.auth.password}
 											</FieldLabel>
 
-											<InputGroup>
+											<InputGroup className="bg-black/75 dark:bg-black/75">
 												<InputGroupInput
 													aria-invalid={!!fieldErrors.password}
 													autoComplete="current-password"
