@@ -34,7 +34,7 @@
     "apps/web": {
       "entry": [
         "src/**/*.test.{ts,tsx}",
-        "src/auth/**/*.ts",
+        "src/lib/auth/plugins/**/*.ts",
         "src/components/auth/**/*.tsx"
       ],
       "ignoreIssues": {

@@ -7,13 +7,12 @@ import {
 } from "@better-auth-ui/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { cn } from "cnfast";
+import { Mail } from "lucide-react";
 import { type SyntheticEvent, useState } from "react";
-import { magicLinkPlugin } from "@/auth/magic-link-plugin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Field,
-	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
@@ -21,13 +20,15 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { MAGIC_LINK_SENT_STORAGE_KEY } from "@/constants/storage-keys";
+import { MAGIC_LINK_SENT } from "@/constants/storage-keys";
+import { magicLinkPlugin } from "@/lib/auth/plugins/magic-link-plugin";
 import { ProviderButtons, type SocialLayout } from "./provider-buttons";
 
 export type MagicLinkProps = {
 	className?: string;
 	socialLayout?: SocialLayout;
 	socialPosition?: "top" | "bottom";
+	callbackUrl?: string;
 };
 
 /**
@@ -42,19 +43,17 @@ export function MagicLink({
 	className,
 	socialLayout,
 	socialPosition = "bottom",
+	callbackUrl,
 }: MagicLinkProps) {
 	const {
 		authClient,
 		basePaths,
 		baseURL,
-		emailAndPassword,
 		localization,
 		navigate,
 		plugins,
 		redirectTo,
 		socialProviders,
-		viewPaths,
-		Link,
 	} = useAuth();
 	const { localization: magicLinkLocalization, viewPaths: magicLinkViewPaths } =
 		useAuthPlugin(magicLinkPlugin);
@@ -64,7 +63,7 @@ export function MagicLink({
 	const { mutate: signInMagicLink, isPending: signInMagicLinkPending } =
 		useSignInMagicLink(authClient as MagicLinkAuthClient, {
 			onSuccess: (_data, variables) => {
-				sessionStorage.setItem(MAGIC_LINK_SENT_STORAGE_KEY, variables.email);
+				sessionStorage.setItem(MAGIC_LINK_SENT, variables.email);
 				navigate({
 					to: `${basePaths.auth}/${magicLinkViewPaths.auth.magicLinkSent}`,
 				});
@@ -85,13 +84,21 @@ export function MagicLink({
 
 	const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		signInMagicLink({ email, callbackURL: `${baseURL}${redirectTo}` });
+		signInMagicLink({
+			email,
+			callbackURL: callbackUrl ?? `${baseURL}${redirectTo}`,
+		});
 	};
 
 	const showSeparator = socialProviders && socialProviders.length > 0;
 
 	return (
-		<Card className={cn("w-full max-w-sm", className)}>
+		<Card
+			className={cn(
+				"w-full max-w-sm gap-3 overflow-hidden bg-transparent py-5 shadow-none",
+				className
+			)}
+		>
 			<CardHeader>
 				<CardTitle className="text-xl">{localization.auth.signIn}</CardTitle>
 			</CardHeader>
@@ -101,11 +108,15 @@ export function MagicLink({
 					{socialPosition === "top" && (
 						<>
 							{socialProviders && socialProviders.length > 0 && (
-								<ProviderButtons socialLayout={socialLayout} view="magicLink" />
+								<ProviderButtons
+									callbackUrl={callbackUrl}
+									socialLayout={socialLayout}
+									view="magicLink"
+								/>
 							)}
 
 							{showSeparator && (
-								<FieldSeparator className="m-0 flex items-center text-xs *:data-[slot=field-separator-content]:bg-card">
+								<FieldSeparator className="m-0 flex items-center text-xs *:data-[slot=field-separator-content]:bg-transparent">
 									{localization.auth.or}
 								</FieldSeparator>
 							)}
@@ -122,6 +133,7 @@ export function MagicLink({
 								<Input
 									aria-invalid={!!fieldErrors.email}
 									autoComplete="email"
+									className="bg-black/75 dark:bg-black/75"
 									disabled={isPending}
 									id="email"
 									name="email"
@@ -151,10 +163,17 @@ export function MagicLink({
 							</Field>
 
 							<div className="flex flex-col gap-3">
-								<Button disabled={isPending} type="submit">
-									{signInMagicLinkPending && <Spinner />}
+								<Button
+									className="bg-foreground text-background hover:bg-white hover:text-background"
+									disabled={isPending}
+									type="submit"
+								>
+									{signInMagicLinkPending ? <Spinner /> : <Mail />}
 
-									{magicLinkLocalization.sendMagicLink}
+									{localization.auth.continueWith.replace(
+										"{{provider}}",
+										magicLinkLocalization.magicLink
+									)}
 								</Button>
 
 								{plugins.flatMap((plugin) =>
@@ -172,31 +191,21 @@ export function MagicLink({
 					{socialPosition === "bottom" && (
 						<>
 							{showSeparator && (
-								<FieldSeparator className="flex items-center text-xs *:data-[slot=field-separator-content]:bg-card">
+								<FieldSeparator className="flex items-center text-xs *:data-[slot=field-separator-content]:bg-transparent">
 									{localization.auth.or}
 								</FieldSeparator>
 							)}
 
 							{socialProviders && socialProviders.length > 0 && (
-								<ProviderButtons socialLayout={socialLayout} view="magicLink" />
+								<ProviderButtons
+									callbackUrl={callbackUrl}
+									socialLayout={socialLayout}
+									view="magicLink"
+								/>
 							)}
 						</>
 					)}
 				</div>
-
-				{emailAndPassword?.enabled && (
-					<div className="mt-4 flex w-full flex-col items-center gap-3">
-						<FieldDescription className="text-center">
-							{localization.auth.needToCreateAnAccount}{" "}
-							<Link
-								className="underline underline-offset-4"
-								href={`${basePaths.auth}/${viewPaths.auth.signUp}`}
-							>
-								{localization.auth.signUp}
-							</Link>
-						</FieldDescription>
-					</div>
-				)}
 			</CardContent>
 		</Card>
 	);

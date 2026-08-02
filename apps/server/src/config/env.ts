@@ -7,7 +7,11 @@ export const env = createEnv({
 		BETTER_AUTH_SECRET: z.string().min(32),
 		OAUTH_GITHUB_CLIENT_ID: z.string(),
 		OAUTH_GITHUB_CLIENT_SECRET: z.string(),
+		OAUTH_GOOGLE_CLIENT_ID: z.string(),
+		OAUTH_GOOGLE_CLIENT_SECRET: z.string(),
 		OAUTH_PROXY_SECRET: z.string(),
+		RESEND_API_KEY: z.string(),
+		RESEND_FROM_EMAIL: z.email(),
 		NODE_ENV: z
 			.enum(["development", "testing", "production"])
 			.default("development"),

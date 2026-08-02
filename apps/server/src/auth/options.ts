@@ -1,20 +1,19 @@
 import { expo } from "@better-auth/expo";
 import { betterAuthDesktop } from "@soorya-u/better-auth-desktop/server";
-import { wsTicketPlugin } from "@soorya-u/better-auth-ws-ticket/server";
+import { wsTicketPlugin as wsTicket } from "@soorya-u/better-auth-ws-ticket/server";
 import type { BetterAuthOptions } from "better-auth";
-import { bearer, deviceAuthorization, oAuthProxy } from "better-auth/plugins";
+import {
+	bearer,
+	deviceAuthorization,
+	magicLink,
+	oAuthProxy,
+} from "better-auth/plugins";
 import { log } from "evlog";
 import { env } from "../config/env";
+import { sendMagicLinkEmail as sendMagicLink } from "../emails/magic-email";
 
 const emailAndPassword =
-	env.NODE_ENV === "production"
-		? {}
-		: {
-				emailAndPassword: {
-					enabled: true,
-					autoSignIn: true,
-				},
-			};
+	env.NODE_ENV === "production" ? {} : { emailAndPassword: { enabled: true } };
 
 export const authOptions = {
 	appName: "Cyrus",
@@ -25,6 +24,10 @@ export const authOptions = {
 		github: {
 			clientId: env.OAUTH_GITHUB_CLIENT_ID,
 			clientSecret: env.OAUTH_GITHUB_CLIENT_SECRET,
+		},
+		google: {
+			clientId: env.OAUTH_GOOGLE_CLIENT_ID,
+			clientSecret: env.OAUTH_GOOGLE_CLIENT_SECRET,
 		},
 	},
 	secret: env.BETTER_AUTH_SECRET,
@@ -54,8 +57,12 @@ export const authOptions = {
 			productionURL: env.PRODUCTION_URL,
 			secret: env.OAUTH_PROXY_SECRET,
 		}),
+		magicLink({
+			disableSignUp: false,
+			sendMagicLink,
+		}),
 		deviceAuthorization({ verificationUri: `${env.WEB_APP_URL}/auth/device` }),
 		bearer(),
-		wsTicketPlugin(),
+		wsTicket(),
 	],
 } satisfies BetterAuthOptions;

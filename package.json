@@ -9,6 +9,8 @@
     ],
     "catalogs": {
       "auth": {
+        "@better-auth-ui/core": "^1.6.40",
+        "@better-auth-ui/react": "^1.6.40",
         "@better-auth/expo": "1.6.21",
         "@soorya-u/better-auth-desktop": "^0.1.1",
         "@soorya-u/better-auth-ws-ticket": "v0.1.0",
@@ -92,7 +94,7 @@
     "knip": "^6.27.0",
     "lefthook": "^2.1.9",
     "syncpack": "^15.3.2",
-    "turbo": "^2.10.4",
+    "turbo": "^2.10.8",
     "typescript": "catalog:core",
     "ultracite": "^7.8.1",
     "vite-tsconfig-paths": "^5.1.4",

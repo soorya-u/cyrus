@@ -6,6 +6,12 @@ export const env = createEnv({
 	client: {
 		/** Worker origin for PartySocket / signaling. */
 		VITE_SERVER_URL: z.url(),
+		VITE_IS_DEV_MODE: z
+			.string()
+			.optional()
+			.transform((value) =>
+				value === undefined ? import.meta.env.DEV : value === "true"
+			),
 		VITE_IS_DESKTOP: z.preprocess(
 			() => typeof window !== "undefined" && !!window.__electrobunWebviewId,
 			z.boolean()

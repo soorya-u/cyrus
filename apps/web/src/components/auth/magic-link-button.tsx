@@ -5,8 +5,8 @@ import { useAuth, useAuthPlugin } from "@better-auth-ui/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { cn } from "cnfast";
 import { Lock, Mail } from "lucide-react";
-import { magicLinkPlugin } from "@/auth/magic-link-plugin";
 import { buttonVariants } from "@/components/ui/button";
+import { magicLinkPlugin } from "@/lib/auth/plugins/magic-link-plugin";
 
 export type MagicLinkButtonProps = {
 	/** @remarks `AuthView` */
@@ -34,6 +34,7 @@ export function MagicLinkButton({ view }: MagicLinkButtonProps) {
 		useAuthPlugin(magicLinkPlugin);
 
 	const isMagicLinkView = view === "magicLink";
+	const searchSuffix = window.location.search;
 
 	// On the magic-link view this button switches back to password sign-in.
 	// With password auth disabled there's nowhere to switch to, so hide it.
@@ -46,10 +47,10 @@ export function MagicLinkButton({ view }: MagicLinkButtonProps) {
 			aria-disabled={isPending || undefined}
 			className={cn(
 				buttonVariants({ variant: "outline" }),
-				"w-full",
+				"w-full bg-white/8 hover:border-primary hover:bg-white/12 dark:bg-white/8 dark:hover:bg-white/12",
 				isPending && "pointer-events-none opacity-50"
 			)}
-			href={`${basePaths.auth}/${isMagicLinkView ? viewPaths.auth.signIn : magicLinkViewPaths.auth.magicLink}`}
+			href={`${basePaths.auth}/${isMagicLinkView ? viewPaths.auth.signIn : magicLinkViewPaths.auth.magicLink}${searchSuffix}`}
 			onClick={(event) => {
 				if (isPending) event.preventDefault();
 			}}

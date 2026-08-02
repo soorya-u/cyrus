@@ -1,5 +1,6 @@
 import { exports } from "cloudflare:workers";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+import { resend } from "../emails";
 
 const worker = exports.default;
 const ORIGIN = "https://cyrus.soorya-u.dev";
@@ -150,5 +151,32 @@ describe("device authorization against D1", () => {
 			access_token?: string;
 		};
 		expect(tokenBody.access_token).toBeTruthy();
+	});
+
+	test("accepts magic-link sign-in requests", async () => {
+		const email = `magic-link-${crypto.randomUUID()}@cyrus.test`;
+		const sendSpy = vi.spyOn(resend.emails, "send").mockResolvedValue({
+			data: { id: "email_test" },
+			error: null,
+			headers: null,
+		});
+
+		try {
+			const requestMagicLink = await worker.fetch(
+				"https://cyrus.soorya-u.dev/api/auth/sign-in/magic-link",
+				{
+					method: "POST",
+					headers: authHeaders({ "content-type": "application/json" }),
+					body: JSON.stringify({
+						email,
+						callbackURL: "https://cyrus.soorya-u.dev/workers",
+					}),
+				}
+			);
+			expect(requestMagicLink.ok).toBe(true);
+			expect(sendSpy).toHaveBeenCalled();
+		} finally {
+			sendSpy.mockRestore();
+		}
 	});
 });

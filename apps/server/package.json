@@ -13,12 +13,14 @@
     "auth:generate": "dotenvx run -- bun x @better-auth/cli generate -y --config src/auth/cli.ts --output src/db/models/auth.ts"
   },
   "dependencies": {
+    "@better-auth-ui/react": "catalog:auth",
     "@better-auth/drizzle-adapter": "1.6.21",
     "@better-auth/expo": "catalog:auth",
     "@cyrus/connections": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@dotenvx/dotenvx": "catalog:env",
     "@orpc/server": "catalog:rpc",
+    "@react-email/render": "^2.1.0",
     "@soorya-u/better-auth-desktop": "catalog:auth",
     "@soorya-u/better-auth-ws-ticket": "catalog:auth",
     "@t3-oss/env-core": "catalog:env",
@@ -29,11 +31,15 @@
     "evlog": "catalog:observability",
     "hono": "^4.12.27",
     "partyserver": "^0.5.8",
+    "react": "catalog:react",
+    "react-email": "^6.9.1",
+    "resend": "^6.18.0",
     "zod": "catalog:rpc"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",
     "@types/bun": "catalog:core",
+    "@types/react": "catalog:react",
     "drizzle-kit": "catalog:database",
     "typescript": "catalog:core",
     "vitest": "catalog:testing"

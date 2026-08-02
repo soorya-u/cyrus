@@ -90,9 +90,23 @@
 	--radius-3xl: calc(var(--radius) + 12px);
 	--radius-4xl: calc(var(--radius) + 16px);
 
+	--animate-orbit: orbit calc(var(--duration) * 1s) linear infinite;
+
 	@keyframes skeleton {
 		to {
 			background-position: -200% 0;
+		}
+	}
+	@keyframes orbit {
+		0% {
+			transform: translate(-50%, -50%) rotate(calc(var(--angle) * 1deg))
+				translateY(calc(var(--radius) * 1px)) rotate(calc(var(--angle) * -1deg));
+		}
+		100% {
+			transform: translate(-50%, -50%)
+				rotate(calc(var(--angle) * 1deg + 360deg))
+				translateY(calc(var(--radius) * 1px))
+				rotate(calc((var(--angle) * -1deg) - 360deg));
 		}
 	}
 }

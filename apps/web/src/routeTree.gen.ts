@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as WorkspaceRouteRouteImport } from './routes/_workspace/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSuccessRouteImport } from './routes/auth/success'
+import { Route as AuthMagicLinkSentRouteImport } from './routes/auth/magic-link-sent'
+import { Route as AuthMagicLinkRouteImport } from './routes/auth/magic-link'
 import { Route as AuthDeviceRouteImport } from './routes/auth/device'
 import { Route as AuthDesktopRouteImport } from './routes/auth/desktop'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
@@ -47,9 +50,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
 const AuthSuccessRoute = AuthSuccessRouteImport.update({
   id: '/success',
   path: '/success',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthMagicLinkSentRoute = AuthMagicLinkSentRouteImport.update({
+  id: '/magic-link-sent',
+  path: '/magic-link-sent',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthMagicLinkRoute = AuthMagicLinkRouteImport.update({
+  id: '/magic-link',
+  path: '/magic-link',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthDeviceRoute = AuthDeviceRouteImport.update({
@@ -168,7 +186,10 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
+  '/auth/magic-link': typeof AuthMagicLinkRoute
+  '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
+  '/auth/': typeof AuthIndexRoute
   '/workers/$workerId': typeof WorkspaceWorkersWorkerIdRouteRouteWithChildren
   '/settings/accounts': typeof WorkspaceSettingsAccountsRoute
   '/settings/archived': typeof WorkspaceSettingsArchivedRoute
@@ -187,11 +208,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
+  '/auth/magic-link': typeof AuthMagicLinkRoute
+  '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
+  '/auth': typeof AuthIndexRoute
   '/settings/accounts': typeof WorkspaceSettingsAccountsRoute
   '/settings/archived': typeof WorkspaceSettingsArchivedRoute
   '/settings/connections': typeof WorkspaceSettingsConnectionsRoute
@@ -216,7 +239,10 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
+  '/auth/magic-link': typeof AuthMagicLinkRoute
+  '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
+  '/auth/': typeof AuthIndexRoute
   '/_workspace/workers/$workerId': typeof WorkspaceWorkersWorkerIdRouteRouteWithChildren
   '/_workspace/settings/accounts': typeof WorkspaceSettingsAccountsRoute
   '/_workspace/settings/archived': typeof WorkspaceSettingsArchivedRoute
@@ -242,7 +268,10 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
+    | '/auth/magic-link'
+    | '/auth/magic-link-sent'
     | '/auth/success'
+    | '/auth/'
     | '/workers/$workerId'
     | '/settings/accounts'
     | '/settings/archived'
@@ -261,11 +290,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
+    | '/auth/magic-link'
+    | '/auth/magic-link-sent'
     | '/auth/success'
+    | '/auth'
     | '/settings/accounts'
     | '/settings/archived'
     | '/settings/connections'
@@ -289,7 +320,10 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
+    | '/auth/magic-link'
+    | '/auth/magic-link-sent'
     | '/auth/success'
+    | '/auth/'
     | '/_workspace/workers/$workerId'
     | '/_workspace/settings/accounts'
     | '/_workspace/settings/archived'
@@ -336,11 +370,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
     '/auth/success': {
       id: '/auth/success'
       path: '/success'
       fullPath: '/auth/success'
       preLoaderRoute: typeof AuthSuccessRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/auth/magic-link-sent': {
+      id: '/auth/magic-link-sent'
+      path: '/magic-link-sent'
+      fullPath: '/auth/magic-link-sent'
+      preLoaderRoute: typeof AuthMagicLinkSentRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/auth/magic-link': {
+      id: '/auth/magic-link'
+      path: '/magic-link'
+      fullPath: '/auth/magic-link'
+      preLoaderRoute: typeof AuthMagicLinkRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/device': {
@@ -554,14 +609,20 @@ interface AuthRouteRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthDesktopRoute: typeof AuthDesktopRoute
   AuthDeviceRoute: typeof AuthDeviceRoute
+  AuthMagicLinkRoute: typeof AuthMagicLinkRoute
+  AuthMagicLinkSentRoute: typeof AuthMagicLinkSentRoute
   AuthSuccessRoute: typeof AuthSuccessRoute
+  AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthDesktopRoute: AuthDesktopRoute,
   AuthDeviceRoute: AuthDeviceRoute,
+  AuthMagicLinkRoute: AuthMagicLinkRoute,
+  AuthMagicLinkSentRoute: AuthMagicLinkSentRoute,
   AuthSuccessRoute: AuthSuccessRoute,
+  AuthIndexRoute: AuthIndexRoute,
 }
 
 const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
