@@ -52,7 +52,7 @@ export function OrbitingCircles({
 					<div
 						className={cn(
 							"absolute top-1/2 left-1/2 flex size-(--icon-size) transform-gpu animate-orbit items-center justify-center rounded-full",
-							{ "[animation-direction:reverse]": reverse }
+							{ "shimmer-reverse": reverse }
 						)}
 						style={
 							{
