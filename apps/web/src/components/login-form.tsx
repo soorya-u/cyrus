@@ -537,7 +537,7 @@ export function LoginForm({
 			<Card className="overflow-hidden border-white/10 bg-black p-0 shadow-none">
 				<CardContent className="grid p-0 md:grid-cols-2">
 					<div className="bg-black p-6 md:p-8">
-						{canUseEmailAndPassword && <AuthPrompts view="signIn" />}
+						<AuthPrompts view={view} />
 
 						<div className="flex flex-col gap-6">
 							<h1 className="text-center font-semibold text-xl">

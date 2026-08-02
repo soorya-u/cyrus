@@ -287,7 +287,7 @@ export function SignIn({
 											<FieldError>{fieldErrors.password}</FieldError>
 										</Field>
 
-										{emailAndPassword.rememberMe && (
+										{emailAndPassword?.rememberMe && (
 											<Field className="my-1">
 												<div className="flex items-center gap-3">
 													<Checkbox

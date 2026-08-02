@@ -29,7 +29,7 @@ export function OrbitingCircles({
 	const childCount = Children.count(children);
 
 	return (
-		<>
+		<div className={cn("relative size-full", className)} {...props}>
 			{path && (
 				<svg
 					className="pointer-events-none absolute inset-0 size-full"
@@ -52,8 +52,7 @@ export function OrbitingCircles({
 					<div
 						className={cn(
 							"absolute top-1/2 left-1/2 flex size-(--icon-size) transform-gpu animate-orbit items-center justify-center rounded-full",
-							{ "[animation-direction:reverse]": reverse },
-							className
+							{ "[animation-direction:reverse]": reverse }
 						)}
 						style={
 							{
@@ -63,12 +62,11 @@ export function OrbitingCircles({
 								"--icon-size": `${iconSize}px`,
 							} as CSSProperties
 						}
-						{...props}
 					>
 						{child}
 					</div>
 				);
 			})}
-		</>
+		</div>
 	);
 }
