@@ -32,11 +32,9 @@ function timeAgo(date: Date) {
 		["second", 1],
 	];
 
-	for (const [unit, threshold] of UNITS) {
-		if (seconds >= threshold) {
+	for (const [unit, threshold] of UNITS)
+		if (seconds >= threshold)
 			return rtf.format(-Math.floor(seconds / threshold), unit);
-		}
-	}
 
 	return rtf.format(0, "second");
 }

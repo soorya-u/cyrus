@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { LoginForm } from "@/components/login-form";
+import { LoginForm } from "@/components/auth/login-form";
 import { normalizeCallbackPath, toAbsoluteCallbackUrl } from "@/utils/callback";
 
 const searchSchema = z.object({

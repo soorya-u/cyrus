@@ -10,7 +10,7 @@ import {
 } from "@better-auth-ui/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { cn } from "cnfast";
-import { Eye, EyeOff, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import {
 	type Dispatch,
 	type ReactNode,
@@ -376,7 +376,10 @@ export function LoginForm({
 	const continueSignIn = useSignInContinuation();
 
 	const canUseEmailAndPassword = Boolean(emailAndPassword?.enabled);
-	const view = canUseEmailAndPassword ? "signIn" : "magicLink";
+	const [mode, setMode] = useState<"signIn" | "magicLink">(
+		canUseEmailAndPassword ? "signIn" : "magicLink"
+	);
+	const view = mode;
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -427,10 +430,35 @@ export function LoginForm({
 		(plugin) => plugin.captchaComponent
 	)?.captchaComponent;
 
-	const authButtons = plugins.flatMap((plugin) =>
+	const pluginAuthButtons = plugins.flatMap((plugin) =>
 		(plugin.authButtons ?? []).map((AuthButton, index) => (
 			<AuthButton key={`${plugin.id}-${index.toString()}`} view={view} />
 		))
+	);
+
+	const authButtons = (
+		<>
+			{canUseEmailAndPassword && (
+				<Button
+					className="w-full bg-white/8 hover:border-primary hover:bg-white/12 dark:bg-white/8 dark:hover:bg-white/12"
+					disabled={isPending}
+					onClick={() => {
+						setMode(mode === "signIn" ? "magicLink" : "signIn");
+					}}
+					type="button"
+					variant="outline"
+				>
+					{mode === "magicLink" ? <Lock /> : <Mail />}
+					{localization.auth.continueWith.replace(
+						"{{provider}}",
+						mode === "magicLink"
+							? localization.auth.password
+							: magicLinkLocalization.magicLink
+					)}
+				</Button>
+			)}
+			{pluginAuthButtons}
+		</>
 	);
 
 	const showSeparator = Boolean(socialProviders?.length);
@@ -477,60 +505,61 @@ export function LoginForm({
 		</FieldSeparator>
 	);
 
-	const authFields = canUseEmailAndPassword ? (
-		<PasswordAuthFields
-			authButtons={authButtons}
-			captcha={
-				Captcha ? <div className="flex justify-center">{Captcha}</div> : null
-			}
-			emailError={fieldErrors.email}
-			isPasswordVisible={isPasswordVisible}
-			isPending={isPending}
-			labels={{
-				email: localization.auth.email,
-				emailPlaceholder: localization.auth.emailPlaceholder,
-				fieldRequired: localization.auth.fieldRequired,
-				hidePassword: localization.auth.hidePassword,
-				invalidEmail: localization.auth.invalidEmail,
-				password: localization.auth.password,
-				showPassword: localization.auth.showPassword,
-				signIn: localization.auth.signIn,
-				tooLong: localization.auth.tooLong,
-				tooShort: localization.auth.tooShort,
-			}}
-			maxPasswordLength={emailAndPassword?.maxPasswordLength}
-			minPasswordLength={emailAndPassword?.minPasswordLength}
-			onSubmit={handlePasswordSubmit}
-			onTogglePassword={() => {
-				setIsPasswordVisible((visible) => !visible);
-			}}
-			password={password}
-			passwordError={fieldErrors.password}
-			passwordPlaceholder={localization.auth.passwordPlaceholder}
-			rememberMe={emailAndPassword?.rememberMe}
-			rememberMeLabel={localization.auth.rememberMe}
-			setFieldErrors={setFieldErrors}
-			setPassword={setPassword}
-			signInEmailPending={signInEmailPending}
-		/>
-	) : (
-		<MagicLinkAuthFields
-			authButtons={authButtons}
-			email={email}
-			emailError={fieldErrors.email}
-			emailLabel={localization.auth.email}
-			emailPlaceholder={localization.auth.emailPlaceholder}
-			isPending={isPending}
-			onSubmit={handleMagicLinkSubmit}
-			setEmail={setEmail}
-			setFieldErrors={setFieldErrors}
-			signInMagicLinkPending={signInMagicLinkPending}
-			submitLabel={localization.auth.continueWith.replace(
-				"{{provider}}",
-				magicLinkLocalization.magicLink
-			)}
-		/>
-	);
+	const authFields =
+		mode === "signIn" ? (
+			<PasswordAuthFields
+				authButtons={authButtons}
+				captcha={
+					Captcha ? <div className="flex justify-center">{Captcha}</div> : null
+				}
+				emailError={fieldErrors.email}
+				isPasswordVisible={isPasswordVisible}
+				isPending={isPending}
+				labels={{
+					email: localization.auth.email,
+					emailPlaceholder: localization.auth.emailPlaceholder,
+					fieldRequired: localization.auth.fieldRequired,
+					hidePassword: localization.auth.hidePassword,
+					invalidEmail: localization.auth.invalidEmail,
+					password: localization.auth.password,
+					showPassword: localization.auth.showPassword,
+					signIn: localization.auth.signIn,
+					tooLong: localization.auth.tooLong,
+					tooShort: localization.auth.tooShort,
+				}}
+				maxPasswordLength={emailAndPassword?.maxPasswordLength}
+				minPasswordLength={emailAndPassword?.minPasswordLength}
+				onSubmit={handlePasswordSubmit}
+				onTogglePassword={() => {
+					setIsPasswordVisible((visible) => !visible);
+				}}
+				password={password}
+				passwordError={fieldErrors.password}
+				passwordPlaceholder={localization.auth.passwordPlaceholder}
+				rememberMe={emailAndPassword?.rememberMe}
+				rememberMeLabel={localization.auth.rememberMe}
+				setFieldErrors={setFieldErrors}
+				setPassword={setPassword}
+				signInEmailPending={signInEmailPending}
+			/>
+		) : (
+			<MagicLinkAuthFields
+				authButtons={authButtons}
+				email={email}
+				emailError={fieldErrors.email}
+				emailLabel={localization.auth.email}
+				emailPlaceholder={localization.auth.emailPlaceholder}
+				isPending={isPending}
+				onSubmit={handleMagicLinkSubmit}
+				setEmail={setEmail}
+				setFieldErrors={setFieldErrors}
+				signInMagicLinkPending={signInMagicLinkPending}
+				submitLabel={localization.auth.continueWith.replace(
+					"{{provider}}",
+					magicLinkLocalization.magicLink
+				)}
+			/>
+		);
 
 	return (
 		<div className={cn("flex w-full flex-col gap-6", className)}>

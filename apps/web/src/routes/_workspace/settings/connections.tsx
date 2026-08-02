@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ActiveSessions } from "@/components/auth/settings/security/active-sessions";
+import { ActiveSessions } from "@/components/auth/security/active-sessions";
 
 export const Route = createFileRoute("/_workspace/settings/connections")({
 	component: SettingsConnectionsPage,

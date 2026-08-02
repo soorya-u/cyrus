@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LinkedAccounts } from "@/components/auth/settings/security/linked-accounts";
+import { LinkedAccounts } from "@/components/auth/security/linked-accounts";
 
 export const Route = createFileRoute("/_workspace/settings/accounts")({
 	component: SettingsAccountsPage,

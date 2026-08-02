@@ -15,7 +15,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSuccessRouteImport } from './routes/auth/success'
 import { Route as AuthMagicLinkSentRouteImport } from './routes/auth/magic-link-sent'
-import { Route as AuthMagicLinkRouteImport } from './routes/auth/magic-link'
 import { Route as AuthDeviceRouteImport } from './routes/auth/device'
 import { Route as AuthDesktopRouteImport } from './routes/auth/desktop'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
@@ -63,11 +62,6 @@ const AuthSuccessRoute = AuthSuccessRouteImport.update({
 const AuthMagicLinkSentRoute = AuthMagicLinkSentRouteImport.update({
   id: '/magic-link-sent',
   path: '/magic-link-sent',
-  getParentRoute: () => AuthRouteRoute,
-} as any)
-const AuthMagicLinkRoute = AuthMagicLinkRouteImport.update({
-  id: '/magic-link',
-  path: '/magic-link',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthDeviceRoute = AuthDeviceRouteImport.update({
@@ -186,7 +180,6 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
-  '/auth/magic-link': typeof AuthMagicLinkRoute
   '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
   '/auth/': typeof AuthIndexRoute
@@ -211,7 +204,6 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
-  '/auth/magic-link': typeof AuthMagicLinkRoute
   '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
   '/auth': typeof AuthIndexRoute
@@ -239,7 +231,6 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop': typeof AuthDesktopRoute
   '/auth/device': typeof AuthDeviceRoute
-  '/auth/magic-link': typeof AuthMagicLinkRoute
   '/auth/magic-link-sent': typeof AuthMagicLinkSentRoute
   '/auth/success': typeof AuthSuccessRoute
   '/auth/': typeof AuthIndexRoute
@@ -268,7 +259,6 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
-    | '/auth/magic-link'
     | '/auth/magic-link-sent'
     | '/auth/success'
     | '/auth/'
@@ -293,7 +283,6 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
-    | '/auth/magic-link'
     | '/auth/magic-link-sent'
     | '/auth/success'
     | '/auth'
@@ -320,7 +309,6 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/desktop'
     | '/auth/device'
-    | '/auth/magic-link'
     | '/auth/magic-link-sent'
     | '/auth/success'
     | '/auth/'
@@ -389,13 +377,6 @@ declare module '@tanstack/react-router' {
       path: '/magic-link-sent'
       fullPath: '/auth/magic-link-sent'
       preLoaderRoute: typeof AuthMagicLinkSentRouteImport
-      parentRoute: typeof AuthRouteRoute
-    }
-    '/auth/magic-link': {
-      id: '/auth/magic-link'
-      path: '/magic-link'
-      fullPath: '/auth/magic-link'
-      preLoaderRoute: typeof AuthMagicLinkRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/device': {
@@ -609,7 +590,6 @@ interface AuthRouteRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthDesktopRoute: typeof AuthDesktopRoute
   AuthDeviceRoute: typeof AuthDeviceRoute
-  AuthMagicLinkRoute: typeof AuthMagicLinkRoute
   AuthMagicLinkSentRoute: typeof AuthMagicLinkSentRoute
   AuthSuccessRoute: typeof AuthSuccessRoute
   AuthIndexRoute: typeof AuthIndexRoute
@@ -619,7 +599,6 @@ const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthDesktopRoute: AuthDesktopRoute,
   AuthDeviceRoute: AuthDeviceRoute,
-  AuthMagicLinkRoute: AuthMagicLinkRoute,
   AuthMagicLinkSentRoute: AuthMagicLinkSentRoute,
   AuthSuccessRoute: AuthSuccessRoute,
   AuthIndexRoute: AuthIndexRoute,
