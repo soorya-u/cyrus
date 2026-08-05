@@ -28,19 +28,35 @@ const ops: string[] = [];
 let projectCwd = "/tmp/project";
 let sessionCreateError: Error | null = null;
 let setModelError: Error | null = null;
+let nextSessionHasNativeModel = true;
 const sessions: RuntimeSession[] = [];
 let nextSessionCwd: string | undefined;
 
 function createMockSession(sessionId: string): RuntimeSession {
+	const hasNativeModel = nextSessionHasNativeModel;
 	return {
 		sessionId,
 		transcript: {
 			session: {
-				models: {
-					availableModels: [{ modelId: "model-1", name: "Model 1" }],
-				},
+				models: hasNativeModel
+					? { availableModels: [{ modelId: "model-1", name: "Model 1" }] }
+					: undefined,
 				modes: { availableModes: [{ id: "mode-1", name: "Mode 1" }] },
-				configOptions: [],
+				configOptions: hasNativeModel
+					? []
+					: [
+							{
+								type: "select",
+								id: "model-config",
+								category: "model",
+								name: "Model",
+								currentValue: "model-1",
+								options: [
+									{ value: "model-1", name: "Model 1" },
+									{ value: "model-2", name: "Model 2" },
+								],
+							},
+						],
 			},
 		},
 		close: mock(async () => undefined),
@@ -201,6 +217,8 @@ mock.module("@/git/checkout", () => ({
 	checkoutGitRef: () => Promise.resolve(Result.ok(undefined)),
 }));
 
+let setSessionConfigOption = mock(async () => undefined);
+
 function createCoordinator() {
 	const pool = {
 		getState: () => "ready",
@@ -218,7 +236,7 @@ function createCoordinator() {
 			agentCapabilities: { loadSession: true },
 		}),
 		getSdkConnection: () => ({
-			setSessionConfigOption: mock(async () => undefined),
+			setSessionConfigOption,
 		}),
 	} as unknown as AgentPool;
 
@@ -233,8 +251,10 @@ describe("startThread", () => {
 		sessions.length = 0;
 		sessionCreateError = null;
 		setModelError = null;
+		nextSessionHasNativeModel = true;
 		nextSessionCwd = undefined;
 		projectCwd = "/tmp/project";
+		setSessionConfigOption = mock(async () => undefined);
 	});
 
 	test("births a thread with a bound session ready to prompt", async () => {
@@ -377,6 +397,29 @@ describe("startThread", () => {
 		if (started.isErr()) throw new Error("expected ok");
 		expect(started.value.bound).not.toBeNull();
 		expect(sessions[0]?.setModel).toHaveBeenCalledWith("model-1");
+	});
+
+	test("applies model preference through the config-option fallback for agents without native session/set_model", async () => {
+		nextSessionHasNativeModel = false;
+		const coordinator = createCoordinator();
+
+		const started = await coordinator.startThread({
+			projectId: "project-1",
+			agentName: "mock-agent",
+			message: [{ type: "text", text: "config-option model" }],
+			preferences: { modelId: "model-2" },
+			turnId: "turn-prefs-fallback",
+		});
+
+		expect(started.isOk()).toBe(true);
+		if (started.isErr()) throw new Error("expected ok");
+		expect(started.value.bound).not.toBeNull();
+		expect(sessions[0]?.setModel).not.toHaveBeenCalled();
+		expect(setSessionConfigOption).toHaveBeenCalledWith({
+			sessionId: "session-1",
+			configId: "model-config",
+			value: "model-2",
+		});
 	});
 
 	test("preference apply failure persists the message and leaves bound null", async () => {

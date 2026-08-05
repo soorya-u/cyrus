@@ -6,6 +6,7 @@ import type { AgentPool } from "@/core/acp/pool";
 import {
 	effortsFromSession,
 	findSelectConfigOptionId,
+	hasNativeModelSelection,
 	modelsFromSession,
 	modesFromSession,
 	personasFromSession,
@@ -115,9 +116,22 @@ async function setModel(
 		cwd,
 		sessionId
 	);
+
+	if (!hasNativeModelSelection(session)) {
+		await setConfigOptionByCategory(
+			deps,
+			threadId,
+			projectId,
+			cwd,
+			sessionId,
+			"model",
+			modelId
+		);
+		return;
+	}
+
 	await session.setModel(modelId);
-	// Model is already applied — reconcile is best-effort so a dependent
-	// reset failure does not report setModel as failed (client refreshes on ok).
+
 	await Result.tryPromise(() =>
 		reconcileDependentConfigOptions(
 			deps,
