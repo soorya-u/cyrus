@@ -166,16 +166,29 @@ export function ThreadRow({
 			)}
 			<div className="ml-auto flex shrink-0 items-center gap-1.5 pr-1.5">
 				{confirmDelete ? (
-					<button
-						className="inline-flex h-5 cursor-pointer items-center rounded-md bg-destructive/12 px-2 font-medium text-[10px] text-destructive hover:bg-destructive/18"
-						onClick={(event) => {
-							event.stopPropagation();
-							onDelete(thread.id);
-						}}
-						type="button"
-					>
-						Confirm
-					</button>
+					<>
+						<button
+							className="inline-flex h-5 cursor-pointer items-center rounded-md bg-destructive/12 px-2 font-medium text-[10px] text-destructive hover:bg-destructive/18"
+							onClick={(event) => {
+								event.stopPropagation();
+								onDelete(thread.id);
+							}}
+							type="button"
+						>
+							Confirm
+						</button>
+						<button
+							aria-label="Cancel delete"
+							className="inline-flex h-5 cursor-pointer items-center rounded-md px-2 font-medium text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
+							onClick={(event) => {
+								event.stopPropagation();
+								setConfirmDelete(false);
+							}}
+							type="button"
+						>
+							Cancel
+						</button>
+					</>
 				) : (
 					<button
 						aria-label={`Delete ${thread.name}`}
