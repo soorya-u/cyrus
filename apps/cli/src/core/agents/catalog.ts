@@ -13,7 +13,6 @@ export type AgentCatalog = {
 	configOptions: SessionConfigOption[];
 };
 
-// SessionModelState was dropped from @agentclientprotocol/sdk's 1.x types; mirror the wire shape directly.
 type RawSessionModel = {
 	modelId: string;
 	name: string;
