@@ -48,7 +48,6 @@ function ToolStatusIcon({
 	return null;
 }
 
-// Unparseable tools render title and status only, without an expand affordance.
 export function ToolRow({ tool }: { tool: ToolCallView }) {
 	const [open, setOpen] = useState(false);
 	const presentation = deriveToolPresentation(tool);
@@ -72,6 +71,7 @@ export function ToolRow({ tool }: { tool: ToolCallView }) {
 					? {
 							role: "button" as const,
 							tabIndex: 0,
+							"aria-expanded": open,
 							onClick: () => setOpen((value) => !value),
 							onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
 								if (event.key === "Enter" || event.key === " ") {
