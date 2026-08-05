@@ -371,14 +371,10 @@ function latestTurnIdFromEntries(
 	entries: ConversationEntry[]
 ): string | undefined {
 	let latestTurnId: string | undefined;
-	let latestCreatedAt = "";
 
 	for (const entry of entries) {
 		if (entry.chunk.event.type !== "user_message") continue;
-		if (entry.createdAt >= latestCreatedAt) {
-			latestCreatedAt = entry.createdAt;
-			latestTurnId = entry.chunk.turnId;
-		}
+		latestTurnId = entry.chunk.turnId;
 	}
 
 	return latestTurnId;
@@ -460,10 +456,6 @@ export function fold(
 		entriesByTurn.set(entry.chunk.turnId, turnEntries);
 	}
 
-	// `entries` arrives pre-sorted by (seq, sub) — see sortConversationEntries
-	// in @cyrus/utils/conversations/entries — so each Map's insertion order
-	// (first-touch order, per key) already is the correct display order. No
-	// resort needed here, by turn or otherwise.
 	const orderedTurns = [...turns.values()];
 	orderedTurns.forEach((turn, index) => {
 		turn.index = index;

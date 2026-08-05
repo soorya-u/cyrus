@@ -11,7 +11,10 @@ export function DiffRow({ diff }: { diff: DiffView }) {
 		<div className="overflow-hidden rounded-md border border-border/60 bg-card text-xs">
 			<button
 				className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left"
-				onClick={() => setOpen((v) => !v)}
+				onClick={(event) => {
+					event.stopPropagation();
+					setOpen((v) => !v);
+				}}
 				type="button"
 			>
 				<Show fallback={<ChevronRightIcon className="size-3" />} when={open}>

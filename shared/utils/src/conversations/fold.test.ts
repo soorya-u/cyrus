@@ -90,6 +90,46 @@ describe("fold", () => {
 		});
 	});
 
+	test("identifies the latest turn by entry position, not createdAt, when timestamps are reversed", () => {
+		const conversation = folded([
+			entry(
+				1,
+				"turn-1",
+				{ type: "user_message", content: "First" },
+				"2026-07-11T00:00:09.000Z"
+			),
+			entry(
+				2,
+				"turn-1",
+				{ type: "turn_completed" },
+				"2026-07-11T00:00:08.000Z"
+			),
+			entry(
+				3,
+				"turn-2",
+				{ type: "user_message", content: "Second" },
+				"2026-07-11T00:00:01.000Z"
+			),
+			entry(
+				4,
+				"turn-2",
+				{ type: "token", text: "Working" },
+				"2026-07-11T00:00:00.000Z"
+			),
+		]);
+
+		expect(conversation.turns.map((turn) => turn.state)).toEqual([
+			"complete",
+			"running",
+		]);
+		expect(conversation.messages.at(-1)).toMatchObject({
+			content: "Working",
+			role: "assistant",
+			streaming: true,
+			turnId: "turn-2",
+		});
+	});
+
 	test("orders turns and messages by entry position, ignoring misleading createdAt strings", () => {
 		// entries always arrive pre-sorted by (seq, sub) — see
 		// sortConversationEntries — so fold trusts array position for order and
