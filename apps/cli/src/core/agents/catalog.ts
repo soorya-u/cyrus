@@ -13,6 +13,14 @@ export type AgentCatalog = {
 	configOptions: SessionConfigOption[];
 };
 
+// SessionModelState was dropped from @agentclientprotocol/sdk's 1.x types; mirror the wire shape directly.
+type RawSessionModel = {
+	modelId: string;
+	name: string;
+	description?: string | null;
+	_meta?: Record<string, unknown> | null;
+};
+
 export function catalogFromSession(session: RuntimeSession): AgentCatalog {
 	const { session: meta } = session.transcript;
 	return {
@@ -23,7 +31,9 @@ export function catalogFromSession(session: RuntimeSession): AgentCatalog {
 
 export function modelsFromSession(session: RuntimeSession): ModelOption[] {
 	const { session: meta } = session.transcript;
-	const fromModels = meta.models?.availableModels;
+	const fromModels = meta.models?.availableModels as
+		| RawSessionModel[]
+		| undefined;
 	if (fromModels && fromModels.length > 0) {
 		return fromModels.map((model) => ({
 			id: model.modelId,
