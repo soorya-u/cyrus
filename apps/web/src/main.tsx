@@ -77,6 +77,7 @@ function WebQueryShell({
 				authClient={authClient}
 				emailAndPassword={{ enabled: env.VITE_IS_DEV_MODE }}
 				Link={({ href, ...rest }) => <Link {...rest} to={href} />}
+				multipleAccountsPerProvider={false}
 				navigate={({ to, replace }) => router.navigate({ to, replace })}
 				plugins={[magicLinkPlugin()]}
 				queryClient={queryClient}

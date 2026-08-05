@@ -38,7 +38,10 @@ function DeleteProjectDialogContent({
 					<AlertDialogCancel onClick={() => call.end(false)}>
 						Cancel
 					</AlertDialogCancel>
-					<AlertDialogAction onClick={() => call.end(true)}>
+					<AlertDialogAction
+						onClick={() => call.end(true)}
+						variant="destructive"
+					>
 						Delete
 					</AlertDialogAction>
 				</AlertDialogFooter>

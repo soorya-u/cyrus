@@ -1,16 +1,15 @@
 import type { ToolCallView } from "@cyrus/schemas/view";
 import { extractToolFields } from "@cyrus/utils/tool-fields";
 import { cn } from "cnfast";
-import {
-	CheckIcon,
-	ChevronDownIcon,
-	MinusIcon,
-	TerminalIcon,
-	XIcon,
-} from "lucide-react";
-import { type KeyboardEvent, useState } from "react";
+import { CheckIcon, MinusIcon, TerminalIcon, XIcon } from "lucide-react";
 import { DiffRow } from "@/components/chat/work-log/diff-row";
 import { Show } from "@/components/helpers/show";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
 	KIND_PRESENTATIONS,
 	type ToolPresentation,
@@ -48,91 +47,102 @@ function ToolStatusIcon({
 	return null;
 }
 
-export function ToolRow({ tool }: { tool: ToolCallView }) {
-	const [open, setOpen] = useState(false);
-	const presentation = deriveToolPresentation(tool);
+function ToolRowHeading({
+	tool,
+	presentation,
+}: {
+	tool: ToolCallView;
+	presentation: ToolPresentation;
+}) {
 	const Icon = presentation.icon;
-	const hasDiffs = Boolean(tool.diffs?.length);
-	const canExpand = hasDiffs || Boolean(presentation.detail?.trim());
 	const showSuccess = tool.status === "completed";
 	const showFailed = tool.status === "failed";
 	const showPending =
 		tool.status === "pending" || tool.status === "in_progress";
 
 	return (
-		<div className="flex flex-col rounded-md px-0.5 py-0.5 text-xs transition-colors">
-			<div
-				className={cn(
-					"flex select-none items-center gap-1.5 rounded-sm",
-					canExpand &&
-						"cursor-pointer hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-inset"
-				)}
-				{...(canExpand
-					? {
-							role: "button" as const,
-							tabIndex: 0,
-							"aria-expanded": open,
-							onClick: () => setOpen((value) => !value),
-							onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
-								if (event.key === "Enter" || event.key === " ") {
-									event.preventDefault();
-									setOpen((value) => !value);
-								}
-							},
-						}
-					: {})}
-			>
-				<span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground/65">
-					<Icon className="size-3.5 stroke-[1.8] opacity-80" />
-				</span>
-				<div className="flex min-w-0 flex-1 items-center gap-1.5">
-					<p className="flex min-w-0 items-baseline gap-1.5 text-[12px] leading-5">
-						<span className="min-w-0 shrink truncate font-medium text-foreground/82">
-							{presentation.heading}
-						</span>
-						<Show when={Boolean(presentation.preview)}>
-							<span className="min-w-0 flex-1 truncate text-muted-foreground/55">
-								{presentation.preview}
-							</span>
-						</Show>
-					</p>
-				</div>
-				<div className="flex shrink-0 items-center gap-px text-muted-foreground/55">
-					<Show when={canExpand}>
-						<ChevronDownIcon
-							className={cn(
-								"size-3 shrink-0 opacity-70 transition-transform duration-200",
-								open && "rotate-180"
-							)}
-						/>
-					</Show>
-					<span className="flex size-4 items-center justify-center">
-						<ToolStatusIcon
-							showFailed={showFailed}
-							showPending={showPending}
-							showSuccess={showSuccess}
-						/>
+		<>
+			<span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground/65">
+				<Icon className="size-3.5 stroke-[1.8] opacity-80" />
+			</span>
+			<div className="flex min-w-0 flex-1 items-center gap-1.5">
+				<p className="flex min-w-0 items-baseline gap-1.5 text-[12px] leading-5">
+					<span className="min-w-0 shrink truncate font-medium text-foreground/82">
+						{presentation.heading}
 					</span>
-				</div>
-			</div>
-			<Show when={open && canExpand}>
-				<div className="ms-7 mt-1 flex flex-col gap-1 border-border/45 border-s ps-3 pt-0.5">
-					<Show
-						fallback={
-							<Show when={Boolean(presentation.detail?.trim())}>
-								<pre className="wrap-break-word max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground leading-relaxed">
-									{presentation.detail}
-								</pre>
-							</Show>
-						}
-						when={hasDiffs}
-					>
-						{tool.diffs?.map((diff) => (
-							<DiffRow diff={diff} key={diff.id} />
-						))}
+					<Show when={Boolean(presentation.preview)}>
+						<span className="min-w-0 flex-1 truncate text-muted-foreground/55">
+							{presentation.preview}
+						</span>
 					</Show>
-				</div>
-			</Show>
-		</div>
+				</p>
+			</div>
+			<span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground/55">
+				<ToolStatusIcon
+					showFailed={showFailed}
+					showPending={showPending}
+					showSuccess={showSuccess}
+				/>
+			</span>
+		</>
+	);
+}
+
+function ToolRowDetail({
+	tool,
+	presentation,
+}: {
+	tool: ToolCallView;
+	presentation: ToolPresentation;
+}) {
+	const hasDiffs = Boolean(tool.diffs?.length);
+
+	return (
+		<Show
+			fallback={
+				<Show when={Boolean(presentation.detail?.trim())}>
+					<pre className="wrap-break-word max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground leading-relaxed">
+						{presentation.detail}
+					</pre>
+				</Show>
+			}
+			when={hasDiffs}
+		>
+			{tool.diffs?.map((diff) => (
+				<DiffRow diff={diff} key={diff.id} />
+			))}
+		</Show>
+	);
+}
+
+export function ToolRow({ tool }: { tool: ToolCallView }) {
+	const presentation = deriveToolPresentation(tool);
+	const hasDiffs = Boolean(tool.diffs?.length);
+	const canExpand = hasDiffs || Boolean(presentation.detail?.trim());
+
+	if (!canExpand) {
+		return (
+			<div className="flex select-none items-center gap-1.5 rounded-md px-0.5 py-0.5 text-xs">
+				<ToolRowHeading presentation={presentation} tool={tool} />
+			</div>
+		);
+	}
+
+	return (
+		<Accordion className="text-xs" collapsible type="single">
+			<AccordionItem className="border-b-0" value={tool.toolCallId}>
+				<AccordionTrigger
+					className={cn(
+						"select-none items-center gap-1.5 rounded-md px-0.5 py-0.5 hover:bg-accent/20 hover:no-underline",
+						"[&>svg]:size-3 [&>svg]:shrink-0 [&>svg]:translate-y-0 [&>svg]:text-muted-foreground/55 [&>svg]:opacity-70"
+					)}
+				>
+					<ToolRowHeading presentation={presentation} tool={tool} />
+				</AccordionTrigger>
+				<AccordionContent className="ms-7 border-border/45 border-s ps-3 pt-0.5 pb-0">
+					<ToolRowDetail presentation={presentation} tool={tool} />
+				</AccordionContent>
+			</AccordionItem>
+		</Accordion>
 	);
 }
