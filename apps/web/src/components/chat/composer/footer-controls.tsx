@@ -3,7 +3,6 @@ import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { useMediaQuery } from "@mantine/hooks";
 import { AgentModelPicker } from "@/components/chat/composer/agent-model-picker";
 import { CompactComposerControls } from "@/components/chat/composer/compact-composer-controls";
-import { ComposerContextUsage } from "@/components/chat/composer/composer-context-usage";
 import { Show } from "@/components/helpers/show";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,7 +110,6 @@ export function ComposerFooterControls({
 }) {
 	const isCompact = useMediaQuery("(max-width: 768px)", false);
 	const {
-		contextUsage,
 		displayEffort,
 		displayMode,
 		displayPersona,
@@ -182,8 +180,6 @@ export function ComposerFooterControls({
 					threadId={threadId}
 				/>
 			</Show>
-
-			<ComposerContextUsage usage={contextUsage} />
 		</div>
 	);
 }

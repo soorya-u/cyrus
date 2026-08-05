@@ -50,4 +50,17 @@ describe("ToolRow", () => {
 
 		expect(screen.getByText("a.ts")).toBeInTheDocument();
 	});
+
+	test("chevron styling is scoped to a direct child, not every descendant svg", () => {
+		const { container } = render(<ToolRow tool={tool} />);
+
+		const trigger = container.querySelector('[data-slot="accordion-trigger"]');
+		expect(trigger).not.toBeNull();
+		expect(trigger?.className).toContain("[&>svg]");
+		expect(trigger?.className).not.toContain("[&_svg:last-child]");
+
+		const statusIcon = container.querySelector("svg.lucide-check");
+		expect(statusIcon).not.toBeNull();
+		expect(statusIcon).toHaveClass("text-green-600");
+	});
 });

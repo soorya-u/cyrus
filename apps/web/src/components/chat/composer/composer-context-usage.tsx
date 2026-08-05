@@ -23,9 +23,8 @@ export function ComposerContextUsage({
 	const percent = Math.round(ratio * 100);
 	const overloaded = hasLimit && percent > 90;
 
-	// Match ComposerPrimaryAction: sm:h-8 sm:w-8 (32px)
-	const size = 32;
-	const stroke = 3;
+	const size = 22;
+	const stroke = 2;
 	const radius = (size - stroke) / 2;
 	const circumference = 2 * Math.PI * radius;
 	const dashOffset = circumference * (1 - ratio);
@@ -44,7 +43,7 @@ export function ComposerContextUsage({
 					<button
 						aria-label={label}
 						className={cn(
-							"relative inline-flex size-8 shrink-0 cursor-default items-center justify-center rounded-full",
+							"relative inline-flex size-6 shrink-0 cursor-default items-center justify-center rounded-full",
 							"text-muted-foreground outline-none transition-colors",
 							"hover:bg-accent hover:text-foreground",
 							"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
@@ -85,7 +84,7 @@ export function ComposerContextUsage({
 				</svg>
 				<span
 					className={cn(
-						"relative font-medium text-[9px] tabular-nums leading-none",
+						"relative font-medium text-[8px] tabular-nums leading-none",
 						overloaded ? "text-destructive" : "text-muted-foreground"
 					)}
 				>

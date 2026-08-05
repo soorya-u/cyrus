@@ -8,6 +8,7 @@ import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { useComposerDraftHydrated } from "@cyrus/hooks/stores/composer-draft";
 import { useEffect, useState } from "react";
 import { FileMentionAutocomplete } from "@/components/chat/composer/composer-attachments";
+import { ComposerContextUsage } from "@/components/chat/composer/composer-context-usage";
 import { ComposerPendingInteractive } from "@/components/chat/composer/composer-interactive";
 import { ComposerLowerChrome } from "@/components/chat/composer/composer-lower-chrome";
 import { ComposerPromptEditor } from "@/components/chat/composer/composer-prompt-editor";
@@ -200,9 +201,10 @@ export function Composer({
 							threadId={threadId}
 						/>
 						<div
-							className="flex shrink-0 flex-nowrap items-center justify-end gap-2"
+							className="flex shrink-0 flex-nowrap items-center justify-end gap-4"
 							data-chat-composer-actions="right"
 						>
+							<ComposerContextUsage usage={catalog.contextUsage} />
 							<ComposerPrimaryAction
 								busy={busy}
 								canSend={
