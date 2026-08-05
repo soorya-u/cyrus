@@ -3,6 +3,7 @@ import { PatchDiff } from "@pierre/diffs/react";
 import { ChevronDownIcon, ChevronRightIcon, GitBranchIcon } from "lucide-react";
 import { useState } from "react";
 import { PATCH_DIFF_OPTIONS } from "@/components/chat/diff/patch-diff-options";
+import { Show } from "@/components/helpers/show";
 
 export function DiffRow({ diff }: { diff: DiffView }) {
 	const [open, setOpen] = useState(false);
@@ -13,11 +14,9 @@ export function DiffRow({ diff }: { diff: DiffView }) {
 				onClick={() => setOpen((v) => !v)}
 				type="button"
 			>
-				{open ? (
+				<Show fallback={<ChevronRightIcon className="size-3" />} when={open}>
 					<ChevronDownIcon className="size-3" />
-				) : (
-					<ChevronRightIcon className="size-3" />
-				)}
+				</Show>
 				<GitBranchIcon className="size-3 text-muted-foreground" />
 				<span className="truncate font-mono">{diff.path}</span>
 				<span className="ml-auto inline-flex items-center gap-2 font-mono text-[11px] tabular-nums">
@@ -29,7 +28,7 @@ export function DiffRow({ diff }: { diff: DiffView }) {
 					</span>
 				</span>
 			</button>
-			{open && (
+			<Show when={open}>
 				<div className="diff-render-surface max-h-80 overflow-auto border-border/60 border-t">
 					<PatchDiff
 						className="h-full min-h-0 overflow-auto"
@@ -37,7 +36,7 @@ export function DiffRow({ diff }: { diff: DiffView }) {
 						patch={diff.patch}
 					/>
 				</div>
-			)}
+			</Show>
 		</div>
 	);
 }

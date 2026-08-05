@@ -8,6 +8,7 @@ import { useIsMutating } from "@tanstack/react-query";
 import type { SocialProvider } from "better-auth/social-providers";
 import { cn } from "cnfast";
 import type { ComponentProps, ReactNode } from "react";
+import { Show } from "@/components/helpers/show";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { LastUsedBadge } from "./last-login-method/last-used-badge";
@@ -75,16 +76,20 @@ export function ProviderButton({
 			variant={variant}
 			{...props}
 		>
-			{signInSocialPending && <Spinner />}
+			<Show when={signInSocialPending}>
+				<Spinner />
+			</Show>
 			{!signInSocialPending && ProviderIcon && <ProviderIcon />}
 
 			{label}
 
-			{display === "icon" && (
+			<Show when={display === "icon"}>
 				<span className="sr-only">{getProviderName(provider)}</span>
-			)}
+			</Show>
 
-			{view !== "signUp" && <LastUsedBadge floating method={provider} />}
+			<Show when={view !== "signUp"}>
+				<LastUsedBadge floating method={provider} />
+			</Show>
 		</Button>
 	);
 }

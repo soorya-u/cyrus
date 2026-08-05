@@ -45,6 +45,7 @@ describe("fold", () => {
 				createdAt: "2026-07-11T00:00:01.000Z",
 				id: "user-turn-1",
 				role: "user",
+				seq: 1,
 				streaming: false,
 				turnId: "turn-1",
 			},
@@ -53,6 +54,7 @@ describe("fold", () => {
 				createdAt: "2026-07-11T00:00:02.000Z",
 				id: "turn-1",
 				role: "assistant",
+				seq: 2,
 				streaming: false,
 				turnId: "turn-1",
 			},
@@ -88,6 +90,47 @@ describe("fold", () => {
 		});
 	});
 
+	test("orders turns and messages by entry position, ignoring misleading createdAt strings", () => {
+		// entries always arrive pre-sorted by (seq, sub) — see
+		// sortConversationEntries — so fold trusts array position for order and
+		// no longer needs createdAt to reorder anything.
+		const conversation = folded([
+			entry(
+				1,
+				"turn-1",
+				{ type: "user_message", content: "First" },
+				"2026-07-11T00:00:09.000Z"
+			),
+			entry(
+				2,
+				"turn-1",
+				{ type: "turn_completed" },
+				"2026-07-11T00:00:08.000Z"
+			),
+			entry(
+				3,
+				"turn-2",
+				{ type: "user_message", content: "Second" },
+				"2026-07-11T00:00:07.000Z"
+			),
+			entry(
+				4,
+				"turn-2",
+				{ type: "turn_completed" },
+				"2026-07-11T00:00:06.000Z"
+			),
+		]);
+
+		expect(conversation.turns.map((turn) => turn.id)).toEqual([
+			"turn-1",
+			"turn-2",
+		]);
+		expect(conversation.messages.map((message) => message.content)).toEqual([
+			"First",
+			"Second",
+		]);
+	});
+
 	test("folds thoughts, tool calls, and diffs", () => {
 		const conversation = folded([
 			entry(1, "turn-1", { type: "user_message", content: "Change it" }),
@@ -121,6 +164,7 @@ describe("fold", () => {
 				content: "Inspecting",
 				createdAt: "2026-07-11T00:00:02.000Z",
 				id: "turn-1:thought:thought-1",
+				seq: 2,
 				streaming: false,
 				turnId: "turn-1",
 			},
@@ -131,19 +175,79 @@ describe("fold", () => {
 				title: "Edit README",
 				toolCallId: "tool-1",
 				turnId: "turn-1",
+				diffs: [
+					{
+						additions: 1,
+						deletions: 1,
+						id: "tool-1:README.md",
+						patch: "@@ -1 +1 @@",
+						path: "README.md",
+						toolCallId: "tool-1",
+						turnId: "turn-1",
+					},
+				],
 			}),
 		]);
-		expect(conversation.diffs).toEqual([
-			{
-				additions: 1,
-				deletions: 1,
-				id: "turn-1:README.md",
-				patch: "@@ -1 +1 @@",
-				path: "README.md",
+	});
+
+	test("replaces a tool call's diffs wholesale on update, doesn't merge", () => {
+		const conversation = folded([
+			entry(1, "turn-1", { type: "user_message", content: "Change it" }),
+			entry(2, "turn-1", {
+				content: [
+					{
+						additions: 1,
+						deletions: 0,
+						newText: "a",
+						oldText: "",
+						patch: "@@ -0,0 +1 @@",
+						path: "a.ts",
+						type: "diff",
+					},
+					{
+						additions: 1,
+						deletions: 0,
+						newText: "b",
+						oldText: "",
+						patch: "@@ -0,0 +1 @@",
+						path: "b.ts",
+						type: "diff",
+					},
+				],
+				status: "in_progress",
+				title: "Edit files",
 				toolCallId: "tool-1",
-				turnId: "turn-1",
-			},
+				type: "tool_call",
+			}),
+			entry(3, "turn-1", {
+				content: [
+					{
+						additions: 1,
+						deletions: 0,
+						newText: "a",
+						oldText: "",
+						patch: "@@ -0,0 +1 @@",
+						path: "a.ts",
+						type: "diff",
+					},
+				],
+				status: "completed",
+				toolCallId: "tool-1",
+				type: "tool_call_update",
+			}),
+			entry(4, "turn-1", {
+				status: "completed",
+				toolCallId: "tool-1",
+				type: "tool_call_update",
+			}),
+			entry(5, "turn-1", { type: "turn_completed" }),
 		]);
+
+		const toolCall = conversation.toolCalls[0];
+		// The 3rd entry replaced the initial two-diff set with just a.ts; the 4th
+		// entry (a status-only update with no content) must not clear that.
+		expect(toolCall?.diffs.map((diff) => diff.path)).toEqual(["a.ts"]);
+		expect(toolCall?.status).toBe("completed");
 	});
 
 	test("folds approval and elicitation requests", () => {
@@ -252,6 +356,7 @@ describe("fold", () => {
 				createdAt: "2026-07-11T00:00:02.000Z",
 				id: "error-entry-2",
 				message: "Agent crashed",
+				seq: 2,
 				turnId: "turn-1",
 			},
 		]);

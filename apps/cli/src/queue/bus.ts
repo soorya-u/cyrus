@@ -17,6 +17,15 @@ function isTerminalEvent(event: ChatChunk["event"]): boolean {
 	return event.type === "turn_completed" || event.type === "turn_interrupted";
 }
 
+type ThreadCursor = {
+	anchor: number;
+	nextSub: number;
+};
+
+function isUnstampedPlaceholder(chunk: ChatChunk): boolean {
+	return chunk.seq === 0;
+}
+
 export function createThreadEventBus(
 	options: CreateThreadEventBusOptions = {}
 ): ThreadEventBus {
@@ -26,7 +35,32 @@ export function createThreadEventBus(
 	const watchedThreads = new Map<string, Set<string>>();
 	const activeTurnLogs = new Map<string, ChatChunk[]>();
 	const turnThreads = new Map<string, string>();
+	const threadCursors = new Map<string, ThreadCursor>();
 	let closed = false;
+
+	function stampChunk(chunk: ChatChunk): ChatChunk {
+		let cursor = threadCursors.get(chunk.threadId);
+		if (!cursor) {
+			cursor = { anchor: 0, nextSub: 1 };
+			threadCursors.set(chunk.threadId, cursor);
+		}
+
+		if (!isUnstampedPlaceholder(chunk)) {
+			if (chunk.seq > cursor.anchor) {
+				cursor.anchor = chunk.seq;
+				cursor.nextSub = 1;
+			}
+			return chunk;
+		}
+
+		const stamped: ChatChunk = {
+			...chunk,
+			seq: cursor.anchor,
+			sub: cursor.nextSub,
+		};
+		cursor.nextSub += 1;
+		return stamped;
+	}
 
 	function getWatchedThreads(peerId: string): Set<string> {
 		let set = watchedThreads.get(peerId);
@@ -62,11 +96,6 @@ export function createThreadEventBus(
 	}
 
 	function trimTurnLog(log: ChatChunk[]): void {
-		while (log.length > maxChunksPerTurn) {
-			const deltaIndex = log.findIndex((chunk) => chunk.seq === 0);
-			if (deltaIndex === -1) break;
-			log.splice(deltaIndex, 1);
-		}
 		while (log.length > maxChunksPerTurn) log.shift();
 	}
 
@@ -105,13 +134,15 @@ export function createThreadEventBus(
 		publish(chunk) {
 			if (closed) return;
 
-			const terminal = isTerminalEvent(chunk.event);
-			if (!terminal) {
-				appendToTurnLog(chunk);
+			const stamped = stampChunk(chunk);
+			const terminal = isTerminalEvent(stamped.event);
+
+			if (!terminal && stamped.sub === undefined) {
+				appendToTurnLog(stamped);
 			}
-			fanOut(chunk);
+			fanOut(stamped);
 			if (terminal) {
-				evictTurnLog(chunk.turnId);
+				evictTurnLog(stamped.turnId);
 			}
 		},
 
@@ -186,6 +217,7 @@ export function createThreadEventBus(
 			watchedThreads.clear();
 			activeTurnLogs.clear();
 			turnThreads.clear();
+			threadCursors.clear();
 		},
 	};
 }

@@ -4,7 +4,11 @@ import type {
 	ConversationEntry,
 	GetConversationsOutput,
 } from "@cyrus/schemas/rtc/threads";
-import { normalizeConversationEntries } from "@cyrus/utils/conversations/entries";
+import {
+	currentMaxPersistedSeq,
+	sortConversationEntries,
+} from "@cyrus/utils/conversations/entries";
+import { Throttler } from "@tanstack/pacer";
 import type { QueryClient } from "@tanstack/react-query";
 
 /** Minimum ms between streaming delta commits — keeps token rendering readable. */
@@ -13,8 +17,10 @@ const STREAM_DELTA_MIN_MS = 120;
 let syntheticEntrySeq = 0;
 const pendingDeltas = new Map<string, ChatChunk>();
 const completedTurnKeys = new Set<string>();
-let deltaFlushHandle: ReturnType<typeof setTimeout> | null = null;
-let lastDeltaFlushAt = 0;
+const deltaThrottler = new Throttler(
+	(queryClient: QueryClient) => flushPendingDeltas(queryClient),
+	{ wait: STREAM_DELTA_MIN_MS }
+);
 
 function turnKey(threadId: string, turnId: string): string {
 	return `${threadId}:${turnId}`;
@@ -26,7 +32,7 @@ function isTerminalEvent(event: ChatChunk["event"]): boolean {
 
 function isStreamingDeltaChunk(chunk: ChatChunk): boolean {
 	return (
-		chunk.seq === 0 &&
+		chunk.sub !== undefined &&
 		(chunk.event.type === "token" || chunk.event.type === "thought")
 	);
 }
@@ -73,9 +79,21 @@ function chunkToEntry(chunk: ChatChunk, id?: string): ConversationEntry {
 		id: id ?? `${entryIdForChunk(chunk)}-${++syntheticEntrySeq}`,
 		threadId: chunk.threadId,
 		seq: chunk.seq,
+		sub: chunk.sub,
 		chunk,
 		createdAt: new Date().toISOString(),
 	};
+}
+
+function currentEntries(
+	queryClient: QueryClient,
+	threadId: string
+): ConversationEntry[] {
+	return (
+		queryClient.getQueryData<GetConversationsOutput>(
+			RTC_OPERATION_KEYS.getConversations(threadId)
+		)?.conversations ?? []
+	);
 }
 
 function updateCache(
@@ -86,9 +104,7 @@ function updateCache(
 	queryClient.setQueryData<GetConversationsOutput>(
 		RTC_OPERATION_KEYS.getConversations(threadId),
 		(old) => ({
-			conversations: normalizeConversationEntries(
-				updater(old?.conversations ?? [])
-			),
+			conversations: sortConversationEntries(updater(old?.conversations ?? [])),
 		})
 	);
 }
@@ -97,8 +113,10 @@ function shouldSkipChunk(
 	entries: ConversationEntry[],
 	chunk: ChatChunk
 ): boolean {
-	if (chunk.seq <= 0) return false;
-	return entries.some((entry) => entry.seq === chunk.seq);
+	if (chunk.sub !== undefined || chunk.seq <= 0) return false;
+	return entries.some(
+		(entry) => entry.sub === undefined && entry.seq === chunk.seq
+	);
 }
 
 function applyChunkToEntries(
@@ -114,12 +132,12 @@ function applyChunkToEntries(
 
 	let next = [...entries];
 
-	if (chunk.event.type === "user_message" && chunk.seq > 0) {
+	if (chunk.event.type === "user_message" && chunk.sub === undefined) {
 		next = next.filter(
 			(entry) =>
 				!(
 					entry.chunk.turnId === chunk.turnId &&
-					entry.seq === 0 &&
+					entry.sub !== undefined &&
 					entry.chunk.event.type === "user_message"
 				)
 		);
@@ -168,10 +186,7 @@ function commitChunk(queryClient: QueryClient, chunk: ChatChunk): void {
 }
 
 function flushPendingDeltas(queryClient: QueryClient): void {
-	if (deltaFlushHandle !== null) {
-		clearTimeout(deltaFlushHandle);
-		deltaFlushHandle = null;
-	}
+	deltaThrottler.cancel();
 	for (const chunk of pendingDeltas.values()) commitChunk(queryClient, chunk);
 
 	pendingDeltas.clear();
@@ -195,7 +210,7 @@ function canPruneEphemeralTurn(
 	return entries.some(
 		(entry) =>
 			entry.chunk.turnId === turnId &&
-			entry.seq > 0 &&
+			entry.sub === undefined &&
 			(entry.chunk.event.type === "message_completed" ||
 				entry.chunk.event.type === "reasoning_completed" ||
 				entry.chunk.event.type === "turn_completed")
@@ -211,20 +226,9 @@ export function pruneEphemeralTurnEntries(
 		if (!canPruneEphemeralTurn(entries, turnId)) return entries;
 		completedTurnKeys.delete(turnKey(threadId, turnId));
 		return entries.filter(
-			(entry) => !(entry.chunk.turnId === turnId && entry.seq === 0)
+			(entry) => !(entry.chunk.turnId === turnId && entry.sub !== undefined)
 		);
 	});
-}
-
-function scheduleStreamingDeltaFlush(queryClient: QueryClient): void {
-	if (deltaFlushHandle !== null) return;
-	const elapsed = Date.now() - lastDeltaFlushAt;
-	const delay = Math.max(0, STREAM_DELTA_MIN_MS - elapsed);
-	deltaFlushHandle = setTimeout(() => {
-		deltaFlushHandle = null;
-		lastDeltaFlushAt = Date.now();
-		flushPendingDeltas(queryClient);
-	}, delay);
 }
 
 function queueStreamingDelta(queryClient: QueryClient, chunk: ChatChunk): void {
@@ -234,7 +238,7 @@ function queueStreamingDelta(queryClient: QueryClient, chunk: ChatChunk): void {
 		key,
 		existing ? mergeStreamingDeltaChunks(existing, chunk) : chunk
 	);
-	scheduleStreamingDeltaFlush(queryClient);
+	deltaThrottler.maybeExecute(queryClient);
 }
 
 export function applyChunkToCache(
@@ -275,7 +279,8 @@ export function appendOptimisticUserMessage(
 	commitChunk(queryClient, {
 		threadId,
 		turnId,
-		seq: 0,
+		seq: currentMaxPersistedSeq(currentEntries(queryClient, threadId)),
+		sub: 0,
 		event: { type: "user_message", content: message, blocks },
 	});
 }
@@ -291,7 +296,8 @@ export function appendTurnTerminal(
 	commitChunk(queryClient, {
 		threadId,
 		turnId,
-		seq: 0,
+		seq: currentMaxPersistedSeq(currentEntries(queryClient, threadId)),
+		sub: 0,
 		event: { type },
 	});
 }

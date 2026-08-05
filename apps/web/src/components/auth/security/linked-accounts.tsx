@@ -1,6 +1,7 @@
 import { useAuth, useListAccounts } from "@better-auth-ui/react";
 import { cn } from "cnfast";
 import { Fragment } from "react";
+import { Show } from "@/components/helpers/show";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Item,
@@ -68,22 +69,29 @@ export function LinkedAccounts({ className }: LinkedAccountsProps) {
 			<Card className={cn("p-0", className)}>
 				<CardContent className="p-0">
 					<ItemGroup className="gap-0">
-						{isPending
-							? socialProviders?.map((provider, index) => (
-									<Fragment key={provider}>
-										{index > 0 && <ItemSeparator />}
-										<AccountRowSkeleton />
-									</Fragment>
-								))
-							: allRows.map((row, index) => (
-									<Fragment key={row.key}>
-										{index > 0 && <ItemSeparator />}
-										<LinkedAccount
-											account={row.account}
-											provider={row.provider}
-										/>
-									</Fragment>
-								))}
+						<Show
+							fallback={allRows.map((row, index) => (
+								<Fragment key={row.key}>
+									<Show when={index > 0}>
+										<ItemSeparator />
+									</Show>
+									<LinkedAccount
+										account={row.account}
+										provider={row.provider}
+									/>
+								</Fragment>
+							))}
+							when={isPending}
+						>
+							{socialProviders?.map((provider, index) => (
+								<Fragment key={provider}>
+									<Show when={index > 0}>
+										<ItemSeparator />
+									</Show>
+									<AccountRowSkeleton />
+								</Fragment>
+							))}
+						</Show>
 					</ItemGroup>
 				</CardContent>
 			</Card>

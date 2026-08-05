@@ -15,6 +15,7 @@
     "@cyrus/providers": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@cyrus/utils": "workspace:*",
+    "@tanstack/pacer": "^0.21.1",
     "@tanstack/react-query": "catalog:rpc",
     "better-result": "catalog:core",
     "evlog": "catalog:observability",

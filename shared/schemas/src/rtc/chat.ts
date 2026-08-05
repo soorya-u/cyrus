@@ -268,11 +268,7 @@ export const PromptInputBlockSchema = z.discriminatedUnion("type", [
 	PromptResourceBlockSchema,
 ]);
 
-export type PromptInputBlock = z.infer<typeof PromptInputBlockSchema>;
-
 export const ChatMessageSchema = z.array(PromptInputBlockSchema).min(1);
-
-export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export function formatPromptBlocks(blocks: PromptInputBlock[]): string {
 	return blocks
@@ -325,12 +321,34 @@ export const AgentEventSchema = z.discriminatedUnion("type", [
 	SessionUpdateEventSchema,
 ]);
 
-export type { PermissionOptionKind } from "@cyrus/schemas/enums/permissions";
-export type {
-	PlanEntryPriority,
-	PlanEntryStatus,
-} from "@cyrus/schemas/enums/plan";
-export type { ToolCallStatus, ToolKind } from "@cyrus/schemas/enums/tools";
+export const ChatInputSchema = z.object({
+	agentName: z.string(),
+	message: ChatMessageSchema,
+	threadId: z.uuid().optional(),
+	turnId: z.uuid().optional(),
+	projectId: z.string(),
+});
+
+export const ChatOutputSchema = z.object({
+	threadId: z.string(),
+	turnId: z.string(),
+});
+
+export const ChatChunkSchema = z.object({
+	threadId: z.string(),
+	turnId: z.string(),
+	seq: z.number(),
+	sub: z.number().optional(),
+	event: AgentEventSchema,
+});
+
+export const CancelInputSchema = z.object({
+	agentName: z.string(),
+	threadId: z.string(),
+});
+
+export type PromptInputBlock = z.infer<typeof PromptInputBlockSchema>;
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export type PlanEntry = z.infer<typeof PlanEntrySchema>;
 export type ToolCallContent = z.infer<typeof ToolCallContentSchema>;
 export type ToolCallLocation = z.infer<typeof ToolCallLocationSchema>;
@@ -346,36 +364,7 @@ export type RespondElicitationInput = z.infer<
 >;
 export type AgentEvent = z.infer<typeof AgentEventSchema>;
 export type Diff = z.infer<typeof DiffSchema>;
-
-export const ChatInputSchema = z.object({
-	agentName: z.string(),
-	message: ChatMessageSchema,
-	threadId: z.uuid().optional(),
-	turnId: z.uuid().optional(),
-	projectId: z.string(),
-});
-
 export type ChatInput = z.infer<typeof ChatInputSchema>;
-
-export const ChatOutputSchema = z.object({
-	threadId: z.string(),
-	turnId: z.string(),
-});
-
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
-
-export const ChatChunkSchema = z.object({
-	threadId: z.string(),
-	turnId: z.string(),
-	seq: z.number(),
-	event: AgentEventSchema,
-});
-
 export type ChatChunk = z.infer<typeof ChatChunkSchema>;
-
-export const CancelInputSchema = z.object({
-	agentName: z.string(),
-	threadId: z.string(),
-});
-
 export type CancelInput = z.infer<typeof CancelInputSchema>;

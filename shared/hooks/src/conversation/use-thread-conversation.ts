@@ -1,6 +1,10 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
+import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
-import { mergeConversationEntries } from "@cyrus/utils/conversations/entries";
+import {
+	currentMaxPersistedSeq,
+	mergeConversationEntries,
+} from "@cyrus/utils/conversations/entries";
 import { fold } from "@cyrus/utils/conversations/fold";
 import {
 	keepPreviousData,
@@ -14,7 +18,6 @@ import { useRtc } from "../contexts/rtc";
 
 const EMPTY: ThreadConversation = {
 	approvals: [],
-	diffs: [],
 	elicitations: [],
 	errors: [],
 	messages: [],
@@ -42,9 +45,13 @@ export function useThreadConversation(
 		staleTime: Number.POSITIVE_INFINITY,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
-		queryFn: async (context) => {
-			const fetched = await baseQueryOptions.queryFn(context);
-			const cached = queryClient.getQueryData<typeof fetched>(queryKey);
+		queryFn: async () => {
+			const cached = queryClient.getQueryData<GetConversationsOutput>(queryKey);
+			const afterSeq = currentMaxPersistedSeq(cached?.conversations ?? []);
+			const fetched = await workerConnection.client.getConversations({
+				threadId: threadId ?? "",
+				afterSeq: afterSeq || undefined,
+			});
 			return {
 				conversations: mergeConversationEntries(
 					cached?.conversations ?? [],

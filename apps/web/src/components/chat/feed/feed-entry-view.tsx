@@ -3,7 +3,6 @@ import { ErrorRow } from "@/components/chat/feed/error-row";
 import { AssistantMessage } from "@/components/chat/messages/assistant-message";
 import { AssistantThinking } from "@/components/chat/messages/assistant-thinking";
 import { UserMessage } from "@/components/chat/messages/user-message";
-import { DiffRow } from "@/components/chat/work-log/diff-row";
 import { ToolRow } from "@/components/chat/work-log/tool-row";
 
 export function FeedEntryView({ entry }: { entry: FeedEntry }) {
@@ -18,8 +17,6 @@ export function FeedEntryView({ entry }: { entry: FeedEntry }) {
 			);
 		case "tool":
 			return <ToolRow tool={entry.tool} />;
-		case "diff":
-			return <DiffRow diff={entry.diff} />;
 		case "error":
 			return <ErrorRow error={entry.error} />;
 		case "approval":

@@ -6,6 +6,7 @@ import Bowser from "bowser";
 import { LogOut, Monitor, Smartphone, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { Show } from "@/components/helpers/show";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,24 +74,29 @@ export function ActiveSession({ activeSession }: ActiveSessionProps) {
 	return (
 		<Item>
 			<ItemMedia variant="icon">
-				{isMobile ? <Smartphone /> : <Monitor />}
+				<Show fallback={<Monitor />} when={isMobile}>
+					<Smartphone />
+				</Show>
 			</ItemMedia>
 			<ItemContent>
 				<ItemTitle>
 					{ua.browser.name || "Unknown Browser"}
 					{ua.os.name ? `, ${ua.os.name}` : ""}
 				</ItemTitle>
-				{isCurrentSession ? (
+				<Show
+					fallback={
+						<Show when={Boolean(activeSession.createdAt)}>
+							<ItemDescription className="capitalize">
+								{activeSession.createdAt && timeAgo(activeSession.createdAt)}
+							</ItemDescription>
+						</Show>
+					}
+					when={isCurrentSession}
+				>
 					<Badge variant="secondary">
 						{localization.settings.currentSession}
 					</Badge>
-				) : (
-					activeSession.createdAt && (
-						<ItemDescription className="capitalize">
-							{timeAgo(activeSession.createdAt)}
-						</ItemDescription>
-					)
-				)}
+				</Show>
 			</ItemContent>
 			<ItemActions>
 				<Button
@@ -110,9 +116,15 @@ export function ActiveSession({ activeSession }: ActiveSessionProps) {
 					size="sm"
 					variant="outline"
 				>
-					{isRevoking && <Spinner />}
-					{!isRevoking && isCurrentSession && <LogOut />}
-					{!(isRevoking || isCurrentSession) && <X />}
+					<Show when={isRevoking}>
+						<Spinner />
+					</Show>
+					<Show when={!isRevoking && isCurrentSession}>
+						<LogOut />
+					</Show>
+					<Show when={!(isRevoking || isCurrentSession)}>
+						<X />
+					</Show>
 
 					{isCurrentSession
 						? localization.auth.signOut

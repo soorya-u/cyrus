@@ -27,6 +27,7 @@ export const ConversationEntrySchema = z.object({
 	id: z.string(),
 	threadId: z.string(),
 	seq: z.number(),
+	sub: z.number().optional(),
 	chunk: ChatChunkSchema,
 	createdAt: z.string(),
 });
