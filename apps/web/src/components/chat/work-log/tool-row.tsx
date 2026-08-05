@@ -65,8 +65,8 @@ function ToolRowHeading({
 			<span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground/65">
 				<Icon className="size-3.5 stroke-[1.8] opacity-80" />
 			</span>
-			<div className="flex min-w-0 flex-1 items-center gap-1.5">
-				<p className="flex min-w-0 items-baseline gap-1.5 text-[12px] leading-5">
+			<span className="flex min-w-0 flex-1 items-center gap-1.5">
+				<span className="flex min-w-0 items-baseline gap-1.5 text-[12px] leading-5">
 					<span className="min-w-0 shrink truncate font-medium text-foreground/82">
 						{presentation.heading}
 					</span>
@@ -75,8 +75,8 @@ function ToolRowHeading({
 							{presentation.preview}
 						</span>
 					</Show>
-				</p>
-			</div>
+				</span>
+			</span>
 			<span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground/55">
 				<ToolStatusIcon
 					showFailed={showFailed}

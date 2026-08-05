@@ -42,41 +42,40 @@ export function ThreadRow({
 						"bg-sidebar-accent font-medium text-sidebar-accent-foreground"
 				)}
 			>
-				<button
-					className="flex min-w-0 flex-1 items-center overflow-hidden text-left outline-hidden focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-					onClick={() => onSelect(thread.id)}
-					onDoubleClick={() => {
-						setDraft(thread.name);
-						setRenaming(true);
-					}}
-					type="button"
-				>
-					{renaming ? (
-						<input
-							className="min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs outline-none"
-							onBlur={() => {
+				{renaming ? (
+					<input
+						className="min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs outline-none"
+						onBlur={() => {
+							onRename(thread.id, draft.trim() || thread.name);
+							setRenaming(false);
+						}}
+						onChange={(event) => setDraft(event.target.value)}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") {
+								event.preventDefault();
 								onRename(thread.id, draft.trim() || thread.name);
 								setRenaming(false);
-							}}
-							onChange={(event) => setDraft(event.target.value)}
-							onClick={(event) => event.stopPropagation()}
-							onKeyDown={(event) => {
-								if (event.key === "Enter") {
-									event.preventDefault();
-									onRename(thread.id, draft.trim() || thread.name);
-									setRenaming(false);
-								} else if (event.key === "Escape") {
-									event.preventDefault();
-									setRenaming(false);
-								}
-							}}
-							ref={inputRef}
-							value={draft}
-						/>
-					) : (
+							} else if (event.key === "Escape") {
+								event.preventDefault();
+								setRenaming(false);
+							}
+						}}
+						ref={inputRef}
+						value={draft}
+					/>
+				) : (
+					<button
+						className="flex min-w-0 flex-1 items-center overflow-hidden text-left outline-hidden focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+						onClick={() => onSelect(thread.id)}
+						onDoubleClick={() => {
+							setDraft(thread.name);
+							setRenaming(true);
+						}}
+						type="button"
+					>
 						<span className="min-w-0 flex-1 truncate">{thread.name}</span>
-					)}
-				</button>
+					</button>
+				)}
 				<div className="ml-auto flex shrink-0 items-center gap-1.5 pr-1.5">
 					{confirmDelete ? (
 						<>
@@ -102,7 +101,7 @@ export function ThreadRow({
 								aria-label={`Delete ${thread.name}`}
 								className={cn(
 									"hidden size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-destructive",
-									"group-hover/sub:flex max-sm:flex"
+									"group-focus-within/sub:flex group-hover/sub:flex max-sm:flex"
 								)}
 								onClick={() => setConfirmDelete(true)}
 								type="button"
@@ -131,41 +130,40 @@ export function ThreadRow({
 				isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"
 			)}
 		>
-			<button
-				className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left"
-				onClick={() => onSelect(thread.id)}
-				onDoubleClick={() => {
-					setDraft(thread.name);
-					setRenaming(true);
-				}}
-				type="button"
-			>
-				{renaming ? (
-					<input
-						className="min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs outline-none"
-						onBlur={() => {
+			{renaming ? (
+				<input
+					className="ms-2 min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs outline-none"
+					onBlur={() => {
+						onRename(thread.id, draft.trim() || thread.name);
+						setRenaming(false);
+					}}
+					onChange={(event) => setDraft(event.target.value)}
+					onKeyDown={(event) => {
+						if (event.key === "Enter") {
+							event.preventDefault();
 							onRename(thread.id, draft.trim() || thread.name);
 							setRenaming(false);
-						}}
-						onChange={(event) => setDraft(event.target.value)}
-						onClick={(event) => event.stopPropagation()}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") {
-								event.preventDefault();
-								onRename(thread.id, draft.trim() || thread.name);
-								setRenaming(false);
-							} else if (event.key === "Escape") {
-								event.preventDefault();
-								setRenaming(false);
-							}
-						}}
-						ref={inputRef}
-						value={draft}
-					/>
-				) : (
+						} else if (event.key === "Escape") {
+							event.preventDefault();
+							setRenaming(false);
+						}
+					}}
+					ref={inputRef}
+					value={draft}
+				/>
+			) : (
+				<button
+					className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left"
+					onClick={() => onSelect(thread.id)}
+					onDoubleClick={() => {
+						setDraft(thread.name);
+						setRenaming(true);
+					}}
+					type="button"
+				>
 					<span className="min-w-0 flex-1 truncate text-xs">{thread.name}</span>
-				)}
-			</button>
+				</button>
+			)}
 			<div className="ml-auto flex shrink-0 items-center gap-1.5 pr-1.5">
 				{confirmDelete ? (
 					<button
@@ -183,7 +181,7 @@ export function ThreadRow({
 						aria-label={`Delete ${thread.name}`}
 						className={cn(
 							"hidden size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground",
-							"group-hover/sub:flex max-sm:flex"
+							"group-focus-within/sub:flex group-hover/sub:flex max-sm:flex"
 						)}
 						onClick={(event) => {
 							event.stopPropagation();
