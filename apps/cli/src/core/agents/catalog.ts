@@ -30,11 +30,10 @@ export function catalogFromSession(session: RuntimeSession): AgentCatalog {
 
 export function modelsFromSession(session: RuntimeSession): ModelOption[] {
 	const { session: meta } = session.transcript;
-	const fromModels = meta.models?.availableModels as
-		| RawSessionModel[]
-		| undefined;
-	if (fromModels && fromModels.length > 0) {
-		return fromModels.map((model) => ({
+	if (hasNativeModelSelection(session)) {
+		const availableModels = (meta.models?.availableModels ??
+			[]) as RawSessionModel[];
+		return availableModels.map((model) => ({
 			id: model.modelId,
 			name: model.name,
 			description: model.description ?? null,
@@ -42,6 +41,11 @@ export function modelsFromSession(session: RuntimeSession): ModelOption[] {
 		}));
 	}
 	return configOptionsToModels(meta.configOptions);
+}
+
+export function hasNativeModelSelection(session: RuntimeSession): boolean {
+	const availableModels = session.transcript.session.models?.availableModels;
+	return Boolean(availableModels && availableModels.length > 0);
 }
 
 export function modesFromSession(session: RuntimeSession): SelectOption[] {

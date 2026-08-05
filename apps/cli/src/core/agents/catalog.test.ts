@@ -5,6 +5,7 @@ import {
 	configOptionsToEfforts,
 	configOptionsToModels,
 	findSelectConfigOptionId,
+	hasNativeModelSelection,
 	modelsFromSession,
 	modesFromSession,
 	reconcileInvalidSelectConfigOptions,
@@ -62,6 +63,33 @@ describe("modelsFromSession", () => {
 			},
 		] as SessionConfigOption[]);
 		expect(models.map((m) => m.id)).toEqual(["a", "b"]);
+	});
+});
+
+describe("hasNativeModelSelection", () => {
+	test("true when the session reports availableModels", () => {
+		expect(
+			hasNativeModelSelection(
+				sessionWith({
+					models: {
+						currentModelId: "m1",
+						availableModels: [{ modelId: "m1", name: "Model 1" }],
+					},
+				})
+			)
+		).toBe(true);
+	});
+
+	test("false when the session has no models block", () => {
+		expect(hasNativeModelSelection(sessionWith({}))).toBe(false);
+	});
+
+	test("false when availableModels is empty", () => {
+		expect(
+			hasNativeModelSelection(
+				sessionWith({ models: { currentModelId: "m1", availableModels: [] } })
+			)
+		).toBe(false);
 	});
 });
 
