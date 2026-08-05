@@ -10,6 +10,8 @@ export const MessageViewSchema = z.object({
 	createdAt: z.string(),
 	turnId: z.string(),
 	streaming: z.boolean().optional(),
+	seq: z.number(),
+	sub: z.number().optional(),
 });
 
 export const ThoughtViewSchema = z.object({
@@ -18,6 +20,18 @@ export const ThoughtViewSchema = z.object({
 	createdAt: z.string(),
 	turnId: z.string(),
 	streaming: z.boolean().optional(),
+	seq: z.number(),
+	sub: z.number().optional(),
+});
+
+export const DiffViewSchema = z.object({
+	id: z.string(),
+	path: z.string(),
+	patch: z.string(),
+	additions: z.number(),
+	deletions: z.number(),
+	turnId: z.string(),
+	toolCallId: z.string().optional(),
 });
 
 export const ToolCallViewSchema = z.object({
@@ -29,16 +43,9 @@ export const ToolCallViewSchema = z.object({
 	rawOutput: z.unknown().optional(),
 	createdAt: z.string(),
 	turnId: z.string(),
-});
-
-export const DiffViewSchema = z.object({
-	id: z.string(),
-	path: z.string(),
-	patch: z.string(),
-	additions: z.number(),
-	deletions: z.number(),
-	turnId: z.string(),
-	toolCallId: z.string().optional(),
+	diffs: z.array(DiffViewSchema).default([]),
+	seq: z.number(),
+	sub: z.number().optional(),
 });
 
 export const TurnViewSchema = z.object({
@@ -55,6 +62,8 @@ export const ErrorViewSchema = z.object({
 	code: z.string().optional(),
 	createdAt: z.string(),
 	turnId: z.string(),
+	seq: z.number(),
+	sub: z.number().optional(),
 });
 
 export const ApprovalOptionViewSchema = z.object({
@@ -73,6 +82,8 @@ export const ApprovalViewSchema = z.object({
 	createdAt: z.string(),
 	turnId: z.string(),
 	resolved: z.boolean().optional(),
+	seq: z.number(),
+	sub: z.number().optional(),
 });
 
 export const ElicitationViewSchema = z.object({
@@ -87,13 +98,14 @@ export const ElicitationViewSchema = z.object({
 	createdAt: z.string(),
 	turnId: z.string(),
 	resolved: z.boolean().optional(),
+	seq: z.number(),
+	sub: z.number().optional(),
 });
 
 export const ThreadConversationSchema = z.object({
 	messages: z.array(MessageViewSchema),
 	thoughts: z.array(ThoughtViewSchema),
 	toolCalls: z.array(ToolCallViewSchema),
-	diffs: z.array(DiffViewSchema),
 	errors: z.array(ErrorViewSchema),
 	approvals: z.array(ApprovalViewSchema),
 	elicitations: z.array(ElicitationViewSchema),

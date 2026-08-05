@@ -9,6 +9,8 @@ import {
 	XIcon,
 } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
+import { DiffRow } from "@/components/chat/work-log/diff-row";
+import { Show } from "@/components/helpers/show";
 import {
 	KIND_PRESENTATIONS,
 	type ToolPresentation,
@@ -51,7 +53,8 @@ export function ToolRow({ tool }: { tool: ToolCallView }) {
 	const [open, setOpen] = useState(false);
 	const presentation = deriveToolPresentation(tool);
 	const Icon = presentation.icon;
-	const canExpand = Boolean(presentation.detail?.trim());
+	const hasDiffs = Boolean(tool.diffs?.length);
+	const canExpand = hasDiffs || Boolean(presentation.detail?.trim());
 	const showSuccess = tool.status === "completed";
 	const showFailed = tool.status === "failed";
 	const showPending =
@@ -87,22 +90,22 @@ export function ToolRow({ tool }: { tool: ToolCallView }) {
 						<span className="min-w-0 shrink truncate font-medium text-foreground/82">
 							{presentation.heading}
 						</span>
-						{presentation.preview && (
+						<Show when={Boolean(presentation.preview)}>
 							<span className="min-w-0 flex-1 truncate text-muted-foreground/55">
 								{presentation.preview}
 							</span>
-						)}
+						</Show>
 					</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-px text-muted-foreground/55">
-					{canExpand && (
+					<Show when={canExpand}>
 						<ChevronDownIcon
 							className={cn(
 								"size-3 shrink-0 opacity-70 transition-transform duration-200",
 								open && "rotate-180"
 							)}
 						/>
-					)}
+					</Show>
 					<span className="flex size-4 items-center justify-center">
 						<ToolStatusIcon
 							showFailed={showFailed}
@@ -112,13 +115,24 @@ export function ToolRow({ tool }: { tool: ToolCallView }) {
 					</span>
 				</div>
 			</div>
-			{open && canExpand && presentation.detail && (
-				<div className="ms-7 mt-1 border-border/45 border-s ps-3 pt-0.5">
-					<pre className="wrap-break-word max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground leading-relaxed">
-						{presentation.detail}
-					</pre>
+			<Show when={open && canExpand}>
+				<div className="ms-7 mt-1 flex flex-col gap-1 border-border/45 border-s ps-3 pt-0.5">
+					<Show
+						fallback={
+							<Show when={Boolean(presentation.detail?.trim())}>
+								<pre className="wrap-break-word max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground leading-relaxed">
+									{presentation.detail}
+								</pre>
+							</Show>
+						}
+						when={hasDiffs}
+					>
+						{tool.diffs?.map((diff) => (
+							<DiffRow diff={diff} key={diff.id} />
+						))}
+					</Show>
 				</div>
-			)}
+			</Show>
 		</div>
 	);
 }

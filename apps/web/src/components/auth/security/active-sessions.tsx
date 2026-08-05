@@ -1,6 +1,7 @@
 import { useAuth, useListSessions, useSession } from "@better-auth-ui/react";
 import { cn } from "cnfast";
 import { Fragment } from "react";
+import { Show } from "@/components/helpers/show";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Item,
@@ -44,18 +45,23 @@ export function ActiveSessions({ className }: ActiveSessionsProps) {
 
 			<Card className={cn("p-0", className)}>
 				<CardContent className="p-0">
-					{isPending ? (
+					<Show
+						fallback={
+							<ItemGroup className="gap-0">
+								{activeSessions?.map((activeSession, index) => (
+									<Fragment key={activeSession.id}>
+										<Show when={index > 0}>
+											<ItemSeparator />
+										</Show>
+										<ActiveSession activeSession={activeSession} />
+									</Fragment>
+								))}
+							</ItemGroup>
+						}
+						when={isPending}
+					>
 						<SessionRowSkeleton />
-					) : (
-						<ItemGroup className="gap-0">
-							{activeSessions?.map((activeSession, index) => (
-								<Fragment key={activeSession.id}>
-									{index > 0 && <ItemSeparator />}
-									<ActiveSession activeSession={activeSession} />
-								</Fragment>
-							))}
-						</ItemGroup>
-					)}
+					</Show>
 				</CardContent>
 			</Card>
 		</div>

@@ -1,6 +1,5 @@
 import type {
 	ApprovalView,
-	DiffView,
 	ElicitationView,
 	ErrorView,
 	MessageView,
@@ -30,13 +29,6 @@ export type ToolFeedEntry = FeedEntryBase & {
 	pendingApproval?: ApprovalView;
 };
 
-export type DiffFeedEntry = FeedEntryBase & {
-	type: "diff";
-	diff: DiffView;
-	turnId: string;
-	pendingApproval?: ApprovalView;
-};
-
 export type ErrorFeedEntry = FeedEntryBase & {
 	type: "error";
 	error: ErrorView;
@@ -59,20 +51,23 @@ export type FeedEntry =
 	| MessageFeedEntry
 	| ThoughtFeedEntry
 	| ToolFeedEntry
-	| DiffFeedEntry
 	| ErrorFeedEntry
 	| ApprovalFeedEntry
 	| ElicitationFeedEntry;
 
+type OrderKey = { seq: number; sub: number };
+
 type TimelineItem = {
-	createdAt: string;
-	kind: number;
+	order: OrderKey;
 	entry: FeedEntry;
 };
 
-function messageSortKind(message: MessageView): number {
-	if (message.role === "user") return 0;
-	return 2;
+function orderKey(entity: { seq: number; sub?: number }): OrderKey {
+	return { seq: entity.seq, sub: entity.sub ?? 0 };
+}
+
+function compareOrderKey(left: OrderKey, right: OrderKey): number {
+	return left.seq - right.seq || left.sub - right.sub;
 }
 
 function findPendingApproval(
@@ -101,7 +96,6 @@ function buildTurnTimeline(
 	messages: MessageView[],
 	thoughts: ThoughtView[],
 	toolCalls: ToolCallView[],
-	diffs: DiffView[],
 	errors: ErrorView[],
 	approvals: ApprovalView[],
 	elicitations: ElicitationView[]
@@ -110,24 +104,21 @@ function buildTurnTimeline(
 
 	pushTurnItems(messages, turnId, (message) => {
 		timeline.push({
-			createdAt: message.createdAt,
-			kind: messageSortKind(message),
+			order: orderKey(message),
 			entry: { type: "message", id: message.id, message },
 		});
 	});
 
 	pushTurnItems(thoughts, turnId, (thought) => {
 		timeline.push({
-			createdAt: thought.createdAt,
-			kind: 1,
+			order: orderKey(thought),
 			entry: { type: "thought", id: thought.id, thought },
 		});
 	});
 
 	pushTurnItems(toolCalls, turnId, (toolCall) => {
 		timeline.push({
-			createdAt: toolCall.createdAt,
-			kind: 3,
+			order: orderKey(toolCall),
 			entry: {
 				type: "tool",
 				id: `tool-${toolCall.toolCallId}`,
@@ -138,37 +129,9 @@ function buildTurnTimeline(
 		});
 	});
 
-	const diffSortAnchor =
-		toolCalls
-			.filter((toolCall) => toolCall.turnId === turnId)
-			.reduce<string | undefined>(
-				(latest, toolCall) =>
-					!latest || toolCall.createdAt > latest ? toolCall.createdAt : latest,
-				undefined
-			) ??
-		messages.find(
-			(message) => message.role === "user" && message.turnId === turnId
-		)?.createdAt ??
-		turnId;
-
-	pushTurnItems(diffs, turnId, (diff) => {
-		timeline.push({
-			createdAt: diffSortAnchor,
-			kind: 4,
-			entry: {
-				type: "diff",
-				id: diff.id,
-				diff,
-				turnId,
-				pendingApproval: findPendingApproval(approvals, diff.toolCallId),
-			},
-		});
-	});
-
 	pushTurnItems(approvals, turnId, (approval) => {
 		timeline.push({
-			createdAt: approval.createdAt,
-			kind: 4.5,
+			order: orderKey(approval),
 			entry: {
 				type: "approval",
 				id: approval.id,
@@ -180,8 +143,7 @@ function buildTurnTimeline(
 
 	pushTurnItems(elicitations, turnId, (elicitation) => {
 		timeline.push({
-			createdAt: elicitation.createdAt,
-			kind: 4.6,
+			order: orderKey(elicitation),
 			entry: {
 				type: "elicitation",
 				id: elicitation.id,
@@ -193,8 +155,7 @@ function buildTurnTimeline(
 
 	pushTurnItems(errors, turnId, (error) => {
 		timeline.push({
-			createdAt: error.createdAt,
-			kind: 5,
+			order: orderKey(error),
 			entry: {
 				type: "error",
 				id: error.id,
@@ -204,16 +165,7 @@ function buildTurnTimeline(
 		});
 	});
 
-	timeline.sort((left, right) => {
-		const leftIsUser = left.kind === 0;
-		const rightIsUser = right.kind === 0;
-		if (leftIsUser && !rightIsUser) return -1;
-		if (!leftIsUser && rightIsUser) return 1;
-
-		const byTime = left.createdAt.localeCompare(right.createdAt);
-		if (byTime !== 0) return byTime;
-		return left.kind - right.kind;
-	});
+	timeline.sort((left, right) => compareOrderKey(left.order, right.order));
 
 	return timeline.map((item) => item.entry);
 }
@@ -235,7 +187,6 @@ export function deriveFeed(
 				conversation.messages,
 				conversation.thoughts,
 				conversation.toolCalls,
-				conversation.diffs,
 				conversation.errors,
 				approvals,
 				elicitations
@@ -252,7 +203,7 @@ export function deriveFeed(
 		(error) => !knownTurnIds.has(error.turnId)
 	);
 	for (const error of orphanedErrors) {
-		insertFeedEntryByCreatedAt(entries, {
+		insertFeedEntryByOrderKey(entries, orderKey(error), {
 			type: "error",
 			id: error.id,
 			error,
@@ -263,22 +214,20 @@ export function deriveFeed(
 	return entries;
 }
 
-function feedEntryCreatedAt(entry: FeedEntry): string | null {
+function feedEntryOrderKey(entry: FeedEntry): OrderKey {
 	switch (entry.type) {
 		case "message":
-			return entry.message.createdAt;
+			return orderKey(entry.message);
 		case "thought":
-			return entry.thought.createdAt;
+			return orderKey(entry.thought);
 		case "tool":
-			return entry.tool.createdAt;
-		case "diff":
-			return null;
+			return orderKey(entry.tool);
 		case "error":
-			return entry.error.createdAt;
+			return orderKey(entry.error);
 		case "approval":
-			return entry.approval.createdAt;
+			return orderKey(entry.approval);
 		case "elicitation":
-			return entry.elicitation.createdAt;
+			return orderKey(entry.elicitation);
 		default: {
 			const _exhaustive: never = entry;
 			return _exhaustive;
@@ -286,15 +235,14 @@ function feedEntryCreatedAt(entry: FeedEntry): string | null {
 	}
 }
 
-function insertFeedEntryByCreatedAt(
+function insertFeedEntryByOrderKey(
 	entries: FeedEntry[],
+	target: OrderKey,
 	entry: ErrorFeedEntry
 ): void {
-	const createdAt = entry.error.createdAt;
 	let index = 0;
 	for (const existing of entries) {
-		const existingAt = feedEntryCreatedAt(existing);
-		if (existingAt !== null && existingAt > createdAt) break;
+		if (compareOrderKey(feedEntryOrderKey(existing), target) > 0) break;
 		index += 1;
 	}
 	entries.splice(index, 0, entry);

@@ -4,6 +4,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { AgentModelPicker } from "@/components/chat/composer/agent-model-picker";
 import { CompactComposerControls } from "@/components/chat/composer/compact-composer-controls";
 import { ComposerContextUsage } from "@/components/chat/composer/composer-context-usage";
+import { Show } from "@/components/helpers/show";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -39,13 +40,13 @@ export function ComposerFooterColumn({
 
 	return (
 		<div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-			{catalogError ? (
+			<Show when={Boolean(catalogError)}>
 				<div className="flex min-w-0 items-center gap-2 px-1">
 					<p className="min-w-0 truncate text-destructive text-xs">
-						{catalogError.message || "Could not load agent catalog."} Select the
-						agent again to retry.
+						{catalogError?.message || "Could not load agent catalog."} Select
+						the agent again to retry.
 					</p>
-					{retry ? (
+					<Show when={Boolean(retry)}>
 						<Button
 							className="h-6 shrink-0 px-2 text-xs"
 							onClick={retry}
@@ -55,9 +56,9 @@ export function ComposerFooterColumn({
 						>
 							Retry
 						</Button>
-					) : null}
+					</Show>
 				</div>
-			) : null}
+			</Show>
 			<ComposerFooterControls
 				agents={agents}
 				localDraft={localDraft}
@@ -131,17 +132,10 @@ export function ComposerFooterControls({
 				threadId={threadId}
 			/>
 
-			{isCompact ? (
-				<CompactComposerControls
-					agents={agents}
-					localDraft={localDraft}
-					projectId={projectId}
-					threadId={threadId}
-				/>
-			) : (
-				<>
-					{modes.length > 0 && (
-						<>
+			<Show
+				fallback={
+					<>
+						<Show when={modes.length > 0}>
 							<Separator
 								className="mx-0.5 hidden h-4 sm:block"
 								orientation="vertical"
@@ -152,10 +146,8 @@ export function ComposerFooterControls({
 								options={modes}
 								value={displayMode}
 							/>
-						</>
-					)}
-					{efforts.length > 0 && (
-						<>
+						</Show>
+						<Show when={efforts.length > 0}>
 							<Separator
 								className="mx-0.5 hidden h-4 sm:block"
 								orientation="vertical"
@@ -166,10 +158,8 @@ export function ComposerFooterControls({
 								options={efforts}
 								value={displayEffort}
 							/>
-						</>
-					)}
-					{personas.length > 0 && (
-						<>
+						</Show>
+						<Show when={personas.length > 0}>
 							<Separator
 								className="mx-0.5 hidden h-4 sm:block"
 								orientation="vertical"
@@ -180,10 +170,18 @@ export function ComposerFooterControls({
 								options={personas}
 								value={displayPersona}
 							/>
-						</>
-					)}
-				</>
-			)}
+						</Show>
+					</>
+				}
+				when={isCompact}
+			>
+				<CompactComposerControls
+					agents={agents}
+					localDraft={localDraft}
+					projectId={projectId}
+					threadId={threadId}
+				/>
+			</Show>
 
 			<ComposerContextUsage usage={contextUsage} />
 		</div>

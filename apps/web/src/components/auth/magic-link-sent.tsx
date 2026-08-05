@@ -1,6 +1,7 @@
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react";
 import { cn } from "cnfast";
 import { useState } from "react";
+import { Show } from "@/components/helpers/show";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldDescription } from "@/components/ui/field";
 import { MAGIC_LINK_SENT } from "@/constants/storage-keys";
@@ -43,10 +44,12 @@ export function MagicLinkSent({ className }: MagicLinkSentProps) {
 							: magicLinkLocalization.magicLinkSent}
 					</FieldDescription>
 
-					{email && <OpenEmailButton email={email} />}
+					<Show when={Boolean(email)}>
+						<OpenEmailButton email={email} />
+					</Show>
 
 					<div className="mt-4 flex w-full flex-col items-center gap-3">
-						{emailAndPassword?.enabled && (
+						<Show when={Boolean(emailAndPassword?.enabled)}>
 							<div className="flex justify-center gap-2 text-sm">
 								<Link
 									className="text-foreground underline"
@@ -55,7 +58,7 @@ export function MagicLinkSent({ className }: MagicLinkSentProps) {
 									{localization.auth.signUp}
 								</Link>
 							</div>
-						)}
+						</Show>
 					</div>
 				</div>
 			</CardContent>

@@ -3,6 +3,7 @@ import type { RegisteredAgent } from "@cyrus/schemas/rtc/agents";
 import { cn } from "cnfast";
 import { BotIcon, ChevronDownIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Show } from "@/components/helpers/show";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -86,7 +87,7 @@ export function AgentModelPicker({
 				onCloseAutoFocus={(event) => event.preventDefault()}
 			>
 				<div className="flex max-h-72 items-stretch">
-					{!agentLocked && (
+					<Show when={!agentLocked}>
 						<div className="flex w-32 shrink-0 flex-col justify-end gap-0.5 border-border/60 border-r p-1">
 							{agents.map((agent) => (
 								<button
@@ -103,14 +104,10 @@ export function AgentModelPicker({
 								</button>
 							))}
 						</div>
-					)}
+					</Show>
 					<div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-y-auto p-1">
-						{modelsLoading ? (
-							<div className="flex flex-1 items-center justify-center py-8">
-								<Spinner className="size-4 text-muted-foreground" />
-							</div>
-						) : (
-							models.map((model) => (
+						<Show
+							fallback={models.map((model) => (
 								<button
 									className={cn(
 										"rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent",
@@ -125,8 +122,13 @@ export function AgentModelPicker({
 								>
 									{model.name}
 								</button>
-							))
-						)}
+							))}
+							when={modelsLoading}
+						>
+							<div className="flex flex-1 items-center justify-center py-8">
+								<Spinner className="size-4 text-muted-foreground" />
+							</div>
+						</Show>
 					</div>
 				</div>
 			</DropdownMenuContent>

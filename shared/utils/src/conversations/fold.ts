@@ -19,7 +19,6 @@ type MutableState = {
 	messages: Map<string, MessageView>;
 	thoughts: Map<string, ThoughtView>;
 	toolCalls: Map<string, ToolCallView>;
-	diffs: Map<string, DiffView>;
 	errors: Map<string, ErrorView>;
 	approvals: Map<string, ApprovalView>;
 	elicitations: Map<string, ElicitationView>;
@@ -45,25 +44,23 @@ function touchTurn(
 	});
 }
 
-function upsertDiffs(
-	diffs: Map<string, DiffView>,
+function extractDiffs(
 	content: ToolCallContent[] | null | undefined,
 	turnId: string,
-	toolCallId?: string
-): void {
-	if (!content) return;
-	for (const item of content) {
-		if (item.type !== "diff") continue;
-		diffs.set(`${turnId}:${item.path}`, {
+	toolCallId: string
+): DiffView[] {
+	if (!content) return [];
+	return content
+		.filter((item) => item.type === "diff")
+		.map((item) => ({
 			additions: item.additions,
 			deletions: item.deletions,
-			id: `${turnId}:${item.path}`,
+			id: `${toolCallId}:${item.path}`,
 			patch: item.patch,
 			path: item.path,
 			toolCallId,
 			turnId,
-		});
-	}
+		}));
 }
 
 function applyUserMessage(
@@ -77,9 +74,6 @@ function applyUserMessage(
 	if (existing) {
 		existing.content = event.content;
 		existing.blocks = event.blocks;
-		if (entry.createdAt < existing.createdAt) {
-			existing.createdAt = entry.createdAt;
-		}
 		return;
 	}
 	state.messages.set(key, {
@@ -89,6 +83,8 @@ function applyUserMessage(
 		id: key,
 		role: "user",
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -122,6 +118,8 @@ function applyThought(
 		createdAt: entry.createdAt,
 		id: key,
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -144,6 +142,8 @@ function applyReasoningCompleted(
 		createdAt: entry.createdAt,
 		id: key,
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -167,6 +167,8 @@ function applyToken(
 		id: key,
 		role: "assistant",
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -178,6 +180,7 @@ function applyToolCall(
 ): void {
 	state.toolCalls.set(event.toolCallId, {
 		createdAt: entry.createdAt,
+		diffs: extractDiffs(event.content, turnId, event.toolCallId),
 		kind: event.kind,
 		rawInput: event.rawInput,
 		rawOutput: event.rawOutput,
@@ -185,8 +188,9 @@ function applyToolCall(
 		title: event.title,
 		toolCallId: event.toolCallId,
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
-	upsertDiffs(state.diffs, event.content, turnId, event.toolCallId);
 }
 
 function applyToolCallUpdate(
@@ -202,9 +206,13 @@ function applyToolCallUpdate(
 		if (event.kind) existing.kind = event.kind;
 		if (event.rawInput !== undefined) existing.rawInput = event.rawInput;
 		if (event.rawOutput !== undefined) existing.rawOutput = event.rawOutput;
+		if (event.content !== undefined && event.content !== null) {
+			existing.diffs = extractDiffs(event.content, turnId, event.toolCallId);
+		}
 	} else {
 		state.toolCalls.set(event.toolCallId, {
 			createdAt: entry.createdAt,
+			diffs: extractDiffs(event.content, turnId, event.toolCallId),
 			kind: event.kind ?? undefined,
 			rawInput: event.rawInput,
 			rawOutput: event.rawOutput,
@@ -212,9 +220,10 @@ function applyToolCallUpdate(
 			title: event.title ?? event.toolCallId,
 			toolCallId: event.toolCallId,
 			turnId,
+			seq: entry.seq,
+			sub: entry.sub,
 		});
 	}
-	upsertDiffs(state.diffs, event.content, turnId, event.toolCallId);
 }
 
 function applyMessageCompleted(
@@ -235,6 +244,8 @@ function applyMessageCompleted(
 		id: key,
 		role: "assistant",
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -251,6 +262,8 @@ function applyThreadError(
 		id: key,
 		message: event.message,
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -275,6 +288,8 @@ function applyApprovalRequest(
 		title: event.request.toolCall.title ?? undefined,
 		toolCallId,
 		turnId,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -297,6 +312,8 @@ function applyElicitationRequest(
 		threadId: entry.threadId,
 		turnId,
 		url: event.request.mode === "url" ? event.request.url : undefined,
+		seq: entry.seq,
+		sub: entry.sub,
 	});
 }
 
@@ -354,58 +371,13 @@ function latestTurnIdFromEntries(
 	entries: ConversationEntry[]
 ): string | undefined {
 	let latestTurnId: string | undefined;
-	let latestCreatedAt = "";
 
 	for (const entry of entries) {
 		if (entry.chunk.event.type !== "user_message") continue;
-		if (entry.createdAt >= latestCreatedAt) {
-			latestCreatedAt = entry.createdAt;
-			latestTurnId = entry.chunk.turnId;
-		}
+		latestTurnId = entry.chunk.turnId;
 	}
 
 	return latestTurnId;
-}
-
-function turnStartedAt(entries: ConversationEntry[], turnId: string): string {
-	const userMessages = entries.filter(
-		(entry) =>
-			entry.chunk.turnId === turnId && entry.chunk.event.type === "user_message"
-	);
-	if (userMessages.length > 0) {
-		return userMessages.reduce(
-			(earliest, entry) =>
-				entry.createdAt < earliest ? entry.createdAt : earliest,
-			userMessages[0]?.createdAt ?? "\uffff"
-		);
-	}
-
-	const turnEntries = entries.filter((entry) => entry.chunk.turnId === turnId);
-	return turnEntries[0]?.createdAt ?? "\uffff";
-}
-
-function turnMinPersistedSeq(
-	entries: ConversationEntry[],
-	turnId: string
-): number {
-	const seqs = entries
-		.filter((entry) => entry.chunk.turnId === turnId && entry.seq > 0)
-		.map((entry) => entry.seq);
-	if (seqs.length === 0) return Number.POSITIVE_INFINITY;
-	return Math.min(...seqs);
-}
-
-function compareTurnOrder(
-	entries: ConversationEntry[],
-	leftId: string,
-	rightId: string
-): number {
-	const leftSeq = turnMinPersistedSeq(entries, leftId);
-	const rightSeq = turnMinPersistedSeq(entries, rightId);
-	if (leftSeq !== rightSeq) return leftSeq - rightSeq;
-	return turnStartedAt(entries, leftId).localeCompare(
-		turnStartedAt(entries, rightId)
-	);
 }
 
 function applyEvent(
@@ -465,7 +437,6 @@ export function fold(
 ): Result<ThreadConversation, ZodError> {
 	const state: MutableState = {
 		approvals: new Map(),
-		diffs: new Map(),
 		elicitations: new Map(),
 		errors: new Map(),
 		messages: new Map(),
@@ -485,9 +456,7 @@ export function fold(
 		entriesByTurn.set(entry.chunk.turnId, turnEntries);
 	}
 
-	const orderedTurns = [...turns.values()].sort((left, right) =>
-		compareTurnOrder(entries, left.id, right.id)
-	);
+	const orderedTurns = [...turns.values()];
 	orderedTurns.forEach((turn, index) => {
 		turn.index = index;
 	});
@@ -502,42 +471,12 @@ export function fold(
 		? orderedTurns.find((turn) => turn.id === latestTurnId)
 		: orderedTurns.at(-1);
 
-	const turnOrder = new Map(
-		orderedTurns.map((turn, index) => [turn.id, index] as const)
-	);
-
 	const parsed = ThreadConversationSchema.safeParse({
-		approvals: [...state.approvals.values()].sort((left, right) => {
-			const leftTurn = turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER;
-			const rightTurn = turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER;
-			if (leftTurn !== rightTurn) return leftTurn - rightTurn;
-			return left.createdAt.localeCompare(right.createdAt);
-		}),
-		diffs: [...state.diffs.values()],
-		elicitations: [...state.elicitations.values()].sort((left, right) => {
-			const leftTurn = turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER;
-			const rightTurn = turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER;
-			if (leftTurn !== rightTurn) return leftTurn - rightTurn;
-			return left.createdAt.localeCompare(right.createdAt);
-		}),
-		errors: [...state.errors.values()].sort((left, right) => {
-			const leftTurn = turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER;
-			const rightTurn = turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER;
-			if (leftTurn !== rightTurn) return leftTurn - rightTurn;
-			return left.createdAt.localeCompare(right.createdAt);
-		}),
+		approvals: [...state.approvals.values()],
+		elicitations: [...state.elicitations.values()],
+		errors: [...state.errors.values()],
 		thoughts: [...state.thoughts.values()]
 			.filter((thought) => thought.content.trim().length > 0)
-			.sort((left, right) => {
-				const leftTurn = left.turnId
-					? (turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER)
-					: Number.MAX_SAFE_INTEGER;
-				const rightTurn = right.turnId
-					? (turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER)
-					: Number.MAX_SAFE_INTEGER;
-				if (leftTurn !== rightTurn) return leftTurn - rightTurn;
-				return left.createdAt.localeCompare(right.createdAt);
-			})
 			.map((thought) => ({
 				...thought,
 				streaming:
@@ -545,28 +484,13 @@ export function fold(
 					latestTurn?.state === "running" &&
 					!completedThoughtIds.has(thought.id),
 			})),
-		messages: [...state.messages.values()]
-			.sort((left, right) => {
-				const leftTurn = left.turnId
-					? (turnOrder.get(left.turnId) ?? Number.MAX_SAFE_INTEGER)
-					: Number.MAX_SAFE_INTEGER;
-				const rightTurn = right.turnId
-					? (turnOrder.get(right.turnId) ?? Number.MAX_SAFE_INTEGER)
-					: Number.MAX_SAFE_INTEGER;
-				if (leftTurn !== rightTurn) return leftTurn - rightTurn;
-				if (left.role !== right.role) {
-					if (left.role === "user") return -1;
-					if (right.role === "user") return 1;
-				}
-				return left.createdAt.localeCompare(right.createdAt);
-			})
-			.map((message) => ({
-				...message,
-				streaming:
-					message.role === "assistant" &&
-					message.turnId === latestTurn?.id &&
-					latestTurn?.state === "running",
-			})),
+		messages: [...state.messages.values()].map((message) => ({
+			...message,
+			streaming:
+				message.role === "assistant" &&
+				message.turnId === latestTurn?.id &&
+				latestTurn?.state === "running",
+		})),
 		toolCalls: [...state.toolCalls.values()],
 		turns: orderedTurns,
 	});

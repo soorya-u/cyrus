@@ -23,6 +23,7 @@ import {
 	ProviderButtons,
 	type SocialLayout,
 } from "@/components/auth/provider-buttons";
+import { Show } from "@/components/helpers/show";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -228,14 +229,16 @@ function PasswordAuthFields({
 											: labels.showPassword
 									}
 								>
-									{isPasswordVisible ? <EyeOff /> : <Eye />}
+									<Show fallback={<Eye />} when={isPasswordVisible}>
+										<EyeOff />
+									</Show>
 								</InputGroupButton>
 							</InputGroupAddon>
 						</InputGroup>
 						<FieldError>{passwordError}</FieldError>
 					</Field>
 
-					{rememberMe && (
+					<Show when={Boolean(rememberMe)}>
 						<Field className="my-1">
 							<div className="flex items-center gap-3">
 								<Checkbox
@@ -251,7 +254,7 @@ function PasswordAuthFields({
 								</FieldLabel>
 							</div>
 						</Field>
-					)}
+					</Show>
 
 					{captcha}
 
@@ -260,7 +263,9 @@ function PasswordAuthFields({
 						disabled={isPending}
 						type="submit"
 					>
-						{signInEmailPending && <Spinner />}
+						<Show when={signInEmailPending}>
+							<Spinner />
+						</Show>
 						{labels.signIn}
 						<LastUsedBadge floating method="email" />
 					</Button>
@@ -337,7 +342,9 @@ function MagicLinkAuthFields({
 						disabled={isPending}
 						type="submit"
 					>
-						{signInMagicLinkPending ? <Spinner /> : <Mail />}
+						<Show fallback={<Mail />} when={signInMagicLinkPending}>
+							<Spinner />
+						</Show>
 						{submitLabel}
 					</Button>
 					{authButtons}
@@ -438,7 +445,7 @@ export function LoginForm({
 
 	const authButtons = (
 		<>
-			{canUseEmailAndPassword && (
+			<Show when={canUseEmailAndPassword}>
 				<Button
 					className="w-full bg-white/8 hover:border-primary hover:bg-white/12 dark:bg-white/8 dark:hover:bg-white/12"
 					disabled={isPending}
@@ -448,7 +455,9 @@ export function LoginForm({
 					type="button"
 					variant="outline"
 				>
-					{mode === "magicLink" ? <Lock /> : <Mail />}
+					<Show fallback={<Mail />} when={mode === "magicLink"}>
+						<Lock />
+					</Show>
 					{localization.auth.continueWith.replace(
 						"{{provider}}",
 						mode === "magicLink"
@@ -456,7 +465,7 @@ export function LoginForm({
 							: magicLinkLocalization.magicLink
 					)}
 				</Button>
-			)}
+			</Show>
 			{pluginAuthButtons}
 		</>
 	);
@@ -486,31 +495,57 @@ export function LoginForm({
 		});
 	};
 
-	const socialBlock = socialProviders && socialProviders.length > 0 && (
-		<ProviderButtons
-			callbackUrl={callbackUrl}
-			socialLayout={socialLayout}
-			view={view}
-		/>
+	const socialBlock = (
+		<Show when={Boolean(socialProviders && socialProviders.length > 0)}>
+			<ProviderButtons
+				callbackUrl={callbackUrl}
+				socialLayout={socialLayout}
+				view={view}
+			/>
+		</Show>
 	);
 
-	const separator = showSeparator && (
-		<FieldSeparator
-			className={cn(
-				"flex items-center text-xs *:data-[slot=field-separator-content]:bg-transparent",
-				socialPosition === "top" && "m-0"
-			)}
+	const separator = (
+		<Show when={showSeparator}>
+			<FieldSeparator
+				className={cn(
+					"flex items-center text-xs *:data-[slot=field-separator-content]:bg-transparent",
+					socialPosition === "top" && "m-0"
+				)}
+			>
+				{localization.auth.or}
+			</FieldSeparator>
+		</Show>
+	);
+
+	const authFields = (
+		<Show
+			fallback={
+				<MagicLinkAuthFields
+					authButtons={authButtons}
+					email={email}
+					emailError={fieldErrors.email}
+					emailLabel={localization.auth.email}
+					emailPlaceholder={localization.auth.emailPlaceholder}
+					isPending={isPending}
+					onSubmit={handleMagicLinkSubmit}
+					setEmail={setEmail}
+					setFieldErrors={setFieldErrors}
+					signInMagicLinkPending={signInMagicLinkPending}
+					submitLabel={localization.auth.continueWith.replace(
+						"{{provider}}",
+						magicLinkLocalization.magicLink
+					)}
+				/>
+			}
+			when={mode === "signIn"}
 		>
-			{localization.auth.or}
-		</FieldSeparator>
-	);
-
-	const authFields =
-		mode === "signIn" ? (
 			<PasswordAuthFields
 				authButtons={authButtons}
 				captcha={
-					Captcha ? <div className="flex justify-center">{Captcha}</div> : null
+					<Show when={Boolean(Captcha)}>
+						<div className="flex justify-center">{Captcha}</div>
+					</Show>
 				}
 				emailError={fieldErrors.email}
 				isPasswordVisible={isPasswordVisible}
@@ -542,24 +577,8 @@ export function LoginForm({
 				setPassword={setPassword}
 				signInEmailPending={signInEmailPending}
 			/>
-		) : (
-			<MagicLinkAuthFields
-				authButtons={authButtons}
-				email={email}
-				emailError={fieldErrors.email}
-				emailLabel={localization.auth.email}
-				emailPlaceholder={localization.auth.emailPlaceholder}
-				isPending={isPending}
-				onSubmit={handleMagicLinkSubmit}
-				setEmail={setEmail}
-				setFieldErrors={setFieldErrors}
-				signInMagicLinkPending={signInMagicLinkPending}
-				submitLabel={localization.auth.continueWith.replace(
-					"{{provider}}",
-					magicLinkLocalization.magicLink
-				)}
-			/>
-		);
+		</Show>
+	);
 
 	return (
 		<div className={cn("flex w-full flex-col gap-6", className)}>
@@ -573,21 +592,17 @@ export function LoginForm({
 								{localization.auth.signIn}
 							</h1>
 
-							{socialPosition === "top" && (
-								<>
-									{socialBlock}
-									{separator}
-								</>
-							)}
+							<Show when={socialPosition === "top"}>
+								{socialBlock}
+								{separator}
+							</Show>
 
 							{authFields}
 
-							{socialPosition === "bottom" && (
-								<>
-									{separator}
-									{socialBlock}
-								</>
-							)}
+							<Show when={socialPosition === "bottom"}>
+								{separator}
+								{socialBlock}
+							</Show>
 						</div>
 					</div>
 

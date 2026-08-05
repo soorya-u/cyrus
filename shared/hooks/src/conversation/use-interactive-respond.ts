@@ -1,5 +1,6 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
+import { currentMaxPersistedSeq } from "@cyrus/utils/conversations/entries";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRtc } from "../contexts/rtc";
 import { applyChunkToCache } from "./conversation-cache";
@@ -23,7 +24,8 @@ export function useRespondApproval() {
 			applyChunkToCache(queryClient, {
 				threadId: input.threadId,
 				turnId: "local-interactive",
-				seq: 0,
+				seq: currentMaxPersistedSeq(previous?.conversations ?? []),
+				sub: 0,
 				event: {
 					type: "approval_resolved",
 					toolCallId: input.toolCallId,
@@ -56,7 +58,8 @@ export function useRespondElicitation() {
 			applyChunkToCache(queryClient, {
 				threadId: input.threadId,
 				turnId: "local-interactive",
-				seq: 0,
+				seq: currentMaxPersistedSeq(previous?.conversations ?? []),
+				sub: 0,
 				event: {
 					type: "elicitation_resolved",
 					elicitationId: input.elicitationId,
