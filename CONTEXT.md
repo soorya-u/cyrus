@@ -67,13 +67,16 @@ One durably persisted event in a thread's transcript. The persisted entries — 
 _Avoid_: message row, log line
 
 **Seq**:
-The monotonic sequence number assigned to a conversation entry when it is persisted. Seq 0 marks a chunk that will never be persisted.
+The monotonic sequence number assigned to a conversation entry when it is persisted. An ephemeral delta reuses the seq of the last entry persisted for its thread as an anchor, rather than a fixed sentinel.
+
+**Sub**:
+The counter distinguishing multiple ephemeral deltas that share the same anchor seq, assigned by the worker as it stamps each one before broadcast.
 
 **Chat chunk**:
 A live conversation event delivered to watching peers as a turn runs.
 
 **Ephemeral delta**:
-A streamed fragment (token or thought) with seq 0 — broadcast live but never persisted; the completed message is persisted once, in full.
+A streamed fragment (token or thought), ordered by its anchor seq plus sub — broadcast live but never persisted, and never held in the replay buffer; the completed message is persisted once, in full.
 _Avoid_: partial message
 
 **Snapshot**:
@@ -92,7 +95,7 @@ A peer's registered interest in a thread's live chunks. Only watching peers rece
 _Avoid_: subscribe (to a thread)
 
 **Replay buffer**:
-The worker-held log of an in-flight turn's chunks, replayed to peers that start watching mid-turn and discarded when the turn ends.
+The worker-held log of an in-flight turn's persisted chunks — ephemeral deltas are never buffered — replayed to peers that start watching mid-turn and discarded when the turn ends.
 
 **Fold**:
 The pure derivation of a conversation view (messages, tool calls, diffs, turn states) from a log of conversation entries.

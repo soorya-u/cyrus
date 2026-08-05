@@ -1,6 +1,6 @@
 # Thread-scoped streaming: unary chat, ThreadEventBus, client overlay
 
-_Decided 2026-07-10._
+_Decided 2026-07-10. Its replay-log eviction and seq-dedup claims are superseded by [0021](./0021-bus-stamped-seq-sub-for-ephemeral-chunks.md)._
 
 The `chat` RPC is a unary turn-start command returning `{ threadId, turnId }`; all live chunks — including the sender's own — flow through each peer's single `subscribe()` stream, fanned out by a `ThreadEventBus` that delivers only to peers watching that thread and keeps a bounded in-memory replay log per active turn (delta-first eviction) for peers that start watching mid-turn. Clients hold live chunks in an overlay store separate from the durable snapshot, deduped by `seq` against the snapshot watermark, and `sendMessage` resolves by observing `turn_completed` on the overlay rather than holding an RPC open.
 
