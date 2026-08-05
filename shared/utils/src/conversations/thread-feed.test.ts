@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { deriveFeed } from "./thread-feed";
+import { deriveFeed, getTurnStartedAt } from "./thread-feed";
 
 describe("deriveFeed", () => {
 	test("emits flat error feed entries from thread errors", () => {
@@ -237,5 +237,50 @@ describe("deriveFeed", () => {
 			"thought-1",
 			"assistant-turn-1",
 		]);
+	});
+});
+
+describe("getTurnStartedAt", () => {
+	test("picks the first activity by seq/sub, not by a skewed createdAt", () => {
+		const startedAt = getTurnStartedAt(
+			{
+				approvals: [],
+				elicitations: [],
+				errors: [],
+				messages: [],
+				thoughts: [
+					{
+						content: "thinking",
+						createdAt: "2026-07-11T00:00:05.000Z",
+						id: "thought-1",
+						seq: 1,
+						turnId: "turn-1",
+					},
+				],
+				toolCalls: [
+					{
+						createdAt: "2026-07-11T00:00:01.000Z",
+						diffs: [],
+						seq: 2,
+						status: "completed",
+						title: "Read file",
+						toolCallId: "tool-1",
+						turnId: "turn-1",
+					},
+				],
+				turns: [
+					{
+						completedAt: null,
+						id: "turn-1",
+						index: 0,
+						state: "running",
+						threadId: "thread-1",
+					},
+				],
+			},
+			"turn-1"
+		);
+
+		expect(startedAt).toBe("2026-07-11T00:00:05.000Z");
 	});
 });

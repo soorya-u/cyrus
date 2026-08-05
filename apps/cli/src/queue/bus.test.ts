@@ -94,4 +94,26 @@ describe("thread event bus", () => {
 		expect(b.sub).toBeUndefined();
 		expect(await reader.next()).toMatchObject({ seq: 6, sub: 1 });
 	});
+
+	test("evicts the oldest persisted chunk once a turn's log exceeds its bound", async () => {
+		const bus = createThreadEventBus({ maxChunksPerTurn: 3 });
+		bus.watch("peer-1", "thread-1");
+		const first = createReader(bus.subscribe("peer-1"));
+
+		bus.publish(persistedChunk(1));
+		bus.publish(persistedChunk(2));
+		bus.publish(persistedChunk(3));
+		bus.publish(persistedChunk(4));
+		await first.next();
+		await first.next();
+		await first.next();
+		await first.next();
+
+		bus.watch("peer-2", "thread-1");
+		const second = createReader(bus.subscribe("peer-2"));
+
+		expect(await second.next()).toMatchObject({ seq: 2 });
+		expect(await second.next()).toMatchObject({ seq: 3 });
+		expect(await second.next()).toMatchObject({ seq: 4 });
+	});
 });

@@ -7,6 +7,7 @@ import type {
 	ThreadConversation,
 	ToolCallView,
 } from "@cyrus/schemas/view";
+import { compareOrderKey, type OrderKey, orderKey } from "./order-key";
 
 type FeedEntryBase = {
 	id: string;
@@ -55,20 +56,10 @@ export type FeedEntry =
 	| ApprovalFeedEntry
 	| ElicitationFeedEntry;
 
-type OrderKey = { seq: number; sub: number };
-
 type TimelineItem = {
 	order: OrderKey;
 	entry: FeedEntry;
 };
-
-function orderKey(entity: { seq: number; sub?: number }): OrderKey {
-	return { seq: entity.seq, sub: entity.sub ?? 0 };
-}
-
-function compareOrderKey(left: OrderKey, right: OrderKey): number {
-	return left.seq - right.seq || left.sub - right.sub;
-}
 
 function findPendingApproval(
 	approvals: ApprovalView[],
@@ -270,7 +261,7 @@ export function getTurnStartedAt(
 		...conversation.messages.filter(
 			(message) => message.role === "assistant" && message.turnId === turnId
 		),
-	].sort((left, right) => left.createdAt.localeCompare(right.createdAt))[0];
+	].sort((left, right) => compareOrderKey(orderKey(left), orderKey(right)))[0];
 
 	return firstActivity?.createdAt ?? null;
 }

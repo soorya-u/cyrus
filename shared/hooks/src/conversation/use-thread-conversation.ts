@@ -3,6 +3,7 @@ import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import {
 	currentMaxPersistedSeq,
+	isSnapshotBehindWatermark,
 	mergeConversationEntries,
 } from "@cyrus/utils/conversations/entries";
 import { fold } from "@cyrus/utils/conversations/fold";
@@ -69,6 +70,24 @@ export function useThreadConversation(
 		log.error({ kind: "unwatch_thread", error, threadId: tid });
 	});
 
+	const onWatched = useEffectEvent(
+		(snapshotHighWaterMark: number, tid: string) => {
+			const cached = queryClient.getQueryData<GetConversationsOutput>(
+				RTC_OPERATION_KEYS.getConversations(tid)
+			);
+			if (
+				isSnapshotBehindWatermark(
+					cached?.conversations ?? [],
+					snapshotHighWaterMark
+				)
+			) {
+				queryClient.invalidateQueries({
+					queryKey: RTC_OPERATION_KEYS.getConversations(tid),
+				});
+			}
+		}
+	);
+
 	useEffect(() => {
 		if (!threadId) return;
 
@@ -79,7 +98,8 @@ export function useThreadConversation(
 		).then((result) => {
 			if (abort.signal.aborted) return;
 			result.match({
-				ok: () => undefined,
+				ok: ({ snapshotHighWaterMark }) =>
+					onWatched(snapshotHighWaterMark, threadId),
 				err: (error) => onWatchError(error, threadId),
 			});
 		});

@@ -1,6 +1,6 @@
 import { RTC_OPERATION_KEYS } from "@cyrus/constants/operation-keys";
 import type { ChatChunk } from "@cyrus/schemas/rtc/chat";
-import { settleTurnWaiter } from "@cyrus/utils/conversations/turn-waiters";
+import { isTerminalEvent } from "@cyrus/utils/conversations/turn-waiters";
 import { useQueryClient } from "@tanstack/react-query";
 import { Result } from "better-result";
 import { log } from "evlog";
@@ -11,13 +11,6 @@ import { applyChunkToCache } from "./conversation-cache";
 
 const SUBSCRIBE_RETRY_MS = 1000;
 const SUBSCRIBE_RETRY_MAX_MS = 8000;
-
-function isTerminalChunk(chunk: ChatChunk): boolean {
-	return (
-		chunk.event.type === "turn_completed" ||
-		chunk.event.type === "turn_interrupted"
-	);
-}
 
 function syncCatalogFromChunk(chunk: ChatChunk): void {
 	if (chunk.event.type !== "session_update") return;
@@ -60,9 +53,8 @@ export function useWorkerConversationSync(): void {
 		syncCatalogFromChunk(chunk);
 		applyChunkToCache(queryClient, chunk);
 
-		if (!isTerminalChunk(chunk)) return;
+		if (!isTerminalEvent(chunk.event)) return;
 
-		settleTurnWaiter(chunk.threadId, chunk.turnId, chunk.event);
 		if (chunk.event.type === "turn_completed") {
 			queryClient.invalidateQueries({
 				predicate: (query) =>

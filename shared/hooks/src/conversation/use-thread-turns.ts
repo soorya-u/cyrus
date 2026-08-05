@@ -3,10 +3,7 @@ import { isTurnInterruptedError } from "@cyrus/errors/turn";
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import { formatPromptBlocks } from "@cyrus/schemas/rtc/chat";
 import type { GetConversationsOutput } from "@cyrus/schemas/rtc/threads";
-import {
-	settleTurnWaiter,
-	waitForTurnEnd,
-} from "@cyrus/utils/conversations/turn-waiters";
+import { waitForTurnEnd } from "@cyrus/utils/conversations/turn-waiters";
 import { randomId } from "@cyrus/utils/identity";
 import { useQueryClient } from "@tanstack/react-query";
 import { Result } from "better-result";
@@ -246,7 +243,6 @@ export function useThreadTurns() {
 
 			for (const turnId of activeTurnIds) {
 				appendTurnTerminal(queryClient, threadId, turnId, "turn_interrupted");
-				settleTurnWaiter(threadId, turnId, { type: "turn_interrupted" });
 			}
 
 			const result = await Result.tryPromise({

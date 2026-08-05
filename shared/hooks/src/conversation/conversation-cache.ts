@@ -8,6 +8,10 @@ import {
 	currentMaxPersistedSeq,
 	sortConversationEntries,
 } from "@cyrus/utils/conversations/entries";
+import {
+	isTerminalEvent,
+	settleTurnWaiter,
+} from "@cyrus/utils/conversations/turn-waiters";
 import { Throttler } from "@tanstack/pacer";
 import type { QueryClient } from "@tanstack/react-query";
 
@@ -24,10 +28,6 @@ const deltaThrottler = new Throttler(
 
 function turnKey(threadId: string, turnId: string): string {
 	return `${threadId}:${turnId}`;
-}
-
-function isTerminalEvent(event: ChatChunk["event"]): boolean {
-	return event.type === "turn_completed" || event.type === "turn_interrupted";
 }
 
 function isStreamingDeltaChunk(chunk: ChatChunk): boolean {
@@ -183,6 +183,7 @@ function commitChunk(queryClient: QueryClient, chunk: ChatChunk): void {
 	updateCache(queryClient, chunk.threadId, (entries) =>
 		applyChunkToEntries(entries, chunk)
 	);
+	settleTurnWaiter(chunk.threadId, chunk.turnId, chunk.event);
 }
 
 function flushPendingDeltas(queryClient: QueryClient): void {
