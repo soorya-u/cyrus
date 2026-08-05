@@ -8,9 +8,8 @@ export function useWorkerJoinToast() {
 	useEffect(
 		() =>
 			signaling.events.subscribe((event) => {
-				if (event.type === "peer-joined" && event.peer.role === "worker") {
+				if (event.type === "peer-joined" && event.peer.role === "worker")
 					toast.success(`${event.peer.name} connected`);
-				}
 			}),
 		[signaling]
 	);
