@@ -52,6 +52,7 @@ export function AgentModelPicker({
 	const [open, setOpen] = useState(false);
 	const {
 		agentLocked,
+		armProbe,
 		displayAgent,
 		displayModel,
 		models,
@@ -63,8 +64,13 @@ export function AgentModelPicker({
 	const activeAgent = agents.find((agent) => agent.id === displayAgent);
 	const activeModel = models.find((model) => model.id === displayModel);
 
+	function handleOpenChange(next: boolean) {
+		setOpen(next);
+		if (next) armProbe();
+	}
+
 	return (
-		<DropdownMenu onOpenChange={setOpen} open={open}>
+		<DropdownMenu onOpenChange={handleOpenChange} open={open}>
 			<DropdownMenuTrigger asChild>
 				<Button
 					className="h-8 min-w-0 max-w-48 shrink justify-between gap-1.5 whitespace-nowrap border-none bg-transparent px-2 text-muted-foreground/70 shadow-none hover:bg-accent hover:text-foreground/80 sm:max-w-56 sm:px-3"

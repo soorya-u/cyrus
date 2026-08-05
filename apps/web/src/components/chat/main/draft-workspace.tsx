@@ -35,6 +35,7 @@ function clearDraftControllerState(draftId: string): void {
 	discardLocalDraft(draftId);
 	useComposerDraftStore.getState().clearDraft(draftId);
 	useAgentCatalogStore.getState().clearPendingAgent(draftId);
+	useAgentCatalogStore.getState().clearCatalogArmed(draftId);
 }
 
 export function DraftWorkspace({

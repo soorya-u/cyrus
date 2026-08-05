@@ -30,3 +30,21 @@ export function pickDisplayOption(
 	if (id && options.some((option) => option.id === id)) return id;
 	return options[0]?.id ?? "";
 }
+
+/**
+ * Draft catalog probes stay gated on `catalogArmed` (set on first user
+ * interaction) even once `pendingAgent` defaults to agents[0], so a default
+ * selection alone never fires the getDraftCatalog RPC.
+ */
+export function pickCatalogAgent(options: {
+	isDraft: boolean;
+	catalogArmed: boolean;
+	pendingAgent: string | undefined;
+	preferredAgent: string | undefined;
+	displayAgent: string;
+}): string {
+	if (!options.isDraft) {
+		return options.preferredAgent ?? options.displayAgent;
+	}
+	return options.catalogArmed ? (options.pendingAgent ?? "") : "";
+}

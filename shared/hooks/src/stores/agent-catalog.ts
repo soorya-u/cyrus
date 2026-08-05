@@ -23,6 +23,7 @@ type AgentCatalogState = {
 	contextUsageByThread: Record<string, ContextUsage | null>;
 	pendingAgentByThread: Record<string, string | undefined>;
 	liveBindingByThread: Record<string, LiveThreadBinding | undefined>;
+	catalogArmedByThread: Record<string, boolean>;
 	setModel: (threadId: string, modelId: string) => void;
 	setMode: (threadId: string, modeId: string) => void;
 	setEffort: (threadId: string, effortId: string) => void;
@@ -37,6 +38,8 @@ type AgentCatalogState = {
 	clearPendingAgent: (threadId: string) => void;
 	setLiveBinding: (threadId: string, binding: LiveThreadBinding) => void;
 	clearLiveBinding: (threadId: string) => void;
+	armCatalog: (threadId: string) => void;
+	clearCatalogArmed: (threadId: string) => void;
 };
 
 function patchSelection(
@@ -59,6 +62,7 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 	contextUsageByThread: {},
 	pendingAgentByThread: {},
 	liveBindingByThread: {},
+	catalogArmedByThread: {},
 	setModel: (threadId, modelId) =>
 		set((state) => {
 			if (state.selectionByThread[threadId]?.modelId === modelId) {
@@ -156,6 +160,23 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set) => ({
 			const { [threadId]: _removed, ...liveBindingByThread } =
 				state.liveBindingByThread;
 			return { liveBindingByThread };
+		}),
+	armCatalog: (threadId) =>
+		set((state) => {
+			if (state.catalogArmedByThread[threadId]) return state;
+			return {
+				catalogArmedByThread: {
+					...state.catalogArmedByThread,
+					[threadId]: true,
+				},
+			};
+		}),
+	clearCatalogArmed: (threadId) =>
+		set((state) => {
+			if (!(threadId in state.catalogArmedByThread)) return state;
+			const { [threadId]: _removed, ...catalogArmedByThread } =
+				state.catalogArmedByThread;
+			return { catalogArmedByThread };
 		}),
 }));
 
