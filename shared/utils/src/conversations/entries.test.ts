@@ -2,6 +2,7 @@ import type { ConversationEntry } from "@cyrus/schemas/rtc/threads";
 import { describe, expect, test } from "vitest";
 import {
 	currentMaxPersistedSeq,
+	isSnapshotBehindWatermark,
 	mergeConversationEntries,
 	sortConversationEntries,
 } from "./entries";
@@ -124,5 +125,27 @@ describe("mergeConversationEntries", () => {
 		const merged = mergeConversationEntries(cached, fetched);
 
 		expect(merged.map((e) => e.id).sort()).toEqual(["delta-1", "persisted"]);
+	});
+});
+
+describe("isSnapshotBehindWatermark", () => {
+	test("is true when the watermark is ahead of the cached snapshot's max persisted seq", () => {
+		const cached: ConversationEntry[] = [
+			entry("persisted", 2, "turn-1", { type: "turn_completed" }),
+		];
+
+		expect(isSnapshotBehindWatermark(cached, 5)).toBe(true);
+	});
+
+	test("is false once the cached snapshot already covers the watermark", () => {
+		const cached: ConversationEntry[] = [
+			entry("persisted", 5, "turn-1", { type: "turn_completed" }),
+		];
+
+		expect(isSnapshotBehindWatermark(cached, 5)).toBe(false);
+	});
+
+	test("is false for an empty snapshot with no durable watermark yet", () => {
+		expect(isSnapshotBehindWatermark([], 0)).toBe(false);
 	});
 });

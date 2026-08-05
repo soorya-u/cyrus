@@ -36,4 +36,18 @@ describe("ToolRow", () => {
 
 		expect(screen.getByText("a.ts")).toBeInTheDocument();
 	});
+
+	test("clicking inside an open diff body does not close the parent tool row", async () => {
+		const user = userEvent.setup();
+		render(<ToolRow tool={tool} />);
+
+		await user.click(screen.getByText("Edit a.ts"));
+		await user.click(screen.getByText("a.ts"));
+
+		const diffBody = document.querySelector(".diff-render-surface");
+		expect(diffBody).not.toBeNull();
+		if (diffBody) await user.click(diffBody);
+
+		expect(screen.getByText("a.ts")).toBeInTheDocument();
+	});
 });

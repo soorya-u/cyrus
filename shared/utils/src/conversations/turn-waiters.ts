@@ -13,7 +13,7 @@ function turnKey(threadId: string, turnId: string): string {
 	return `${threadId}:${turnId}`;
 }
 
-function isTerminalEvent(
+export function isTerminalEvent(
 	event: ChatChunk["event"]
 ): event is Extract<
 	ChatChunk["event"],

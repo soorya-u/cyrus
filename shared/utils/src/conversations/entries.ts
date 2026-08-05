@@ -1,4 +1,5 @@
 import type { ConversationEntry } from "@cyrus/schemas/rtc/threads";
+import { compareBySeqSub } from "./order-key";
 
 function isPersisted(entry: ConversationEntry): boolean {
 	return entry.sub === undefined;
@@ -32,10 +33,8 @@ export function sortConversationEntries(
 	entries: ConversationEntry[]
 ): ConversationEntry[] {
 	return [...entries].sort((left, right) => {
-		if (left.seq !== right.seq) return left.seq - right.seq;
-		const leftSub = left.sub ?? 0;
-		const rightSub = right.sub ?? 0;
-		if (leftSub !== rightSub) return leftSub - rightSub;
+		const bySeqSub = compareBySeqSub(left, right);
+		if (bySeqSub !== 0) return bySeqSub;
 		return left.createdAt.localeCompare(right.createdAt);
 	});
 }
@@ -45,6 +44,13 @@ export function currentMaxPersistedSeq(entries: ConversationEntry[]): number {
 		(max, entry) => (isPersisted(entry) && entry.seq > max ? entry.seq : max),
 		0
 	);
+}
+
+export function isSnapshotBehindWatermark(
+	entries: ConversationEntry[],
+	watermark: number
+): boolean {
+	return watermark > currentMaxPersistedSeq(entries);
 }
 
 export function mergeConversationEntries(

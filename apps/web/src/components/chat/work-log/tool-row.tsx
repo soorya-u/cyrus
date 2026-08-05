@@ -61,27 +61,27 @@ export function ToolRow({ tool }: { tool: ToolCallView }) {
 		tool.status === "pending" || tool.status === "in_progress";
 
 	return (
-		<div
-			className={cn(
-				"flex flex-col rounded-md px-0.5 py-0.5 text-xs transition-colors",
-				canExpand &&
-					"cursor-pointer hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-inset"
-			)}
-			{...(canExpand
-				? {
-						role: "button" as const,
-						tabIndex: 0,
-						onClick: () => setOpen((value) => !value),
-						onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
-							if (event.key === "Enter" || event.key === " ") {
-								event.preventDefault();
-								setOpen((value) => !value);
-							}
-						},
-					}
-				: {})}
-		>
-			<div className="flex select-none items-center gap-1.5">
+		<div className="flex flex-col rounded-md px-0.5 py-0.5 text-xs transition-colors">
+			<div
+				className={cn(
+					"flex select-none items-center gap-1.5 rounded-sm",
+					canExpand &&
+						"cursor-pointer hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-inset"
+				)}
+				{...(canExpand
+					? {
+							role: "button" as const,
+							tabIndex: 0,
+							onClick: () => setOpen((value) => !value),
+							onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
+								if (event.key === "Enter" || event.key === " ") {
+									event.preventDefault();
+									setOpen((value) => !value);
+								}
+							},
+						}
+					: {})}
+			>
 				<span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground/65">
 					<Icon className="size-3.5 stroke-[1.8] opacity-80" />
 				</span>
