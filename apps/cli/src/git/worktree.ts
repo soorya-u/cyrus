@@ -1,8 +1,9 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { type GitError, operationFailedError } from "@cyrus/errors/git";
+import { generateName } from "@cyrus/utils/identity";
 import { Result } from "better-result";
-import type { Repository, Worktree } from "es-git";
+import type { Commit, Repository, Worktree } from "es-git";
 import {
 	openGitRepository,
 	operationFailedFromUnknown,
@@ -14,6 +15,8 @@ import {
 	worktreeNameForBranch,
 } from "./paths";
 
+const MAX_BRANCH_NAME_ATTEMPTS = 5;
+
 function findWorktreeByPath(
 	repo: Repository,
 	worktreePath: string
@@ -24,6 +27,26 @@ function findWorktreeByPath(
 		if (resolve(worktree.path()) === target) return worktree;
 	}
 	return null;
+}
+
+function resolveBranchCommit(
+	repo: Repository,
+	refName: string
+): Result<Commit, GitError> {
+	return Result.try(() => {
+		const branch = repo.getBranch(refName, "Local");
+		const oid = branch.referenceTarget();
+		if (!oid) throw new Error(`Branch '${refName}' has no commits yet`);
+		return repo.getCommit(oid);
+	}).mapError(operationFailedFromUnknown);
+}
+
+function generateUniqueBranchName(repo: Repository): string {
+	for (let attempt = 0; attempt < MAX_BRANCH_NAME_ATTEMPTS; attempt++) {
+		const candidate = generateName();
+		if (!repo.findBranch(candidate, "Local")) return candidate;
+	}
+	return `${generateName()}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 export async function createGitWorktree(
@@ -39,23 +62,38 @@ export async function createGitWorktree(
 		: Result.ok(undefined);
 	if (resolvedPath.isErr()) return Result.err(resolvedPath.error);
 
+	const commit = resolveBranchCommit(opened.value, refName);
+	if (commit.isErr()) return Result.err(commit.error);
+
+	const branchName = generateUniqueBranchName(opened.value);
+	const branch = Result.try(() =>
+		opened.value.createBranch(branchName, commit.value)
+	);
+	if (branch.isErr())
+		return Result.err(operationFailedFromUnknown(branch.error));
+
 	const worktreePath =
-		resolvedPath.value ?? defaultWorktreePath(projectCwd, refName);
+		resolvedPath.value ?? defaultWorktreePath(projectCwd, branchName);
 	const prepared = await runGitOperationAsync(() =>
 		mkdir(dirname(worktreePath), { recursive: true })
 	);
-	if (prepared.isErr()) return Result.err(prepared.error);
+	if (prepared.isErr()) {
+		Result.try(() => branch.value.delete());
+		return Result.err(prepared.error);
+	}
 
 	const created = Result.try(() => {
-		const name = worktreeNameForBranch(refName);
+		const name = worktreeNameForBranch(branchName);
 		opened.value.worktree(name, worktreePath, {
-			refName: `refs/heads/${refName}`,
+			refName: `refs/heads/${branchName}`,
 			checkoutExisting: true,
 		});
 		return worktreePath;
 	});
-	if (created.isErr())
+	if (created.isErr()) {
+		Result.try(() => branch.value.delete());
 		return Result.err(operationFailedFromUnknown(created.error));
+	}
 
 	return Result.ok(created.value);
 }
