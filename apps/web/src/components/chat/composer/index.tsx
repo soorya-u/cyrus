@@ -85,21 +85,12 @@ export function Composer({
 	const canPasteUrls = supportsEmbeddedContext;
 	const composerBlocked = Boolean(threadError ?? catalog.catalogError);
 
-	// Drafts defer project-git until the user opens the branch chrome so opening
-	// a draft performs no worker RPCs beyond ambient listAgents.
 	const [draftGitOpen, setDraftGitOpen] = useState(false);
-	// Keep every draft lazy: a new draft/project identity must re-defer project
-	// git access until its own branch chrome is explicitly opened.
+	const [draftCatalogSettled, setDraftCatalogSettled] = useState(false);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on identity change
 	useEffect(() => {
 		setDraftGitOpen(false);
 	}, [threadId, projectId]);
-
-	// One-way latch: keeps a fresh draft in skeleton until its default agent
-	// and model have both settled, so the composer never paints an
-	// agent-selected-but-no-model-yet frame. Never re-arms after the first
-	// settle, so a later agent switch (mid-typing) never re-hides the editor.
-	const [draftCatalogSettled, setDraftCatalogSettled] = useState(false);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on identity change
 	useEffect(() => {
 		setDraftCatalogSettled(false);
