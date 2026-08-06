@@ -35,13 +35,15 @@ export function createWireErrorLogger(): WireMiddleware {
 			const request = pending.get(frame.id);
 			log.error({
 				kind: "acp_wire_request_error",
+				id: frame.id,
 				method: request?.method,
 				params: request?.params,
 				error: frame.error,
 			});
+			pending.delete(frame.id);
+		} else if (ctx.direction === "out" && "result" in frame) {
+			pending.delete(frame.id);
 		}
-
-		if ("result" in frame || "error" in frame) pending.delete(frame.id);
 
 		return next();
 	};

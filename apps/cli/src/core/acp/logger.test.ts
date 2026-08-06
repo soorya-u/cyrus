@@ -43,6 +43,55 @@ describe("createWireErrorLogger", () => {
 		errorSpy.mockRestore();
 	});
 
+	test("an incoming response to our own outgoing request doesn't evict an unrelated pending agent request sharing the same id", async () => {
+		const errorSpy = spyOn(log, "error").mockImplementation(() => undefined);
+		const middleware = createWireErrorLogger();
+		const next = async () => undefined;
+
+		await middleware(
+			{
+				direction: "in",
+				frame: {
+					jsonrpc: "2.0",
+					id: 1,
+					method: "session/request_permission",
+					params: { toolCall: { toolCallId: "tool-1" } },
+				},
+			},
+			next
+		);
+		await middleware(
+			{
+				direction: "out",
+				frame: { jsonrpc: "2.0", id: 1, method: "session/prompt", params: {} },
+			},
+			next
+		);
+		await middleware(
+			{ direction: "in", frame: { jsonrpc: "2.0", id: 1, result: {} } },
+			next
+		);
+		await middleware(
+			{
+				direction: "out",
+				frame: {
+					jsonrpc: "2.0",
+					id: 1,
+					error: { code: -32_602, message: "Invalid params" },
+				},
+			},
+			next
+		);
+
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: "session/request_permission",
+				params: { toolCall: { toolCallId: "tool-1" } },
+			})
+		);
+		errorSpy.mockRestore();
+	});
+
 	test("never drops a frame, even without a matching request", async () => {
 		const errorSpy = spyOn(log, "error").mockImplementation(() => undefined);
 		const middleware = createWireErrorLogger();
