@@ -179,7 +179,6 @@ export function Composer({
 							<ComposerPromptEditor
 								key={threadId}
 								onCommandKeyDown={editor.handlers.commandKeyDown}
-								onFocus={catalog.armProbe}
 								onPaste={editor.handlers.paste}
 								onPlainTextChange={editor.handlers.plainTextChange}
 								placeholder={editor.placeholder}

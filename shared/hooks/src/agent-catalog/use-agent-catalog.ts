@@ -10,7 +10,6 @@ import {
 	type CatalogOption,
 	type CatalogQueryKeys,
 	EMPTY_COMMANDS,
-	pickCatalogAgent,
 	pickDisplayOption,
 	pickExplicitOption,
 } from "./selectors";
@@ -52,9 +51,6 @@ export function useAgentCatalog({
 	const liveBinding = useAgentCatalogStore(
 		(state) => state.liveBindingByThread[threadId]
 	);
-	const catalogArmed = useAgentCatalogStore(
-		(state) => state.catalogArmedByThread[threadId] ?? false
-	);
 	const setModelSelection = useAgentCatalogStore((state) => state.setModel);
 	const setModeSelection = useAgentCatalogStore((state) => state.setMode);
 	const setEffortSelection = useAgentCatalogStore((state) => state.setEffort);
@@ -62,7 +58,6 @@ export function useAgentCatalog({
 	const setPendingAgent = useAgentCatalogStore(
 		(state) => state.setPendingAgent
 	);
-	const armCatalog = useAgentCatalogStore((state) => state.armCatalog);
 	const setCapabilities = useAgentCatalogStore(
 		(state) => state.setCapabilities
 	);
@@ -93,17 +88,9 @@ export function useAgentCatalog({
 	const displayAgent = isDraft
 		? pickExplicitOption(pendingAgent, agents)
 		: pickDisplayOption(preferredAgent, agents);
-	// Drafts default `pendingAgent` to agents[0] on mount (below) so the
-	// composer opens with an agent pre-selected, but the getDraftCatalog probe
-	// stays gated on `catalogArmed` — set only once the user actually
-	// interacts with the composer — so a default selection alone never fires it.
-	const catalogAgent = pickCatalogAgent({
-		catalogArmed,
-		displayAgent,
-		isDraft,
-		pendingAgent,
-		preferredAgent,
-	});
+	const catalogAgent = isDraft
+		? (pendingAgent ?? "")
+		: (preferredAgent ?? displayAgent);
 
 	const keys: CatalogQueryKeys = {
 		models: RTC_OPERATION_KEYS.getModels(threadId, catalogAgent),
@@ -205,14 +192,8 @@ export function useAgentCatalog({
 			? draftCatalog.isFetching
 			: threadCatalogEnabled && modelsQuery.isFetching);
 
-	function armProbe() {
-		if (!isDraft) return;
-		armCatalog(threadId);
-	}
-
 	function selectAgent(agentName: string) {
 		if (!isDraft) return;
-		armCatalog(threadId);
 		if (agentName === catalogAgent && draftCatalog.error) {
 			queryClient.invalidateQueries({ queryKey: draftCatalog.queryKey });
 			return;
@@ -274,7 +255,6 @@ export function useAgentCatalog({
 		modes,
 		personas,
 		promptCapabilities,
-		armProbe,
 		selectAgent,
 		selectEffort,
 		selectMode,

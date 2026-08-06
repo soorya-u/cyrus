@@ -191,7 +191,6 @@ type ComposerPromptEditorProps = {
 	className?: string;
 	onPlainTextChange: (text: string) => void;
 	onCommandKeyDown?: (key: ComposerCommandKey, event: KeyboardEvent) => boolean;
-	onFocus?: () => void;
 	onPaste?: (event: ReactClipboardEvent<HTMLDivElement>) => void;
 };
 
@@ -402,14 +401,7 @@ const ComposerPromptEditorInner = forwardRef<
 	ComposerPromptEditorHandle,
 	ComposerPromptEditorProps
 >(function ComposerPromptEditorInner(
-	{
-		placeholder,
-		className,
-		onPlainTextChange,
-		onCommandKeyDown,
-		onFocus,
-		onPaste,
-	},
+	{ placeholder, className, onPlainTextChange, onCommandKeyDown, onPaste },
 	ref
 ) {
 	const handleRef = useRef<ComposerPromptEditorHandle | null>(null);
@@ -452,7 +444,6 @@ const ComposerPromptEditorInner = forwardRef<
 							"wrap-break-word block max-h-50 min-h-17.5 w-full overflow-y-auto whitespace-pre-wrap bg-transparent text-[16px] text-foreground leading-relaxed outline-none sm:text-[14px]",
 							className
 						)}
-						onFocus={onFocus}
 						onPaste={onPaste}
 						placeholder={<span />}
 					/>

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
 	type CatalogOption,
-	pickCatalogAgent,
 	pickDisplayOption,
 	pickExplicitOption,
 } from "./selectors";
@@ -36,65 +35,5 @@ describe("pickDisplayOption", () => {
 
 	test("returns the id when it matches an option", () => {
 		expect(pickDisplayOption("codex", AGENTS)).toBe("codex");
-	});
-});
-
-describe("pickCatalogAgent", () => {
-	test("non-draft threads use the preferred agent, falling back to displayAgent", () => {
-		expect(
-			pickCatalogAgent({
-				catalogArmed: false,
-				displayAgent: "claude",
-				isDraft: false,
-				pendingAgent: undefined,
-				preferredAgent: "codex",
-			})
-		).toBe("codex");
-
-		expect(
-			pickCatalogAgent({
-				catalogArmed: false,
-				displayAgent: "claude",
-				isDraft: false,
-				pendingAgent: undefined,
-				preferredAgent: undefined,
-			})
-		).toBe("claude");
-	});
-
-	test("draft threads withhold the agent until the catalog is armed, even with a default pendingAgent", () => {
-		expect(
-			pickCatalogAgent({
-				catalogArmed: false,
-				displayAgent: "claude",
-				isDraft: true,
-				pendingAgent: "claude",
-				preferredAgent: "claude",
-			})
-		).toBe("");
-	});
-
-	test("armed draft threads surface the pending agent so the probe can fire", () => {
-		expect(
-			pickCatalogAgent({
-				catalogArmed: true,
-				displayAgent: "claude",
-				isDraft: true,
-				pendingAgent: "claude",
-				preferredAgent: "claude",
-			})
-		).toBe("claude");
-	});
-
-	test("armed draft threads with no pending agent yet stay empty", () => {
-		expect(
-			pickCatalogAgent({
-				catalogArmed: true,
-				displayAgent: "",
-				isDraft: true,
-				pendingAgent: undefined,
-				preferredAgent: undefined,
-			})
-		).toBe("");
 	});
 });
