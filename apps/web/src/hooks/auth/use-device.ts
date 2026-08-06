@@ -17,6 +17,9 @@ function formatDeviceCode(value: string) {
 
 export function useAuthDevice() {
 	const [outcome, setOutcome] = useState<DeviceOutcome>("pending");
+	const [decision, setDecision] = useState<"approved" | "declined" | null>(
+		null
+	);
 
 	const decideMutation = useMutation({
 		mutationKey: AUTH_OPERATION_KEYS.deviceDecide,
@@ -28,18 +31,14 @@ export function useAuthDevice() {
 			approve: boolean;
 		}) => {
 			const formattedCode = formatDeviceCode(userCode);
-			if (!formattedCode) {
-				throw new Error("missing_user_code");
-			}
+			if (!formattedCode) throw new Error("missing_user_code");
 
 			await authClient.device({ query: { user_code: formattedCode } });
 			const { error } = approve
 				? await authClient.device.approve({ userCode: formattedCode })
 				: await authClient.device.deny({ userCode: formattedCode });
 
-			if (error) {
-				throw error;
-			}
+			if (error) throw error;
 
 			return approve;
 		},
@@ -58,12 +57,14 @@ export function useAuthDevice() {
 	});
 
 	const decide = (userCode: string, approve: boolean) => {
+		setDecision(approve ? "approved" : "declined");
 		decideMutation.mutate({ userCode, approve });
 	};
 
 	return {
 		outcome,
 		decide,
+		decision,
 		isDeciding: decideMutation.isPending,
 	};
 }
