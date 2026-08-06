@@ -23,6 +23,31 @@ import type { ComposerProps } from "@/types/composer";
 
 export type { ComposerSubject } from "@/types/composer";
 
+type ComposerBodyStatus =
+	| "loading"
+	| "agents-error"
+	| "unavailable"
+	| "settling"
+	| "interactive"
+	| "ready";
+
+function getComposerBodyStatus(options: {
+	agentsLoading: boolean;
+	agentsError: boolean;
+	agentsReady: boolean;
+	hasAgents: boolean;
+	localDraft: boolean;
+	draftCatalogSettled: boolean;
+	isInteractivePending: boolean;
+}): ComposerBodyStatus {
+	if (options.agentsLoading) return "loading";
+	if (options.agentsError) return "agents-error";
+	if (options.agentsReady && !options.hasAgents) return "unavailable";
+	if (options.localDraft && !options.draftCatalogSettled) return "settling";
+	if (options.isInteractivePending) return "interactive";
+	return "ready";
+}
+
 export function Composer({
 	projectId,
 	threadId,
@@ -69,6 +94,27 @@ export function Composer({
 	useEffect(() => {
 		setDraftGitOpen(false);
 	}, [threadId, projectId]);
+
+	// One-way latch: keeps a fresh draft in skeleton until its default agent
+	// and model have both settled, so the composer never paints an
+	// agent-selected-but-no-model-yet frame. Never re-arms after the first
+	// settle, so a later agent switch (mid-typing) never re-hides the editor.
+	const [draftCatalogSettled, setDraftCatalogSettled] = useState(false);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on identity change
+	useEffect(() => {
+		setDraftCatalogSettled(false);
+	}, [threadId, projectId]);
+	useEffect(() => {
+		if (draftCatalogSettled) return;
+		if (!localDraft) return;
+		if (!catalog.displayAgent || catalog.modelsLoading) return;
+		setDraftCatalogSettled(true);
+	}, [
+		draftCatalogSettled,
+		localDraft,
+		catalog.displayAgent,
+		catalog.modelsLoading,
+	]);
 	const threadGitStatus = useGitStatus(localDraft ? undefined : threadId);
 	const projectGitStatus = useProjectGitStatus(
 		localDraft && draftGitOpen ? projectId : undefined
@@ -87,7 +133,8 @@ export function Composer({
 		!agentsLoading &&
 		!agentsQuery.isError &&
 		!(agentsReady && !hasAgents) &&
-		!isInteractivePending;
+		!isInteractivePending &&
+		(!localDraft || draftCatalogSettled);
 
 	const editor = useComposerEditor({
 		threadId,
@@ -103,12 +150,22 @@ export function Composer({
 		onSend,
 	});
 
+	const composerBodyStatus = getComposerBodyStatus({
+		agentsLoading,
+		agentsError: agentsQuery.isError,
+		agentsReady,
+		draftCatalogSettled,
+		hasAgents,
+		isInteractivePending,
+		localDraft,
+	});
+
 	function renderComposerBody() {
-		if (agentsLoading) {
+		if (composerBodyStatus === "loading" || composerBodyStatus === "settling") {
 			return <ComposerSkeleton />;
 		}
 
-		if (agentsQuery.isError) {
+		if (composerBodyStatus === "agents-error") {
 			return (
 				<div className="group rounded-[22px] p-px transition-colors duration-200">
 					<div className="chat-composer-glass rounded-4xl border border-border px-4 py-5 text-center transition-colors duration-200">
@@ -123,11 +180,11 @@ export function Composer({
 			);
 		}
 
-		if (agentsReady && !hasAgents) {
+		if (composerBodyStatus === "unavailable") {
 			return <ComposerUnavailable />;
 		}
 
-		if (isInteractivePending) {
+		if (composerBodyStatus === "interactive") {
 			return (
 				<div className="space-y-2">
 					<ComposerQueueChips threadId={threadId} />
