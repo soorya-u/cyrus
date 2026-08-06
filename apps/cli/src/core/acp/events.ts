@@ -148,6 +148,7 @@ export function mapApprovalRequest(
 					fields.title ||
 					rawToolCall.title ||
 					"Permission required",
+				content: enrichDiffContent(fields.content),
 			},
 			options: (request.options ?? []).map((option) => ({
 				optionId: option.optionId ?? option.kind ?? "deny",

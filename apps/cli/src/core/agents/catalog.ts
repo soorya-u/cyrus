@@ -13,6 +13,13 @@ export type AgentCatalog = {
 	configOptions: SessionConfigOption[];
 };
 
+type RawSessionModel = {
+	modelId: string;
+	name: string;
+	description?: string | null;
+	_meta?: Record<string, unknown> | null;
+};
+
 export function catalogFromSession(session: RuntimeSession): AgentCatalog {
 	const { session: meta } = session.transcript;
 	return {
@@ -24,7 +31,9 @@ export function catalogFromSession(session: RuntimeSession): AgentCatalog {
 export function modelsFromSession(session: RuntimeSession): ModelOption[] {
 	const { session: meta } = session.transcript;
 	if (hasNativeModelSelection(session)) {
-		return (meta.models?.availableModels ?? []).map((model) => ({
+		const availableModels = (meta.models?.availableModels ??
+			[]) as RawSessionModel[];
+		return availableModels.map((model) => ({
 			id: model.modelId,
 			name: model.name,
 			description: model.description ?? null,

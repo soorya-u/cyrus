@@ -5,6 +5,7 @@ import {
 } from "@acp-kit/core";
 import type { AgentEvent } from "@cyrus/schemas/rtc/chat";
 import { mapApprovalRequest } from "./events";
+import { createWireErrorLogger } from "./logger";
 
 export type TurnBinding = {
 	threadId: string;
@@ -180,6 +181,7 @@ export function createInteractiveHost(
 		requestPermission: (request) =>
 			interactivePending.requestPermission(request),
 		onAgentExit,
+		wireMiddleware: [createWireErrorLogger()],
 	};
 }
 
