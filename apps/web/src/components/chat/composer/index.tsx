@@ -85,12 +85,7 @@ export function Composer({
 	const canPasteUrls = supportsEmbeddedContext;
 	const composerBlocked = Boolean(threadError ?? catalog.catalogError);
 
-	const [draftGitOpen, setDraftGitOpen] = useState(false);
 	const [draftCatalogSettled, setDraftCatalogSettled] = useState(false);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on identity change
-	useEffect(() => {
-		setDraftGitOpen(false);
-	}, [threadId, projectId]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on identity change
 	useEffect(() => {
 		setDraftCatalogSettled(false);
@@ -108,7 +103,7 @@ export function Composer({
 	]);
 	const threadGitStatus = useGitStatus(localDraft ? undefined : threadId);
 	const projectGitStatus = useProjectGitStatus(
-		localDraft && draftGitOpen ? projectId : undefined
+		localDraft ? projectId : undefined
 	);
 	const isGitRepo =
 		(localDraft ? projectGitStatus : threadGitStatus).data?.isRepo === true;
@@ -301,10 +296,8 @@ export function Composer({
 			</div>
 
 			<ComposerLowerChrome
-				draftGitOpen={draftGitOpen}
 				isGitRepo={isGitRepo}
 				localDraft={localDraft}
-				onOpenDraftGit={() => setDraftGitOpen(true)}
 				subject={subject}
 			/>
 		</div>

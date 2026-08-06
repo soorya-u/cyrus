@@ -17,6 +17,7 @@ import {
 	SearchIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -74,6 +75,20 @@ function resolveBranchTriggerLabel(
 	return refName;
 }
 
+function refsQueryId(
+	isActiveSource: boolean,
+	branchMenuOpened: boolean,
+	id: string
+): string | undefined {
+	return isActiveSource && branchMenuOpened ? id : undefined;
+}
+
+function useMutationErrorToast(error: Error | null | undefined) {
+	useEffect(() => {
+		if (error) toast.error(error.message);
+	}, [error]);
+}
+
 function BranchListItems({
 	filteredRefs,
 	isLoading,
@@ -116,9 +131,12 @@ export function ComposerBranchToolbar({
 		localDraft ? subject.projectId : undefined
 	);
 	const gitStatus = localDraft ? projectGitStatus : threadGitStatus;
-	const threadGitRefs = useListGitRefs(localDraft ? undefined : subject.id);
+	const [branchMenuOpened, setBranchMenuOpened] = useState(false);
+	const threadGitRefs = useListGitRefs(
+		refsQueryId(!localDraft, branchMenuOpened, subject.id)
+	);
 	const projectGitRefs = useListProjectGitRefs(
-		localDraft ? subject.projectId : undefined
+		refsQueryId(localDraft, branchMenuOpened, subject.projectId)
 	);
 	const gitRefs = localDraft ? projectGitRefs : threadGitRefs;
 	const checkoutRef = useCheckoutRef();
@@ -150,7 +168,7 @@ export function ComposerBranchToolbar({
 		? (draftGit?.branch ?? statusRefName)
 		: statusRefName;
 	const hasWorktree = localDraft ? false : Boolean(subject.worktreePath);
-	const envLocked = hasWorktree;
+	const envLocked = !localDraft;
 	const branchMutationError = localDraft
 		? null
 		: (checkoutRef.error ?? createWorktree.error);
@@ -164,6 +182,8 @@ export function ComposerBranchToolbar({
 	}, [branchQuery, gitRefs.data?.refs]);
 
 	const refsLoading = gitRefs.isLoading && gitRefs.data === undefined;
+
+	useMutationErrorToast(branchMutationError);
 
 	if (!isRepo) return null;
 
@@ -233,7 +253,11 @@ export function ComposerBranchToolbar({
 
 			<DropdownMenu
 				onOpenChange={(open) => {
-					if (!open) setBranchQuery("");
+					if (open) {
+						setBranchMenuOpened(true);
+					} else {
+						setBranchQuery("");
+					}
 				}}
 			>
 				<DropdownMenuTrigger
@@ -274,12 +298,6 @@ export function ComposerBranchToolbar({
 					</div>
 				</DropdownMenuContent>
 			</DropdownMenu>
-
-			{branchMutationError ? (
-				<span className="truncate text-[11px] text-destructive">
-					{branchMutationError.message}
-				</span>
-			) : null}
 		</div>
 	);
 }

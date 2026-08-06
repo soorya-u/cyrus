@@ -43,6 +43,10 @@ _Avoid_: session, chat, conversation (as an entity name), committed thread
 Controller-local composer state before a thread exists: the chosen project, branch or worktree choice, agent and preferences, and the unsent message. A draft never leaves the controller.
 _Avoid_: draft thread
 
+**Worktree**:
+A second git checkout of a project, on its own freshly-forked branch, that a thread runs from instead of the project directory — created by forking a new branch off the requested ref rather than checking that ref out directly, since a ref can only be checked out in one worktree at a time.
+_Avoid_: clone, sandbox
+
 **Bind**:
 The worker-internal act of making a thread's persisted session live — creating it at the thread's first message or resuming it on demand — yielding that session's catalog.
 _Avoid_: attach, connect
