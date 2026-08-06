@@ -17,9 +17,7 @@ export const Route = createFileRoute("/auth/device")({
 	validateSearch: z.object({ user_code: z.string().optional() }),
 	beforeLoad: async ({ search }) => {
 		const { data } = await authClient.getSession();
-		if (data?.user) {
-			return;
-		}
+		if (data?.user) return;
 
 		throw redirect({
 			to: "/auth",
@@ -37,7 +35,7 @@ function DevicePage() {
 	const { user_code: userCode } = Route.useSearch();
 	const { data: session, isPending } = authClient.useSession();
 	const [code, setCode] = useState(() => normalizeDeviceCode(userCode ?? ""));
-	const { outcome, decide, isDeciding } = useAuthDevice();
+	const { outcome, decide, isDeciding, decision } = useAuthDevice();
 
 	if (isPending) return <Spinner />;
 	if (!session?.user) return <Spinner />;
@@ -121,10 +119,10 @@ function DevicePage() {
 					onClick={() => decide(code, false)}
 					variant="outline"
 				>
-					{isDeciding ? <Spinner /> : "Deny"}
+					{isDeciding && decision === "declined" ? <Spinner /> : "Deny"}
 				</Button>
 				<Button disabled={isDeciding} onClick={() => decide(code, true)}>
-					{isDeciding ? <Spinner /> : "Approve"}
+					{isDeciding && decision === "approved" ? <Spinner /> : "Approve"}
 				</Button>
 			</div>
 		</>
