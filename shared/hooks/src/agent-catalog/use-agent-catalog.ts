@@ -85,8 +85,6 @@ export function useAgentCatalog({
 		pendingAgent ?? liveBinding?.agentName ?? thread?.agentName;
 
 	const boundAgent = pickExplicitOption(preferredAgent, agents);
-	// Drafts require an explicit agent selection before probing — do not fall
-	// back to agents[0], which would fire getDraftCatalog on open.
 	const displayAgent = isDraft
 		? pickExplicitOption(pendingAgent, agents)
 		: pickDisplayOption(preferredAgent, agents);
@@ -166,6 +164,14 @@ export function useAgentCatalog({
 			mutationKey: RTC_OPERATION_KEYS.setPersona,
 		}),
 	});
+
+	useEffect(() => {
+		if (!isDraft) return;
+		if (pendingAgent) return;
+		const defaultAgent = agents[0]?.id;
+		if (!defaultAgent) return;
+		setPendingAgent(threadId, defaultAgent);
+	}, [agents, isDraft, pendingAgent, setPendingAgent, threadId]);
 
 	useEffect(() => {
 		if (!catalogAgent || models.length === 0) return;
