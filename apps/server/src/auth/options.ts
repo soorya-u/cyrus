@@ -31,6 +31,14 @@ export const authOptions = {
 	},
 	secret: env.BETTER_AUTH_SECRET,
 	baseURL: env.WEB_APP_URL,
+	session: {
+		additionalFields: {
+			workerName: {
+				type: "string",
+				required: false,
+			},
+		},
+	},
 	advanced: {
 		defaultCookieAttributes: {
 			sameSite: "lax" as const,
