@@ -71,4 +71,23 @@ describe("ActiveSession", () => {
 		expect(navigateMock).toHaveBeenCalledWith({ to: "/auth/sign-out" });
 		expect(revokeSessionMock).not.toHaveBeenCalled();
 	});
+
+	test("renders the worker name instead of browser/OS when workerName is set", () => {
+		render(
+			<ActiveSession
+				activeSession={
+					{
+						id: "session-3",
+						token: "worker-token",
+						userAgent: "",
+						createdAt: new Date(Date.now() - 60_000),
+						workerName: "sooryas-macbook",
+					} as never
+				}
+			/>
+		);
+
+		expect(screen.getByText("sooryas-macbook")).toBeInTheDocument();
+		expect(screen.queryByText("Unknown Browser")).not.toBeInTheDocument();
+	});
 });

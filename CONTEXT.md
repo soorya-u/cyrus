@@ -29,6 +29,10 @@ The room-level connection through the sync server that lets peers discover and d
 A controller's direct connection to one specific worker, over which all worker RPCs run.
 _Avoid_: RTC connection (as a domain term), channel, controller (for the connection)
 
+**Login session**:
+A better-auth credential grant — the row a peer gets on signing in, holding its token, IP, and user agent. Carries a `workerName` when it belongs to a worker (set via the CLI's device-authorization login), and is `null` when it belongs to a controller (web, desktop, mobile sign-in). Distinct from an ACP **Session**.
+_Avoid_: session (ambiguous with ACP Session), auth session, device
+
 ### Projects and threads
 
 **Project**:

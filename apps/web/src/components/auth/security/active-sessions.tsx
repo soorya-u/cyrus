@@ -11,44 +11,63 @@ import {
 	ItemSeparator,
 } from "@/components/ui/item";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActiveSession } from "./active-session";
+import { ActiveSession, type SessionWithWorkerName } from "./active-session";
 
 export type ActiveSessionsProps = {
 	className?: string;
 };
 
-/**
- * Render a card listing all active sessions for the current user with revoke controls.
- *
- * Shows each session's browser, OS, IP address, and creation time. The current session is marked
- * and navigates to sign-out on click, while other sessions can be revoked individually.
- *
- * @returns A JSX element containing the sessions card
- */
 export function ActiveSessions({ className }: ActiveSessionsProps) {
-	const { authClient, localization } = useAuth();
+	const { authClient } = useAuth();
 	const { data: session } = useSession(authClient);
 
 	const { data: sessions, isPending } = useListSessions(authClient);
 
-	const activeSessions = [...(sessions ?? [])].sort(
-		(a, b) =>
-			Number(b.id === session?.session.id) -
-			Number(a.id === session?.session.id)
-	);
+	const allSessions = ((sessions as SessionWithWorkerName[] | undefined) ?? [])
+		.slice()
+		.sort(
+			(a, b) =>
+				Number(b.id === session?.session.id) -
+				Number(a.id === session?.session.id)
+		);
+	const controllerSessions = allSessions.filter((s) => !s.workerName);
+	const workerSessions = allSessions.filter((s) => s.workerName);
 
 	return (
-		<div>
-			<h2 className="mb-3 font-semibold text-sm">
-				{localization.settings.activeSessions}
-			</h2>
+		<div className={cn("space-y-6", className)}>
+			<SessionSection
+				isPending={isPending}
+				sessions={controllerSessions}
+				title="Controllers"
+			/>
+			<Show when={isPending || workerSessions.length > 0}>
+				<SessionSection
+					isPending={isPending}
+					sessions={workerSessions}
+					title={`Workers (${workerSessions.length})`}
+				/>
+			</Show>
+		</div>
+	);
+}
 
-			<Card className={cn("p-0", className)}>
+type SessionSectionProps = {
+	title: string;
+	sessions: SessionWithWorkerName[];
+	isPending: boolean;
+};
+
+function SessionSection({ title, sessions, isPending }: SessionSectionProps) {
+	return (
+		<div>
+			<h2 className="mb-3 font-semibold text-sm">{title}</h2>
+
+			<Card className="p-0">
 				<CardContent className="p-0">
 					<Show
 						fallback={
 							<ItemGroup className="gap-0">
-								{activeSessions?.map((activeSession, index) => (
+								{sessions.map((activeSession, index) => (
 									<Fragment key={activeSession.id}>
 										<Show when={index > 0}>
 											<ItemSeparator />

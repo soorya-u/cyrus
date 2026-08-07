@@ -1,12 +1,20 @@
 import { generateName } from "@cyrus/utils/identity";
 import { Result } from "better-result";
-import { authClient } from "@/lib/auth";
-import { getOrCreate, set } from "@/store/config";
+import { authClient, syncWorkerName } from "@/lib/auth";
+import { getOrCreate, remove, set } from "@/store/config";
 import { createSpinner } from "@/utils/spinner";
 import { blue, bold, cyan, print, underline } from "@/utils/style";
 
 export const CLIENT_ID = "cyrusd";
 export const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
+
+async function syncNewWorkerName(): Promise<Result<void, string>> {
+	const nameResult = await Result.tryPromise(() =>
+		getOrCreate("name", generateName)
+	);
+	if (nameResult.isErr()) return Result.err("no local name");
+	return await syncWorkerName(nameResult.value);
+}
 
 export async function login(): Promise<void> {
 	const { data, error } = await authClient.device.code({
@@ -61,7 +69,14 @@ export async function login(): Promise<void> {
 
 		if (accessToken) {
 			await set("token", accessToken);
-			await Result.tryPromise(() => getOrCreate("name", generateName));
+
+			const syncResult = await syncNewWorkerName();
+			if (syncResult.isErr()) {
+				await remove("token");
+				spinner.error(`Failed to sync worker name: ${syncResult.error}`);
+				process.exit(1);
+			}
+
 			const session = await authClient.getSession();
 			const email = session.data?.user?.email;
 			spinner.success(`Logged in${email ? ` as ${email}` : ""}.`);

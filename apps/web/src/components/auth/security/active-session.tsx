@@ -1,9 +1,7 @@
-"use client";
-
 import { useAuth, useRevokeSession, useSession } from "@better-auth-ui/react";
 import type { Session } from "better-auth";
 import Bowser from "bowser";
-import { LogOut, Monitor, Smartphone, X } from "lucide-react";
+import { LogOut, Monitor, Smartphone, TerminalIcon, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Show } from "@/components/helpers/show";
@@ -40,19 +38,12 @@ function timeAgo(date: Date) {
 	return rtf.format(0, "second");
 }
 
+export type SessionWithWorkerName = Session & { workerName?: string | null };
+
 export type ActiveSessionProps = {
-	activeSession: Session;
+	activeSession: SessionWithWorkerName;
 };
 
-/**
- * Render a single active session row with device info and revoke control.
- *
- * Shows the session's browser, OS, and creation time. The current session is marked
- * and navigates to sign-out on click, while other sessions can be revoked individually.
- *
- * @param session - The session object containing id, token, userAgent, ipAddress, and createdAt
- * @returns A JSX element containing the active session row
- */
 export function ActiveSession({ activeSession }: ActiveSessionProps) {
 	const { authClient, basePaths, localization, viewPaths, navigate } =
 		useAuth();
@@ -67,22 +58,34 @@ export function ActiveSession({ activeSession }: ActiveSessionProps) {
 	);
 
 	const isCurrentSession = activeSession.token === session?.session.token;
-	const ua = Bowser.parse(activeSession.userAgent || "");
+	const { workerName } = activeSession;
+	const ua = workerName
+		? null
+		: Bowser.parse(activeSession.userAgent || "unknown");
 	const isMobile =
-		ua.platform.type === "mobile" || ua.platform.type === "tablet";
+		ua?.platform.type === "mobile" || ua?.platform.type === "tablet";
+
+	let icon = <Monitor />;
+	if (workerName) {
+		icon = <TerminalIcon />;
+	} else if (isMobile) {
+		icon = <Smartphone />;
+	}
+
+	const title = workerName ? (
+		workerName
+	) : (
+		<>
+			{ua?.browser.name || "Unknown Browser"}
+			{ua?.os.name ? `, ${ua.os.name}` : ""}
+		</>
+	);
 
 	return (
 		<Item>
-			<ItemMedia variant="icon">
-				<Show fallback={<Monitor />} when={isMobile}>
-					<Smartphone />
-				</Show>
-			</ItemMedia>
+			<ItemMedia variant="icon">{icon}</ItemMedia>
 			<ItemContent>
-				<ItemTitle>
-					{ua.browser.name || "Unknown Browser"}
-					{ua.os.name ? `, ${ua.os.name}` : ""}
-				</ItemTitle>
+				<ItemTitle>{title}</ItemTitle>
 				<Show
 					fallback={
 						<Show when={Boolean(activeSession.createdAt)}>

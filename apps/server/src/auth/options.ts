@@ -12,13 +12,12 @@ import { log } from "evlog";
 import { env } from "../config/env";
 import { sendMagicLinkEmail as sendMagicLink } from "../emails/magic-email";
 
-const emailAndPassword =
-	env.NODE_ENV === "production" ? {} : { emailAndPassword: { enabled: true } };
+const isProduction = env.NODE_ENV === "production";
 
 export const authOptions = {
 	appName: "Cyrus",
 	basePath: "/api/auth",
-	...emailAndPassword,
+	emailAndPassword: { enabled: !isProduction },
 	trustedOrigins: [...env.ALLOWED_ORIGINS, env.PRODUCTION_URL],
 	socialProviders: {
 		github: {
@@ -32,19 +31,23 @@ export const authOptions = {
 	},
 	secret: env.BETTER_AUTH_SECRET,
 	baseURL: env.WEB_APP_URL,
+	session: {
+		additionalFields: {
+			workerName: {
+				type: "string",
+				required: false,
+			},
+		},
+	},
 	advanced: {
 		defaultCookieAttributes: {
 			sameSite: "lax" as const,
 			httpOnly: true,
-			secure: env.NODE_ENV === "production",
+			secure: isProduction,
 		},
 	},
 	logger: {
-		log: (
-			level: "debug" | "info" | "warn" | "error",
-			message: string,
-			...args: unknown[]
-		) => log[level]({ message, args }),
+		log: (level, message, ...args) => log[level]({ message, args }),
 		level: env.LOG_LEVEL,
 	},
 	plugins: [
