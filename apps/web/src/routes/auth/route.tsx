@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Route = createFileRoute("/auth")({
 	component: AuthLayout,
@@ -7,6 +8,7 @@ export const Route = createFileRoute("/auth")({
 function AuthLayout() {
 	return (
 		<div className="relative flex min-h-screen flex-col items-center justify-center bg-(--home-page-bg) px-6 text-foreground antialiased">
+			<ThemeToggle className="absolute top-4 right-4 z-10" />
 			{/* Overflow clipped on the grid layer only — parent overflow:hidden breaks backdrop-filter. */}
 			<div
 				aria-hidden="true"

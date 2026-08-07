@@ -67,7 +67,7 @@ export function ProviderButton({
 	return (
 		<Button
 			className={cn(
-				"relative overflow-visible bg-white/8 hover:border-primary hover:bg-white/12 dark:bg-white/8 dark:hover:bg-white/12",
+				"relative overflow-visible hover:border-primary",
 				className
 			)}
 			disabled={isPending}
