@@ -11,6 +11,7 @@ import {
 import { useIsMutating } from "@tanstack/react-query";
 import { cn } from "cnfast";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { useTheme } from "next-themes";
 import {
 	type Dispatch,
 	type ReactNode,
@@ -57,11 +58,15 @@ export type LoginFormProps = {
 };
 
 function LoginAgentsPanel() {
+	const { resolvedTheme } = useTheme();
+	const flickerColor =
+		resolvedTheme === "dark" ? "rgb(255, 255, 255)" : "rgb(0, 0, 0)";
+
 	return (
-		<div className="relative hidden min-h-100 overflow-hidden border-white/10 border-l bg-black md:block">
+		<div className="relative hidden min-h-100 overflow-hidden border-l bg-muted md:block">
 			<FlickeringGrid
 				className="absolute inset-0 z-0"
-				color="rgb(255, 255, 255)"
+				color={flickerColor}
 				maxOpacity={0.12}
 			/>
 			<div className="absolute inset-0 z-1">
@@ -152,7 +157,6 @@ function PasswordAuthFields({
 						<Input
 							aria-invalid={!!emailError}
 							autoComplete="email"
-							className="bg-black/75 dark:bg-black/75"
 							disabled={isPending}
 							id="email"
 							name="email"
@@ -176,7 +180,7 @@ function PasswordAuthFields({
 
 					<Field data-invalid={!!passwordError}>
 						<FieldLabel htmlFor="password">{labels.password}</FieldLabel>
-						<InputGroup className="bg-black/75 dark:bg-black/75">
+						<InputGroup>
 							<InputGroupInput
 								aria-invalid={!!passwordError}
 								autoComplete="current-password"
@@ -259,7 +263,7 @@ function PasswordAuthFields({
 					{captcha}
 
 					<Button
-						className="relative overflow-visible bg-foreground text-background hover:bg-white hover:text-background"
+						className="relative overflow-visible bg-foreground text-background hover:bg-foreground/90"
 						disabled={isPending}
 						type="submit"
 					>
@@ -313,7 +317,6 @@ function MagicLinkAuthFields({
 					<Input
 						aria-invalid={!!emailError}
 						autoComplete="email"
-						className="bg-black/75 dark:bg-black/75"
 						disabled={isPending}
 						id="email"
 						name="email"
@@ -338,7 +341,7 @@ function MagicLinkAuthFields({
 
 				<div className="flex flex-col gap-3">
 					<Button
-						className="bg-foreground text-background hover:bg-white hover:text-background"
+						className="bg-foreground text-background hover:bg-foreground/90"
 						disabled={isPending}
 						type="submit"
 					>
@@ -447,7 +450,7 @@ export function LoginForm({
 		<>
 			<Show when={canUseEmailAndPassword}>
 				<Button
-					className="w-full bg-white/8 hover:border-primary hover:bg-white/12 dark:bg-white/8 dark:hover:bg-white/12"
+					className="w-full hover:border-primary"
 					disabled={isPending}
 					onClick={() => {
 						setMode(mode === "signIn" ? "magicLink" : "signIn");
@@ -582,9 +585,9 @@ export function LoginForm({
 
 	return (
 		<div className={cn("flex w-full flex-col gap-6", className)}>
-			<Card className="overflow-hidden border-white/10 bg-black p-0 shadow-none">
+			<Card className="overflow-hidden p-0 shadow-none">
 				<CardContent className="grid p-0 md:grid-cols-2">
-					<div className="bg-black p-6 md:p-8">
+					<div className="p-6 md:p-8">
 						<AuthPrompts view={view} />
 
 						<div className="flex flex-col gap-6">
