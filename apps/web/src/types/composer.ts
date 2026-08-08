@@ -18,6 +18,7 @@ export type ComposerProps = {
 	threadId: string;
 	subject: ComposerSubject;
 	onSend: (message: ChatMessage) => Promise<Result<void, Error>>;
+	onExecuteShell?: (command: string) => Promise<Result<void, Error>>;
 	onStop?: () => void;
 	busy?: boolean;
 	stopping?: boolean;

@@ -41,6 +41,7 @@ type UseComposerEditorOptions = {
 	stopping: boolean;
 	composerBlocked: boolean;
 	onSend: (message: ChatMessage) => Promise<Result<void, Error>>;
+	onExecuteShell?: (command: string) => Promise<Result<void, Error>>;
 };
 
 function textForTriggers(plainText: string): string {
@@ -51,7 +52,10 @@ function buildPlaceholder(options: {
 	canAttachFiles: boolean;
 	canPasteUrls: boolean;
 	canSlash: boolean;
+	shellInputArmed: boolean;
 }): string {
+	if (options.shellInputArmed)
+		return "Type a command and press Enter to execute";
 	const hints = ["Ask anything"];
 	if (options.canAttachFiles) hints.push("@ files");
 	if (options.canPasteUrls) hints.push("paste URLs");
@@ -72,6 +76,7 @@ export function useComposerEditor({
 	stopping,
 	composerBlocked,
 	onSend,
+	onExecuteShell,
 }: UseComposerEditorOptions) {
 	const { setValue: setDraft, clear: clearDraft } = useComposerDraft(threadId);
 	const [plainText, setPlainText] = useState("");
@@ -87,12 +92,16 @@ export function useComposerEditor({
 	const threadIdRef = useRef(threadId);
 	threadIdRef.current = threadId;
 	const hasAgentSelected = Boolean(displayAgent);
+	const shellInputArmed = Boolean(onExecuteShell) && plainText.startsWith("!");
 	const submitStateRef = useRef({
 		stopping,
 		sending,
 		hasAgents,
 		composerBlocked,
 		hasAgentSelected,
+		plainText,
+		shellInputArmed,
+		onExecuteShell,
 	});
 	submitStateRef.current = {
 		stopping,
@@ -100,17 +109,17 @@ export function useComposerEditor({
 		hasAgents,
 		composerBlocked,
 		hasAgentSelected,
+		plainText,
+		shellInputArmed,
+		onExecuteShell,
 	};
 
-	// Arm before Lexical's mount-time empty onChange can clear localStorage.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: re-arm on thread switch as well as editorReady
 	useLayoutEffect(() => {
 		if (!editorReady) return;
 		ignoringEmptyDraftWriteRef.current = true;
 	}, [editorReady, threadId]);
 
-	// Restore after the editor is mounted rather than while skeleton/interactive
-	// content occupies the composer.
 	useEffect(() => {
 		if (!editorReady) return;
 
@@ -195,6 +204,34 @@ export function useComposerEditor({
 		[setDraft]
 	);
 
+	const restorePlainText = useCallback(
+		(text: string, originatingThreadId: string) => {
+			if (originatingThreadId !== threadIdRef.current) return;
+			editorRef.current?.setMessage([{ type: "text", text }]);
+			setPlainText(text);
+			setHasContent(true);
+		},
+		[]
+	);
+
+	const runSubmission = useCallback(
+		async (
+			action: () => Promise<Result<void, Error>>,
+			onFailure: (originatingThreadId: string) => void
+		) => {
+			const originatingThreadId = threadIdRef.current;
+			setSending(true);
+			editorRef.current?.clear();
+			setPlainText("");
+			setHasContent(false);
+			clearDraft();
+			const result = await action();
+			if (result.isErr()) onFailure(originatingThreadId);
+			setSending(false);
+		},
+		[clearDraft]
+	);
+
 	const submit = useCallback(async () => {
 		const state = submitStateRef.current;
 		if (
@@ -208,24 +245,28 @@ export function useComposerEditor({
 		) {
 			return;
 		}
+
+		if (state.shellInputArmed) {
+			const { onExecuteShell } = state;
+			const fullText = state.plainText;
+			const command = fullText.slice(1).trim();
+			if (!(command && onExecuteShell)) return;
+
+			await runSubmission(
+				() => onExecuteShell(command),
+				(originatingThreadId) => restorePlainText(fullText, originatingThreadId)
+			);
+			return;
+		}
+
 		const message = editorRef.current?.getMessage() ?? [];
 		if (message.length === 0) return;
 
-		const originatingThreadId = threadIdRef.current;
-		setSending(true);
-		editorRef.current?.clear();
-		setPlainText("");
-		setHasContent(false);
-		clearDraft();
-		try {
-			const result = await onSend(message);
-			if (result.isErr()) restoreMessage(message, originatingThreadId);
-		} catch {
-			restoreMessage(message, originatingThreadId);
-		} finally {
-			setSending(false);
-		}
-	}, [clearDraft, onSend, restoreMessage]);
+		await runSubmission(
+			() => onSend(message),
+			(originatingThreadId) => restoreMessage(message, originatingThreadId)
+		);
+	}, [onSend, runSubmission, restoreMessage, restorePlainText]);
 
 	const handleMentionKeys = useCallback(
 		(key: ComposerCommandKey): boolean => {
@@ -324,11 +365,13 @@ export function useComposerEditor({
 		editorRef,
 		hasContent,
 		sending,
+		shellInputArmed,
 		submit,
 		placeholder: buildPlaceholder({
 			canAttachFiles,
 			canPasteUrls,
 			canSlash: commands.length > 0,
+			shellInputArmed,
 		}),
 		handlers: {
 			commandKeyDown: handleCommandKeyDown,

@@ -83,6 +83,9 @@ The counter distinguishing multiple ephemeral deltas that share the same anchor 
 **Chat chunk**:
 A live conversation event delivered to watching peers as a turn runs.
 
+**Shell execution**:
+The conversation entry persisted for a **Shell input** run: command, stream-tagged lines (stdout/stderr), exit code, and start/complete times. A dedicated entry kind alongside message/thought/tool/error, not a synthetic tool call. Identified by its own execution id — distinct from a **Turn** id — since a shell execution runs independently of any turn and is cancelled independently (its own Stop control, not the composer's turn-scoped Stop button).
+
 **Ephemeral delta**:
 A streamed fragment (token or thought), ordered by its anchor seq plus sub — broadcast live but never persisted, and never held in the replay buffer; the completed message is persisted once, in full.
 _Avoid_: partial message
@@ -150,6 +153,10 @@ The health check that spawns an enabled agent and verifies the ACP handshake com
 
 **Composer**:
 The chat input area: prompt box, agent/model picker, mode/effort/persona controls, prompt queue, and the panel where approvals and elicitations are answered.
+
+**Shell input**:
+Composer state entered when `!` is the first character typed in a thread's composer; the text is sent as a shell command instead of a prompt. Thread-scoped only — requires an existing thread. Distinct from an agent's **mode** (`modeId`).
+_Avoid_: shell mode (collides with modeId)
 
 **Prompt queue**:
 Messages queued per thread while a turn is active, sent sequentially once the turn completes.

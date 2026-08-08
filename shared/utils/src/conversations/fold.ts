@@ -6,6 +6,7 @@ import {
 	type ElicitationView,
 	type ErrorView,
 	type MessageView,
+	type ShellExecutionView,
 	type ThoughtView,
 	type ThreadConversation,
 	ThreadConversationSchema,
@@ -22,6 +23,7 @@ type MutableState = {
 	errors: Map<string, ErrorView>;
 	approvals: Map<string, ApprovalView>;
 	elicitations: Map<string, ElicitationView>;
+	shellExecutions: Map<string, ShellExecutionView>;
 };
 
 function touchTurn(
@@ -267,6 +269,80 @@ function applyThreadError(
 	});
 }
 
+function applyShellExecutionStart(
+	state: MutableState,
+	entry: ConversationEntry,
+	event: Extract<AgentEvent, { type: "shell_execution_start" }>,
+	shellExecutionId: string
+): void {
+	state.shellExecutions.set(shellExecutionId, {
+		command: event.command,
+		completedAt: null,
+		exitCode: null,
+		id: shellExecutionId,
+		lines: [],
+		seq: entry.seq,
+		startedAt: entry.createdAt,
+		status: "running",
+		sub: entry.sub,
+		threadId: entry.threadId,
+	});
+}
+
+function applyShellExecutionLine(
+	state: MutableState,
+	entry: ConversationEntry,
+	event: Extract<AgentEvent, { type: "shell_execution_line" }>,
+	shellExecutionId: string
+): void {
+	const existing = state.shellExecutions.get(shellExecutionId);
+	if (existing) {
+		existing.lines = [...existing.lines, ...event.lines];
+		return;
+	}
+	state.shellExecutions.set(shellExecutionId, {
+		command: "",
+		completedAt: null,
+		exitCode: null,
+		id: shellExecutionId,
+		lines: event.lines,
+		seq: entry.seq,
+		startedAt: entry.createdAt,
+		status: "running",
+		sub: entry.sub,
+		threadId: entry.threadId,
+	});
+}
+
+function applyShellExecutionEnd(
+	state: MutableState,
+	entry: ConversationEntry,
+	event: Extract<AgentEvent, { type: "shell_execution_end" }>,
+	shellExecutionId: string
+): void {
+	const existing = state.shellExecutions.get(shellExecutionId);
+	if (existing) {
+		existing.completedAt = entry.createdAt;
+		existing.exitCode = event.exitCode;
+		existing.lines = event.lines;
+		existing.status = event.status;
+		return;
+	}
+
+	state.shellExecutions.set(shellExecutionId, {
+		command: "",
+		completedAt: entry.createdAt,
+		exitCode: event.exitCode,
+		id: shellExecutionId,
+		lines: event.lines,
+		seq: entry.seq,
+		startedAt: entry.createdAt,
+		status: event.status,
+		sub: entry.sub,
+		threadId: entry.threadId,
+	});
+}
+
 function applyApprovalRequest(
 	state: MutableState,
 	entry: ConversationEntry,
@@ -385,7 +461,26 @@ function applyEvent(
 	entry: ConversationEntry,
 	completedThoughtIds: Set<string>
 ): void {
-	const { turnId, event } = entry.chunk;
+	const { turnId, shellExecutionId, event } = entry.chunk;
+
+	if (event.type === "shell_execution_start") {
+		if (shellExecutionId)
+			applyShellExecutionStart(state, entry, event, shellExecutionId);
+		return;
+	}
+	if (event.type === "shell_execution_end") {
+		if (shellExecutionId)
+			applyShellExecutionEnd(state, entry, event, shellExecutionId);
+		return;
+	}
+	if (event.type === "shell_execution_line") {
+		if (shellExecutionId)
+			applyShellExecutionLine(state, entry, event, shellExecutionId);
+		return;
+	}
+
+	if (!turnId) return;
+
 	switch (event.type) {
 		case "user_message":
 			applyUserMessage(state, entry, event, turnId);
@@ -440,6 +535,7 @@ export function fold(
 		elicitations: new Map(),
 		errors: new Map(),
 		messages: new Map(),
+		shellExecutions: new Map(),
 		thoughts: new Map(),
 		toolCalls: new Map(),
 	};
@@ -448,12 +544,14 @@ export function fold(
 	const entriesByTurn = new Map<string, ConversationEntry[]>();
 
 	for (const entry of entries) {
-		touchTurn(turns, entry.chunk.turnId, entry.threadId, entry.createdAt);
+		const { turnId } = entry.chunk;
+		if (turnId) {
+			touchTurn(turns, turnId, entry.threadId, entry.createdAt);
+			const turnEntries = entriesByTurn.get(turnId) ?? [];
+			turnEntries.push(entry);
+			entriesByTurn.set(turnId, turnEntries);
+		}
 		applyEvent(state, entry, completedThoughtIds);
-
-		const turnEntries = entriesByTurn.get(entry.chunk.turnId) ?? [];
-		turnEntries.push(entry);
-		entriesByTurn.set(entry.chunk.turnId, turnEntries);
 	}
 
 	const orderedTurns = [...turns.values()];
@@ -491,6 +589,7 @@ export function fold(
 				message.turnId === latestTurn?.id &&
 				latestTurn?.state === "running",
 		})),
+		shellExecutions: [...state.shellExecutions.values()],
 		toolCalls: [...state.toolCalls.values()],
 		turns: orderedTurns,
 	});

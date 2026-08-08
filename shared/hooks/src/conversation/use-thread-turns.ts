@@ -32,7 +32,12 @@ function listOpenConversationTurnIds(
 		RTC_OPERATION_KEYS.getConversations(threadId)
 	);
 	const conversations = data?.conversations ?? [];
-	const turnIds = new Set(conversations.map((entry) => entry.chunk.turnId));
+
+	const turnIds = new Set(
+		conversations
+			.map((entry) => entry.chunk.turnId)
+			.filter((turnId) => turnId !== undefined)
+	);
 	const terminalTurnIds = new Set(
 		conversations
 			.filter(

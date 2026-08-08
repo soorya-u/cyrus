@@ -6,6 +6,7 @@ import {
 import { useListAgents } from "@cyrus/hooks/queries/use-list-agents";
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { useComposerDraftHydrated } from "@cyrus/hooks/stores/composer-draft";
+import { cn } from "cnfast";
 import { useEffect, useState } from "react";
 import { FileMentionAutocomplete } from "@/components/chat/composer/composer-attachments";
 import { ComposerContextUsage } from "@/components/chat/composer/composer-context-usage";
@@ -53,6 +54,7 @@ export function Composer({
 	threadId,
 	subject,
 	onSend,
+	onExecuteShell,
 	onStop,
 	busy = false,
 	stopping = false,
@@ -134,6 +136,7 @@ export function Composer({
 		stopping,
 		composerBlocked,
 		onSend,
+		onExecuteShell,
 	});
 
 	const composerBodyStatus = getComposerBodyStatus({
@@ -191,7 +194,14 @@ export function Composer({
 		return (
 			<div className="group rounded-[22px] p-px transition-colors duration-200">
 				<ComposerQueueChips threadId={threadId} />
-				<div className="chat-composer-glass overflow-visible rounded-4xl border border-border transition-colors duration-200 has-focus-visible:border-ring/45">
+				<div
+					className={cn(
+						"chat-composer-glass overflow-visible rounded-4xl border transition-colors duration-200",
+						editor.shellInputArmed
+							? "border-destructive"
+							: "border-border has-focus-visible:border-ring/45"
+					)}
+				>
 					<div className="relative overflow-visible px-3 pt-3.5 pb-2 sm:px-4 sm:pt-4">
 						<div className="relative overflow-visible">
 							{editor.slash.filter === null || editor.slash.dismissed ? null : (
