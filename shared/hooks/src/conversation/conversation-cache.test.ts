@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import {
 	appendOptimisticUserMessage,
 	appendTurnTerminal,
+	applyChunkToCache,
 } from "./conversation-cache";
 
 describe("conversation cache", () => {
@@ -38,5 +39,79 @@ describe("conversation cache", () => {
 
 		const result = await waiting;
 		expect(result.isErr()).toBe(true);
+	});
+
+	test("groups shell execution lines by shellExecutionId (no turnId) and prunes them once the run ends", async () => {
+		const queryClient = new QueryClient();
+		const threadId = "thread-3";
+		const shellExecutionId = "shell-1";
+
+		applyChunkToCache(queryClient, {
+			threadId,
+			shellExecutionId,
+			seq: 10,
+			event: { type: "shell_execution_start", command: "ls" },
+		});
+		applyChunkToCache(queryClient, {
+			threadId,
+			shellExecutionId,
+			seq: 0,
+			sub: 1,
+			event: {
+				type: "shell_execution_line",
+				lines: [{ stream: "stdout", text: "a.txt" }],
+			},
+		});
+		applyChunkToCache(queryClient, {
+			threadId,
+			shellExecutionId,
+			seq: 0,
+			sub: 2,
+			event: {
+				type: "shell_execution_line",
+				lines: [{ stream: "stdout", text: "b.txt" }],
+			},
+		});
+
+		await new Promise((resolve) => setTimeout(resolve, 200));
+
+		type CachedEntry = {
+			sub?: number;
+			chunk: { event: { type: string; lines?: unknown[] } };
+		};
+		const getConversations = () =>
+			queryClient.getQueryData<{ conversations: CachedEntry[] }>(
+				RTC_OPERATION_KEYS.getConversations(threadId)
+			)?.conversations ?? [];
+
+		const midway = getConversations();
+		expect(midway).toHaveLength(2);
+		const mergedLineEntry = midway.find(
+			(entry) => entry.chunk.event.type === "shell_execution_line"
+		);
+		expect(mergedLineEntry?.chunk.event.lines).toEqual([
+			{ stream: "stdout", text: "a.txt" },
+			{ stream: "stdout", text: "b.txt" },
+		]);
+
+		applyChunkToCache(queryClient, {
+			threadId,
+			shellExecutionId,
+			seq: 11,
+			event: {
+				type: "shell_execution_end",
+				status: "exited",
+				exitCode: 0,
+				lines: [
+					{ stream: "stdout", text: "a.txt" },
+					{ stream: "stdout", text: "b.txt" },
+				],
+			},
+		});
+
+		const final = getConversations();
+
+		expect(final).toHaveLength(2);
+		expect(final.every((entry) => entry.sub === undefined)).toBe(true);
 	});
 });

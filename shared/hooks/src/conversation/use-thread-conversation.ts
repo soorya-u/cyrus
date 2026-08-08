@@ -22,6 +22,7 @@ const EMPTY: ThreadConversation = {
 	elicitations: [],
 	errors: [],
 	messages: [],
+	shellExecutions: [],
 	thoughts: [],
 	toolCalls: [],
 	turns: [],

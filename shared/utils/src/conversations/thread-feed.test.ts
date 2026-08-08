@@ -6,6 +6,7 @@ describe("deriveFeed", () => {
 		const feed = deriveFeed({
 			approvals: [],
 			elicitations: [],
+			shellExecutions: [],
 			errors: [
 				{
 					code: "coordinator.runtime",
@@ -53,6 +54,7 @@ describe("deriveFeed", () => {
 		const feed = deriveFeed({
 			approvals: [],
 			elicitations: [],
+			shellExecutions: [],
 			errors: [
 				{
 					createdAt: "2026-07-11T00:00:01.500Z",
@@ -132,6 +134,7 @@ describe("deriveFeed", () => {
 					seq: 1,
 				},
 			],
+			shellExecutions: [],
 			thoughts: [],
 			toolCalls: [
 				{
@@ -179,6 +182,7 @@ describe("deriveFeed", () => {
 		const feed = deriveFeed({
 			approvals: [],
 			elicitations: [],
+			shellExecutions: [],
 			errors: [],
 			messages: [
 				{
@@ -238,6 +242,66 @@ describe("deriveFeed", () => {
 			"assistant-turn-1",
 		]);
 	});
+
+	test("places a shell execution by seq, never inside a turn timeline", () => {
+		const feed = deriveFeed({
+			approvals: [],
+			elicitations: [],
+			errors: [],
+			messages: [
+				{
+					content: "Go",
+					createdAt: "2026-07-11T00:00:01.000Z",
+					id: "user-turn-1",
+					role: "user",
+					turnId: "turn-1",
+					seq: 1,
+				},
+				{
+					content: "Done",
+					createdAt: "2026-07-11T00:00:03.000Z",
+					id: "assistant-turn-1",
+					role: "assistant",
+					turnId: "turn-1",
+					seq: 3,
+				},
+			],
+			shellExecutions: [
+				{
+					command: "ls",
+					completedAt: "2026-07-11T00:00:02.500Z",
+					exitCode: 0,
+					id: "shell-1",
+					lines: [{ stream: "stdout", text: "README.md" }],
+					seq: 2,
+					startedAt: "2026-07-11T00:00:02.000Z",
+					status: "exited",
+					threadId: "thread-1",
+				},
+			],
+			thoughts: [],
+			toolCalls: [],
+			turns: [
+				{
+					completedAt: "2026-07-11T00:00:03.000Z",
+					id: "turn-1",
+					index: 0,
+					state: "complete",
+					threadId: "thread-1",
+				},
+			],
+		});
+
+		expect(feed.map((entry) => entry.id)).toEqual([
+			"user-turn-1",
+			"shell-shell-1",
+			"assistant-turn-1",
+		]);
+		expect(feed.find((entry) => entry.id === "shell-shell-1")).toMatchObject({
+			type: "shell",
+			shellExecution: { command: "ls", status: "exited" },
+		});
+	});
 });
 
 describe("getTurnStartedAt", () => {
@@ -246,6 +310,7 @@ describe("getTurnStartedAt", () => {
 			{
 				approvals: [],
 				elicitations: [],
+				shellExecutions: [],
 				errors: [],
 				messages: [],
 				thoughts: [

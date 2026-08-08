@@ -30,6 +30,26 @@ function folded(entries: ConversationEntry[]) {
 	return result.value;
 }
 
+function shellEntry(
+	seq: number,
+	shellExecutionId: string,
+	event: AgentEvent,
+	createdAt = `2026-07-11T00:00:${String(seq).padStart(2, "0")}.000Z`
+): ConversationEntry {
+	return {
+		chunk: {
+			event,
+			seq,
+			shellExecutionId,
+			threadId: "thread-1",
+		},
+		createdAt,
+		id: `entry-${seq}`,
+		seq,
+		threadId: "thread-1",
+	};
+}
+
 describe("fold", () => {
 	test("folds user and assistant events into ordered messages", () => {
 		const conversation = folded([
@@ -401,5 +421,100 @@ describe("fold", () => {
 			},
 		]);
 		expect(conversation.turns[0]?.state).toBe("interrupted");
+	});
+
+	test("folds a shell execution without creating a fake turn", () => {
+		const conversation = folded([
+			entry(1, "turn-1", { type: "user_message", content: "Hello" }),
+			shellEntry(2, "shell-1", {
+				type: "shell_execution_start",
+				command: "ls -la",
+			}),
+			shellEntry(3, "shell-1", {
+				type: "shell_execution_end",
+				status: "exited",
+				exitCode: 0,
+				lines: [{ stream: "stdout", text: "README.md" }],
+			}),
+		]);
+
+		expect(conversation.turns.map((turn) => turn.id)).toEqual(["turn-1"]);
+		expect(conversation.shellExecutions).toEqual([
+			{
+				command: "ls -la",
+				completedAt: "2026-07-11T00:00:03.000Z",
+				exitCode: 0,
+				id: "shell-1",
+				lines: [{ stream: "stdout", text: "README.md" }],
+				seq: 2,
+				startedAt: "2026-07-11T00:00:02.000Z",
+				status: "exited",
+				sub: undefined,
+				threadId: "thread-1",
+			},
+		]);
+	});
+
+	test("keeps a shell execution's original seq position when it finishes", () => {
+		const conversation = folded([
+			shellEntry(1, "shell-1", {
+				type: "shell_execution_start",
+				command: "sleep 1",
+			}),
+			shellEntry(5, "shell-1", {
+				type: "shell_execution_end",
+				status: "exited",
+				exitCode: 0,
+				lines: [],
+			}),
+		]);
+
+		expect(conversation.shellExecutions[0]?.seq).toBe(1);
+	});
+
+	test("accumulates ephemeral shell_execution_line entries while running", () => {
+		const conversation = folded([
+			shellEntry(1, "shell-1", {
+				type: "shell_execution_start",
+				command: "bun run build",
+			}),
+			shellEntry(1, "shell-1", {
+				type: "shell_execution_line",
+				lines: [{ stream: "stdout", text: "building..." }],
+			}),
+			shellEntry(1, "shell-1", {
+				type: "shell_execution_line",
+				lines: [{ stream: "stderr", text: "warning: slow" }],
+			}),
+		]);
+
+		expect(conversation.shellExecutions[0]).toMatchObject({
+			lines: [
+				{ stream: "stdout", text: "building..." },
+				{ stream: "stderr", text: "warning: slow" },
+			],
+			status: "running",
+		});
+	});
+
+	test("reports a cancelled shell execution's status and partial output", () => {
+		const conversation = folded([
+			shellEntry(1, "shell-1", {
+				type: "shell_execution_start",
+				command: "sleep 100",
+			}),
+			shellEntry(2, "shell-1", {
+				type: "shell_execution_end",
+				status: "cancelled",
+				exitCode: null,
+				lines: [{ stream: "stdout", text: "partial" }],
+			}),
+		]);
+
+		expect(conversation.shellExecutions[0]).toMatchObject({
+			exitCode: null,
+			lines: [{ stream: "stdout", text: "partial" }],
+			status: "cancelled",
+		});
 	});
 });

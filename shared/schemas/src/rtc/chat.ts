@@ -299,6 +299,35 @@ export const ThreadErrorEventSchema = z.object({
 	code: z.string().optional(),
 });
 
+export const ShellExecutionLineSchema = z.object({
+	stream: z.enum(["stdout", "stderr"]),
+	text: z.string(),
+});
+
+export const ShellExecutionEndStatusSchema = z.enum([
+	"exited",
+	"timeout",
+	"cancelled",
+	"spawn_error",
+]);
+
+export const ShellExecutionStartEventSchema = z.object({
+	type: z.literal("shell_execution_start"),
+	command: z.string(),
+});
+
+export const ShellExecutionLineEventSchema = z.object({
+	type: z.literal("shell_execution_line"),
+	lines: z.array(ShellExecutionLineSchema).min(1),
+});
+
+export const ShellExecutionEndEventSchema = z.object({
+	type: z.literal("shell_execution_end"),
+	status: ShellExecutionEndStatusSchema,
+	exitCode: z.number().nullable(),
+	lines: z.array(ShellExecutionLineSchema),
+});
+
 export const AgentEventSchema = z.discriminatedUnion("type", [
 	ThreadStartedEventSchema,
 	UserMessageEventSchema,
@@ -319,6 +348,9 @@ export const AgentEventSchema = z.discriminatedUnion("type", [
 	ElicitationRequestEventSchema,
 	ElicitationResolvedEventSchema,
 	SessionUpdateEventSchema,
+	ShellExecutionStartEventSchema,
+	ShellExecutionLineEventSchema,
+	ShellExecutionEndEventSchema,
 ]);
 
 export const ChatInputSchema = z.object({
@@ -336,7 +368,8 @@ export const ChatOutputSchema = z.object({
 
 export const ChatChunkSchema = z.object({
 	threadId: z.string(),
-	turnId: z.string(),
+	turnId: z.string().optional(),
+	shellExecutionId: z.string().optional(),
 	seq: z.number(),
 	sub: z.number().optional(),
 	event: AgentEventSchema,
@@ -345,6 +378,20 @@ export const ChatChunkSchema = z.object({
 export const CancelInputSchema = z.object({
 	agentName: z.string(),
 	threadId: z.string(),
+});
+
+export const ExecuteShellInputInputSchema = z.object({
+	threadId: z.string(),
+	command: z.string().min(1),
+});
+
+export const ExecuteShellInputOutputSchema = z.object({
+	shellExecutionId: z.string(),
+});
+
+export const CancelShellExecutionInputSchema = z.object({
+	threadId: z.string(),
+	shellExecutionId: z.string(),
 });
 
 export type PromptInputBlock = z.infer<typeof PromptInputBlockSchema>;
@@ -368,3 +415,16 @@ export type ChatInput = z.infer<typeof ChatInputSchema>;
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 export type ChatChunk = z.infer<typeof ChatChunkSchema>;
 export type CancelInput = z.infer<typeof CancelInputSchema>;
+export type ShellExecutionLine = z.infer<typeof ShellExecutionLineSchema>;
+export type ShellExecutionEndStatus = z.infer<
+	typeof ShellExecutionEndStatusSchema
+>;
+export type ExecuteShellInputInput = z.infer<
+	typeof ExecuteShellInputInputSchema
+>;
+export type ExecuteShellInputOutput = z.infer<
+	typeof ExecuteShellInputOutputSchema
+>;
+export type CancelShellExecutionInput = z.infer<
+	typeof CancelShellExecutionInputSchema
+>;

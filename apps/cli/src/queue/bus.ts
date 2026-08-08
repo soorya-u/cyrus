@@ -99,7 +99,7 @@ export function createThreadEventBus(
 		while (log.length > maxChunksPerTurn) log.shift();
 	}
 
-	function appendToTurnLog(chunk: ChatChunk): void {
+	function appendToTurnLog(chunk: ChatChunk & { turnId: string }): void {
 		const { turnId } = chunk;
 		let log = activeTurnLogs.get(turnId);
 		if (!log) {
@@ -137,11 +137,11 @@ export function createThreadEventBus(
 			const stamped = stampChunk(chunk);
 			const terminal = isTerminalEvent(stamped.event);
 
-			if (!terminal && stamped.sub === undefined) {
-				appendToTurnLog(stamped);
+			if (!terminal && stamped.sub === undefined && stamped.turnId) {
+				appendToTurnLog(stamped as ChatChunk & { turnId: string });
 			}
 			fanOut(stamped);
-			if (terminal) {
+			if (terminal && stamped.turnId) {
 				evictTurnLog(stamped.turnId);
 			}
 		},

@@ -26,14 +26,26 @@ const deltaThrottler = new Throttler(
 	{ wait: STREAM_DELTA_MIN_MS }
 );
 
-function turnKey(threadId: string, turnId: string): string {
-	return `${threadId}:${turnId}`;
+function correlationId(
+	chunk: Pick<ChatChunk, "turnId" | "shellExecutionId">
+): string {
+	return chunk.turnId ?? chunk.shellExecutionId ?? "";
+}
+
+function isCorrelationTerminal(event: ChatChunk["event"]): boolean {
+	return isTerminalEvent(event) || event.type === "shell_execution_end";
+}
+
+function turnKey(threadId: string, correlationKey: string): string {
+	return `${threadId}:${correlationKey}`;
 }
 
 function isStreamingDeltaChunk(chunk: ChatChunk): boolean {
 	return (
 		chunk.sub !== undefined &&
-		(chunk.event.type === "token" || chunk.event.type === "thought")
+		(chunk.event.type === "token" ||
+			chunk.event.type === "thought" ||
+			chunk.event.type === "shell_execution_line")
 	);
 }
 
@@ -42,7 +54,7 @@ function streamingDeltaKey(chunk: ChatChunk): string {
 		chunk.event.type === "token" || chunk.event.type === "thought"
 			? (chunk.event.messageId ?? "default")
 			: "default";
-	return `${chunk.threadId}:${chunk.turnId}:${chunk.event.type}:${messageId}`;
+	return `${chunk.threadId}:${correlationId(chunk)}:${chunk.event.type}:${messageId}`;
 }
 
 function mergeStreamingDeltaChunks(
@@ -63,6 +75,15 @@ function mergeStreamingDeltaChunks(
 			event: { ...left, text: left.text + right.text },
 		};
 	}
+	if (
+		left.type === "shell_execution_line" &&
+		right.type === "shell_execution_line"
+	) {
+		return {
+			...incoming,
+			event: { ...right, lines: [...left.lines, ...right.lines] },
+		};
+	}
 	return incoming;
 }
 
@@ -71,7 +92,7 @@ function entryIdForChunk(chunk: ChatChunk): string {
 		chunk.event.type === "token" || chunk.event.type === "thought"
 			? (chunk.event.messageId ?? "default")
 			: "";
-	return `local-${chunk.turnId}-${chunk.seq}-${chunk.event.type}-${messageId}`;
+	return `local-${correlationId(chunk)}-${chunk.seq}-${chunk.event.type}-${messageId}`;
 }
 
 function chunkToEntry(chunk: ChatChunk, id?: string): ConversationEntry {
@@ -123,9 +144,10 @@ function applyChunkToEntries(
 	entries: ConversationEntry[],
 	chunk: ChatChunk
 ): ConversationEntry[] {
-	const key = turnKey(chunk.threadId, chunk.turnId);
+	const chunkKey = correlationId(chunk);
+	const key = turnKey(chunk.threadId, chunkKey);
 
-	if (completedTurnKeys.has(key) && !isTerminalEvent(chunk.event))
+	if (completedTurnKeys.has(key) && !isCorrelationTerminal(chunk.event))
 		return entries;
 
 	if (shouldSkipChunk(entries, chunk)) return entries;
@@ -163,18 +185,18 @@ function applyChunkToEntries(
 	}
 
 	if (
-		isTerminalEvent(chunk.event) &&
+		isCorrelationTerminal(chunk.event) &&
 		next.some(
 			(entry) =>
-				entry.chunk.turnId === chunk.turnId &&
-				isTerminalEvent(entry.chunk.event)
+				correlationId(entry.chunk) === chunkKey &&
+				isCorrelationTerminal(entry.chunk.event)
 		)
 	)
 		return next;
 
 	next.push(chunkToEntry(chunk));
 
-	if (isTerminalEvent(chunk.event)) completedTurnKeys.add(key);
+	if (isCorrelationTerminal(chunk.event)) completedTurnKeys.add(key);
 
 	return next;
 }
@@ -183,7 +205,7 @@ function commitChunk(queryClient: QueryClient, chunk: ChatChunk): void {
 	updateCache(queryClient, chunk.threadId, (entries) =>
 		applyChunkToEntries(entries, chunk)
 	);
-	settleTurnWaiter(chunk.threadId, chunk.turnId, chunk.event);
+	if (chunk.turnId) settleTurnWaiter(chunk.threadId, chunk.turnId, chunk.event);
 }
 
 function flushPendingDeltas(queryClient: QueryClient): void {
@@ -195,10 +217,10 @@ function flushPendingDeltas(queryClient: QueryClient): void {
 
 function flushPendingDeltasForTurn(
 	queryClient: QueryClient,
-	turnId: string
+	groupId: string
 ): void {
 	for (const [key, chunk] of pendingDeltas) {
-		if (chunk.turnId !== turnId) continue;
+		if (correlationId(chunk) !== groupId) continue;
 		commitChunk(queryClient, chunk);
 		pendingDeltas.delete(key);
 	}
@@ -206,28 +228,30 @@ function flushPendingDeltasForTurn(
 
 function canPruneEphemeralTurn(
 	entries: ConversationEntry[],
-	turnId: string
+	groupId: string
 ): boolean {
 	return entries.some(
 		(entry) =>
-			entry.chunk.turnId === turnId &&
+			correlationId(entry.chunk) === groupId &&
 			entry.sub === undefined &&
 			(entry.chunk.event.type === "message_completed" ||
 				entry.chunk.event.type === "reasoning_completed" ||
-				entry.chunk.event.type === "turn_completed")
+				entry.chunk.event.type === "turn_completed" ||
+				entry.chunk.event.type === "shell_execution_end")
 	);
 }
 
 export function pruneEphemeralTurnEntries(
 	queryClient: QueryClient,
 	threadId: string,
-	turnId: string
+	groupId: string
 ): void {
 	updateCache(queryClient, threadId, (entries) => {
-		if (!canPruneEphemeralTurn(entries, turnId)) return entries;
-		completedTurnKeys.delete(turnKey(threadId, turnId));
+		if (!canPruneEphemeralTurn(entries, groupId)) return entries;
+		completedTurnKeys.delete(turnKey(threadId, groupId));
 		return entries.filter(
-			(entry) => !(entry.chunk.turnId === turnId && entry.sub !== undefined)
+			(entry) =>
+				!(correlationId(entry.chunk) === groupId && entry.sub !== undefined)
 		);
 	});
 }
@@ -246,14 +270,16 @@ export function applyChunkToCache(
 	queryClient: QueryClient,
 	chunk: ChatChunk
 ): void {
+	const groupId = correlationId(chunk);
+
 	if (isStreamingDeltaChunk(chunk)) {
-		if (completedTurnKeys.has(turnKey(chunk.threadId, chunk.turnId))) return;
+		if (completedTurnKeys.has(turnKey(chunk.threadId, groupId))) return;
 		queueStreamingDelta(queryClient, chunk);
 		return;
 	}
 
-	if (isTerminalEvent(chunk.event)) {
-		flushPendingDeltasForTurn(queryClient, chunk.turnId);
+	if (isCorrelationTerminal(chunk.event)) {
+		flushPendingDeltasForTurn(queryClient, groupId);
 		flushPendingDeltas(queryClient);
 	} else {
 		flushPendingDeltas(queryClient);
@@ -261,10 +287,10 @@ export function applyChunkToCache(
 
 	commitChunk(queryClient, chunk);
 
-	if (isTerminalEvent(chunk.event)) {
-		pruneEphemeralTurnEntries(queryClient, chunk.threadId, chunk.turnId);
+	if (isCorrelationTerminal(chunk.event)) {
+		pruneEphemeralTurnEntries(queryClient, chunk.threadId, groupId);
 		if (chunk.event.type === "turn_interrupted") {
-			completedTurnKeys.delete(turnKey(chunk.threadId, chunk.turnId));
+			completedTurnKeys.delete(turnKey(chunk.threadId, groupId));
 		}
 	}
 }

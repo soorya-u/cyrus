@@ -3,6 +3,7 @@ import type {
 	ElicitationView,
 	ErrorView,
 	MessageView,
+	ShellExecutionView,
 	ThoughtView,
 	ThreadConversation,
 	ToolCallView,
@@ -48,13 +49,19 @@ export type ElicitationFeedEntry = FeedEntryBase & {
 	turnId: string;
 };
 
+export type ShellFeedEntry = FeedEntryBase & {
+	type: "shell";
+	shellExecution: ShellExecutionView;
+};
+
 export type FeedEntry =
 	| MessageFeedEntry
 	| ThoughtFeedEntry
 	| ToolFeedEntry
 	| ErrorFeedEntry
 	| ApprovalFeedEntry
-	| ElicitationFeedEntry;
+	| ElicitationFeedEntry
+	| ShellFeedEntry;
 
 type TimelineItem = {
 	order: OrderKey;
@@ -202,6 +209,16 @@ export function deriveFeed(
 		});
 	}
 
+	// Shell executions are never turn-scoped, so every one of them goes through
+	// the same order-key insertion as an orphaned error, not the turn timeline.
+	for (const shellExecution of conversation.shellExecutions) {
+		insertFeedEntryByOrderKey(entries, orderKey(shellExecution), {
+			type: "shell",
+			id: `shell-${shellExecution.id}`,
+			shellExecution,
+		});
+	}
+
 	return entries;
 }
 
@@ -219,6 +236,8 @@ function feedEntryOrderKey(entry: FeedEntry): OrderKey {
 			return orderKey(entry.approval);
 		case "elicitation":
 			return orderKey(entry.elicitation);
+		case "shell":
+			return orderKey(entry.shellExecution);
 		default: {
 			const _exhaustive: never = entry;
 			return _exhaustive;
@@ -229,7 +248,7 @@ function feedEntryOrderKey(entry: FeedEntry): OrderKey {
 function insertFeedEntryByOrderKey(
 	entries: FeedEntry[],
 	target: OrderKey,
-	entry: ErrorFeedEntry
+	entry: FeedEntry
 ): void {
 	let index = 0;
 	for (const existing of entries) {
