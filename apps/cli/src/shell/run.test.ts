@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ShellExecutionLine } from "@cyrus/schemas/rtc/chat";
-import { pumpLines } from "./shell";
+import { pumpLines } from "./run";
 
 function streamFromChunks(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
 	return new ReadableStream({

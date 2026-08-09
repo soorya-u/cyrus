@@ -7,14 +7,12 @@ import {
 	DollarSignIcon,
 	SquareIcon,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
-import {
-	AnimatedSpan,
-	TerminalOutput,
-} from "@/components/chat/feed/terminal-output";
 import { Show } from "@/components/helpers/show";
+import { AnimatedSpan, TerminalOutput } from "@/components/ui/terminal-output";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
+import { useShellFailureToast } from "@/hooks/chat/use-shell-failure-toast";
 
 function shellStatusTooltip(execution: ShellExecutionView): string | null {
 	switch (execution.status) {
@@ -61,22 +59,6 @@ function ShellStatusDot({ execution }: { execution: ShellExecutionView }) {
 			<TooltipPopup side="top">{tooltip}</TooltipPopup>
 		</Tooltip>
 	);
-}
-
-function useShellFailureToast(execution: ShellExecutionView) {
-	const previousStatusRef = useRef(execution.status);
-
-	useEffect(() => {
-		const previousStatus = previousStatusRef.current;
-		previousStatusRef.current = execution.status;
-		if (previousStatus === execution.status) return;
-
-		if (execution.status === "timeout") {
-			toast.error(`Command timed out: ${execution.command}`);
-		} else if (execution.status === "spawn_error") {
-			toast.error(`Failed to start command: ${execution.command}`);
-		}
-	}, [execution.status, execution.command]);
 }
 
 export function ShellExecutionRow({

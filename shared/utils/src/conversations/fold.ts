@@ -472,20 +472,13 @@ function applyEvent(
 ): void {
 	const { turnId, shellExecutionId, event } = entry.chunk;
 
-	if (event.type === "shell_execution_start") {
-		if (shellExecutionId)
+	if (shellExecutionId) {
+		if (event.type === "shell_execution_start")
 			applyShellExecutionStart(state, entry, event, shellExecutionId);
-		return;
-	}
-	if (event.type === "shell_execution_end") {
-		if (shellExecutionId)
+		else if (event.type === "shell_execution_end")
 			applyShellExecutionEnd(state, entry, event, shellExecutionId);
-		return;
-	}
-	if (event.type === "shell_execution_line") {
-		if (shellExecutionId)
+		else if (event.type === "shell_execution_line")
 			applyShellExecutionLine(state, entry, event, shellExecutionId);
-		return;
 	}
 
 	if (!turnId) return;

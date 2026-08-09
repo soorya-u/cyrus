@@ -1,8 +1,9 @@
+import { shellErrorMessageFromUnknown } from "@cyrus/errors/shell";
 import { Result } from "better-result";
 import { useRtc } from "../contexts/rtc";
 
 function toError(cause: unknown): Error {
-	return cause instanceof Error ? cause : new Error(String(cause));
+	return new Error(shellErrorMessageFromUnknown(cause));
 }
 
 export function useShellExecution() {
