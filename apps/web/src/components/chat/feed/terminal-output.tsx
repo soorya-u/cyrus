@@ -1,7 +1,3 @@
-// Trimmed from magicui's Terminal (https://magicui.design/docs/components/terminal):
-// only the sequencing engine and AnimatedSpan/TerminalOutput are used by
-// ShellExecutionRow. The bordered/mac-dots Terminal chrome and TypingAnimation
-// aren't needed here — ShellExecutionRow supplies its own header.
 import { cn } from "cnfast";
 import { type MotionProps, motion, useInView } from "motion/react";
 import {
@@ -88,18 +84,15 @@ export const AnimatedSpan = ({
 type TerminalOutputProps = {
 	children: React.ReactNode;
 	className?: string;
+	id?: string;
 	sequence?: boolean;
 	startOnView?: boolean;
 };
 
-/**
- * Headless sequencing engine + `<pre><code>` output: no bordered card or
- * mac-dots header, for custom chrome that wants the AnimatedSpan choreography
- * without magicui's default Terminal frame.
- */
 export const TerminalOutput = ({
 	children,
 	className,
+	id,
 	sequence = true,
 	startOnView = true,
 }: TerminalOutputProps) => {
@@ -126,7 +119,6 @@ export const TerminalOutput = ({
 	}, [sequence, activeIndex, sequenceHasStarted]);
 
 	const wrappedChildren = useMemo(() => {
-		if (!sequence) return children;
 		const array = Children.toArray(children);
 		return array.map((child, index) => (
 			// biome-ignore lint/suspicious/noArrayIndexKey: arbitrary JSX children have no natural id; position is stable
@@ -134,19 +126,13 @@ export const TerminalOutput = ({
 				{child as React.ReactNode}
 			</ItemIndexContext.Provider>
 		));
-	}, [children, sequence]);
-
-	const content = (
-		<pre className={cn("p-4", className)} ref={containerRef}>
-			<code className="grid gap-y-1 overflow-auto">{wrappedChildren}</code>
-		</pre>
-	);
-
-	if (!sequence) return content;
+	}, [children]);
 
 	return (
 		<SequenceContext.Provider value={contextValue}>
-			{content}
+			<pre className={cn("p-4", className)} id={id} ref={containerRef}>
+				<code className="grid gap-y-1 overflow-auto">{wrappedChildren}</code>
+			</pre>
 		</SequenceContext.Provider>
 	);
 };

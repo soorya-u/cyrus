@@ -7,7 +7,7 @@ import {
 	DollarSignIcon,
 	SquareIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
 	AnimatedSpan,
@@ -87,9 +87,15 @@ export function ShellExecutionRow({
 	const [open, setOpen] = useState(true);
 	const { cancelShellExecution } = useShellExecution();
 	useShellFailureToast(execution);
+	const outputId = useId();
 
 	const hasOutput = execution.lines.length > 0;
 	const expanded = open && hasOutput;
+
+	async function handleCancel() {
+		const result = await cancelShellExecution(execution.threadId, execution.id);
+		if (result.isErr()) toast.error("Could not stop the command");
+	}
 
 	return (
 		<div className="mb-5 flex justify-end">
@@ -101,6 +107,8 @@ export function ShellExecutionRow({
 					)}
 				>
 					<button
+						aria-controls={hasOutput ? outputId : undefined}
+						aria-expanded={hasOutput ? open : undefined}
 						className="flex min-w-0 flex-1 items-center gap-1 text-left font-mono text-sm"
 						onClick={() => setOpen((value) => !value)}
 						type="button"
@@ -112,9 +120,7 @@ export function ShellExecutionRow({
 					<Show when={execution.status === "running"}>
 						<button
 							className="flex size-4 shrink-0 items-center justify-center text-red-500 hover:text-red-400"
-							onClick={() =>
-								cancelShellExecution(execution.threadId, execution.id)
-							}
+							onClick={handleCancel}
 							title="Stop command"
 							type="button"
 						>
@@ -123,6 +129,9 @@ export function ShellExecutionRow({
 					</Show>
 					<Show when={hasOutput}>
 						<button
+							aria-controls={outputId}
+							aria-expanded={open}
+							aria-label={open ? "Collapse output" : "Expand output"}
 							className="flex shrink-0 items-center"
 							onClick={() => setOpen((value) => !value)}
 							type="button"
@@ -141,6 +150,7 @@ export function ShellExecutionRow({
 				<Show when={expanded}>
 					<TerminalOutput
 						className="max-h-80 overflow-auto"
+						id={outputId}
 						sequence={execution.status === "running"}
 					>
 						{execution.lines.map((line, index) => (

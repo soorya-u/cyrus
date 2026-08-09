@@ -517,4 +517,23 @@ describe("fold", () => {
 			status: "cancelled",
 		});
 	});
+
+	test("preserves output when shell_execution_start arrives after its output", () => {
+		const conversation = folded([
+			shellEntry(1, "shell-1", {
+				type: "shell_execution_line",
+				lines: [{ stream: "stdout", text: "building..." }],
+			}),
+			shellEntry(2, "shell-1", {
+				type: "shell_execution_start",
+				command: "bun run build",
+			}),
+		]);
+
+		expect(conversation.shellExecutions[0]).toMatchObject({
+			command: "bun run build",
+			lines: [{ stream: "stdout", text: "building..." }],
+			status: "running",
+		});
+	});
 });

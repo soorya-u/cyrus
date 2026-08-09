@@ -5,11 +5,6 @@ function toError(cause: unknown): Error {
 	return cause instanceof Error ? cause : new Error(String(cause));
 }
 
-/**
- * Fire-and-forget: executeShellInput/cancelShellExecution only start or stop
- * the run. Output and completion arrive as chat chunks over the existing
- * subscribe pipe (see use-worker-conversation-sync.ts), same as a turn.
- */
 export function useShellExecution() {
 	const { connection: workerConnection } = useRtc();
 

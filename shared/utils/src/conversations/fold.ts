@@ -275,6 +275,15 @@ function applyShellExecutionStart(
 	event: Extract<AgentEvent, { type: "shell_execution_start" }>,
 	shellExecutionId: string
 ): void {
+	const existing = state.shellExecutions.get(shellExecutionId);
+	if (existing) {
+		existing.command = event.command;
+		existing.seq = entry.seq;
+		existing.startedAt = entry.createdAt;
+		existing.sub = entry.sub;
+		return;
+	}
+
 	state.shellExecutions.set(shellExecutionId, {
 		command: event.command,
 		completedAt: null,

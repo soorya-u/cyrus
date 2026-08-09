@@ -209,8 +209,6 @@ export function deriveFeed(
 		});
 	}
 
-	// Shell executions are never turn-scoped, so every one of them goes through
-	// the same order-key insertion as an orphaned error, not the turn timeline.
 	for (const shellExecution of conversation.shellExecutions) {
 		insertFeedEntryByOrderKey(entries, orderKey(shellExecution), {
 			type: "shell",

@@ -149,6 +149,11 @@ export function Composer({
 		localDraft,
 	});
 
+	const canSend =
+		editor.hasContent &&
+		!composerBlocked &&
+		(editor.shellInputArmed || Boolean(catalog.displayAgent));
+
 	function renderComposerBody() {
 		if (composerBodyStatus === "loading" || composerBodyStatus === "settling") {
 			return <ComposerSkeleton />;
@@ -198,7 +203,7 @@ export function Composer({
 					className={cn(
 						"chat-composer-glass overflow-visible rounded-4xl border transition-colors duration-200",
 						editor.shellInputArmed
-							? "border-terminal"
+							? "border-terminal-border"
 							: "border-border has-focus-visible:border-ring/45"
 					)}
 				>
@@ -260,11 +265,7 @@ export function Composer({
 							<ComposerContextUsage usage={catalog.contextUsage} />
 							<ComposerPrimaryAction
 								busy={busy}
-								canSend={
-									editor.hasContent &&
-									!composerBlocked &&
-									Boolean(catalog.displayAgent)
-								}
+								canSend={canSend}
 								onStop={onStop}
 								sending={editor.sending}
 								shellInputArmed={editor.shellInputArmed}

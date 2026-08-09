@@ -195,8 +195,6 @@ export function useComposerEditor({
 
 	const restoreMessage = useCallback(
 		(message: ChatMessage, originatingThreadId: string) => {
-			// A send that fails after the composer switched threads must not leak
-			// the old message into the new thread's editor.
 			if (originatingThreadId !== threadIdRef.current) return;
 			editorRef.current?.setMessage(message);
 			setHasContent(true);
@@ -211,8 +209,9 @@ export function useComposerEditor({
 			editorRef.current?.setPlainText(text);
 			setPlainText(text);
 			setHasContent(true);
+			setDraft([{ type: "text", text }]);
 		},
-		[]
+		[setDraft]
 	);
 
 	const runSubmission = useCallback(
@@ -235,17 +234,7 @@ export function useComposerEditor({
 
 	const submit = useCallback(async () => {
 		const state = submitStateRef.current;
-		if (
-			state.stopping ||
-			state.sending ||
-			!state.hasAgents ||
-			state.composerBlocked ||
-			// Drafts start without an agent; block send until one is chosen so the
-			// message is never cleared for a submission that cannot proceed.
-			!state.hasAgentSelected
-		) {
-			return;
-		}
+		if (state.stopping || state.sending || state.composerBlocked) return;
 
 		if (state.shellInputArmed) {
 			const { onExecuteShell } = state;
@@ -258,6 +247,8 @@ export function useComposerEditor({
 			);
 			return;
 		}
+
+		if (!(state.hasAgents && state.hasAgentSelected)) return;
 
 		const message = editorRef.current?.getMessage() ?? [];
 		if (message.length === 0) return;
@@ -332,25 +323,17 @@ export function useComposerEditor({
 	const handleCommandKeyDown = useCallback(
 		(key: ComposerCommandKey): boolean => {
 			if (handleMentionKeys(key) || handleSlashKeys(key)) return true;
-			if (key === "Backspace") {
-				// Only intercepted to exit shell input on an already-empty composer;
-				// every other backspace press falls through to normal deletion.
-				if (!(shellInputArmed && plainText === "")) return false;
-				setShellInputArmed(false);
-				return true;
-			}
 			if (key !== "Enter") return false;
 			submit().catch(() => undefined);
 			return true;
 		},
-		[handleMentionKeys, handleSlashKeys, submit, shellInputArmed, plainText]
+		[handleMentionKeys, handleSlashKeys, submit]
 	);
 
 	function handlePlainTextChange(next: string) {
-		// `!` as the first character arms shell input and is consumed rather
-		// than shown — the recursive onChange this setPlainText triggers picks
-		// up the rest of the bookkeeping below for the stripped text.
-		if (onExecuteShell && !shellInputArmed && next.startsWith("!")) {
+		if (shellInputArmed && next === "") {
+			setShellInputArmed(false);
+		} else if (onExecuteShell && !shellInputArmed && next.startsWith("!")) {
 			setShellInputArmed(true);
 			editorRef.current?.setPlainText(next.slice(1));
 			return;

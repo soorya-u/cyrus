@@ -58,6 +58,7 @@
 	--color-destructive-foreground: var(--destructive-foreground);
 	--color-terminal: var(--terminal);
 	--color-terminal-foreground: var(--terminal-foreground);
+	--color-terminal-border: var(--terminal-border);
 	--color-ring: var(--ring);
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
@@ -237,6 +238,7 @@
 	/* Shell input accent (composer border + primary action while armed). */
 	--terminal: #4af262;
 	--terminal-foreground: #0a0a0a;
+	--terminal-border: var(--terminal);
 	--border: --alpha(var(--color-black) / 8%);
 	--input: --alpha(var(--color-black) / 10%);
 	--ring: oklch(0.488 0.217 264);
@@ -279,6 +281,7 @@
 			var(--color-red-500) 90%,
 			var(--color-white)
 		);
+		--terminal-border: color-mix(in srgb, var(--terminal) 55%, black);
 		--border: --alpha(var(--color-white) / 6%);
 		--input: --alpha(var(--color-white) / 8%);
 		--ring: oklch(0.588 0.217 264);
