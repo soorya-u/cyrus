@@ -7,21 +7,43 @@ import {
 	DollarSignIcon,
 	SquareIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
 	AnimatedSpan,
 	TerminalOutput,
 } from "@/components/chat/feed/terminal-output";
 import { Show } from "@/components/helpers/show";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
+
+function shellStatusTooltip(execution: ShellExecutionView): string | null {
+	switch (execution.status) {
+		case "running":
+		case "cancelled":
+			return null;
+		case "exited":
+			return `Exit code ${execution.exitCode}`;
+		case "timeout":
+			return "Command timed out";
+		case "spawn_error":
+			return "Failed to start command";
+		default: {
+			const _exhaustive: never = execution.status;
+			return _exhaustive;
+		}
+	}
+}
 
 function ShellStatusDot({ execution }: { execution: ShellExecutionView }) {
+	if (execution.status === "cancelled") return null;
 	if (execution.status === "running") {
 		return (
 			<span className="size-2 shrink-0 animate-pulse rounded-full bg-foreground" />
 		);
 	}
+
 	const failed = execution.status !== "exited" || execution.exitCode !== 0;
-	return (
+	const dot = (
 		<span
 			className={cn(
 				"size-2 shrink-0 rounded-full",
@@ -29,41 +51,32 @@ function ShellStatusDot({ execution }: { execution: ShellExecutionView }) {
 			)}
 		/>
 	);
+
+	const tooltip = shellStatusTooltip(execution);
+	if (!tooltip) return dot;
+
+	return (
+		<Tooltip>
+			<TooltipTrigger render={dot} />
+			<TooltipPopup side="top">{tooltip}</TooltipPopup>
+		</Tooltip>
+	);
 }
 
-function shellSummaryLine(
-	execution: ShellExecutionView
-): { text: string; className: string } | null {
-	switch (execution.status) {
-		case "running":
-			return null;
-		case "exited":
-			return execution.exitCode === 0
-				? null
-				: {
-						className: "text-red-600 dark:text-red-400",
-						text: `Process exited with code ${execution.exitCode}`,
-					};
-		case "timeout":
-			return {
-				className: "text-red-600 dark:text-red-400",
-				text: "Command timed out and was stopped",
-			};
-		case "cancelled":
-			return {
-				className: "text-muted-foreground",
-				text: "Command was stopped",
-			};
-		case "spawn_error":
-			return {
-				className: "text-red-600 dark:text-red-400",
-				text: "Failed to start command",
-			};
-		default: {
-			const _exhaustive: never = execution.status;
-			return _exhaustive;
+function useShellFailureToast(execution: ShellExecutionView) {
+	const previousStatusRef = useRef(execution.status);
+
+	useEffect(() => {
+		const previousStatus = previousStatusRef.current;
+		previousStatusRef.current = execution.status;
+		if (previousStatus === execution.status) return;
+
+		if (execution.status === "timeout") {
+			toast.error(`Command timed out: ${execution.command}`);
+		} else if (execution.status === "spawn_error") {
+			toast.error(`Failed to start command: ${execution.command}`);
 		}
-	}
+	}, [execution.status, execution.command]);
 }
 
 export function ShellExecutionRow({
@@ -73,7 +86,10 @@ export function ShellExecutionRow({
 }) {
 	const [open, setOpen] = useState(true);
 	const { cancelShellExecution } = useShellExecution();
-	const summary = shellSummaryLine(execution);
+	useShellFailureToast(execution);
+
+	const hasOutput = execution.lines.length > 0;
+	const expanded = open && hasOutput;
 
 	return (
 		<div className="mb-5 flex justify-end">
@@ -81,7 +97,7 @@ export function ShellExecutionRow({
 				<div
 					className={cn(
 						"flex w-full items-center gap-2 p-3",
-						open && "border-border border-b"
+						expanded && "border-border border-b"
 					)}
 				>
 					<button
@@ -105,22 +121,24 @@ export function ShellExecutionRow({
 							<SquareIcon className="size-2.5 fill-current" />
 						</button>
 					</Show>
-					<button
-						className="flex shrink-0 items-center"
-						onClick={() => setOpen((value) => !value)}
-						type="button"
-					>
-						<Show
-							fallback={
-								<ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
-							}
-							when={open}
+					<Show when={hasOutput}>
+						<button
+							className="flex shrink-0 items-center"
+							onClick={() => setOpen((value) => !value)}
+							type="button"
 						>
-							<ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
-						</Show>
-					</button>
+							<Show
+								fallback={
+									<ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
+								}
+								when={open}
+							>
+								<ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+							</Show>
+						</button>
+					</Show>
 				</div>
-				<Show when={open}>
+				<Show when={expanded}>
 					<TerminalOutput
 						className="max-h-80 overflow-auto"
 						sequence={execution.status === "running"}
@@ -138,11 +156,6 @@ export function ShellExecutionRow({
 								{line.text}
 							</AnimatedSpan>
 						))}
-						{summary ? (
-							<AnimatedSpan className={summary.className}>
-								{summary.text}
-							</AnimatedSpan>
-						) : null}
 					</TerminalOutput>
 				</Show>
 			</div>
