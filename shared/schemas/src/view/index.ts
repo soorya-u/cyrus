@@ -102,6 +102,32 @@ export const ElicitationViewSchema = z.object({
 	sub: z.number().optional(),
 });
 
+export const ShellExecutionLineViewSchema = z.object({
+	stream: z.enum(["stdout", "stderr"]),
+	text: z.string(),
+});
+
+export const ShellExecutionStatusSchema = z.enum([
+	"running",
+	"exited",
+	"timeout",
+	"cancelled",
+	"spawn_error",
+]);
+
+export const ShellExecutionViewSchema = z.object({
+	id: z.string(),
+	threadId: z.string(),
+	command: z.string(),
+	lines: z.array(ShellExecutionLineViewSchema),
+	status: ShellExecutionStatusSchema,
+	exitCode: z.number().nullable(),
+	startedAt: z.string(),
+	completedAt: z.string().nullable(),
+	seq: z.number(),
+	sub: z.number().optional(),
+});
+
 export const ThreadConversationSchema = z.object({
 	messages: z.array(MessageViewSchema),
 	thoughts: z.array(ThoughtViewSchema),
@@ -110,6 +136,7 @@ export const ThreadConversationSchema = z.object({
 	approvals: z.array(ApprovalViewSchema),
 	elicitations: z.array(ElicitationViewSchema),
 	turns: z.array(TurnViewSchema),
+	shellExecutions: z.array(ShellExecutionViewSchema),
 });
 
 export type MessageView = z.infer<typeof MessageViewSchema>;
@@ -120,4 +147,8 @@ export type TurnView = z.infer<typeof TurnViewSchema>;
 export type ErrorView = z.infer<typeof ErrorViewSchema>;
 export type ApprovalView = z.infer<typeof ApprovalViewSchema>;
 export type ElicitationView = z.infer<typeof ElicitationViewSchema>;
+export type ShellExecutionLineView = z.infer<
+	typeof ShellExecutionLineViewSchema
+>;
+export type ShellExecutionView = z.infer<typeof ShellExecutionViewSchema>;
 export type ThreadConversation = z.infer<typeof ThreadConversationSchema>;

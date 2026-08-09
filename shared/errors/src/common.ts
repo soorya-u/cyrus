@@ -7,6 +7,7 @@ export const errorModules = {
 	turn: "turn",
 	connection: "connection",
 	fs: "fs",
+	shell: "shell",
 } as const;
 
 export type ErrorModule = (typeof errorModules)[keyof typeof errorModules];

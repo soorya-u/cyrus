@@ -1,5 +1,6 @@
 import type { FeedEntry } from "@cyrus/utils/conversations/thread-feed";
 import { ErrorRow } from "@/components/chat/feed/error-row";
+import { ShellExecutionRow } from "@/components/chat/feed/shell-execution-row";
 import { AssistantMessage } from "@/components/chat/messages/assistant-message";
 import { AssistantThinking } from "@/components/chat/messages/assistant-thinking";
 import { UserMessage } from "@/components/chat/messages/user-message";
@@ -19,6 +20,8 @@ export function FeedEntryView({ entry }: { entry: FeedEntry }) {
 			return <ToolRow tool={entry.tool} />;
 		case "error":
 			return <ErrorRow error={entry.error} />;
+		case "shell":
+			return <ShellExecutionRow execution={entry.shellExecution} />;
 		case "approval":
 		case "elicitation":
 			// Interactive prompts render in the composer, not the feed.

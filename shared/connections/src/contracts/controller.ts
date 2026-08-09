@@ -14,9 +14,12 @@ import {
 } from "@cyrus/schemas/rtc/catalog";
 import {
 	CancelInputSchema,
+	CancelShellExecutionInputSchema,
 	ChatChunkSchema,
 	ChatInputSchema,
 	ChatOutputSchema,
+	ExecuteShellInputInputSchema,
+	ExecuteShellInputOutputSchema,
 	RespondApprovalInputSchema,
 	RespondElicitationInputSchema,
 } from "@cyrus/schemas/rtc/chat";
@@ -111,6 +114,12 @@ export const controllerContract = {
 	watchThread: oc.input(WatchThreadInputSchema).output(WatchThreadOutputSchema),
 	unwatchThread: oc.input(UnwatchThreadInputSchema).output(VoidOutputSchema),
 	cancel: oc.input(CancelInputSchema).output(VoidOutputSchema),
+	executeShellInput: oc
+		.input(ExecuteShellInputInputSchema)
+		.output(ExecuteShellInputOutputSchema),
+	cancelShellExecution: oc
+		.input(CancelShellExecutionInputSchema)
+		.output(VoidOutputSchema),
 	respondApproval: oc
 		.input(RespondApprovalInputSchema)
 		.output(VoidOutputSchema),

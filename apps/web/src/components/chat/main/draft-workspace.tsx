@@ -26,6 +26,7 @@ const EMPTY_CONVERSATION = {
 	elicitations: [],
 	errors: [],
 	messages: [],
+	shellExecutions: [],
 	thoughts: [],
 	toolCalls: [],
 	turns: [],

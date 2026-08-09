@@ -25,6 +25,11 @@ export const env = createEnv({
 			.int()
 			.positive()
 			.default(30 * 60 * 1000),
+		CYRUS_SHELL_INPUT_TIMEOUT_MS: z.coerce
+			.number()
+			.int()
+			.positive()
+			.default(60_000),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

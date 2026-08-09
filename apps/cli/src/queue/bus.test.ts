@@ -20,6 +20,18 @@ function tokenChunk(turnId = "turn-1"): ChatChunk {
 	};
 }
 
+function shellPersistedChunk(
+	seq: number,
+	shellExecutionId = "shell-1"
+): ChatChunk {
+	return {
+		threadId: "thread-1",
+		shellExecutionId,
+		seq,
+		event: { type: "shell_execution_start", command: "ls" },
+	};
+}
+
 function createReader(iterator: AsyncGenerator<ChatChunk>) {
 	let pending = iterator.next();
 	return {
@@ -115,5 +127,38 @@ describe("thread event bus", () => {
 		expect(await second.next()).toMatchObject({ seq: 2 });
 		expect(await second.next()).toMatchObject({ seq: 3 });
 		expect(await second.next()).toMatchObject({ seq: 4 });
+	});
+
+	test("fans out shell execution chunks live, same as turn chunks", async () => {
+		const bus = createThreadEventBus();
+		bus.watch("peer-1", "thread-1");
+		const reader = createReader(bus.subscribe("peer-1"));
+
+		bus.publish(persistedChunk(1));
+		bus.publish(shellPersistedChunk(2));
+
+		expect(await reader.next()).toMatchObject({ seq: 1, turnId: "turn-1" });
+		expect(await reader.next()).toMatchObject({
+			seq: 2,
+			shellExecutionId: "shell-1",
+		});
+	});
+
+	test("does not replay shell execution chunks to a late-joining watcher", async () => {
+		const bus = createThreadEventBus();
+		bus.watch("peer-1", "thread-1");
+		const first = createReader(bus.subscribe("peer-1"));
+
+		bus.publish(persistedChunk(1));
+		bus.publish(shellPersistedChunk(2));
+		await first.next();
+		await first.next();
+
+		bus.watch("peer-2", "thread-1");
+		const second = createReader(bus.subscribe("peer-2"));
+		expect(await second.next()).toMatchObject({ seq: 1 });
+
+		bus.publish(tokenChunk());
+		expect(await second.next()).toMatchObject({ event: { type: "token" } });
 	});
 });

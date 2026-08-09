@@ -1,3 +1,4 @@
+import { useShellExecution } from "@cyrus/hooks/conversation/use-shell-execution";
 import { useThreadConversation } from "@cyrus/hooks/conversation/use-thread-conversation";
 import { useThreadTurns } from "@cyrus/hooks/conversation/use-thread-turns";
 import {
@@ -47,6 +48,7 @@ export function ThreadWorkspace({
 	const { baseThreads: threads } = useThreads({ projects, invalidateThreads });
 	const { sendMessage, stopThread, isThreadStopping, isThreadActive } =
 		useThreadTurns();
+	const { executeShellInput } = useShellExecution();
 	const { diffOpen, setDiffOpen } = useChatUiStore();
 	useGitStatus(diffOpen ? threadId : undefined);
 
@@ -122,6 +124,13 @@ export function ThreadWorkspace({
 		return await sendMessage(thread.id, message);
 	}
 
+	async function handleExecuteShell(
+		command: string
+	): Promise<Result<void, Error>> {
+		if (!thread) return Result.ok(undefined);
+		return await executeShellInput(thread.id, command);
+	}
+
 	if (!thread) return null;
 
 	return (
@@ -142,6 +151,7 @@ export function ThreadWorkspace({
 					/>
 					<Composer
 						busy={running || active}
+						onExecuteShell={handleExecuteShell}
 						onSend={handleSend}
 						onStop={async () => await stopThread(thread.id)}
 						pendingApprovals={pendingApprovals}
