@@ -92,7 +92,7 @@ export function useComposerEditor({
 	const threadIdRef = useRef(threadId);
 	threadIdRef.current = threadId;
 	const hasAgentSelected = Boolean(displayAgent);
-	const shellInputArmed = Boolean(onExecuteShell) && plainText.startsWith("!");
+	const [shellInputArmed, setShellInputArmed] = useState(false);
 	const submitStateRef = useRef({
 		stopping,
 		sending,
@@ -135,6 +135,7 @@ export function useComposerEditor({
 				return;
 			}
 
+			setShellInputArmed(false);
 			const draft = useComposerDraftStore.getState().draftsByThread[threadId];
 			if (draft && draft.length > 0) {
 				editor.setMessage(draft);
@@ -207,7 +208,7 @@ export function useComposerEditor({
 	const restorePlainText = useCallback(
 		(text: string, originatingThreadId: string) => {
 			if (originatingThreadId !== threadIdRef.current) return;
-			editorRef.current?.setMessage([{ type: "text", text }]);
+			editorRef.current?.setPlainText(text);
 			setPlainText(text);
 			setHasContent(true);
 		},
@@ -248,13 +249,12 @@ export function useComposerEditor({
 
 		if (state.shellInputArmed) {
 			const { onExecuteShell } = state;
-			const fullText = state.plainText;
-			const command = fullText.slice(1).trim();
+			const command = state.plainText.trim();
 			if (!(command && onExecuteShell)) return;
 
 			await runSubmission(
 				() => onExecuteShell(command),
-				(originatingThreadId) => restorePlainText(fullText, originatingThreadId)
+				(originatingThreadId) => restorePlainText(command, originatingThreadId)
 			);
 			return;
 		}
@@ -332,14 +332,30 @@ export function useComposerEditor({
 	const handleCommandKeyDown = useCallback(
 		(key: ComposerCommandKey): boolean => {
 			if (handleMentionKeys(key) || handleSlashKeys(key)) return true;
+			if (key === "Backspace") {
+				// Only intercepted to exit shell input on an already-empty composer;
+				// every other backspace press falls through to normal deletion.
+				if (!(shellInputArmed && plainText === "")) return false;
+				setShellInputArmed(false);
+				return true;
+			}
 			if (key !== "Enter") return false;
 			submit().catch(() => undefined);
 			return true;
 		},
-		[handleMentionKeys, handleSlashKeys, submit]
+		[handleMentionKeys, handleSlashKeys, submit, shellInputArmed, plainText]
 	);
 
 	function handlePlainTextChange(next: string) {
+		// `!` as the first character arms shell input and is consumed rather
+		// than shown — the recursive onChange this setPlainText triggers picks
+		// up the rest of the bookkeeping below for the stripped text.
+		if (onExecuteShell && !shellInputArmed && next.startsWith("!")) {
+			setShellInputArmed(true);
+			editorRef.current?.setPlainText(next.slice(1));
+			return;
+		}
+
 		setPlainText(next);
 		const message = editorRef.current?.getMessage() ?? [];
 		setHasContent(editorRef.current?.hasContent() ?? false);

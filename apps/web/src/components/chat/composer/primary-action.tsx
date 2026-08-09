@@ -1,3 +1,4 @@
+import { cn } from "cnfast";
 import { ArrowUpIcon, CornerUpLeftIcon, SquareIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -7,12 +8,14 @@ export function ComposerPrimaryAction({
 	onStop,
 	sending = false,
 	stopping = false,
+	shellInputArmed = false,
 }: {
 	busy: boolean;
 	canSend: boolean;
 	onStop?: () => void;
 	sending?: boolean;
 	stopping?: boolean;
+	shellInputArmed?: boolean;
 }) {
 	if (stopping) {
 		return (
@@ -59,7 +62,12 @@ export function ComposerPrimaryAction({
 	return (
 		<button
 			aria-label={sending ? "Sending message" : "Send message"}
-			className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-xs transition-all duration-150 hover:scale-105 hover:bg-primary active:inset-shadow-[0_1px_--theme(--color-black/8%)] active:shadow-none enabled:inset-shadow-[0_1px_--theme(--color-white/16%)] enabled:cursor-pointer enabled:shadow-primary/24 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:hover:scale-100 sm:h-8 sm:w-8"
+			className={cn(
+				"flex h-9 w-9 items-center justify-center rounded-full shadow-xs transition-all duration-150 hover:scale-105 active:inset-shadow-[0_1px_--theme(--color-black/8%)] active:shadow-none enabled:inset-shadow-[0_1px_--theme(--color-white/16%)] enabled:cursor-pointer disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:hover:scale-100 sm:h-8 sm:w-8",
+				shellInputArmed
+					? "bg-terminal/90 text-terminal-foreground shadow-terminal/24 hover:bg-terminal"
+					: "bg-primary/90 text-primary-foreground shadow-primary/24 hover:bg-primary"
+			)}
 			disabled={!canSend || sending}
 			type="submit"
 		>

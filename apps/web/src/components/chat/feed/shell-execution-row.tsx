@@ -39,10 +39,7 @@ function shellSummaryLine(
 			return null;
 		case "exited":
 			return execution.exitCode === 0
-				? {
-						className: "text-emerald-600 dark:text-emerald-400",
-						text: "Process exited with code 0",
-					}
+				? null
 				: {
 						className: "text-red-600 dark:text-red-400",
 						text: `Process exited with code ${execution.exitCode}`,
@@ -69,12 +66,6 @@ function shellSummaryLine(
 	}
 }
 
-/**
- * Renders a Shell execution (see CONTEXT.md) — the validated "Variant A"
- * design from issue #161: a custom accordion header ($ command + live status
- * dot + inline stop control + chevron) driving the real magicui sequencing
- * engine, right-aligned/narrower to read as user-authored.
- */
 export function ShellExecutionRow({
 	execution,
 }: {
@@ -98,16 +89,13 @@ export function ShellExecutionRow({
 						onClick={() => setOpen((value) => !value)}
 						type="button"
 					>
-						<DollarSignIcon className="size-3.5 shrink-0 text-muted-foreground" />
+						<DollarSignIcon className="size-3.5 shrink-0 text-terminal" />
 						<span className="truncate">{execution.command}</span>
 					</button>
 					<ShellStatusDot execution={execution} />
-					{/* Stop control for this execution specifically — distinct from
-					    the composer's Stop button, which only cancels the agent
-					    turn. The two can be running at once. */}
 					<Show when={execution.status === "running"}>
 						<button
-							className="flex size-4 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+							className="flex size-4 shrink-0 items-center justify-center text-red-500 hover:text-red-400"
 							onClick={() =>
 								cancelShellExecution(execution.threadId, execution.id)
 							}
@@ -133,11 +121,6 @@ export function ShellExecutionRow({
 					</button>
 				</div>
 				<Show when={open}>
-					{/* sequence=true while running: lines arrive one at a time from the
-					    live overlay, matching magicui's chained-reveal expectations.
-					    Once finished, all lines are already present at mount (e.g. on
-					    page load) — sequence=true would never fire its chained reveal
-					    in that case, so sequence=false shows them immediately. */}
 					<TerminalOutput
 						className="max-h-80 overflow-auto"
 						sequence={execution.status === "running"}

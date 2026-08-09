@@ -19,6 +19,7 @@ import {
 	type EditorState,
 	KEY_ARROW_DOWN_COMMAND,
 	KEY_ARROW_UP_COMMAND,
+	KEY_BACKSPACE_COMMAND,
 	KEY_ENTER_COMMAND,
 	KEY_ESCAPE_COMMAND,
 	KEY_TAB_COMMAND,
@@ -184,7 +185,8 @@ export type ComposerCommandKey =
 	| "ArrowUp"
 	| "Enter"
 	| "Tab"
-	| "Escape";
+	| "Escape"
+	| "Backspace";
 
 type ComposerPromptEditorProps = {
 	placeholder: string;
@@ -262,6 +264,18 @@ function CommandKeyPlugin({
 				KEY_ESCAPE_COMMAND,
 				(event) => {
 					if (handle("Escape", event)) {
+						event?.preventDefault();
+						return true;
+					}
+					return false;
+				},
+				COMMAND_PRIORITY_HIGH
+			),
+
+			editor.registerCommand(
+				KEY_BACKSPACE_COMMAND,
+				(event) => {
+					if (handle("Backspace", event)) {
 						event?.preventDefault();
 						return true;
 					}

@@ -198,7 +198,7 @@ export function Composer({
 					className={cn(
 						"chat-composer-glass overflow-visible rounded-4xl border transition-colors duration-200",
 						editor.shellInputArmed
-							? "border-destructive"
+							? "border-terminal"
 							: "border-border has-focus-visible:border-ring/45"
 					)}
 				>
@@ -267,6 +267,7 @@ export function Composer({
 								}
 								onStop={onStop}
 								sending={editor.sending}
+								shellInputArmed={editor.shellInputArmed}
 								stopping={stopping}
 							/>
 						</div>
