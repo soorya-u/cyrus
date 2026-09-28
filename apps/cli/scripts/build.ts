@@ -5,7 +5,9 @@ import type { BunPlugin } from "bun";
 
 const DRIZZLE_KIT_IMPORT = /^drizzle-kit(?:\/|$)/;
 const NODE_DATACHANNEL = /node-datachannel\.(cjs|mjs)$/;
+const PARCEL_WATCHER_INDEX = /@parcel\/watcher\/index\.js$/;
 const JS_MODULE = /\.js$/;
+const PARCEL_WATCHER_REQUIRE = "binding = require(name);";
 
 const cliRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = join(cliRoot, "../..");
@@ -45,6 +47,19 @@ function platformTarget(): string {
 	return `${os}-${arch}`;
 }
 
+/** Maps our `platformTarget()` naming to `@parcel/watcher`'s own per-platform package names. */
+function parcelWatcherPackageName(target: string): string {
+	if (target === "linux-x64-gnu") return "@parcel/watcher-linux-x64-glibc";
+	if (target === "linux-arm64-gnu") return "@parcel/watcher-linux-arm64-glibc";
+	if (target === "win32-x64-msvc") return "@parcel/watcher-win32-x64";
+	if (target === "win32-arm64-msvc") return "@parcel/watcher-win32-arm64";
+	if (target === "darwin-x64") return "@parcel/watcher-darwin-x64";
+	if (target === "darwin-arm64") return "@parcel/watcher-darwin-arm64";
+	throw new Error(
+		`No @parcel/watcher native package known for target "${target}"`
+	);
+}
+
 /** Keep drizzle-kit off the bundle — rebundling payload-sqlite breaks Zod. */
 function externalizeDrizzleKit(): BunPlugin {
 	return {
@@ -66,6 +81,7 @@ function externalizeDrizzleKit(): BunPlugin {
 function rewriteNativeAddonRequires(
 	ndcNode: string,
 	tursoNode: string,
+	watcherNode: string,
 	target: string
 ): BunPlugin {
 	const relativeNdc = "../../../build/Release/node_datachannel.node";
@@ -118,6 +134,19 @@ function rewriteNativeAddonRequires(
 					.replaceAll(`"${tursoPlatformPackage}"`, `"${tursoNode}"`);
 				return { contents, loader: "js" };
 			});
+			build.onLoad({ filter: PARCEL_WATCHER_INDEX }, async (args) => {
+				const source = await Bun.file(args.path).text();
+				if (!source.includes(PARCEL_WATCHER_REQUIRE)) {
+					throw new Error(
+						`@parcel/watcher loader at ${args.path} is missing the expected "${PARCEL_WATCHER_REQUIRE}" pattern; native embedding would silently fail.`
+					);
+				}
+				const contents = source.replace(
+					PARCEL_WATCHER_REQUIRE,
+					`binding = require(${JSON.stringify(watcherNode)});`
+				);
+				return { contents, loader: "js" };
+			});
 		},
 	};
 }
@@ -151,11 +180,17 @@ const tursoNode = join(
 	`database-${target}`,
 	`turso.${target}.node`
 );
+const watcherPkgJson = Bun.resolveSync("@parcel/watcher/package.json", fromCli);
+const watcherPlatformPkgJson = require.resolve(
+	`${parcelWatcherPackageName(target)}/package.json`,
+	{ paths: [watcherPkgJson] }
+);
+const watcherNode = join(dirname(watcherPlatformPkgJson), "watcher.node");
 
 await mkdir(generatedDir, { recursive: true });
 await writeFile(
 	embedNativesEntry,
-	`require(${JSON.stringify(ndcNode)});\nrequire(${JSON.stringify(tursoNode)});\n`
+	`require(${JSON.stringify(ndcNode)});\nrequire(${JSON.stringify(tursoNode)});\nrequire(${JSON.stringify(watcherNode)});\n`
 );
 
 await mkdir(dirname(outfile), { recursive: true });
@@ -166,7 +201,7 @@ const result = await Bun.build({
 	external: ["drizzle-kit"],
 	plugins: [
 		externalizeDrizzleKit(),
-		rewriteNativeAddonRequires(ndcNode, tursoNode, target),
+		rewriteNativeAddonRequires(ndcNode, tursoNode, watcherNode, target),
 	],
 	compile: { outfile },
 });
@@ -185,7 +220,11 @@ await writeFile(
 			outfile,
 			external: ["drizzle-kit"],
 			staged: ["drizzle-kit", "drizzle-orm"],
-			embedded: ["node-datachannel", "@tursodatabase/database"],
+			embedded: [
+				"node-datachannel",
+				"@tursodatabase/database",
+				"@parcel/watcher",
+			],
 			bun: Bun.version,
 		},
 		null,
