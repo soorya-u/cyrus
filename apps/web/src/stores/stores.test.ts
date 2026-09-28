@@ -1,14 +1,21 @@
 import { describe, expect, test } from "vitest";
-import { PATCH_DIFF_OPTIONS } from "@/components/chat/diff/patch-diff-options";
+import { PATCH_DIFF_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
 import { useChatUiStore } from "@/stores/chat-ui";
 import { useProjectOrderStore } from "@/stores/project-order";
 import { useTwoFactorMethodsStore } from "@/stores/two-factor-methods";
 
 describe("chat ui store", () => {
-	test("toggles diff panel state", () => {
-		useChatUiStore.setState({ diffOpen: false });
-		useChatUiStore.getState().toggleDiffOpen();
-		expect(useChatUiStore.getState().diffOpen).toBe(true);
+	test("toggles workspace drawer open state", () => {
+		useChatUiStore.setState({ drawerOpen: false });
+		useChatUiStore.getState().toggleDrawerOpen();
+		expect(useChatUiStore.getState().drawerOpen).toBe(true);
+	});
+
+	test("defaults to the explorer tab and switches to diff", () => {
+		useChatUiStore.setState({ workspaceTab: "explorer" });
+		expect(useChatUiStore.getState().workspaceTab).toBe("explorer");
+		useChatUiStore.getState().setWorkspaceTab("diff");
+		expect(useChatUiStore.getState().workspaceTab).toBe("diff");
 	});
 });
 

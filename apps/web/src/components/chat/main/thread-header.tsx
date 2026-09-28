@@ -34,7 +34,7 @@ export function ThreadHeader({
 	threadId,
 	localDraft = false,
 }: ThreadHeaderProps) {
-	const { diffOpen, toggleDiffOpen } = useChatUiStore();
+	const { drawerOpen, toggleDrawerOpen } = useChatUiStore();
 	const { projects } = useProjects();
 	const project = projects.find((item) => item.id === projectId);
 	// Drafts never fetch git status on open — branch UI lives in the composer
@@ -50,16 +50,16 @@ export function ThreadHeader({
 		if (isRepo)
 			return (
 				<button
-					aria-pressed={diffOpen}
+					aria-pressed={drawerOpen}
 					className={
-						diffOpen
+						drawerOpen
 							? "inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 font-medium text-primary-foreground text-xs"
 							: "inline-flex h-7 items-center gap-1 rounded-md bg-muted/70 px-2 font-medium text-foreground text-xs hover:bg-muted"
 					}
-					onClick={toggleDiffOpen}
+					onClick={toggleDrawerOpen}
 					type="button"
 				>
-					Diffs
+					Workspace
 				</button>
 			);
 

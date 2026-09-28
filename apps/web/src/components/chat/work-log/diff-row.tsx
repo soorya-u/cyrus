@@ -2,7 +2,7 @@ import type { DiffView } from "@cyrus/schemas/view";
 import { PatchDiff } from "@pierre/diffs/react";
 import { ChevronDownIcon, ChevronRightIcon, GitBranchIcon } from "lucide-react";
 import { useState } from "react";
-import { PATCH_DIFF_OPTIONS } from "@/components/chat/diff/patch-diff-options";
+import { PATCH_DIFF_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
 import { Show } from "@/components/helpers/show";
 
 export function DiffRow({ diff }: { diff: DiffView }) {

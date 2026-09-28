@@ -1,18 +1,12 @@
 import { useGitPatch, useGitStatus } from "@cyrus/hooks/queries/use-git";
 import { PatchDiff } from "@pierre/diffs/react";
 import { cn } from "cnfast";
-import { ChevronDownIcon, GitBranchIcon, RefreshCwIcon } from "lucide-react";
+import { GitBranchIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PATCH_DIFF_OPTIONS } from "@/components/chat/diff/patch-diff-options";
+import { PATCH_DIFF_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export function DiffPanel({
-	threadId,
-	onClose,
-}: {
-	threadId: string;
-	onClose: () => void;
-}) {
+export function DiffTab({ threadId }: { threadId: string }) {
 	const [selectedPath, setSelectedPath] = useState<string | undefined>();
 	const statusQuery = useGitStatus(threadId);
 	const patchQuery = useGitPatch(threadId, selectedPath, Boolean(selectedPath));
@@ -62,7 +56,7 @@ export function DiffPanel({
 	}
 
 	return (
-		<div className="flex h-full w-full flex-col border-border border-l bg-card">
+		<div className="flex h-full w-full flex-col">
 			<div className="flex items-center gap-2 border-border border-b px-3 py-2">
 				<GitBranchIcon className="size-3.5 text-muted-foreground" />
 				<span className="font-medium text-sm">
@@ -85,14 +79,6 @@ export function DiffPanel({
 					<RefreshCwIcon
 						className={cn("size-3.5", loading && "animate-spin")}
 					/>
-				</button>
-				<button
-					aria-label="Close diff panel"
-					className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-					onClick={onClose}
-					type="button"
-				>
-					<ChevronDownIcon className="size-4" />
 				</button>
 			</div>
 			<div className="flex min-h-0 flex-1">

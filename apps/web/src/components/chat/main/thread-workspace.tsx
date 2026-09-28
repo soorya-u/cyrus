@@ -23,9 +23,9 @@ import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
 import { useChatUiStore } from "@/stores/chat-ui";
 
-const DiffPanel = lazy(() =>
-	import("@/components/chat/diff/diff-panel").then((mod) => ({
-		default: mod.DiffPanel,
+const WorkspaceDrawer = lazy(() =>
+	import("@/components/chat/workspace/workspace-drawer").then((mod) => ({
+		default: mod.WorkspaceDrawer,
 	}))
 );
 
@@ -49,8 +49,8 @@ export function ThreadWorkspace({
 	const { sendMessage, stopThread, isThreadStopping, isThreadActive } =
 		useThreadTurns();
 	const { executeShellInput } = useShellExecution();
-	const { diffOpen, setDiffOpen } = useChatUiStore();
-	useGitStatus(diffOpen ? threadId : undefined);
+	const { drawerOpen, setDrawerOpen } = useChatUiStore();
+	useGitStatus(drawerOpen ? threadId : undefined);
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
 	const conversation = useThreadConversation(baseThread ? threadId : undefined);
@@ -90,7 +90,7 @@ export function ThreadWorkspace({
 	);
 
 	useEffect(() => {
-		if (!(diffOpen && lastTurn)) return;
+		if (!(drawerOpen && lastTurn)) return;
 		const previous = lastTurnStateRef.current;
 		lastTurnStateRef.current = lastTurn.state;
 		if (
@@ -99,7 +99,7 @@ export function ThreadWorkspace({
 		) {
 			invalidateThreadGitQueries(queryClient, threadId);
 		}
-	}, [diffOpen, lastTurn, queryClient, threadId]);
+	}, [drawerOpen, lastTurn, queryClient, threadId]);
 
 	const threadProjectId = thread?.projectId;
 	const resolvedThreadId = thread?.id;
@@ -167,11 +167,11 @@ export function ThreadWorkspace({
 						threadId={thread.id}
 					/>
 				</div>
-				{diffOpen ? (
+				{drawerOpen ? (
 					<div className="w-105 shrink-0">
 						<Suspense fallback={null}>
-							<DiffPanel
-								onClose={() => setDiffOpen(false)}
+							<WorkspaceDrawer
+								onClose={() => setDrawerOpen(false)}
 								threadId={thread.id}
 							/>
 						</Suspense>
