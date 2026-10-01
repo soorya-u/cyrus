@@ -1,10 +1,7 @@
 import { useShellExecution } from "@cyrus/hooks/conversation/use-shell-execution";
 import { useThreadConversation } from "@cyrus/hooks/conversation/use-thread-conversation";
 import { useThreadTurns } from "@cyrus/hooks/conversation/use-thread-turns";
-import {
-	invalidateThreadGitQueries,
-	useGitStatus,
-} from "@cyrus/hooks/queries/use-git";
+import { useGitFilesWatch, useGitStatus } from "@cyrus/hooks/queries/use-git";
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { useThreads } from "@cyrus/hooks/queries/use-threads";
 import {
@@ -14,10 +11,9 @@ import {
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Result } from "better-result";
-import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { Composer } from "@/components/chat/composer";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
@@ -43,7 +39,6 @@ export function ThreadWorkspace({
 	threadId,
 }: ThreadWorkspaceProps) {
 	const navigate = useNavigate();
-	const queryClient = useQueryClient();
 	const { projects, invalidateThreads } = useProjects();
 	const { baseThreads: threads } = useThreads({ projects, invalidateThreads });
 	const { sendMessage, stopThread, isThreadStopping, isThreadActive } =
@@ -51,6 +46,7 @@ export function ThreadWorkspace({
 	const { executeShellInput } = useShellExecution();
 	const { drawerOpen, setDrawerOpen } = useChatUiStore();
 	useGitStatus(drawerOpen ? threadId : undefined);
+	useGitFilesWatch(drawerOpen ? threadId : undefined);
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
 	const conversation = useThreadConversation(baseThread ? threadId : undefined);
@@ -61,8 +57,6 @@ export function ThreadWorkspace({
 		? { ...baseThread, ...conversation }
 		: null;
 
-	const lastTurn = conversation.turns.at(-1);
-	const lastTurnStateRef = useRef(lastTurn?.state);
 	// Only orphan tip errors (e.g. bind failures) block send. Turn errors stay in
 	// the feed so a failed turn does not permanently prevent the next message.
 	const lastError = conversation.errors.at(-1) ?? null;
@@ -88,18 +82,6 @@ export function ThreadWorkspace({
 				: [],
 		[conversation.elicitations, elicitationCapable]
 	);
-
-	useEffect(() => {
-		if (!(drawerOpen && lastTurn)) return;
-		const previous = lastTurnStateRef.current;
-		lastTurnStateRef.current = lastTurn.state;
-		if (
-			previous === "running" &&
-			(lastTurn.state === "complete" || lastTurn.state === "interrupted")
-		) {
-			invalidateThreadGitQueries(queryClient, threadId);
-		}
-	}, [drawerOpen, lastTurn, queryClient, threadId]);
 
 	const threadProjectId = thread?.projectId;
 	const resolvedThreadId = thread?.id;

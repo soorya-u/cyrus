@@ -58,6 +58,8 @@ export const GitListDirectoryOutputSchema = z.object({
 	entries: z.array(GitDirectoryEntrySchema),
 });
 
+export const GitFilesChangedSchema = z.object({});
+
 export const GitReadFileOutputSchema = z.discriminatedUnion("kind", [
 	z.object({ kind: z.literal("text"), contents: z.string() }),
 	z.object({
@@ -106,6 +108,7 @@ export const ProjectGitRefsQueryInputSchema = ProjectQueryInputSchema.extend({
 export type GitFileChange = z.infer<typeof GitFileChangeSchema>;
 export type GitStatusOutput = z.infer<typeof GitStatusOutputSchema>;
 export type GitPatchOutput = z.infer<typeof GitPatchOutputSchema>;
+export type GitFilesChanged = z.infer<typeof GitFilesChangedSchema>;
 export type GitReadFileOutput = z.infer<typeof GitReadFileOutputSchema>;
 export type GitDirectoryEntry = z.infer<typeof GitDirectoryEntrySchema>;
 export type GitRef = z.infer<typeof GitRefSchema>;

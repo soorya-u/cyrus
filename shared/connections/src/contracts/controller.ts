@@ -37,6 +37,7 @@ import {
 	GitCheckoutInputSchema,
 	GitCreateWorktreeInputSchema,
 	GitCreateWorktreeOutputSchema,
+	GitFilesChangedSchema,
 	GitListDirectoryInputSchema,
 	GitListDirectoryOutputSchema,
 	GitPatchInputSchema,
@@ -134,6 +135,9 @@ export const controllerContract = {
 		.input(ThreadGitQueryInputSchema)
 		.output(GitStatusOutputSchema),
 	getGitPatch: oc.input(GitPatchInputSchema).output(GitPatchOutputSchema),
+	watchGitFiles: oc
+		.input(ThreadGitQueryInputSchema)
+		.output(eventIterator(GitFilesChangedSchema)),
 	readGitFile: oc.input(GitReadFileInputSchema).output(GitReadFileOutputSchema),
 	listGitDirectory: oc
 		.input(GitListDirectoryInputSchema)

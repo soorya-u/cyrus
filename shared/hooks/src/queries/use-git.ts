@@ -5,6 +5,8 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import { Result } from "better-result";
+import { useEffect } from "react";
 import { useRtc } from "../contexts/rtc";
 
 export function useGitStatus(threadId: string | undefined) {
@@ -41,6 +43,71 @@ export function useGitPatch(
 					queryFn: skipToken,
 				}
 	);
+}
+
+const WATCH_RETRY_MIN_MS = 1000;
+const WATCH_RETRY_MAX_MS = 30_000;
+
+/** Keeps git queries fresh while a File watch for the thread's effective cwd is open. */
+export function useGitFilesWatch(threadId: string | undefined) {
+	const { connection } = useRtc();
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		if (!threadId) return;
+		const abort = new AbortController();
+		let iterator:
+			| Awaited<ReturnType<typeof connection.client.watchGitFiles>>
+			| undefined;
+
+		const sleep = (ms: number) =>
+			new Promise<void>((resolve) => {
+				const timer = setTimeout(resolve, ms);
+				abort.signal.addEventListener(
+					"abort",
+					() => {
+						clearTimeout(timer);
+						resolve();
+					},
+					{ once: true }
+				);
+			});
+
+		const run = async () => {
+			let delay = WATCH_RETRY_MIN_MS;
+			let reconnecting = false;
+			while (!abort.signal.aborted) {
+				let gotSignal = false;
+				await Result.tryPromise(async () => {
+					iterator = await connection.client.watchGitFiles(
+						{ threadId },
+						{ signal: abort.signal }
+					);
+					// Changes made while disconnected were never signalled.
+					if (reconnecting) invalidateGitQueries(queryClient, threadId);
+					for await (const _ of iterator) {
+						if (abort.signal.aborted) break;
+						gotSignal = true;
+						invalidateGitQueries(queryClient, threadId);
+					}
+				});
+				iterator = undefined;
+				if (abort.signal.aborted) return;
+				reconnecting = true;
+				await sleep(delay);
+				// Back off while connections keep ending without delivering anything.
+				delay = gotSignal
+					? WATCH_RETRY_MIN_MS
+					: Math.min(delay * 2, WATCH_RETRY_MAX_MS);
+			}
+		};
+		run().catch(() => undefined);
+
+		return () => {
+			abort.abort();
+			iterator?.return?.(undefined)?.catch(() => undefined);
+		};
+	}, [connection, queryClient, threadId]);
 }
 
 export function useGitFile(
@@ -143,13 +210,6 @@ export function useCreateWorktree() {
 			});
 		},
 	});
-}
-
-export function invalidateThreadGitQueries(
-	queryClient: ReturnType<typeof useQueryClient>,
-	threadId: string
-) {
-	invalidateGitQueries(queryClient, threadId);
 }
 
 export function useProjectGitStatus(projectId: string | undefined) {
