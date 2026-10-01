@@ -55,12 +55,38 @@ class FakeIntersectionObserver {
 	}
 }
 
+const HOVER_TRANSLUCENT = /hover:bg-(muted|accent)\/\d+/;
+const LONG_HEADER = /very-long-file-name\.tsx/;
+
 const useGitStatusMock = vi.fn();
 const useGitPatchMock = vi.fn();
 
+let appTheme: "light" | "dark" | undefined = "light";
+
+vi.mock("next-themes", () => ({
+	useTheme: () => ({ resolvedTheme: appTheme }),
+}));
+
 vi.mock("@pierre/diffs/react", () => ({
-	PatchDiff: ({ patch }: { patch: string }) => (
-		<pre data-testid="patch">{patch}</pre>
+	PatchDiff: ({
+		patch,
+		options,
+	}: {
+		patch: string;
+		options: {
+			themeType: string;
+			theme: Record<string, string>;
+			unsafeCSS: string;
+		};
+	}) => (
+		<pre
+			data-css={options.unsafeCSS}
+			data-testid="patch"
+			data-theme={JSON.stringify(options.theme)}
+			data-theme-type={options.themeType}
+		>
+			{patch}
+		</pre>
 	),
 }));
 
@@ -106,6 +132,7 @@ function setup(files: ReturnType<typeof change>[], patch: string) {
 beforeEach(() => {
 	vi.clearAllMocks();
 	observed.clear();
+	appTheme = "light";
 	autoIntersect = true;
 	vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
 });
@@ -212,6 +239,57 @@ describe("DiffTab (uncommitted changes)", () => {
 		act(() => [...observed][0]?.notify());
 		expect(screen.getAllByTestId("patch")).toHaveLength(1);
 		expect(screen.getByTestId("patch")).toHaveTextContent("+++ b/a.ts");
+	});
+
+	test("renders diffs in the app's light or dark theme, not a fixed one", () => {
+		setup([change("a.ts", "Modified", 1, 1)], patchFor("a.ts"));
+		const { unmount } = render(<DiffTab threadId="t1" />);
+		let patch = screen.getByTestId("patch");
+		expect(patch).toHaveAttribute("data-theme-type", "light");
+		expect(JSON.parse(patch.getAttribute("data-theme") ?? "{}")).toEqual({
+			dark: "github-dark",
+			light: "github-light",
+		});
+		unmount();
+
+		appTheme = "dark";
+		render(<DiffTab threadId="t1" />);
+		patch = screen.getByTestId("patch");
+		expect(patch).toHaveAttribute("data-theme-type", "dark");
+	});
+
+	test("blanks the old-file number on deleted lines", () => {
+		setup([change("a.ts", "Modified", 1, 1)], patchFor("a.ts"));
+		render(<DiffTab threadId="t1" />);
+
+		expect(screen.getByTestId("patch").getAttribute("data-css")).toContain(
+			'[data-line-type="change-deletion"] [data-line-number-content] { visibility: hidden; }'
+		);
+	});
+
+	test("keeps the file header opaque on hover so diff content cannot show through", () => {
+		setup([change("a.ts", "Modified", 1, 1)], patchFor("a.ts"));
+		render(<DiffTab threadId="t1" />);
+		const header = screen.getByRole("button", { name: A_TS_HEADER });
+
+		expect(header.className).toContain("bg-background");
+		expect(header.className).not.toMatch(HOVER_TRANSLUCENT);
+	});
+
+	test("pins the line counts to the right end and lets a long name shrink", () => {
+		setup(
+			[change("very/long/dir/very-long-file-name.tsx", "Modified", 12, 3)],
+			patchFor("very/long/dir/very-long-file-name.tsx")
+		);
+		render(<DiffTab threadId="t1" />);
+		const header = screen.getByRole("button", { name: LONG_HEADER });
+		const [, , name, directory, counts] = [...header.children] as HTMLElement[];
+
+		expect(name?.className).toContain("truncate");
+		expect(directory?.className).toContain("truncate");
+		expect(counts?.className).toContain("shrink-0");
+		expect(counts?.className).toContain("ml-auto");
+		expect(counts).toHaveTextContent("+12 -3");
 	});
 
 	test("explains files without a text diff", () => {

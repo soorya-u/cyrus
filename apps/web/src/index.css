@@ -544,36 +544,14 @@ body {
 	   stronger still for the words that changed (Zed's version_control colors). */
 	--diffs-addition-color-override: #27a657;
 	--diffs-deletion-color-override: #e06c76;
-	--diffs-bg-addition-override: color-mix(
-		in srgb,
-		#27a657 16%,
-		var(--background)
-	);
-	--diffs-bg-addition-number-override: color-mix(
-		in srgb,
-		#27a657 26%,
-		var(--background)
-	);
-	--diffs-bg-addition-emphasis-override: color-mix(
-		in srgb,
-		#27a657 40%,
-		var(--background)
-	);
-	--diffs-bg-deletion-override: color-mix(
-		in srgb,
-		#e06c76 16%,
-		var(--background)
-	);
-	--diffs-bg-deletion-number-override: color-mix(
-		in srgb,
-		#e06c76 26%,
-		var(--background)
-	);
-	--diffs-bg-deletion-emphasis-override: color-mix(
-		in srgb,
-		#e06c76 40%,
-		var(--background)
-	);
+	/* These are the colours the viewer blends into each row (the blend strength
+	   is set in DRAWER_VIEWER_OPTIONS.unsafeCSS). */
+	--diffs-bg-addition-override: #27a657;
+	--diffs-bg-addition-number-override: #27a657;
+	--diffs-bg-addition-emphasis-override: light-dark(#27a65766, #27a65759);
+	--diffs-bg-deletion-override: #e06c76;
+	--diffs-bg-deletion-number-override: #e06c76;
+	--diffs-bg-deletion-emphasis-override: light-dark(#e06c7666, #e06c7659);
 	--diffs-fg-number-addition-override: #27a657;
 	--diffs-fg-number-deletion-override: #e06c76;
 	background-color: var(--background) !important;

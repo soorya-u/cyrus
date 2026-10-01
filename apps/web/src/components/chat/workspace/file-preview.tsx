@@ -1,7 +1,8 @@
 import { useGitFile } from "@cyrus/hooks/queries/use-git";
 import { File } from "@pierre/diffs/react";
 import { ArrowLeftIcon } from "lucide-react";
-import { FILE_VIEW_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
+import { DRAWER_VIEWER_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
+import { useViewerTheme } from "@/components/chat/workspace/use-viewer-theme";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const UNPREVIEWABLE_MESSAGE = {
@@ -27,6 +28,7 @@ export function FilePreview({
 	onClose: () => void;
 }) {
 	const query = useGitFile(threadId, path);
+	const viewerTheme = useViewerTheme();
 
 	let body: React.ReactNode;
 	if (query.isLoading) {
@@ -39,7 +41,8 @@ export function FilePreview({
 		body = (
 			<File
 				file={{ name: path, contents: query.data.contents }}
-				options={FILE_VIEW_OPTIONS}
+				key={viewerTheme.themeType}
+				options={{ ...DRAWER_VIEWER_OPTIONS, ...viewerTheme }}
 			/>
 		);
 	}

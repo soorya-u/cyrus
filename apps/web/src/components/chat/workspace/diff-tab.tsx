@@ -11,19 +11,19 @@ import {
 	RefreshCwIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PATCH_DIFF_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
+import { DRAWER_VIEWER_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
 import { splitPatchByFile } from "@/components/chat/workspace/split-patch";
 import {
 	ADDED_LINES_COLOR,
 	DELETED_LINES_COLOR,
 	STATUS_LABEL,
 } from "@/components/chat/workspace/tree-theme";
+import { useViewerTheme } from "@/components/chat/workspace/use-viewer-theme";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// The file's header row already shows its path and line counts.
 const DRAWER_PATCH_OPTIONS = {
-	...PATCH_DIFF_OPTIONS,
-	disableFileHeader: true,
+	...DRAWER_VIEWER_OPTIONS,
+	diffStyle: "unified" as const,
 	// Highlight the words that changed within a line, not just the whole line.
 	lineDiffType: "word" as const,
 };
@@ -63,6 +63,11 @@ function splitPath(path: string): { name: string; directory: string } {
 function FileDiffBody({ patch }: { patch: string | undefined }) {
 	const ref = useRef<HTMLDivElement>(null);
 	const [near, setNear] = useState(false);
+	const viewerTheme = useViewerTheme();
+	const options = useMemo(
+		() => ({ ...DRAWER_PATCH_OPTIONS, ...viewerTheme }),
+		[viewerTheme]
+	);
 
 	useEffect(() => {
 		const element = ref.current;
@@ -97,7 +102,13 @@ function FileDiffBody({ patch }: { patch: string | undefined }) {
 			ref={ref}
 			style={near ? undefined : { minHeight: estimatedHeight }}
 		>
-			{near ? <PatchDiff options={DRAWER_PATCH_OPTIONS} patch={patch} /> : null}
+			{near ? (
+				<PatchDiff
+					key={viewerTheme.themeType}
+					options={options}
+					patch={patch}
+				/>
+			) : null}
 		</div>
 	);
 }
@@ -121,7 +132,7 @@ function FileSection({
 		<section className="border-border border-b">
 			<button
 				aria-expanded={expanded}
-				className="sticky top-0 z-10 flex w-full items-center gap-2 bg-background px-2 py-1.5 text-left text-xs hover:bg-muted/60"
+				className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden bg-background px-2 py-1.5 text-left text-xs hover:bg-[color-mix(in_srgb,var(--background)_92%,var(--foreground))]"
 				onClick={onToggle}
 				type="button"
 			>
@@ -133,13 +144,13 @@ function FileSection({
 				>
 					{label.letter}
 				</span>
-				<span className="shrink-0 font-medium">{name}</span>
+				<span className="min-w-0 shrink truncate font-medium">{name}</span>
 				{directory ? (
-					<span className="min-w-0 truncate text-muted-foreground">
+					<span className="min-w-0 flex-1 truncate text-muted-foreground">
 						{directory}
 					</span>
 				) : null}
-				<span className="ml-auto shrink-0 pl-2">
+				<span className="ml-auto shrink-0 whitespace-nowrap pl-2">
 					<LineCountLabels
 						deletions={file.deletions}
 						insertions={file.insertions}
