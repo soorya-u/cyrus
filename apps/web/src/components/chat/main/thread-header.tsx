@@ -5,7 +5,7 @@ import {
 import { useProjects } from "@cyrus/hooks/queries/use-projects";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cnfast";
-import { GitBranchPlusIcon } from "lucide-react";
+import { GitBranchPlusIcon, PanelRightIcon } from "lucide-react";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -15,6 +15,7 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { useChatUiStore } from "@/stores/chat-ui";
 
 type ThreadHeaderProps = {
@@ -49,18 +50,26 @@ export function ThreadHeader({
 
 		if (isRepo)
 			return (
-				<button
-					aria-pressed={drawerOpen}
-					className={
-						drawerOpen
-							? "inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 font-medium text-primary-foreground text-xs"
-							: "inline-flex h-7 items-center gap-1 rounded-md bg-muted/70 px-2 font-medium text-foreground text-xs hover:bg-muted"
-					}
-					onClick={toggleDrawerOpen}
-					type="button"
-				>
-					Workspace
-				</button>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								aria-label="Toggle workspace drawer"
+								aria-pressed={drawerOpen}
+								className={cn(drawerOpen && "bg-accent text-accent-foreground")}
+								onClick={toggleDrawerOpen}
+								size="icon-sm"
+								type="button"
+								variant="ghost"
+							/>
+						}
+					>
+						<PanelRightIcon className="size-4" />
+					</TooltipTrigger>
+					<TooltipPopup>
+						{drawerOpen ? "Close workspace" : "Open workspace"}
+					</TooltipPopup>
+				</Tooltip>
 			);
 
 		if (gitStatus.data?.isRepo === false)
