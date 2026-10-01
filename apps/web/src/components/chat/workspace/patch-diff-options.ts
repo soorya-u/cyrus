@@ -11,4 +11,6 @@ export const FILE_VIEW_OPTIONS = {
 	overflow: PATCH_DIFF_OPTIONS.overflow,
 	theme: PATCH_DIFF_OPTIONS.theme,
 	themeType: PATCH_DIFF_OPTIONS.themeType,
+	// The viewer already shows the path next to its back button.
+	disableFileHeader: true,
 };

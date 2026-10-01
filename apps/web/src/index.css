@@ -527,3 +527,18 @@ body {
 		animation: none;
 	}
 }
+
+/* Inside the Workspace drawer, diffs and file previews sit on the app
+   background. The viewer paints its background on the custom element's :host,
+   so the override has to target the element itself, not its shadow contents. */
+.workspace-drawer diffs-container {
+	--diffs-bg: var(--background) !important;
+	--diffs-light-bg: var(--background) !important;
+	--diffs-dark-bg: var(--background) !important;
+	--diffs-bg-context-override: var(--background);
+	--diffs-bg-buffer-override: var(--background);
+	/* The default stylistic sets turn digits into superscripts in some mono fonts. */
+	--diffs-font-family: var(--font-mono) !important;
+	--diffs-font-features: normal !important;
+	background-color: var(--background) !important;
+}

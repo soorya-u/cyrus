@@ -1,33 +1,13 @@
 import { useGitStatus } from "@cyrus/hooks/queries/use-git";
-import type { GitFileStatus } from "@cyrus/schemas/rtc/git";
-import type { GitStatusEntry } from "@pierre/trees";
 import { FileTree, useFileTree } from "@pierre/trees/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FilePreview } from "@/components/chat/workspace/file-preview";
-import { buildFileTreePathUpdates } from "@/components/chat/workspace/file-tree-path-updates";
+import {
+	TREE_STATUS,
+	TREE_THEME_STYLE,
+} from "@/components/chat/workspace/tree-theme";
 import { useDirectoryEntries } from "@/components/chat/workspace/use-directory-entries";
-
-const TREE_STATUS: Record<GitFileStatus, GitStatusEntry["status"]> = {
-	Added: "added",
-	Deleted: "deleted",
-	Modified: "modified",
-	Renamed: "renamed",
-	Untracked: "untracked",
-};
-
-// The tree pins its own `color-scheme: light dark` (OS preference); inherit the
-// app theme instead and let the drawer's card background show through.
-// File-tree colors from Zed's One theme (dark / light), applied through the
-// tree's override variables: `text`, `text.muted`, `modified` and `deleted`.
-// The tree inherits the app's color scheme, so light-dark() follows the theme.
-const TREE_THEME_STYLE = {
-	colorScheme: "inherit",
-	"--trees-bg-override": "transparent",
-	"--trees-fg-override": "light-dark(#242529, #dce0e5)",
-	"--trees-fg-muted-override": "light-dark(#58585a, #a9afbc)",
-	"--trees-status-modified-override": "light-dark(#a48819, #dec184)",
-	"--trees-status-deleted-override": "light-dark(#d36151, #d07277)",
-} as React.CSSProperties;
+import { useTreePathSync } from "@/components/chat/workspace/use-tree-path-sync";
 
 function parentOf(path: string): string {
 	return path.slice(0, Math.max(0, path.lastIndexOf("/")));
@@ -94,18 +74,7 @@ export function ExplorerTab({ threadId }: { threadId: string }) {
 		search: false,
 	});
 
-	const previousPathsRef = useRef<readonly string[] | null>(null);
-	useEffect(() => {
-		if (!ready || previousPathsRef.current === treePaths) return;
-		const previous = previousPathsRef.current;
-		previousPathsRef.current = treePaths;
-		if (previous === null) {
-			model.resetPaths(treePaths);
-			return;
-		}
-		const updates = buildFileTreePathUpdates(previous, treePaths);
-		if (updates.length > 0) model.batch(updates);
-	}, [ready, model, treePaths]);
+	useTreePathSync(model, treePaths, ready);
 
 	// The tree has no expand callback, so load a folder's children the first
 	// time it is seen expanded.

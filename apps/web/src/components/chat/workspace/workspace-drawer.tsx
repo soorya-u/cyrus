@@ -20,7 +20,7 @@ export function WorkspaceDrawer({
 	const { workspaceTab, setWorkspaceTab } = useChatUiStore();
 
 	return (
-		<div className="flex h-full w-full flex-col bg-background">
+		<div className="workspace-drawer flex h-full w-full flex-col bg-background">
 			<div className="min-h-0 flex-1">
 				{workspaceTab === "explorer" ? (
 					<ExplorerTab key={threadId} threadId={threadId} />

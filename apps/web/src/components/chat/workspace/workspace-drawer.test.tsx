@@ -12,6 +12,18 @@ vi.mock("@cyrus/hooks/queries/use-git", () => ({
 	useGitPatch: (...args: unknown[]) => useGitPatchMock(...args),
 }));
 
+vi.mock("@pierre/trees/react", () => ({
+	useFileTree: () => ({
+		model: {
+			resetPaths: vi.fn(),
+			batch: vi.fn(),
+			setGitStatus: vi.fn(),
+			getItem: vi.fn(),
+		},
+	}),
+	FileTree: () => <div />,
+}));
+
 vi.mock("@/components/chat/workspace/explorer-tab", () => ({
 	ExplorerTab: ({ threadId }: { threadId: string }) => (
 		<div>explorer for {threadId}</div>
