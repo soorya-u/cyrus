@@ -11,10 +11,13 @@ import { orpcOk, throwOrpc } from "@cyrus/errors/orpc";
 import { notFound } from "@cyrus/errors/repository";
 import { Result } from "better-result";
 import { checkoutGitRef } from "@/git/checkout";
+import { watchGitDirectory } from "@/git/file-watch";
 import { initGitRepository } from "@/git/init";
 import { getGitPatch } from "@/git/patch";
+import { readGitFile } from "@/git/read-file";
 import { listGitRefs } from "@/git/refs";
 import { getGitStatus } from "@/git/status";
+import { listGitDirectory } from "@/git/tree";
 import { createGitWorktree, removeGitWorktree } from "@/git/worktree";
 import type { ControllerOs } from "./deps";
 
@@ -36,6 +39,23 @@ export function gitHandlers(os: ControllerOs) {
 		getGitPatch: os.getGitPatch.handler(async ({ input }) => {
 			const cwd = await requireThreadCwd(input.threadId);
 			return { patch: orpcOk(await getGitPatch(cwd, input.path)) };
+		}),
+
+		watchGitFiles: os.watchGitFiles.handler(async ({ input, signal }) => {
+			const cwd = await requireThreadCwd(input.threadId);
+			return orpcOk(await watchGitDirectory(cwd, { signal }));
+		}),
+
+		readGitFile: os.readGitFile.handler(async ({ input }) => {
+			const cwd = await requireThreadCwd(input.threadId);
+			return orpcOk(await readGitFile(cwd, input.path));
+		}),
+
+		listGitDirectory: os.listGitDirectory.handler(async ({ input }) => {
+			const cwd = await requireThreadCwd(input.threadId);
+			return {
+				entries: orpcOk(await listGitDirectory(cwd, input.directoryPath)),
+			};
 		}),
 
 		listGitRefs: os.listGitRefs.handler(async ({ input }) => {

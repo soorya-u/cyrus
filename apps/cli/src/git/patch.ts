@@ -1,7 +1,7 @@
 import type { GitError } from "@cyrus/errors/git";
 import { Result } from "better-result";
-import { WORKING_TREE_DIFF_OPTIONS } from "./diff-options";
 import { openGitRepository, operationFailedFromUnknown } from "./open";
+import { buildWorkingTreeFiles } from "./working-tree";
 
 export async function getGitPatch(
 	cwd: string,
@@ -10,13 +10,16 @@ export async function getGitPatch(
 	const opened = await openGitRepository(cwd);
 	if (opened.isErr()) return Result.err(opened.error);
 
-	return Result.try(() => {
-		const headTree = opened.value.head().peelToTree();
-		const diff = opened.value.diffTreeToWorkdirWithIndex(headTree, {
-			...WORKING_TREE_DIFF_OPTIONS,
-			...(path ? { pathspecs: [path] } : {}),
-		});
-		diff.findSimilar({ renames: true });
-		return diff.print();
-	}).mapError(operationFailedFromUnknown);
+	const headTree = Result.try(() => opened.value.head().peelToTree());
+	if (headTree.isErr()) {
+		return Result.err(operationFailedFromUnknown(headTree.error));
+	}
+
+	const files = await buildWorkingTreeFiles(
+		cwd,
+		opened.value,
+		headTree.value,
+		path
+	);
+	return files.map((built) => built.map((file) => file.patch).join(""));
 }

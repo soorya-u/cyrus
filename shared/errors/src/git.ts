@@ -6,6 +6,7 @@ const tags = {
 	notRepository: errorTag(errorModules.git, "not_repository"),
 	operationFailed: errorTag(errorModules.git, "operation_failed"),
 	branchCheckedOut: errorTag(errorModules.git, "branch_checked_out"),
+	pathOutsideCwd: errorTag(errorModules.git, "path_outside_cwd"),
 } as const;
 
 export class GitNotRepositoryError extends TaggedError(
@@ -44,10 +45,23 @@ export class GitBranchCheckedOutError extends TaggedError(
 	}
 }
 
+export class GitPathOutsideCwdError extends TaggedError(tags.pathOutsideCwd)<{
+	path: string;
+}>() {
+	get message() {
+		return `Path '${this.path}' is outside the effective cwd`;
+	}
+
+	get orpcCode() {
+		return "BAD_REQUEST" as const;
+	}
+}
+
 export type GitError =
 	| GitNotRepositoryError
 	| GitOperationFailedError
-	| GitBranchCheckedOutError;
+	| GitBranchCheckedOutError
+	| GitPathOutsideCwdError;
 
 export function notRepositoryError(): GitError {
 	return new GitNotRepositoryError({});
@@ -65,4 +79,8 @@ export function branchAlreadyCheckedOutError(
 	path: string
 ): GitError {
 	return new GitBranchCheckedOutError({ branch, path });
+}
+
+export function pathOutsideCwdError(path: string): GitError {
+	return new GitPathOutsideCwdError({ path });
 }

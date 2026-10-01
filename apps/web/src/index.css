@@ -527,3 +527,32 @@ body {
 		animation: none;
 	}
 }
+
+/* Inside the Workspace drawer, diffs and file previews sit on the app
+   background. The viewer paints its background on the custom element's :host,
+   so the override has to target the element itself, not its shadow contents. */
+.workspace-drawer diffs-container {
+	--diffs-bg: var(--background) !important;
+	--diffs-light-bg: var(--background) !important;
+	--diffs-dark-bg: var(--background) !important;
+	--diffs-bg-context-override: var(--background);
+	--diffs-bg-buffer-override: var(--background);
+	/* The default stylistic sets turn digits into superscripts in some mono fonts. */
+	--diffs-font-family: var(--font-mono) !important;
+	--diffs-font-features: normal !important;
+	/* Added / removed lines, as in Zed: tinted rows, a stronger gutter, and
+	   stronger still for the words that changed (Zed's version_control colors). */
+	--diffs-addition-color-override: #27a657;
+	--diffs-deletion-color-override: #e06c76;
+	/* These are the colours the viewer blends into each row (the blend strength
+	   is set in DRAWER_VIEWER_OPTIONS.unsafeCSS). */
+	--diffs-bg-addition-override: #27a657;
+	--diffs-bg-addition-number-override: #27a657;
+	--diffs-bg-addition-emphasis-override: light-dark(#27a65766, #27a65759);
+	--diffs-bg-deletion-override: #e06c76;
+	--diffs-bg-deletion-number-override: #e06c76;
+	--diffs-bg-deletion-emphasis-override: light-dark(#e06c7666, #e06c7659);
+	--diffs-fg-number-addition-override: #27a657;
+	--diffs-fg-number-deletion-override: #e06c76;
+	background-color: var(--background) !important;
+}

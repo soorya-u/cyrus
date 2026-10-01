@@ -67,6 +67,50 @@ describe("git status", () => {
 	});
 });
 
+describe("git status per-file line counts", () => {
+	test("counts additions and deletions for modified, untracked and deleted files", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "cyrus-git-"));
+		try {
+			await initRepo(dir);
+			await writeFile(join(dir, "README.md"), "hello\nworld\nagain\n");
+			await writeFile(join(dir, "fresh.ts"), "a\nb\nc\nd\n");
+			const status = await getGitStatus(dir);
+			expect(status.isRepo).toBe(true);
+			if (!status.isRepo) return;
+
+			const byPath = new Map(status.files.map((file) => [file.path, file]));
+			expect(byPath.get("README.md")).toMatchObject({
+				status: "Modified",
+				insertions: 2,
+				deletions: 0,
+			});
+			expect(byPath.get("fresh.ts")).toMatchObject({
+				status: "Untracked",
+				insertions: 4,
+				deletions: 0,
+			});
+		} finally {
+			await rm(dir, { recursive: true, force: true });
+		}
+	});
+
+	test("counts deleted lines and leaves unchanged counts at zero", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "cyrus-git-"));
+		try {
+			await initRepo(dir);
+			await rm(join(dir, "README.md"));
+			const status = await getGitStatus(dir);
+			expect(status.isRepo).toBe(true);
+			if (!status.isRepo) return;
+			expect(status.files).toEqual([
+				{ path: "README.md", status: "Deleted", insertions: 0, deletions: 1 },
+			]);
+		} finally {
+			await rm(dir, { recursive: true, force: true });
+		}
+	});
+});
+
 describe("createGitWorktree", () => {
 	test("forks a new branch instead of the checked-out source branch", async () => {
 		const dir = await mkdtemp(join(tmpdir(), "cyrus-git-"));

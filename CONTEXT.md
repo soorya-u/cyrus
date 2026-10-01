@@ -105,6 +105,10 @@ _Avoid_: cursor
 A peer's registered interest in a thread's live chunks. Only watching peers receive a thread's chunks.
 _Avoid_: subscribe (to a thread)
 
+**File watch**:
+A peer's registered interest in filesystem changes at a thread's effective cwd, filtered against the repo's ignore rules. Scoped to one thread at a time — started on subscribe, stopped on unsubscribe. Distinct from **Watch** (live conversation chunks).
+_Avoid_: watch (ambiguous with thread chunk watch), file watcher (as the peer-facing term — that's the underlying mechanism, not the subscription)
+
 **Replay buffer**:
 The worker-held log of an in-flight turn's persisted chunks — ephemeral deltas are never buffered — replayed to peers that start watching mid-turn and discarded when the turn ends.
 
@@ -161,5 +165,14 @@ _Avoid_: shell mode (collides with modeId)
 **Prompt queue**:
 Messages queued per thread while a turn is active, sent sequentially once the turn completes.
 
-**Diff panel**:
-The git-backed side panel showing real working-tree changes at the thread's effective cwd — distinct from agent-reported diffs in the feed.
+**Workspace drawer**:
+The side panel beside the chat feed, toggled open per thread, holding a toggle group that switches between the **Explorer tab** and the **Diff tab**.
+_Avoid_: diff panel (that's one tab within it, not the container), drawer alone (ambiguous outside this context)
+
+**Diff tab**:
+The Workspace drawer tab showing real working-tree changes at the thread's effective cwd — distinct from agent-reported diffs in the feed. Formerly the whole panel; now one of two tabs.
+_Avoid_: diff panel
+
+**Explorer tab**:
+The Workspace drawer tab showing the thread's effective cwd as a lazily-loaded file tree, git-status-colored per file (added/deleted/modified/renamed/untracked), view-only — no create, rename, move, or delete. Clicking a file opens its full content with syntax highlighting; clicking a changed file in the Diff tab instead opens that file's diff.
+_Avoid_: file explorer (as a component name — the tree itself is a distinct concern from the tab hosting it)
