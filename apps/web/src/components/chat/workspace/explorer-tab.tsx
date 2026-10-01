@@ -2,7 +2,8 @@ import { useGitStatus } from "@cyrus/hooks/queries/use-git";
 import type { GitFileStatus } from "@cyrus/schemas/rtc/git";
 import type { GitStatusEntry } from "@pierre/trees";
 import { FileTree, useFileTree } from "@pierre/trees/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FilePreview } from "@/components/chat/workspace/file-preview";
 import { buildFileTreePathUpdates } from "@/components/chat/workspace/file-tree-path-updates";
 import { useDirectoryEntries } from "@/components/chat/workspace/use-directory-entries";
 
@@ -13,6 +14,13 @@ const TREE_STATUS: Record<GitFileStatus, GitStatusEntry["status"]> = {
 	Renamed: "renamed",
 	Untracked: "untracked",
 };
+
+// The tree pins its own `color-scheme: light dark` (OS preference); inherit the
+// app theme instead and let the drawer's card background show through.
+const TREE_THEME_STYLE = {
+	colorScheme: "inherit",
+	"--trees-bg-override": "transparent",
+} as React.CSSProperties;
 
 function parentOf(path: string): string {
 	return path.slice(0, Math.max(0, path.lastIndexOf("/")));
@@ -64,8 +72,14 @@ export function ExplorerTab({ threadId }: { threadId: string }) {
 		refresh();
 	}, [statusUpdatedAt, refresh]);
 
+	const [openPath, setOpenPath] = useState<string | null>(null);
+
 	const { model } = useFileTree({
 		paths: [],
+		onSelectionChange: (selectedPaths) => {
+			const selected = selectedPaths.at(-1);
+			if (selected && !selected.endsWith("/")) setOpenPath(selected);
+		},
 		density: "compact",
 		initialExpansion: "closed",
 		dragAndDrop: false,
@@ -124,5 +138,27 @@ export function ExplorerTab({ threadId }: { threadId: string }) {
 		);
 	}
 
-	return <FileTree className="h-full w-full" model={model} />;
+	const closePreview = () => {
+		if (openPath) model.getItem(openPath)?.deselect();
+		setOpenPath(null);
+	};
+
+	return (
+		<div className="h-full w-full">
+			<div className={openPath ? "hidden" : "h-full w-full"}>
+				<FileTree
+					className="h-full w-full"
+					model={model}
+					style={TREE_THEME_STYLE}
+				/>
+			</div>
+			{openPath ? (
+				<FilePreview
+					onClose={closePreview}
+					path={openPath}
+					threadId={threadId}
+				/>
+			) : null}
+		</div>
+	);
 }

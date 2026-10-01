@@ -43,6 +43,29 @@ export function useGitPatch(
 	);
 }
 
+export function useGitFile(
+	threadId: string | undefined,
+	path: string | undefined
+) {
+	const { orpc: orpcController } = useRtc();
+
+	return useQuery(
+		threadId && path
+			? orpcController.readGitFile.queryOptions({
+					queryKey: RTC_OPERATION_KEYS.readGitFile(threadId, path),
+					input: { threadId, path },
+					retry: false,
+				})
+			: {
+					queryKey: RTC_OPERATION_KEYS.readGitFile(
+						threadId ?? "none",
+						path ?? ""
+					),
+					queryFn: skipToken,
+				}
+	);
+}
+
 export function useListGitRefs(threadId: string | undefined) {
 	const { orpc: orpcController } = useRtc();
 
@@ -68,6 +91,9 @@ function invalidateGitQueries(
 	});
 	queryClient.invalidateQueries({
 		queryKey: ["controller", "get-git-patch", threadId],
+	});
+	queryClient.invalidateQueries({
+		queryKey: ["controller", "read-git-file", threadId],
 	});
 	queryClient.invalidateQueries({
 		queryKey: RTC_OPERATION_KEYS.listGitRefs(threadId),

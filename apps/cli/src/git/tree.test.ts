@@ -112,6 +112,12 @@ describe("listGitDirectory", () => {
 		});
 	});
 
+	test("refuses to list .git", async () => {
+		await withRepo(async (dir) => {
+			expect((await listGitDirectory(dir, ".git")).isErr()).toBe(true);
+		});
+	});
+
 	test("rejects a symlink that points outside the effective cwd", async () => {
 		await withRepo(async (dir) => {
 			const outside = await mkdtemp(join(tmpdir(), "cyrus-outside-"));

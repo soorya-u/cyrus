@@ -41,6 +41,8 @@ import {
 	GitListDirectoryOutputSchema,
 	GitPatchInputSchema,
 	GitPatchOutputSchema,
+	GitReadFileInputSchema,
+	GitReadFileOutputSchema,
 	GitRefsOutputSchema,
 	GitRefsQueryInputSchema,
 	GitStatusOutputSchema,
@@ -132,6 +134,7 @@ export const controllerContract = {
 		.input(ThreadGitQueryInputSchema)
 		.output(GitStatusOutputSchema),
 	getGitPatch: oc.input(GitPatchInputSchema).output(GitPatchOutputSchema),
+	readGitFile: oc.input(GitReadFileInputSchema).output(GitReadFileOutputSchema),
 	listGitDirectory: oc
 		.input(GitListDirectoryInputSchema)
 		.output(GitListDirectoryOutputSchema),

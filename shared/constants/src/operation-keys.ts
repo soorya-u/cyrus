@@ -45,6 +45,8 @@ export const RTC_OPERATION_KEYS = {
 		["controller", "get-git-status", threadId] as const,
 	getGitPatch: (threadId: string, path?: string) =>
 		["controller", "get-git-patch", threadId, path ?? "all"] as const,
+	readGitFile: (threadId: string, path: string) =>
+		["controller", "read-git-file", threadId, path] as const,
 	listGitDirectory: (threadId: string, directoryPath: string) =>
 		["controller", "list-git-directory", threadId, directoryPath] as const,
 	listGitRefs: (threadId: string) =>

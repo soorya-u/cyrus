@@ -58,6 +58,14 @@ export const GitListDirectoryOutputSchema = z.object({
 	entries: z.array(GitDirectoryEntrySchema),
 });
 
+export const GitReadFileOutputSchema = z.discriminatedUnion("kind", [
+	z.object({ kind: z.literal("text"), contents: z.string() }),
+	z.object({
+		kind: z.literal("unpreviewable"),
+		reason: z.enum(["binary", "too_large"]),
+	}),
+]);
+
 export const ThreadGitQueryInputSchema = z.object({
 	threadId: z.string().min(1),
 });
@@ -68,6 +76,10 @@ export const GitPatchInputSchema = ThreadGitQueryInputSchema.extend({
 
 export const GitListDirectoryInputSchema = ThreadGitQueryInputSchema.extend({
 	directoryPath: z.string(),
+});
+
+export const GitReadFileInputSchema = ThreadGitQueryInputSchema.extend({
+	path: z.string().min(1),
 });
 
 export const GitRefsQueryInputSchema = ThreadGitQueryInputSchema.extend({
@@ -94,11 +106,8 @@ export const ProjectGitRefsQueryInputSchema = ProjectQueryInputSchema.extend({
 export type GitFileChange = z.infer<typeof GitFileChangeSchema>;
 export type GitStatusOutput = z.infer<typeof GitStatusOutputSchema>;
 export type GitPatchOutput = z.infer<typeof GitPatchOutputSchema>;
+export type GitReadFileOutput = z.infer<typeof GitReadFileOutputSchema>;
 export type GitDirectoryEntry = z.infer<typeof GitDirectoryEntrySchema>;
-export type GitListDirectoryOutput = z.infer<
-	typeof GitListDirectoryOutputSchema
->;
-export type GitListDirectoryInput = z.infer<typeof GitListDirectoryInputSchema>;
 export type GitRef = z.infer<typeof GitRefSchema>;
 export type GitRefsOutput = z.infer<typeof GitRefsOutputSchema>;
 export type GitPatchInput = z.infer<typeof GitPatchInputSchema>;
