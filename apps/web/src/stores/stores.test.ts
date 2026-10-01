@@ -11,6 +11,12 @@ describe("chat ui store", () => {
 		expect(useChatUiStore.getState().drawerOpen).toBe(true);
 	});
 
+	test("remembers the drawer size", () => {
+		useChatUiStore.setState({ drawerSize: 40 });
+		useChatUiStore.getState().setDrawerSize(55);
+		expect(useChatUiStore.getState().drawerSize).toBe(55);
+	});
+
 	test("defaults to the explorer tab and switches to diff", () => {
 		useChatUiStore.setState({ workspaceTab: "explorer" });
 		expect(useChatUiStore.getState().workspaceTab).toBe("explorer");

@@ -13,10 +13,15 @@ import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
 import { useNavigate } from "@tanstack/react-router";
 import { Result } from "better-result";
-import { lazy, Suspense, useEffect, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Composer } from "@/components/chat/composer";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { useChatUiStore } from "@/stores/chat-ui";
 
 const WorkspaceDrawer = lazy(() =>
@@ -24,6 +29,36 @@ const WorkspaceDrawer = lazy(() =>
 		default: mod.WorkspaceDrawer,
 	}))
 );
+
+// The size is read once on mount: feeding the live value back into
+// defaultSize would re-apply the layout on every resize step and fight the drag.
+function WorkspaceDrawerPanel({
+	threadId,
+	onClose,
+}: {
+	threadId: string;
+	onClose: () => void;
+}) {
+	const [initialSize] = useState(() => useChatUiStore.getState().drawerSize);
+	const setDrawerSize = useChatUiStore((state) => state.setDrawerSize);
+
+	return (
+		<>
+			<ResizableHandle />
+			<ResizablePanel
+				defaultSize={`${initialSize}`}
+				id="workspace"
+				maxSize="70"
+				minSize="22"
+				onResize={(size) => setDrawerSize(size.asPercentage)}
+			>
+				<Suspense fallback={null}>
+					<WorkspaceDrawer onClose={onClose} threadId={threadId} />
+				</Suspense>
+			</ResizablePanel>
+		</>
+	);
+}
 
 type ThreadWorkspaceProps = {
 	workerId: string;
@@ -124,42 +159,40 @@ export function ThreadWorkspace({
 				workerId={workerId}
 			/>
 
-			<div className="flex min-h-0 flex-1">
-				<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-					<ChatFeed
-						active={running || active}
-						className="min-h-0"
-						conversation={conversation}
-					/>
-					<Composer
-						busy={running || active}
-						onExecuteShell={handleExecuteShell}
-						onSend={handleSend}
-						onStop={async () => await stopThread(thread.id)}
-						pendingApprovals={pendingApprovals}
-						pendingElicitations={pendingElicitations}
-						projectId={projectId}
-						stopping={stopping}
-						subject={{
-							id: thread.id,
-							projectId: thread.projectId,
-							worktreePath: thread.worktreePath,
-						}}
-						threadError={composerBlockingError}
+			<ResizablePanelGroup className="min-h-0 flex-1" orientation="horizontal">
+				<ResizablePanel id="chat" minSize="30">
+					<div className="relative flex h-full min-h-0 min-w-0 flex-col">
+						<ChatFeed
+							active={running || active}
+							className="min-h-0"
+							conversation={conversation}
+						/>
+						<Composer
+							busy={running || active}
+							onExecuteShell={handleExecuteShell}
+							onSend={handleSend}
+							onStop={async () => await stopThread(thread.id)}
+							pendingApprovals={pendingApprovals}
+							pendingElicitations={pendingElicitations}
+							projectId={projectId}
+							stopping={stopping}
+							subject={{
+								id: thread.id,
+								projectId: thread.projectId,
+								worktreePath: thread.worktreePath,
+							}}
+							threadError={composerBlockingError}
+							threadId={thread.id}
+						/>
+					</div>
+				</ResizablePanel>
+				{drawerOpen ? (
+					<WorkspaceDrawerPanel
+						onClose={() => setDrawerOpen(false)}
 						threadId={thread.id}
 					/>
-				</div>
-				{drawerOpen ? (
-					<div className="w-105 shrink-0">
-						<Suspense fallback={null}>
-							<WorkspaceDrawer
-								onClose={() => setDrawerOpen(false)}
-								threadId={thread.id}
-							/>
-						</Suspense>
-					</div>
 				) : null}
-			</div>
+			</ResizablePanelGroup>
 		</>
 	);
 }

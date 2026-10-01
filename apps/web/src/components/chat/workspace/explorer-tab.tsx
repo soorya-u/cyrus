@@ -17,9 +17,16 @@ const TREE_STATUS: Record<GitFileStatus, GitStatusEntry["status"]> = {
 
 // The tree pins its own `color-scheme: light dark` (OS preference); inherit the
 // app theme instead and let the drawer's card background show through.
+// File-tree colors from Zed's One theme (dark / light), applied through the
+// tree's override variables: `text`, `text.muted`, `modified` and `deleted`.
+// The tree inherits the app's color scheme, so light-dark() follows the theme.
 const TREE_THEME_STYLE = {
 	colorScheme: "inherit",
 	"--trees-bg-override": "transparent",
+	"--trees-fg-override": "light-dark(#242529, #dce0e5)",
+	"--trees-fg-muted-override": "light-dark(#58585a, #a9afbc)",
+	"--trees-status-modified-override": "light-dark(#a48819, #dec184)",
+	"--trees-status-deleted-override": "light-dark(#d36151, #d07277)",
 } as React.CSSProperties;
 
 function parentOf(path: string): string {
