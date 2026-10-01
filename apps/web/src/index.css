@@ -540,5 +540,41 @@ body {
 	/* The default stylistic sets turn digits into superscripts in some mono fonts. */
 	--diffs-font-family: var(--font-mono) !important;
 	--diffs-font-features: normal !important;
+	/* Added / removed lines, as in Zed: tinted rows, a stronger gutter, and
+	   stronger still for the words that changed (Zed's version_control colors). */
+	--diffs-addition-color-override: #27a657;
+	--diffs-deletion-color-override: #e06c76;
+	--diffs-bg-addition-override: color-mix(
+		in srgb,
+		#27a657 16%,
+		var(--background)
+	);
+	--diffs-bg-addition-number-override: color-mix(
+		in srgb,
+		#27a657 26%,
+		var(--background)
+	);
+	--diffs-bg-addition-emphasis-override: color-mix(
+		in srgb,
+		#27a657 40%,
+		var(--background)
+	);
+	--diffs-bg-deletion-override: color-mix(
+		in srgb,
+		#e06c76 16%,
+		var(--background)
+	);
+	--diffs-bg-deletion-number-override: color-mix(
+		in srgb,
+		#e06c76 26%,
+		var(--background)
+	);
+	--diffs-bg-deletion-emphasis-override: color-mix(
+		in srgb,
+		#e06c76 40%,
+		var(--background)
+	);
+	--diffs-fg-number-addition-override: #27a657;
+	--diffs-fg-number-deletion-override: #e06c76;
 	background-color: var(--background) !important;
 }

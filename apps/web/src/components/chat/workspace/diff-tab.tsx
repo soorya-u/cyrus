@@ -10,7 +10,7 @@ import {
 	GitBranchIcon,
 	RefreshCwIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PATCH_DIFF_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
 import { splitPatchByFile } from "@/components/chat/workspace/split-patch";
 import {
@@ -21,10 +21,19 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // The file's header row already shows its path and line counts.
-const DRAWER_PATCH_OPTIONS = { ...PATCH_DIFF_OPTIONS, disableFileHeader: true };
+const DRAWER_PATCH_OPTIONS = {
+	...PATCH_DIFF_OPTIONS,
+	disableFileHeader: true,
+	// Highlight the words that changed within a line, not just the whole line.
+	lineDiffType: "word" as const,
+};
 
-/** Above this many changed files, start collapsed so the view stays cheap. */
-const EXPAND_ALL_LIMIT = 8;
+// Highlighting a diff is expensive, so a file's diff is only mounted once it
+// is within this distance of the scroll viewport.
+const NEAR_VIEWPORT_MARGIN = "800px";
+// Stand-in height per diff line until the real diff replaces the placeholder.
+const ESTIMATED_LINE_HEIGHT = 20;
+const MAX_ESTIMATED_HEIGHT = 6000;
 
 type LineCounts = { insertions: number; deletions: number };
 
@@ -49,6 +58,48 @@ function splitPath(path: string): { name: string; directory: string } {
 	return slash === -1
 		? { name: path, directory: "" }
 		: { name: path.slice(slash + 1), directory: path.slice(0, slash) };
+}
+
+function FileDiffBody({ patch }: { patch: string | undefined }) {
+	const ref = useRef<HTMLDivElement>(null);
+	const [near, setNear] = useState(false);
+
+	useEffect(() => {
+		const element = ref.current;
+		if (near || !element) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((entry) => entry.isIntersecting)) setNear(true);
+			},
+			{ rootMargin: NEAR_VIEWPORT_MARGIN }
+		);
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, [near]);
+
+	if (!patch?.includes("\n@@")) {
+		return (
+			<p className="px-3 py-4 text-muted-foreground/70 text-xs">
+				{patch?.includes("Binary files")
+					? "Binary file — no text diff."
+					: "No line changes."}
+			</p>
+		);
+	}
+
+	const estimatedHeight = Math.min(
+		patch.split("\n").length * ESTIMATED_LINE_HEIGHT,
+		MAX_ESTIMATED_HEIGHT
+	);
+	return (
+		<div
+			className="diff-render-surface"
+			ref={ref}
+			style={near ? undefined : { minHeight: estimatedHeight }}
+		>
+			{near ? <PatchDiff options={DRAWER_PATCH_OPTIONS} patch={patch} /> : null}
+		</div>
+	);
 }
 
 function FileSection({
@@ -95,19 +146,7 @@ function FileSection({
 					/>
 				</span>
 			</button>
-			{expanded ? (
-				<div className="diff-render-surface">
-					{patch?.includes("\n@@") ? (
-						<PatchDiff options={DRAWER_PATCH_OPTIONS} patch={patch} />
-					) : (
-						<p className="px-3 py-4 text-muted-foreground/70 text-xs">
-							{patch?.includes("Binary files")
-								? "Binary file — no text diff."
-								: "No line changes."}
-						</p>
-					)}
-				</div>
-			) : null}
+			{expanded ? <FileDiffBody patch={patch} /> : null}
 		</section>
 	);
 }
@@ -127,23 +166,19 @@ export function DiffTab({ threadId }: { threadId: string }) {
 		patchQuery.isLoading ||
 		patchQuery.isFetching;
 
-	// Files the user flipped away from the default; the default depends on how
-	// many files changed, so only deviations are stored.
-	const [toggled, setToggled] = useState<ReadonlySet<string>>(new Set());
-	const expandedByDefault = files.length <= EXPAND_ALL_LIMIT;
-	const isExpanded = (path: string) => expandedByDefault !== toggled.has(path);
+	// Every file starts expanded; only the ones the user collapsed are stored.
+	const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+	const isExpanded = (path: string) => !collapsed.has(path);
 	const allExpanded = files.every((file) => isExpanded(file.path));
 
 	const toggle = (path: string) =>
-		setToggled((previous) => {
+		setCollapsed((previous) => {
 			const next = new Set(previous);
 			if (!next.delete(path)) next.add(path);
 			return next;
 		});
 	const setAll = (expanded: boolean) =>
-		setToggled(
-			new Set(expanded === expandedByDefault ? [] : files.map((f) => f.path))
-		);
+		setCollapsed(new Set(expanded ? [] : files.map((file) => file.path)));
 
 	let body: React.ReactNode;
 	if (files.length === 0) {

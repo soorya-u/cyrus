@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { DiffTab } from "./diff-tab";
@@ -8,6 +8,52 @@ const UNTRACKED_HEADER = /^U\s*new\.ts\s*src\s*\+4$/;
 const DELETED_HEADER = /^D\s*old\.md\s*-5$/;
 const A_TS_HEADER = /a\.ts/;
 const ANY_TS_HEADER = /\.ts/;
+
+const observed = new Set<{ element: Element; notify: () => void }>();
+let autoIntersect = true;
+
+class FakeIntersectionObserver {
+	private readonly callback: IntersectionObserverCallback;
+	private readonly entries = new Set<{
+		element: Element;
+		notify: () => void;
+	}>();
+
+	constructor(callback: IntersectionObserverCallback) {
+		this.callback = callback;
+	}
+
+	observe(element: Element) {
+		const entry = {
+			element,
+			notify: () =>
+				this.callback(
+					[
+						{
+							isIntersecting: true,
+							target: element,
+						} as IntersectionObserverEntry,
+					],
+					this as unknown as IntersectionObserver
+				),
+		};
+		this.entries.add(entry);
+		observed.add(entry);
+		if (autoIntersect) entry.notify();
+	}
+
+	disconnect() {
+		for (const entry of this.entries) observed.delete(entry);
+		this.entries.clear();
+	}
+
+	unobserve() {
+		// not needed: the fake only tracks observe/disconnect
+	}
+	takeRecords() {
+		return [];
+	}
+}
 
 const useGitStatusMock = vi.fn();
 const useGitPatchMock = vi.fn();
@@ -57,7 +103,12 @@ function setup(files: ReturnType<typeof change>[], patch: string) {
 	});
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+	vi.clearAllMocks();
+	observed.clear();
+	autoIntersect = true;
+	vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+});
 
 describe("DiffTab (uncommitted changes)", () => {
 	test("requests one patch for the whole working tree", () => {
@@ -134,17 +185,33 @@ describe("DiffTab (uncommitted changes)", () => {
 		expect(screen.getAllByTestId("patch")).toHaveLength(2);
 	});
 
-	test("starts collapsed when many files changed", () => {
-		const files = Array.from({ length: 9 }, (_, i) =>
+	test("starts with every file expanded, however many changed", () => {
+		const files = Array.from({ length: 12 }, (_, i) =>
 			change(`f${i}.ts`, "Modified", 1, 1)
 		);
 		setup(files, files.map((f) => patchFor(f.path)).join(""));
 		render(<DiffTab threadId="t1" />);
 
-		expect(screen.queryAllByTestId("patch")).toHaveLength(0);
 		expect(
 			screen.getAllByRole("button", { name: ANY_TS_HEADER })[0]
-		).toHaveAttribute("aria-expanded", "false");
+		).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getAllByTestId("patch")).toHaveLength(12);
+	});
+
+	test("only mounts a file's diff once it is near the viewport", () => {
+		autoIntersect = false;
+		const files = [
+			change("a.ts", "Modified", 1, 1),
+			change("b.ts", "Modified", 1, 1),
+		];
+		setup(files, patchFor("a.ts") + patchFor("b.ts"));
+		render(<DiffTab threadId="t1" />);
+
+		expect(screen.queryAllByTestId("patch")).toHaveLength(0);
+
+		act(() => [...observed][0]?.notify());
+		expect(screen.getAllByTestId("patch")).toHaveLength(1);
+		expect(screen.getByTestId("patch")).toHaveTextContent("+++ b/a.ts");
 	});
 
 	test("explains files without a text diff", () => {
