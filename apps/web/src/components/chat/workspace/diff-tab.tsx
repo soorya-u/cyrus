@@ -1,21 +1,30 @@
 import { useGitPatch, useGitStatus } from "@cyrus/hooks/queries/use-git";
+import type { GitFileChange } from "@cyrus/schemas/rtc/git";
 import { PatchDiff } from "@pierre/diffs/react";
-import { FileTree, useFileTree } from "@pierre/trees/react";
 import { cn } from "cnfast";
-import { ArrowLeftIcon, GitBranchIcon, RefreshCwIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	ChevronDownIcon,
+	ChevronRightIcon,
+	ChevronsDownUpIcon,
+	ChevronsUpDownIcon,
+	GitBranchIcon,
+	RefreshCwIcon,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { PATCH_DIFF_OPTIONS } from "@/components/chat/workspace/patch-diff-options";
+import { splitPatchByFile } from "@/components/chat/workspace/split-patch";
 import {
 	ADDED_LINES_COLOR,
 	DELETED_LINES_COLOR,
-	TREE_STATUS,
-	TREE_THEME_STYLE,
+	STATUS_LABEL,
 } from "@/components/chat/workspace/tree-theme";
-import { useTreePathSync } from "@/components/chat/workspace/use-tree-path-sync";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// The back row above the diff already shows the path and line counts.
+// The file's header row already shows its path and line counts.
 const DRAWER_PATCH_OPTIONS = { ...PATCH_DIFF_OPTIONS, disableFileHeader: true };
+
+/** Above this many changed files, start collapsed so the view stays cheap. */
+const EXPAND_ALL_LIMIT = 8;
 
 type LineCounts = { insertions: number; deletions: number };
 
@@ -35,114 +44,140 @@ function LineCountLabels({ insertions, deletions }: LineCounts) {
 	);
 }
 
+function splitPath(path: string): { name: string; directory: string } {
+	const slash = path.lastIndexOf("/");
+	return slash === -1
+		? { name: path, directory: "" }
+		: { name: path.slice(slash + 1), directory: path.slice(0, slash) };
+}
+
+function FileSection({
+	file,
+	patch,
+	expanded,
+	onToggle,
+}: {
+	file: GitFileChange;
+	patch: string | undefined;
+	expanded: boolean;
+	onToggle: () => void;
+}) {
+	const { name, directory } = splitPath(file.path);
+	const label = STATUS_LABEL[file.status];
+	const ChevronIcon = expanded ? ChevronDownIcon : ChevronRightIcon;
+
+	return (
+		<section className="border-border border-b">
+			<button
+				aria-expanded={expanded}
+				className="sticky top-0 z-10 flex w-full items-center gap-2 bg-background px-2 py-1.5 text-left text-xs hover:bg-muted/60"
+				onClick={onToggle}
+				type="button"
+			>
+				<ChevronIcon className="size-3.5 shrink-0 text-muted-foreground" />
+				<span
+					className="w-3 shrink-0 text-center font-medium font-mono"
+					style={{ color: label.color }}
+					title={file.status}
+				>
+					{label.letter}
+				</span>
+				<span className="shrink-0 font-medium">{name}</span>
+				{directory ? (
+					<span className="min-w-0 truncate text-muted-foreground">
+						{directory}
+					</span>
+				) : null}
+				<span className="ml-auto shrink-0 pl-2">
+					<LineCountLabels
+						deletions={file.deletions}
+						insertions={file.insertions}
+					/>
+				</span>
+			</button>
+			{expanded ? (
+				<div className="diff-render-surface">
+					{patch?.includes("\n@@") ? (
+						<PatchDiff options={DRAWER_PATCH_OPTIONS} patch={patch} />
+					) : (
+						<p className="px-3 py-4 text-muted-foreground/70 text-xs">
+							{patch?.includes("Binary files")
+								? "Binary file — no text diff."
+								: "No line changes."}
+						</p>
+					)}
+				</div>
+			) : null}
+		</section>
+	);
+}
+
 export function DiffTab({ threadId }: { threadId: string }) {
 	const statusQuery = useGitStatus(threadId);
+	const patchQuery = useGitPatch(threadId, undefined);
 	const status = statusQuery.data;
 	const files = useMemo(() => (status?.isRepo ? status.files : []), [status]);
-	const [openPath, setOpenPath] = useState<string | null>(null);
-	const patchQuery = useGitPatch(
-		threadId,
-		openPath ?? undefined,
-		Boolean(openPath)
+	const patches = useMemo(
+		() => splitPatchByFile(patchQuery.data?.patch ?? ""),
+		[patchQuery.data]
 	);
-	const loading = statusQuery.isLoading || statusQuery.isFetching;
+	const loading =
+		statusQuery.isLoading ||
+		statusQuery.isFetching ||
+		patchQuery.isLoading ||
+		patchQuery.isFetching;
 
-	const countsRef = useRef(new Map<string, LineCounts>());
-	countsRef.current = new Map(
-		files.map((file) => [
-			file.path,
-			{ insertions: file.insertions, deletions: file.deletions },
-		])
-	);
+	// Files the user flipped away from the default; the default depends on how
+	// many files changed, so only deviations are stored.
+	const [toggled, setToggled] = useState<ReadonlySet<string>>(new Set());
+	const expandedByDefault = files.length <= EXPAND_ALL_LIMIT;
+	const isExpanded = (path: string) => expandedByDefault !== toggled.has(path);
+	const allExpanded = files.every((file) => isExpanded(file.path));
 
-	const { model } = useFileTree({
-		paths: [],
-		density: "compact",
-		initialExpansion: "open",
-		flattenEmptyDirectories: true,
-		dragAndDrop: false,
-		renaming: false,
-		search: false,
-		onSelectionChange: (selectedPaths) => {
-			const selected = selectedPaths.at(-1);
-			if (selected && !selected.endsWith("/")) setOpenPath(selected);
-		},
-		renderRowDecoration: ({ item, row }) => {
-			if (row.kind === "directory") return null;
-			const counts = countsRef.current.get(item.path);
-			if (!counts || (counts.insertions === 0 && counts.deletions === 0)) {
-				return null;
-			}
-			const parts = [
-				counts.insertions > 0
-					? { text: `+${counts.insertions}`, color: ADDED_LINES_COLOR }
-					: null,
-				counts.deletions > 0
-					? {
-							text: `${counts.insertions > 0 ? "\u00a0" : ""}-${counts.deletions}`,
-							color: DELETED_LINES_COLOR,
-						}
-					: null,
-			].filter((part) => part !== null);
-			return { text: parts.map((part) => part.text).join(""), parts };
-		},
-	});
-
-	const treePaths = useMemo(() => files.map((file) => file.path), [files]);
-	useTreePathSync(model, treePaths);
-
-	useEffect(() => {
-		model.setGitStatus(
-			files.map((file) => ({
-				path: file.path,
-				status: TREE_STATUS[file.status],
-			}))
+	const toggle = (path: string) =>
+		setToggled((previous) => {
+			const next = new Set(previous);
+			if (!next.delete(path)) next.add(path);
+			return next;
+		});
+	const setAll = (expanded: boolean) =>
+		setToggled(
+			new Set(expanded === expandedByDefault ? [] : files.map((f) => f.path))
 		);
-	}, [files, model]);
 
-	// A diff for a file that is no longer changed has nothing left to show.
-	useEffect(() => {
-		if (openPath && status && !files.some((file) => file.path === openPath)) {
-			setOpenPath(null);
-		}
-	}, [files, openPath, status]);
-
-	const closeDiff = () => {
-		if (openPath) model.getItem(openPath)?.deselect();
-		setOpenPath(null);
-	};
-
-	let patchContent: React.ReactNode;
-	if (patchQuery.isLoading) {
-		patchContent = (
-			<p className="py-8 text-center text-muted-foreground/70 text-xs">
-				Loading diff…
+	let body: React.ReactNode;
+	if (files.length === 0) {
+		body = (
+			<p className="px-3 py-8 text-center text-muted-foreground/70 text-xs">
+				No changes in working tree.
 			</p>
 		);
-	} else if (patchQuery.data?.patch) {
-		patchContent = (
-			<PatchDiff
-				className="h-full min-h-0 overflow-auto"
-				options={DRAWER_PATCH_OPTIONS}
-				patch={patchQuery.data.patch}
-			/>
+	} else if (patchQuery.isLoading) {
+		body = (
+			<p className="px-3 py-8 text-center text-muted-foreground/70 text-xs">
+				Loading changes…
+			</p>
 		);
 	} else {
-		patchContent = (
-			<p className="py-8 text-center text-muted-foreground/70 text-xs">
-				No patch for this file.
-			</p>
-		);
+		body = files.map((file) => (
+			<FileSection
+				expanded={isExpanded(file.path)}
+				file={file}
+				key={file.path}
+				onToggle={() => toggle(file.path)}
+				patch={patches.get(file.path)}
+			/>
+		));
 	}
-
-	const openCounts = openPath ? countsRef.current.get(openPath) : undefined;
 
 	return (
 		<div className="flex h-full w-full flex-col">
 			<div className="flex items-center gap-2 border-border border-b px-3 py-2">
 				<GitBranchIcon className="size-3.5 text-muted-foreground" />
 				<span className="font-medium text-sm">
-					{status?.isRepo ? (status.refName ?? "detached") : "Diffs"}
+					{status?.isRepo
+						? (status.refName ?? "detached")
+						: "Uncommitted changes"}
 				</span>
 				{status?.isRepo ? (
 					<span className="rounded-md bg-muted/70 px-1.5 py-0.5 text-[11px]">
@@ -152,65 +187,39 @@ export function DiffTab({ threadId }: { threadId: string }) {
 						/>
 					</span>
 				) : null}
-				<button
-					aria-label="Sync diffs"
-					className="ml-auto inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-					onClick={() => {
-						statusQuery.refetch();
-						if (openPath) patchQuery.refetch();
-					}}
-					type="button"
-				>
-					<RefreshCwIcon
-						className={cn("size-3.5", loading && "animate-spin")}
-					/>
-				</button>
-			</div>
-
-			<div className={cn("min-h-0 flex-1", openPath && "hidden")}>
-				{files.length === 0 ? (
-					<p className="px-3 py-8 text-center text-muted-foreground/70 text-xs">
-						No changes in working tree.
-					</p>
-				) : (
-					<FileTree
-						className="h-full w-full"
-						model={model}
-						style={TREE_THEME_STYLE}
-					/>
-				)}
-			</div>
-
-			{openPath ? (
-				<div className="flex min-h-0 flex-1 flex-col">
-					<div className="flex items-center gap-2 border-border border-b px-2 py-2">
+				<div className="ml-auto flex items-center gap-1">
+					{files.length > 0 ? (
 						<button
-							aria-label="Back to changes"
-							className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-							onClick={closeDiff}
+							aria-label={
+								allExpanded ? "Collapse all files" : "Expand all files"
+							}
+							className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+							onClick={() => setAll(!allExpanded)}
 							type="button"
 						>
-							<ArrowLeftIcon className="size-4" />
+							{allExpanded ? (
+								<ChevronsDownUpIcon className="size-3.5" />
+							) : (
+								<ChevronsUpDownIcon className="size-3.5" />
+							)}
 						</button>
-						<span
-							className="min-w-0 truncate font-mono text-xs"
-							title={openPath}
-						>
-							{openPath}
-						</span>
-						{openCounts ? (
-							<span className="ml-auto shrink-0 text-[11px]">
-								<LineCountLabels {...openCounts} />
-							</span>
-						) : null}
-					</div>
-					<ScrollArea className="min-h-0 flex-1">
-						<div className="diff-render-surface min-h-full p-2">
-							{patchContent}
-						</div>
-					</ScrollArea>
+					) : null}
+					<button
+						aria-label="Sync diffs"
+						className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+						onClick={() => {
+							statusQuery.refetch();
+							patchQuery.refetch();
+						}}
+						type="button"
+					>
+						<RefreshCwIcon
+							className={cn("size-3.5", loading && "animate-spin")}
+						/>
+					</button>
 				</div>
-			) : null}
+			</div>
+			<ScrollArea className="min-h-0 flex-1">{body}</ScrollArea>
 		</div>
 	);
 }

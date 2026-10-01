@@ -32,8 +32,9 @@ export function useGitPatch(
 ) {
 	const { orpc: orpcController } = useRtc();
 
+	// No path means the whole working-tree patch.
 	return useQuery(
-		threadId && path && enabled
+		threadId && enabled
 			? orpcController.getGitPatch.queryOptions({
 					queryKey: RTC_OPERATION_KEYS.getGitPatch(threadId, path),
 					input: { threadId, path },

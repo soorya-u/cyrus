@@ -50,6 +50,41 @@ describe("getGitPatch", () => {
 		});
 	});
 
+	test("keeps carriage returns when a file switches from LF to CRLF", async () => {
+		await withRepo(async (dir) => {
+			await writeFile(join(dir, "README.md"), "hello\r\n");
+			const patch = await patchFor(dir, "README.md");
+
+			expect(patch).toContain("@@ -1 +1 @@\n-hello\n+hello\r\n");
+		});
+	});
+
+	test("keeps carriage returns in context and changed lines of CRLF files", async () => {
+		await withRepo(async (dir) => {
+			await writeFile(join(dir, "gone.txt"), "bye\r\nbye\r\nmore\r\n");
+			const { openRepository } = await import("es-git");
+			const repo = await openRepository(dir);
+			const index = repo.index();
+			index.addPath("gone.txt");
+			index.write();
+			const signature = { name: "Test", email: "test@example.com" };
+			const head = repo.head().target();
+			if (!head) throw new Error("no head");
+			repo.commit(repo.getTree(index.writeTree()), "crlf", {
+				author: signature,
+				committer: signature,
+				updateRef: "HEAD",
+				parents: [head],
+			});
+			await writeFile(join(dir, "gone.txt"), "bye\r\nBYE\r\nmore\r\n");
+
+			const patch = await patchFor(dir, "gone.txt");
+			expect(patch).toContain(
+				"@@ -1,3 +1,3 @@\n bye\r\n-bye\r\n+BYE\r\n more\r\n"
+			);
+		});
+	});
+
 	test("renders an untracked file as a new file", async () => {
 		await withRepo(async (dir) => {
 			await writeFile(join(dir, "fresh.ts"), "a\nb\n");

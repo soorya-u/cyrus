@@ -25,3 +25,16 @@ export const TREE_THEME_STYLE = {
 // Zed's `version_control.added` / `version_control.deleted`.
 export const ADDED_LINES_COLOR = "#27a657";
 export const DELETED_LINES_COLOR = "#e06c76";
+
+// Zed's `created` / `modified` / `deleted` / `renamed` (light / dark), for the
+// status letter in a file's header.
+export const STATUS_LABEL: Record<
+	GitFileStatus,
+	{ letter: string; color: string }
+> = {
+	Added: { letter: "A", color: "light-dark(#669f59, #a1c181)" },
+	Untracked: { letter: "U", color: "light-dark(#669f59, #a1c181)" },
+	Modified: { letter: "M", color: "light-dark(#a48819, #dec184)" },
+	Deleted: { letter: "D", color: "light-dark(#d36151, #d07277)" },
+	Renamed: { letter: "R", color: "light-dark(#5c78e2, #74ade8)" },
+};
