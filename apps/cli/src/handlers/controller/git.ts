@@ -15,6 +15,7 @@ import { initGitRepository } from "@/git/init";
 import { getGitPatch } from "@/git/patch";
 import { listGitRefs } from "@/git/refs";
 import { getGitStatus } from "@/git/status";
+import { listGitDirectory } from "@/git/tree";
 import { createGitWorktree, removeGitWorktree } from "@/git/worktree";
 import type { ControllerOs } from "./deps";
 
@@ -36,6 +37,13 @@ export function gitHandlers(os: ControllerOs) {
 		getGitPatch: os.getGitPatch.handler(async ({ input }) => {
 			const cwd = await requireThreadCwd(input.threadId);
 			return { patch: orpcOk(await getGitPatch(cwd, input.path)) };
+		}),
+
+		listGitDirectory: os.listGitDirectory.handler(async ({ input }) => {
+			const cwd = await requireThreadCwd(input.threadId);
+			return {
+				entries: orpcOk(await listGitDirectory(cwd, input.directoryPath)),
+			};
 		}),
 
 		listGitRefs: os.listGitRefs.handler(async ({ input }) => {

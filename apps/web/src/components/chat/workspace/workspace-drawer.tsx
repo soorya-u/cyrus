@@ -23,7 +23,7 @@ export function WorkspaceDrawer({
 		<div className="flex h-full w-full flex-col border-border border-l bg-card">
 			<div className="min-h-0 flex-1">
 				{workspaceTab === "explorer" ? (
-					<ExplorerTab />
+					<ExplorerTab key={threadId} threadId={threadId} />
 				) : (
 					<DiffTab threadId={threadId} />
 				)}

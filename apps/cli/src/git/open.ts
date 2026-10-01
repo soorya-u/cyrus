@@ -5,7 +5,11 @@ import { openRepository, type Repository } from "es-git";
 
 function mapOpenError(error: unknown): GitError {
 	const message = error instanceof Error ? error.message : String(error);
-	if (message.toLowerCase().includes("not a git repository")) {
+	const lowered = message.toLowerCase();
+	if (
+		lowered.includes("not a git repository") ||
+		lowered.includes("could not find repository")
+	) {
 		return notRepositoryError();
 	}
 	return operationFailedError(message);

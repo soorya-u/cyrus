@@ -12,6 +12,12 @@ vi.mock("@cyrus/hooks/queries/use-git", () => ({
 	useGitPatch: (...args: unknown[]) => useGitPatchMock(...args),
 }));
 
+vi.mock("@/components/chat/workspace/explorer-tab", () => ({
+	ExplorerTab: ({ threadId }: { threadId: string }) => (
+		<div>explorer for {threadId}</div>
+	),
+}));
+
 beforeEach(() => {
 	vi.clearAllMocks();
 	useGitStatusMock.mockReturnValue({
@@ -34,7 +40,7 @@ describe("WorkspaceDrawer", () => {
 	test("defaults to the explorer tab", () => {
 		render(<WorkspaceDrawer onClose={vi.fn()} threadId="thread-1" />);
 
-		expect(screen.getByText("File browsing coming soon.")).toBeInTheDocument();
+		expect(screen.getByText("explorer for thread-1")).toBeInTheDocument();
 	});
 
 	test("switches to the diff tab and back via the toggle group", async () => {
@@ -47,7 +53,7 @@ describe("WorkspaceDrawer", () => {
 
 		await user.click(screen.getByRole("radio", { name: "Explorer" }));
 		expect(useChatUiStore.getState().workspaceTab).toBe("explorer");
-		expect(screen.getByText("File browsing coming soon.")).toBeInTheDocument();
+		expect(screen.getByText("explorer for thread-1")).toBeInTheDocument();
 	});
 
 	test("only one tab is ever selected — clicking the active tab again is a no-op", async () => {
