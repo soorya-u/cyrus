@@ -18,3 +18,4 @@ ADR-0011 deliberately gave the diff panel (now the **Diff tab**, one of two tabs
 - Under `.git/` only `HEAD`, `index` and `refs/` count as changes, so commits and checkouts refresh status without lock-file noise. In a linked worktree `.git` is a file pointing at the main repo's git dir, so those commit/checkout events are not seen there; working-tree edits still are.
 - `node_modules` is excluded from the native watch outright because it is expensive to watch and ignored by every project.
 - The turn-end git-query invalidation was removed: the watcher sees the same edits, whether they come from an agent, a shell command or an external editor.
+- A cwd that is not a git repository is still browsed and watched, just without ignore filtering (there are no ignore rules to apply). The watcher switches to repository filtering as soon as a `.git` appears, so a `git init` from outside Cyrus is signalled and the Diff tab shows up without a reconnect.

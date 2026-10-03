@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { GitNotRepositoryError } from "@cyrus/errors/git";
 import { initRepository, openRepository } from "es-git";
 import { watchGitDirectory } from "@/git/file-watch";
 
@@ -131,14 +130,43 @@ describe("watchGitDirectory", () => {
 		}
 	});
 
-	test("fails outside a git repository", async () => {
+	test("watches a plain directory and filters by git once it is initialised", async () => {
 		const dir = await mkdtemp(join(tmpdir(), "cyrus-watch-"));
+		const controller = new AbortController();
+		let signals = 0;
+		let consumer: Promise<void> | undefined;
 		try {
-			const result = await watchGitDirectory(dir);
-			expect(result.isErr()).toBe(true);
-			if (!result.isErr()) return;
-			expect(GitNotRepositoryError.is(result.error)).toBe(true);
+			const watch = await watchGitDirectory(dir, {
+				debounceMs: DEBOUNCE_MS,
+				signal: controller.signal,
+			});
+			if (!watch.isOk()) throw new Error("watch failed to start");
+			const iterator = watch.value;
+			consumer = (async () => {
+				for await (const _ of iterator) signals++;
+			})();
+			await Bun.sleep(150);
+
+			// Nothing is ignored without a repository.
+			await writeFile(join(dir, "debug.log"), "x");
+			await Bun.sleep(SETTLE_MS);
+			expect(signals).toBe(1);
+
+			// Initialising the repository is itself signalled...
+			await initRepository(dir, { initialHead: "main" });
+			await Bun.sleep(SETTLE_MS);
+			expect(signals).toBeGreaterThan(1);
+
+			// ...and ignore rules apply from then on.
+			await writeFile(join(dir, ".gitignore"), "*.log\n");
+			await Bun.sleep(SETTLE_MS);
+			const settled = signals;
+			await writeFile(join(dir, "other.log"), "x");
+			await Bun.sleep(SETTLE_MS);
+			expect(signals).toBe(settled);
 		} finally {
+			controller.abort();
+			await consumer;
 			await rm(dir, { recursive: true, force: true });
 		}
 	});

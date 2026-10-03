@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { realpath } from "node:fs/promises";
 import { relative, sep } from "node:path";
-import type { GitError } from "@cyrus/errors/git";
+import { type GitError, GitNotRepositoryError } from "@cyrus/errors/git";
 import type { GitFilesChanged } from "@cyrus/schemas/rtc/git";
 import watcher, { type Event } from "@parcel/watcher";
 import { Result } from "better-result";
@@ -46,10 +46,11 @@ function isIgnored(
 }
 
 function isRelevant(
-	repo: Repository,
+	repo: Repository | null,
 	relativePath: string,
 	event: Event
 ): boolean {
+	if (!repo) return true;
 	if (relativePath === GIT_DIR || relativePath.startsWith(`${GIT_DIR}/`)) {
 		return (
 			GIT_STATE_PATHS.has(relativePath) ||
@@ -61,11 +62,6 @@ function isRelevant(
 	return !isIgnored(repo, relativePath, event);
 }
 
-/**
- * Watches the effective cwd and yields one payload-less signal per burst of
- * relevant changes. Closing the iterator, aborting `signal`, or a native
- * watcher failure ends it; the consumer is expected to reconnect.
- */
 export async function watchGitDirectory(
 	cwd: string,
 	options: FileWatchOptions = {}
@@ -79,8 +75,10 @@ export async function watchGitDirectory(
 	} = options;
 
 	const opened = await openGitRepository(cwd);
-	if (opened.isErr()) return Result.err(opened.error);
-	const repo = opened.value;
+	if (opened.isErr() && !GitNotRepositoryError.is(opened.error)) {
+		return Result.err(opened.error);
+	}
+	let repo: Repository | null = opened.isOk() ? opened.value : null;
 
 	const root = await Result.tryPromise(() => realpath(cwd));
 	if (root.isErr()) return Result.err(operationFailedFromUnknown(root.error));
@@ -92,6 +90,15 @@ export async function watchGitDirectory(
 	let waiting: ((result: IteratorResult<GitFilesChanged>) => void) | undefined;
 	let closing: Promise<void> | undefined;
 	let unsubscribe: (() => Promise<void>) | undefined;
+	let adopting = false;
+
+	const adoptRepository = async () => {
+		if (adopting) return;
+		adopting = true;
+		const adopted = await openGitRepository(cwd);
+		adopting = false;
+		if (adopted.isOk() && !closed) repo = adopted.value;
+	};
 
 	const deliver = () => {
 		timer = undefined;
@@ -146,13 +153,19 @@ export async function watchGitDirectory(
 				}
 				let relevant: boolean;
 				try {
-					relevant = events.some((event) =>
-						isRelevant(
-							repo,
-							relative(root.value, event.path).split(sep).join("/"),
-							event
-						)
-					);
+					relevant = events.some((event) => {
+						const relativePath = relative(root.value, event.path)
+							.split(sep)
+							.join("/");
+						if (
+							!repo &&
+							(relativePath === GIT_DIR ||
+								relativePath.startsWith(`${GIT_DIR}/`))
+						) {
+							adoptRepository();
+						}
+						return isRelevant(repo, relativePath, event);
+					});
 				} catch {
 					// Unable to classify a change: refresh rather than miss it.
 					relevant = true;
