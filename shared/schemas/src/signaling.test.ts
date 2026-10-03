@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
 	DeviceInfoSchema,
 	DeviceRoleSchema,
+	DeviceStateSchema,
 	OfferInputSchema,
 	ServerEventSchema,
 } from "./signaling";
@@ -64,6 +65,24 @@ describe("signaling schemas", () => {
 				type: "ice-candidate",
 				from: "controller-1",
 				candidate: { sdpMid: "0" },
+			})
+		).toThrow();
+	});
+});
+
+describe("DeviceStateSchema version", () => {
+	test("reads a peer that predates the handshake as 0.0.0", () => {
+		expect(
+			DeviceStateSchema.parse({ name: "Laptop", role: "worker" }).version
+		).toBe("0.0.0");
+	});
+
+	test("rejects a version that is not major.minor.patch", () => {
+		expect(() =>
+			DeviceStateSchema.parse({
+				name: "Laptop",
+				role: "worker",
+				version: "new",
 			})
 		).toThrow();
 	});

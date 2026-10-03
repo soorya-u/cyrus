@@ -19,3 +19,4 @@ There is deliberately no rollback command and no kept `cyrusd.previous`: schema 
 - The install root is fixed at `~/.cyrus` and does not follow `CYRUS_HOME`, which holds one worker's data and can differ per worker.
 - The asset-naming contract is shared by both installers, the upgrader, and the npm packaging, and is pinned by a test.
 - Linux musl (Alpine) and Windows arm64 are not covered.
+- Stores created by development builds from before the embedded migrations (the schema was pushed with drizzle-kit's `pushSchema`, with no migration history) are not baselined: the `init` migration fails on the tables that already exist, and the worker refuses to start. Delete `~/.cyrus/store.db` once. No released version predates the migrations, and Cyrus keeps no backward compatibility during active development (`docs/guides/CODING_STANDARDS.md`).

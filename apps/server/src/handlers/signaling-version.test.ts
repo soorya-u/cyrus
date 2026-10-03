@@ -1,4 +1,4 @@
-import type { DeviceState } from "@cyrus/schemas/signaling";
+import { type DeviceState, DeviceStateSchema } from "@cyrus/schemas/signaling";
 import { describe, expect, test } from "vitest";
 import { checkPeerVersion as check } from "./signaling";
 
@@ -54,5 +54,15 @@ describe("checkPeerVersion", () => {
 				version: "0.3.0-rc.1",
 			}).isOk()
 		).toBe(true);
+	});
+
+	test("turns away a peer that predates the handshake with the minimum check", () => {
+		const legacy = DeviceStateSchema.parse({ name: "w", role: "worker" });
+		const result = checkPeerVersion(legacy);
+		expect(result.isErr() && result.error).toMatchObject({
+			_tag: "connection.upgrade_required",
+			declared: "0.0.0",
+			minimum: "0.3.0",
+		});
 	});
 });

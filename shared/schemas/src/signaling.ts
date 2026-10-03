@@ -18,11 +18,13 @@ export const ReleaseVersionSchema = z
 	.string()
 	.regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
 
-// metadata a device declares on join; its identity is the connection id
+// metadata a device declares on join; its identity is the connection id.
+// A peer that predates the version handshake omits `version` and is read as
+// 0.0.0, so the minimum check (not schema validation) turns it away.
 export const DeviceStateSchema = z.object({
 	name: z.string(),
 	role: DeviceRoleSchema,
-	version: ReleaseVersionSchema,
+	version: ReleaseVersionSchema.default("0.0.0"),
 });
 
 // a peer as seen by others: its declared metadata plus its stable id

@@ -24,9 +24,11 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # a merged PR checks out refs/pull/N/merge by default, which is not the commit that landed on main
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Extract version
         id: version

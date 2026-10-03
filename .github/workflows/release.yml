@@ -132,7 +132,7 @@ jobs:
 
       - name: Create draft release
         id: release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           draft: true
           generate_release_notes: true
@@ -177,7 +177,7 @@ jobs:
       - uses: ./tooling/github/setup
 
       - name: Migrate database
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
           wranglerVersion: "4.104.0"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -185,7 +185,7 @@ jobs:
           command: d1 migrations apply cyrus --remote --config wrangler.json
 
       - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
           wranglerVersion: "4.104.0"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
