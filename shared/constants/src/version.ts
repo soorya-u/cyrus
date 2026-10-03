@@ -1,6 +1,8 @@
-import { version } from "~/package.json" with { type: "json" };
+import pkg from "~/package.json" with { type: "json" };
 
-export const RELEASE_VERSION: string = version;
+// Default import: esbuild (wrangler) treats `with { type: "json" }` as a spec
+// JSON module, which has no named exports.
+export const RELEASE_VERSION: string = pkg.version;
 
 export const MIN_PEER_VERSION = {
 	controller: "0.0.0",
