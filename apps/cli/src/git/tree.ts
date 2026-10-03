@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { posix } from "node:path";
-import type { GitError } from "@cyrus/errors/git";
+import { type GitError, GitNotRepositoryError } from "@cyrus/errors/git";
 import type { GitDirectoryEntry } from "@cyrus/schemas/rtc/git";
 import { Result } from "better-result";
 import { resolveWithinCwd } from "./contain";
@@ -9,13 +9,20 @@ import { openGitRepository, operationFailedFromUnknown } from "./open";
 const GIT_DIR = ".git";
 const TRAILING_SLASHES = /\/+$/;
 
-/** Lists one directory level under `directoryPath`, omitting `.git` and ignored paths. */
+/**
+ * Lists one directory level under `directoryPath`, omitting `.git` and ignored
+ * paths. Outside a git repository there are no ignore rules, so nothing but
+ * `.git` is omitted.
+ */
 export async function listGitDirectory(
 	cwd: string,
 	directoryPath: string
 ): Promise<Result<GitDirectoryEntry[], GitError>> {
 	const opened = await openGitRepository(cwd);
-	if (opened.isErr()) return Result.err(opened.error);
+	if (opened.isErr() && !GitNotRepositoryError.is(opened.error)) {
+		return Result.err(opened.error);
+	}
+	const repo = opened.isOk() ? opened.value : null;
 
 	const resolved = await resolveWithinCwd(cwd, directoryPath);
 	if (resolved.isErr()) return Result.err(resolved.error);
@@ -30,18 +37,16 @@ export async function listGitDirectory(
 	const normalized = posix.normalize(directoryPath);
 	const base =
 		normalized === "." ? "" : normalized.replace(TRAILING_SLASHES, "");
-	const repo = opened.value;
-	const index = repo.index();
+	const index = repo?.index();
 	const entries: GitDirectoryEntry[] = [];
 	for (const dirent of dirents.value) {
 		if (dirent.name === GIT_DIR) continue;
 		const path = base ? `${base}/${dirent.name}` : dirent.name;
 		const kind = dirent.isDirectory() ? "directory" : "file";
 		// Ignore rules never hide a file git already tracks.
-		const tracked = kind === "file" && index.getByPath(path) !== null;
-		const ignored = repo.isPathIgnored(
-			kind === "directory" ? `${path}/` : path
-		);
+		const tracked = kind === "file" && index?.getByPath(path) != null;
+		const ignored =
+			repo?.isPathIgnored(kind === "directory" ? `${path}/` : path) ?? false;
 		if (ignored && !tracked) continue;
 		entries.push({ path, kind });
 	}

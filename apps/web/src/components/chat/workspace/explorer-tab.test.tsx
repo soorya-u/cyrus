@@ -90,4 +90,31 @@ describe("ExplorerTab", () => {
 
 		expect(screen.getByText("Not a git repository")).toBeInTheDocument();
 	});
+
+	test("shows the root folder name in a header", () => {
+		render(<ExplorerTab rootPath="/home/me/projects/my-app" threadId="t1" />);
+
+		expect(screen.getByText("my-app")).toHaveAttribute(
+			"title",
+			"/home/me/projects/my-app"
+		);
+	});
+
+	test("ignores trailing separators and Windows paths in the header", () => {
+		const { rerender } = render(
+			<ExplorerTab rootPath="/home/me/my-app/" threadId="t1" />
+		);
+		expect(screen.getByText("my-app")).toBeInTheDocument();
+
+		rerender(
+			<ExplorerTab rootPath={String.raw`C:\work\my-app`} threadId="t1" />
+		);
+		expect(screen.getByText("my-app")).toBeInTheDocument();
+	});
+
+	test("falls back to a generic label without a root path", () => {
+		render(<ExplorerTab threadId="t1" />);
+
+		expect(screen.getByText("Project")).toBeInTheDocument();
+	});
 });

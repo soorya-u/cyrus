@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	GitNotRepositoryError,
-	GitPathOutsideCwdError,
-} from "@cyrus/errors/git";
+import { GitPathOutsideCwdError } from "@cyrus/errors/git";
 import { initRepository, openRepository } from "es-git";
 import { listGitDirectory } from "@/git/tree";
 
@@ -133,13 +130,33 @@ describe("listGitDirectory", () => {
 		});
 	});
 
-	test("returns a not-repository error outside git", async () => {
+	test("lists a plain directory without ignore rules outside git", async () => {
 		const dir = await mkdtemp(join(tmpdir(), "cyrus-tree-"));
 		try {
+			await mkdir(join(dir, "node_modules"));
+			await writeFile(join(dir, "debug.log"), "log");
+			await writeFile(join(dir, "a.ts"), "a");
+
 			const result = await listGitDirectory(dir, "");
+			expect(result.isOk()).toBe(true);
+			if (!result.isOk()) return;
+			expect(result.value).toEqual([
+				{ path: "node_modules", kind: "directory" },
+				{ path: "a.ts", kind: "file" },
+				{ path: "debug.log", kind: "file" },
+			]);
+		} finally {
+			await rm(dir, { recursive: true, force: true });
+		}
+	});
+
+	test("still rejects paths that escape the cwd outside git", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "cyrus-tree-"));
+		try {
+			const result = await listGitDirectory(dir, "..");
 			expect(result.isErr()).toBe(true);
 			if (!result.isErr()) return;
-			expect(GitNotRepositoryError.is(result.error)).toBe(true);
+			expect(GitPathOutsideCwdError.is(result.error)).toBe(true);
 		} finally {
 			await rm(dir, { recursive: true, force: true });
 		}

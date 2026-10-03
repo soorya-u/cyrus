@@ -159,15 +159,41 @@
 		background: color-mix(in srgb, var(--card) 20%, transparent);
 	}
 
+	/* Keep the shadow close to the card: a wide, offset one smears across the
+	   branch toolbar row sitting right below it. */
 	.chat-composer-glass {
 		box-shadow:
-			0 18px 48px -20px rgb(0 0 0 / 28%),
-			0 4px 14px -7px rgb(0 0 0 / 22%);
+			0 1px 2px rgb(0 0 0 / 5%),
+			0 4px 12px -6px rgb(0 0 0 / 12%);
 	}
 
+	/* The blur reaches slightly past the card and fades out, so it never ends in
+	   a hard vertical edge at the card's sides that chops the shadow. The mask
+	   must sit on this element itself: on an ancestor it would become the
+	   backdrop root and the blur would see nothing. */
 	.chat-composer-shared-blur {
 		-webkit-backdrop-filter: blur(16px);
 		backdrop-filter: blur(16px);
+		-webkit-mask-image:
+			linear-gradient(
+				to right,
+				transparent,
+				#000 1rem,
+				#000 calc(100% - 1rem),
+				transparent
+			),
+			linear-gradient(to bottom, transparent, #000 0.75rem);
+		mask-image:
+			linear-gradient(
+				to right,
+				transparent,
+				#000 1rem,
+				#000 calc(100% - 1rem),
+				transparent
+			),
+			linear-gradient(to bottom, transparent, #000 0.75rem);
+		-webkit-mask-composite: source-in;
+		mask-composite: intersect;
 	}
 
 	.dark .chat-composer-glass,
@@ -177,8 +203,8 @@
 
 	.dark .chat-composer-glass {
 		box-shadow:
-			0 18px 48px -20px rgb(0 0 0 / 60%),
-			0 4px 14px -7px rgb(0 0 0 / 40%);
+			0 1px 2px rgb(0 0 0 / 30%),
+			0 4px 12px -6px rgb(0 0 0 / 40%);
 	}
 
 	.chat-composer-lower-chrome {

@@ -11,12 +11,14 @@ import {
 import type { ChatMessage } from "@cyrus/schemas/rtc/chat";
 import type { Thread } from "@cyrus/schemas/rtc/threads";
 import type { ThreadConversation } from "@cyrus/schemas/view";
+import { useMediaQuery } from "@mantine/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import { Result } from "better-result";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Composer } from "@/components/chat/composer";
 import { ChatFeed } from "@/components/chat/feed/chat-feed";
 import { ThreadHeader } from "@/components/chat/main/thread-header";
+import { WorkspaceDrawerSheet } from "@/components/chat/workspace/workspace-drawer-sheet";
 import {
 	ResizableHandle,
 	ResizablePanel,
@@ -34,10 +36,10 @@ const WorkspaceDrawer = lazy(() =>
 // defaultSize would re-apply the layout on every resize step and fight the drag.
 function WorkspaceDrawerPanel({
 	threadId,
-	onClose,
+	rootPath,
 }: {
 	threadId: string;
-	onClose: () => void;
+	rootPath?: string;
 }) {
 	const [initialSize] = useState(() => useChatUiStore.getState().drawerSize);
 	const setDrawerSize = useChatUiStore((state) => state.setDrawerSize);
@@ -53,7 +55,7 @@ function WorkspaceDrawerPanel({
 				onResize={(size) => setDrawerSize(size.asPercentage)}
 			>
 				<Suspense fallback={null}>
-					<WorkspaceDrawer onClose={onClose} threadId={threadId} />
+					<WorkspaceDrawer rootPath={rootPath} threadId={threadId} />
 				</Suspense>
 			</ResizablePanel>
 		</>
@@ -80,10 +82,14 @@ export function ThreadWorkspace({
 		useThreadTurns();
 	const { executeShellInput } = useShellExecution();
 	const { drawerOpen, setDrawerOpen } = useChatUiStore();
+	const isMobile = useMediaQuery("(max-width: 768px)", false);
 	useGitStatus(drawerOpen ? threadId : undefined);
 	useGitFilesWatch(drawerOpen ? threadId : undefined);
 
 	const baseThread = threads.find((item) => item.id === threadId) ?? null;
+	const rootPath =
+		baseThread?.worktreePath ??
+		projects.find((item) => item.id === baseThread?.projectId)?.cwd;
 	const conversation = useThreadConversation(baseThread ? threadId : undefined);
 	const stopping = isThreadStopping(threadId);
 	const running = conversation.turns.some((turn) => turn.state === "running");
@@ -186,13 +192,21 @@ export function ThreadWorkspace({
 						/>
 					</div>
 				</ResizablePanel>
-				{drawerOpen ? (
-					<WorkspaceDrawerPanel
-						onClose={() => setDrawerOpen(false)}
-						threadId={thread.id}
-					/>
+				{drawerOpen && !isMobile ? (
+					<WorkspaceDrawerPanel rootPath={rootPath} threadId={thread.id} />
 				) : null}
 			</ResizablePanelGroup>
+			{isMobile ? (
+				<WorkspaceDrawerSheet onOpenChange={setDrawerOpen} open={drawerOpen}>
+					<Suspense fallback={null}>
+						<WorkspaceDrawer
+							onClose={() => setDrawerOpen(false)}
+							rootPath={rootPath}
+							threadId={thread.id}
+						/>
+					</Suspense>
+				</WorkspaceDrawerSheet>
+			) : null}
 		</>
 	);
 }
