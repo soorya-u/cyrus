@@ -1,5 +1,6 @@
 import { useGitStatus } from "@cyrus/hooks/queries/use-git";
 import { FileTree, useFileTree } from "@pierre/trees/react";
+import { FolderIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FilePreview } from "@/components/chat/workspace/file-preview";
 import {
@@ -13,7 +14,22 @@ function parentOf(path: string): string {
 	return path.slice(0, Math.max(0, path.lastIndexOf("/")));
 }
 
-export function ExplorerTab({ threadId }: { threadId: string }) {
+const TRAILING_SEPARATORS = /[\\/]+$/;
+const PATH_SEPARATORS = /[\\/]/;
+
+function folderName(path: string | undefined): string {
+	const trimmed = path?.replace(TRAILING_SEPARATORS, "") ?? "";
+	return trimmed.split(PATH_SEPARATORS).at(-1) || trimmed || "Project";
+}
+
+export function ExplorerTab({
+	threadId,
+	rootPath,
+}: {
+	threadId: string;
+	/** The thread's effective cwd: its worktree, else the project folder. */
+	rootPath?: string;
+}) {
 	const { entries, load, refresh, ready, error } =
 		useDirectoryEntries(threadId);
 	const statusQuery = useGitStatus(threadId);
@@ -121,9 +137,15 @@ export function ExplorerTab({ threadId }: { threadId: string }) {
 
 	return (
 		<div className="h-full w-full">
-			<div className={openPath ? "hidden" : "h-full w-full"}>
+			<div className={openPath ? "hidden" : "flex h-full w-full flex-col"}>
+				<div className="flex items-center gap-2 border-border border-b px-3 py-2">
+					<FolderIcon className="size-3.5 shrink-0 text-muted-foreground" />
+					<span className="truncate font-medium text-sm" title={rootPath}>
+						{folderName(rootPath)}
+					</span>
+				</div>
 				<FileTree
-					className="h-full w-full"
+					className="min-h-0 w-full flex-1"
 					model={model}
 					style={TREE_THEME_STYLE}
 				/>
