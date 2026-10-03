@@ -14,10 +14,17 @@ const IceCandidateSchema = z.object({
 
 export const DeviceRoleSchema = z.enum(["controller", "worker"]);
 
-// metadata a device declares on join; its identity is the connection id
+export const ReleaseVersionSchema = z
+	.string()
+	.regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
+
+// metadata a device declares on join; its identity is the connection id.
+// A peer that predates the version handshake omits `version` and is read as
+// 0.0.0, so the minimum check (not schema validation) turns it away.
 export const DeviceStateSchema = z.object({
 	name: z.string(),
 	role: DeviceRoleSchema,
+	version: ReleaseVersionSchema.default("0.0.0"),
 });
 
 // a peer as seen by others: its declared metadata plus its stable id
@@ -60,6 +67,7 @@ export const ServerEventSchema = z.discriminatedUnion("type", [
 	}),
 ]);
 
+export type ReleaseVersion = z.infer<typeof ReleaseVersionSchema>;
 export type DeviceRole = z.infer<typeof DeviceRoleSchema>;
 export type DeviceState = z.infer<typeof DeviceStateSchema>;
 export type DeviceInfo = z.infer<typeof DeviceInfoSchema>;

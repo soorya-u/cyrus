@@ -1,0 +1,60 @@
+name: Release Tag
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag, e.g. 0.2.0 (re-runs a release whose tag was deleted)"
+        required: true
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  create-tag:
+    name: Tag and start release
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'bot/release-v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # a merged PR checks out refs/pull/N/merge by default, which is not the commit that landed on main
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+
+      - name: Extract version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${BRANCH#bot/release-v}"
+          fi
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push annotated tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Start the release pipeline
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref "$TAG"

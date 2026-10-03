@@ -176,3 +176,29 @@ _Avoid_: diff panel
 **Explorer tab**:
 The Workspace drawer tab showing the thread's effective cwd as a lazily-loaded file tree, git-status-colored per file (added/deleted/modified/renamed/untracked), view-only — no create, rename, move, or delete. Clicking a file opens its full content with syntax highlighting; clicking a changed file in the Diff tab instead opens that file's diff.
 _Avoid_: file explorer (as a component name — the tree itself is a distinct concern from the tab hosting it)
+
+### Releases
+
+**Release**:
+One tagged, unified shipment of the server, the web app, and the CLI under a single version. Desktop and mobile are not part of a release.
+_Avoid_: deploy (as a noun), build
+
+**Release version**:
+The single version number a release carries, sourced from the repo root and shared by every app it ships.
+_Avoid_: app version, package version
+
+**Prerelease**:
+A release whose version carries a suffix (e.g. `0.1.0-rc.1`). It ships the CLI only, never touches the production server or web app, and is never offered as the latest release.
+_Avoid_: beta, canary, nightly
+
+**Upgrade**:
+Replacing the installed CLI binary in place with another release's. Never performed while a worker is running.
+_Avoid_: update, self-update
+
+**Declared version**:
+The release version a peer states about itself on joining the room, alongside its name and role.
+_Avoid_: client version, app version
+
+**Minimum version**:
+The lowest declared version the server admits to the room, held per peer role (worker, controller) and compared on major.minor.patch only, ignoring any prerelease suffix.
+_Avoid_: supported version, required version

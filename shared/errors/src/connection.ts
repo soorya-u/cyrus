@@ -7,7 +7,10 @@ const tags = {
 	dialFailed: errorTag(errorModules.connection, "dial_failed"),
 	dataChannelFailed: errorTag(errorModules.connection, "data_channel_failed"),
 	iceFailed: errorTag(errorModules.connection, "ice_failed"),
+	upgradeRequired: errorTag(errorModules.connection, "upgrade_required"),
 } as const;
+
+export const UPGRADE_REQUIRED_CODE = "UPGRADE_REQUIRED";
 
 export class ConnectionInvalidHostError extends TaggedError(tags.invalidHost)<{
 	message: string;
@@ -58,12 +61,28 @@ export class ConnectionIceFailedError extends TaggedError(tags.iceFailed)<{
 	}
 }
 
+export class ConnectionUpgradeRequiredError extends TaggedError(
+	tags.upgradeRequired
+)<{
+	role: string;
+	declared: string;
+	minimum: string;
+}>() {
+	get message() {
+		return `Version ${this.declared} is older than the minimum ${this.minimum} the server admits for a ${this.role}.`;
+	}
+	get orpcCode() {
+		return "PRECONDITION_FAILED" as const;
+	}
+}
+
 export type ConnectionError =
 	| ConnectionInvalidHostError
 	| ConnectionSignalingFailedError
 	| ConnectionDialFailedError
 	| ConnectionDataChannelFailedError
-	| ConnectionIceFailedError;
+	| ConnectionIceFailedError
+	| ConnectionUpgradeRequiredError;
 
 export function isConnectionError(cause: unknown): cause is ConnectionError {
 	return isModuleError(cause, errorModules.connection);
@@ -102,6 +121,14 @@ export function iceFailedError(
 	detail?: string
 ): ConnectionIceFailedError {
 	return new ConnectionIceFailedError({ message, detail });
+}
+
+export function upgradeRequiredError(
+	role: string,
+	declared: string,
+	minimum: string
+): ConnectionUpgradeRequiredError {
+	return new ConnectionUpgradeRequiredError({ role, declared, minimum });
 }
 
 export function connectionErrorMessageFromUnknown(error: unknown): string {

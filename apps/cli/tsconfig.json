@@ -4,6 +4,7 @@
     "outDir": "dist",
     "strictNullChecks": true,
     "paths": {
+      "~/*": ["../../*"],
       "@/*": ["./src/*"]
     },
     "lib": ["ESNext", "DOM", "DOM.Iterable"]

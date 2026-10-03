@@ -1,4 +1,5 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
+import { RELEASE_VERSION } from "@cyrus/constants/version";
 
 function requireEnv(name: string): string {
 	const value = process.env[name];
@@ -29,6 +30,7 @@ async function checkSignalingHub(): Promise<void> {
 		role: "controller",
 		id: "deploy-smoke",
 		name: "Deploy Smoke",
+		version: RELEASE_VERSION,
 		protocols: async () => {
 			const response = await fetch(new URL("/api/auth/ws-ticket", baseUrl), {
 				method: "POST",

@@ -1,6 +1,8 @@
 import { connectSignaling } from "@cyrus/connections/rtc/session";
 import { serveWorker } from "@cyrus/connections/rtc/worker";
+import { RELEASE_VERSION } from "@cyrus/constants/version";
 import { connection } from "@cyrus/database/connection";
+import { ConnectionUpgradeRequiredError } from "@cyrus/errors/connection";
 import { generateName, randomId } from "@cyrus/utils/identity";
 import { createWorkerRuntime } from "@/core";
 import { createControllerRouter } from "@/handlers/controller";
@@ -17,7 +19,7 @@ import {
 	markHealthStarting,
 	touchHeartbeat,
 } from "@/store/health";
-import { unwrapOrExit } from "@/utils/result";
+import { exitWithError, unwrapOrExit } from "@/utils/result";
 import { print } from "@/utils/style";
 
 export async function worker(): Promise<void> {
@@ -44,16 +46,21 @@ export async function worker(): Promise<void> {
 	print.dim`worker "${name}" joining hub`;
 	await markHealthStarting({ pid: process.pid });
 
-	const signalingSession = unwrapOrExit(
-		await connectSignaling({
-			host: env.CLI_PUBLIC_SERVER_URL,
-			room,
-			role: "worker",
-			id,
-			name,
-			protocols: authClient.wsTicket.protocols,
-		})
-	);
+	const signaling = await connectSignaling({
+		host: env.CLI_PUBLIC_SERVER_URL,
+		room,
+		role: "worker",
+		version: RELEASE_VERSION,
+		id,
+		name,
+		protocols: authClient.wsTicket.protocols,
+	});
+	if (
+		signaling.isErr() &&
+		signaling.error instanceof ConnectionUpgradeRequiredError
+	)
+		exitWithError(`${signaling.error.message} Run \`cyrusd upgrade\`.`);
+	const signalingSession = unwrapOrExit(signaling);
 	print.success`✓ connected — waiting for message…`;
 
 	const eventBus = createThreadEventBus();

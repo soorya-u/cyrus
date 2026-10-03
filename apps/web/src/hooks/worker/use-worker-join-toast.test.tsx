@@ -57,7 +57,12 @@ describe("useWorkerJoinToast", () => {
 
 		emit({
 			type: "peer-joined",
-			peer: { id: "peer-1", name: "Worker One", role: "worker" },
+			peer: {
+				id: "peer-1",
+				name: "Worker One",
+				role: "worker",
+				version: "0.1.0",
+			},
 		});
 
 		expect(toast.success).toHaveBeenCalledTimes(1);
@@ -74,7 +79,12 @@ describe("useWorkerJoinToast", () => {
 
 		emit({
 			type: "peer-joined",
-			peer: { id: "peer-2", name: "Controller One", role: "controller" },
+			peer: {
+				id: "peer-2",
+				name: "Controller One",
+				role: "controller",
+				version: "0.1.0",
+			},
 		});
 
 		expect(toast.success).not.toHaveBeenCalled();
@@ -100,7 +110,12 @@ describe("useWorkerJoinToast", () => {
 		unmount();
 		emit({
 			type: "peer-joined",
-			peer: { id: "peer-1", name: "Worker One", role: "worker" },
+			peer: {
+				id: "peer-1",
+				name: "Worker One",
+				role: "worker",
+				version: "0.1.0",
+			},
 		});
 
 		expect(toast.success).not.toHaveBeenCalled();

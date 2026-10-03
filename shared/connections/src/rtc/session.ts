@@ -3,14 +3,39 @@ import {
 	connectionErrorMessageFromUnknown,
 	invalidHostError,
 	signalingFailedError,
+	UPGRADE_REQUIRED_CODE,
+	upgradeRequiredError,
 } from "@cyrus/errors/connection";
 import type { DeviceRole } from "@cyrus/schemas/signaling";
-import { createORPCClient } from "@orpc/client";
+import { createORPCClient, ORPCError } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import { Result } from "better-result";
 import { PartySocket } from "partysocket";
+import { z } from "zod";
 import type { SignalingClient } from "../contracts/signaling";
 import { createSignalingEvents, type SignalingEvents } from "./peer";
+
+const UpgradeRequiredDataSchema = z.object({
+	declared: z.string(),
+	minimum: z.string(),
+	role: z.string(),
+});
+
+export function signalingSubscribeError(error: unknown): ConnectionError {
+	if (error instanceof ORPCError && error.code === UPGRADE_REQUIRED_CODE) {
+		const data = UpgradeRequiredDataSchema.safeParse(error.data);
+		if (data.success)
+			return upgradeRequiredError(
+				data.data.role,
+				data.data.declared,
+				data.data.minimum
+			);
+	}
+	return signalingFailedError(
+		"Failed to subscribe to signaling events",
+		connectionErrorMessageFromUnknown(error)
+	);
+}
 
 export type ConnectSignalingOptions = {
 	host: string;
@@ -18,6 +43,7 @@ export type ConnectSignalingOptions = {
 	id: string;
 	name: string;
 	role: DeviceRole;
+	version: string;
 	protocols: () => Promise<string[]>;
 };
 
@@ -121,14 +147,11 @@ export async function connectSignaling(
 			const stream = await signaling.onSignalingEvent({
 				name: options.name,
 				role: options.role,
+				version: options.version,
 			});
 			return createSignalingEvents(stream);
 		},
-		catch: (error) =>
-			signalingFailedError(
-				"Failed to subscribe to signaling events",
-				connectionErrorMessageFromUnknown(error)
-			),
+		catch: signalingSubscribeError,
 	});
 
 	if (eventsResult.isErr()) {

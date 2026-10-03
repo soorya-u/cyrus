@@ -1,6 +1,5 @@
 {
   "name": "@cyrus/mobile",
-  "version": "1.0.0",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {
@@ -11,6 +10,7 @@
   "dependencies": {
     "@better-auth/expo": "catalog:auth",
     "@cyrus/connections": "workspace:*",
+    "@cyrus/constants": "workspace:*",
     "@cyrus/hooks": "workspace:*",
     "@cyrus/providers": "workspace:*",
     "@cyrus/utils": "workspace:*",

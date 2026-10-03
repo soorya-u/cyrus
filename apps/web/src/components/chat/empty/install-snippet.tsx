@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	INSTALL_COMMANDS,
+	INSTALL_LABELS,
 	INSTALL_METHODS,
 	type InstallMethod,
 } from "@/constants/commands";
@@ -36,7 +37,7 @@ export function InstallSnippet({ className }: { className?: string }) {
 							onClick={() => setMethod(option)}
 							type="button"
 						>
-							{option === "npm" ? "npm" : "shell"}
+							{INSTALL_LABELS[option]}
 						</button>
 					))}
 				</div>

@@ -1,0 +1,65 @@
+name: Release Prep
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 0.2.0 or 0.2.0-rc.1"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    name: Open release PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$VERSION' is not a version like 1.2.3 or 1.2.3-rc.1"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Tag v$VERSION already exists"
+            exit 1
+          fi
+
+      - name: Bump the root package.json version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          sed -i "0,/^  \"version\": \".*\",/s//  \"version\": \"$VERSION\",/" package.json
+          git diff --stat package.json
+
+      - name: Create release PR
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
+        with:
+          title: "Release v${{ inputs.version }}"
+          branch: bot/release-v${{ inputs.version }}
+          commit-message: "Release v${{ inputs.version }}"
+          body: |
+            ## Release v${{ inputs.version }}
+
+            Created by the Release Prep workflow.
+
+            ### Changes
+            - Bumped the root `package.json` version to `${{ inputs.version }}`, the single version shared by the server, web app and CLI.
+
+            ### Before merging
+            If this release introduces a breaking change to the wire contract, raise `MIN_PEER_VERSION` in `shared/constants/src/version.ts` in this PR.
+
+            ### After merging
+            The annotated tag `v${{ inputs.version }}` is created automatically and starts the release pipeline.
+          add-paths: |
+            package.json

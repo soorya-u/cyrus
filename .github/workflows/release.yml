@@ -1,0 +1,324 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+    env:
+      CLI_PUBLIC_SERVER_URL: http://localhost:8787
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./tooling/github/setup
+
+      - name: Verify tag matches the version
+        id: release
+        run: bun scripts/ci/check-release.ts
+
+      - name: Lint
+        run: bun check
+
+      - name: Type check
+        run: bun check:types
+
+      - name: Unit tests
+        run: bun test:unit
+
+      - name: Integration tests
+        run: bun test:integration
+
+  build-cli:
+    name: Build cyrusd (${{ matrix.asset }})
+    needs: [preflight]
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - asset: cyrusd-linux-x64
+            os: ubuntu-latest
+          - asset: cyrusd-linux-arm64
+            os: ubuntu-24.04-arm
+          - asset: cyrusd-darwin-arm64
+            os: macos-latest
+          - asset: cyrusd-darwin-x64
+            os: macos-15-intel
+          - asset: cyrusd-windows-x64.exe
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./tooling/github/setup
+
+      - name: Build
+        shell: bash
+        run: bun --filter @cyrus/cli build
+        env:
+          CLI_PUBLIC_SERVER_URL: ${{ secrets.WORKERS_URL }}
+
+      - name: Name the binary for the release
+        shell: bash
+        run: |
+          SRC=apps/cli/dist/cyrusd
+          if [ -f "$SRC.exe" ]; then SRC="$SRC.exe"; fi
+          mkdir -p out
+          cp "$SRC" "out/${{ matrix.asset }}"
+          chmod +x "out/${{ matrix.asset }}"
+
+      - name: Check the binary runs and reports the release version
+        shell: bash
+        run: |
+          REPORTED=$("./out/${{ matrix.asset }}" --version | tr -d '\r')
+          if [ "$REPORTED" != "${{ needs.preflight.outputs.version }}" ]; then
+            echo "::error::${{ matrix.asset }} reports '$REPORTED', expected ${{ needs.preflight.outputs.version }}"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.asset }}
+          path: out/${{ matrix.asset }}
+          if-no-files-found: error
+
+  draft-release:
+    name: Draft release
+    needs: [preflight, build-cli]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      release_id: ${{ steps.release.outputs.id }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v5
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: assets
+        run: sha256sum cyrusd-* > SHA256SUMS
+
+      - name: Resolve previous tag
+        id: prev
+        run: |
+          PREV=$(git tag --sort=-v:refname | grep -v -x "${{ github.ref_name }}" | head -1 || true)
+          echo "tag=${PREV}" >> "$GITHUB_OUTPUT"
+
+      - name: Create draft release
+        id: release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        with:
+          draft: true
+          generate_release_notes: true
+          previous_tag: ${{ steps.prev.outputs.tag }}
+          prerelease: ${{ needs.preflight.outputs.prerelease == 'true' }}
+          files: assets/*
+
+  e2e:
+    name: Smoke the release binary
+    needs: [draft-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: cyrusd-linux-x64
+
+      - name: Smoke
+        env:
+          CYRUS_HOME_ROOT: ${{ runner.temp }}
+        run: |
+          chmod +x cyrusd-linux-x64
+          export CYRUS_HOME="$CYRUS_HOME_ROOT/cyrus-home"
+          ./cyrusd-linux-x64 --help
+          ./cyrusd-linux-x64 --version
+          # no worker is running, so status must say so and exit non-zero
+          if ./cyrusd-linux-x64 status; then echo "::error::status should exit non-zero"; exit 1; fi
+          # a binary outside ~/.cyrus/bin must refuse to overwrite itself
+          if ./cyrusd-linux-x64 upgrade; then echo "::error::upgrade should refuse an unmanaged install"; exit 1; fi
+
+  deploy-server:
+    name: Deploy server
+    needs: [preflight, e2e]
+    if: needs.preflight.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./tooling/github/setup
+
+      - name: Migrate database
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          wranglerVersion: "4.104.0"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations apply cyrus --remote --config wrangler.json
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          wranglerVersion: "4.104.0"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          vars: |
+            NODE_ENV
+          secrets: |
+            BETTER_AUTH_SECRET
+            PRODUCTION_URL
+            OAUTH_GITHUB_CLIENT_ID
+            OAUTH_GITHUB_CLIENT_SECRET
+            OAUTH_GOOGLE_CLIENT_ID
+            OAUTH_GOOGLE_CLIENT_SECRET
+            OAUTH_PROXY_SECRET
+            RESEND_API_KEY
+            RESEND_FROM_EMAIL
+            ALLOWED_ORIGINS
+            WEB_APP_URL
+        env:
+          NODE_ENV: production
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+          OAUTH_GITHUB_CLIENT_ID: ${{ secrets.OAUTH_GITHUB_CLIENT_ID }}
+          OAUTH_GITHUB_CLIENT_SECRET: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
+          OAUTH_GOOGLE_CLIENT_ID: ${{ secrets.OAUTH_GOOGLE_CLIENT_ID }}
+          OAUTH_GOOGLE_CLIENT_SECRET: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
+          OAUTH_PROXY_SECRET: ${{ secrets.OAUTH_PROXY_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+
+      - name: Deploy smoke
+        working-directory: tooling/test
+        run: bun smoke/deploy.ts
+        env:
+          SMOKE_BASE_URL: ${{ secrets.WORKERS_URL }}
+          SMOKE_BEARER_TOKEN: ${{ secrets.DEPLOY_SMOKE_TOKEN }}
+          SMOKE_ROOM_ID: ${{ secrets.DEPLOY_SMOKE_ROOM_ID }}
+
+  publish-release:
+    name: Publish release
+    needs: [preflight, draft-release, e2e, deploy-server]
+    if: ${{ !cancelled() && needs.e2e.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.deploy-server.result) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.draft-release.outputs.release_id }}
+          PRERELEASE: ${{ needs.preflight.outputs.prerelease }}
+        run: |
+          if [ "$PRERELEASE" = "true" ]; then LATEST=false; else LATEST=true; fi
+          gh api -X PATCH "repos/${{ github.repository }}/releases/$RELEASE_ID" \
+            -F draft=false -F prerelease="$PRERELEASE" -f make_latest="$LATEST"
+
+  publish-npm:
+    name: Publish to npm
+    needs: [publish-release]
+    if: ${{ needs.publish-release.result == 'success' && vars.PUBLISH_NPM == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Clear .npmrc
+        run: rm -f "$NPM_CONFIG_USERCONFIG" ~/.npmrc
+
+      - name: Publish npm packages
+        run: ./scripts/ci/publish-npm.sh
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+
+  deploy-web:
+    name: Deploy web
+    needs: [preflight, publish-release]
+    if: ${{ needs.publish-release.result == 'success' && needs.preflight.outputs.prerelease == 'false' }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Deploy to Vercel
+        run: npx --yes vercel@62 deploy --prod --yes --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Smoke the site and the installer
+        env:
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS "$WEB_APP_URL/" -o /dev/null \
+              && curl -fsS "$WEB_APP_URL/install.sh" | head -n 1 | grep -q '^#!/bin/sh'; then
+              echo "web is serving the new deployment"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$WEB_APP_URL did not serve the site and install.sh"
+          exit 1
+
+  cleanup:
+    name: Remove failed release
+    needs: [preflight, build-cli, draft-release, e2e]
+    if: ${{ always() && github.ref_type == 'tag' && (needs.preflight.result == 'failure' || needs.build-cli.result == 'failure' || needs.draft-release.result == 'failure' || needs.e2e.result == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Delete the draft release and the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.draft-release.outputs.release_id }}
+        run: |
+          if [ -n "$RELEASE_ID" ]; then
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$RELEASE_ID" || true
+          fi
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/${{ github.ref_name }}" || true

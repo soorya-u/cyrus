@@ -8,6 +8,9 @@ import { defineConfig } from "vitest/config";
 
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
+const constantsPaths = () =>
+	tsconfigPaths({ projects: [packageRoot("shared/constants/tsconfig.json")] });
+
 function packageRoot(...segments: string[]): string {
 	return path.join(repoRoot, ...segments);
 }
@@ -28,6 +31,7 @@ export default defineConfig({
 			{
 				root: packageRoot("apps/server"),
 				plugins: [
+					constantsPaths(),
 					cloudflareTest({
 						wrangler: { configPath: packageRoot("wrangler.json") },
 						miniflare: { bindings },
@@ -42,6 +46,7 @@ export default defineConfig({
 			},
 			{
 				root: packageRoot("shared/connections"),
+				plugins: [constantsPaths()],
 				test: {
 					name: "@cyrus/connections",
 					environment: "node",
@@ -50,6 +55,7 @@ export default defineConfig({
 			},
 			{
 				root: packageRoot("shared/constants"),
+				plugins: [constantsPaths()],
 				test: {
 					name: "@cyrus/constants",
 					environment: "node",

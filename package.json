@@ -1,6 +1,7 @@
 {
   "name": "cyrus",
   "private": true,
+  "version": "0.0.0",
   "workspaces": {
     "packages": [
       "apps/*",
@@ -73,6 +74,7 @@
     "dev:cli": "turbo -F @cyrus/cli dev --",
     "db:push": "turbo -F @cyrus/server db:push",
     "db:studio": "turbo -F @cyrus/server db:studio",
+    "db:file:generate": "turbo -F @cyrus/database db:generate",
     "db:file:studio": "turbo -F @cyrus/database db:studio",
     "db:generate": "turbo -F @cyrus/server db:generate",
     "db:migrate": "turbo -F @cyrus/server db:migrate",
@@ -88,6 +90,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
     "@cloudflare/vitest-pool-workers": "^0.18.6",
+    "@cyrus/constants": "workspace:*",
     "@cyrus/test": "workspace:*",
     "@cyrus/typescript": "workspace:*",
     "@vitejs/plugin-react": "^4.6.0",

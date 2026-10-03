@@ -10,6 +10,7 @@
     "types": ["vite/client", "@testing-library/jest-dom"],
     "rootDirs": ["."],
     "paths": {
+      "~/*": ["../../*"],
       "@/*": ["./src/*"],
       "@cyrus/errors/*": ["../../shared/errors/src/*"],
       "@cyrus/hooks/*": ["../../shared/hooks/src/*"],

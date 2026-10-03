@@ -2,7 +2,10 @@
   "extends": "@cyrus/typescript/tsconfig.base.json",
   "compilerOptions": {
     "types": ["bun"],
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    // Bun does not follow `paths` through a package-name `extends`, so the root
+    // alias from the base config is repeated here for the CLI's compiled build.
+    "paths": { "~/*": ["../../*"] }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
