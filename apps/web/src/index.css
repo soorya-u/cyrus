@@ -183,7 +183,6 @@
 				transparent
 			),
 			linear-gradient(to bottom, transparent, #000 0.75rem);
-		-webkit-mask-composite: source-in;
 		mask-image:
 			linear-gradient(
 				to right,
@@ -193,6 +192,7 @@
 				transparent
 			),
 			linear-gradient(to bottom, transparent, #000 0.75rem);
+		-webkit-mask-composite: source-in;
 		mask-composite: intersect;
 	}
 
