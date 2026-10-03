@@ -17,6 +17,8 @@
     "@better-auth/drizzle-adapter": "1.6.21",
     "@better-auth/expo": "catalog:auth",
     "@cyrus/connections": "workspace:*",
+    "@cyrus/constants": "workspace:*",
+    "@cyrus/errors": "workspace:*",
     "@cyrus/schemas": "workspace:*",
     "@dotenvx/dotenvx": "catalog:env",
     "@orpc/server": "catalog:rpc",

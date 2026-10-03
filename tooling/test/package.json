@@ -11,7 +11,8 @@
     "smoke:deploy": "bun smoke/deploy.ts"
   },
   "dependencies": {
-    "@cyrus/connections": "workspace:*"
+    "@cyrus/connections": "workspace:*",
+    "@cyrus/constants": "workspace:*"
   },
   "devDependencies": {
     "@cyrus/typescript": "workspace:*",

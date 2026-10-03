@@ -14,11 +14,13 @@ describe("signaling schemas", () => {
 				id: "device-1",
 				name: "Laptop",
 				role: "worker",
+				version: "0.1.0",
 			})
 		).toEqual({
 			id: "device-1",
 			name: "Laptop",
 			role: "worker",
+			version: "0.1.0",
 		});
 	});
 
@@ -28,6 +30,7 @@ describe("signaling schemas", () => {
 				id: "device-1",
 				name: "Laptop",
 				role: "observer",
+				version: "0.1.0",
 			})
 		).toThrow();
 	});

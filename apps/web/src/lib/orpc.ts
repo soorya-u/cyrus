@@ -1,5 +1,6 @@
 import { connectControllerWeb } from "@cyrus/connections/rtc/controller/web";
 import { connectSignaling } from "@cyrus/connections/rtc/session";
+import { RELEASE_VERSION } from "@cyrus/constants/version";
 import { signalingFailedError } from "@cyrus/errors/connection";
 import type { RtcDialer, SignalingDialer } from "@cyrus/providers/types";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
@@ -15,6 +16,7 @@ export const dialSignaling: SignalingDialer = async () => {
 		host: env.VITE_SERVER_URL,
 		room: data.user.id,
 		role: "controller",
+		version: RELEASE_VERSION,
 		id: getControllerId(),
 		name: getControllerName(),
 		protocols: authClient.wsTicket.protocols,

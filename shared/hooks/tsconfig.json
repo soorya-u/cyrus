@@ -6,6 +6,7 @@
     "types": ["@testing-library/jest-dom"],
     "strictNullChecks": true,
     "paths": {
+      "~/*": ["../../*"],
       "@cyrus/providers/*": ["../providers/src/*"]
     }
   },

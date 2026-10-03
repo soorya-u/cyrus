@@ -1,18 +1,15 @@
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BunPlugin } from "bun";
 
-const DRIZZLE_KIT_IMPORT = /^drizzle-kit(?:\/|$)/;
 const NODE_DATACHANNEL = /node-datachannel\.(cjs|mjs)$/;
 const PARCEL_WATCHER_INDEX = /@parcel\/watcher\/index\.js$/;
 const JS_MODULE = /\.js$/;
 const PARCEL_WATCHER_REQUIRE = "binding = require(name);";
 
 const cliRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-const repoRoot = join(cliRoot, "../..");
 const outfile = join(cliRoot, "dist/cyrusd");
-const stageDir = join(cliRoot, "dist/node_modules");
 const fromCli = join(cliRoot, "src/cli.ts");
 const generatedDir = join(cliRoot, "scripts/.generated");
 const embedNativesEntry = join(generatedDir, "embed-natives.ts");
@@ -60,24 +57,6 @@ function parcelWatcherPackageName(target: string): string {
 	);
 }
 
-/** Keep drizzle-kit off the bundle — rebundling payload-sqlite breaks Zod. */
-function externalizeDrizzleKit(): BunPlugin {
-	return {
-		name: "externalize-drizzle-kit",
-		setup(build) {
-			build.onResolve({ filter: DRIZZLE_KIT_IMPORT }, (args) => ({
-				path: args.path,
-				external: true,
-			}));
-		},
-	};
-}
-
-/**
- * Rewrite native loaders to absolute `.node` paths. Pair with a second
- * entrypoint that `require`s those same paths so Bun.compile embeds them into
- * `$bunfs` (onLoad rewrites alone leave runtime filesystem requires).
- */
 function rewriteNativeAddonRequires(
 	ndcNode: string,
 	tursoNode: string,
@@ -151,24 +130,6 @@ function rewriteNativeAddonRequires(
 	};
 }
 
-async function stageDrizzleKitRuntime(): Promise<void> {
-	const fromDatabase = join(repoRoot, "shared/database/src/connection.ts");
-	const drizzleKitRoot = resolvePackageRoot("drizzle-kit", fromDatabase);
-	const drizzleOrmRoot = resolvePackageRoot("drizzle-orm", fromDatabase);
-
-	await rm(stageDir, { force: true, recursive: true });
-	await mkdir(stageDir, { recursive: true });
-	await cp(drizzleKitRoot, join(stageDir, "drizzle-kit"), { recursive: true });
-	await cp(drizzleOrmRoot, join(stageDir, "drizzle-orm"), { recursive: true });
-
-	const payloadDir = join(stageDir, "drizzle-kit/payload");
-	await mkdir(payloadDir, { recursive: true });
-	await cp(
-		join(stageDir, "drizzle-kit/payload-sqlite.mjs"),
-		join(payloadDir, "sqlite.js")
-	);
-}
-
 const target = platformTarget();
 const ndcNode = join(
 	resolvePackageRoot("node-datachannel", fromCli),
@@ -198,9 +159,7 @@ await mkdir(dirname(outfile), { recursive: true });
 const result = await Bun.build({
 	entrypoints: [fromCli, embedNativesEntry],
 	env: "CLI_PUBLIC_*",
-	external: ["drizzle-kit"],
 	plugins: [
-		externalizeDrizzleKit(),
 		rewriteNativeAddonRequires(ndcNode, tursoNode, watcherNode, target),
 	],
 	compile: { outfile },
@@ -211,15 +170,11 @@ if (!result.success) {
 	process.exit(1);
 }
 
-await stageDrizzleKitRuntime();
-
 await writeFile(
 	join(cliRoot, "dist/build-meta.json"),
 	`${JSON.stringify(
 		{
 			outfile,
-			external: ["drizzle-kit"],
-			staged: ["drizzle-kit", "drizzle-orm"],
 			embedded: [
 				"node-datachannel",
 				"@tursodatabase/database",

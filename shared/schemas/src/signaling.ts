@@ -14,10 +14,15 @@ const IceCandidateSchema = z.object({
 
 export const DeviceRoleSchema = z.enum(["controller", "worker"]);
 
+export const ReleaseVersionSchema = z
+	.string()
+	.regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
+
 // metadata a device declares on join; its identity is the connection id
 export const DeviceStateSchema = z.object({
 	name: z.string(),
 	role: DeviceRoleSchema,
+	version: ReleaseVersionSchema,
 });
 
 // a peer as seen by others: its declared metadata plus its stable id
@@ -60,6 +65,7 @@ export const ServerEventSchema = z.discriminatedUnion("type", [
 	}),
 ]);
 
+export type ReleaseVersion = z.infer<typeof ReleaseVersionSchema>;
 export type DeviceRole = z.infer<typeof DeviceRoleSchema>;
 export type DeviceState = z.infer<typeof DeviceStateSchema>;
 export type DeviceInfo = z.infer<typeof DeviceInfoSchema>;

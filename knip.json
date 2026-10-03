@@ -8,7 +8,7 @@
   },
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.{ts,sh}", "wrangler.json"],
+      "entry": ["scripts/**/*.{ts,js,cjs,sh}", "wrangler.json"],
       "ignoreUnresolved": ["./src/db/migrations/apply.ts"]
     },
     "apps/cli": {

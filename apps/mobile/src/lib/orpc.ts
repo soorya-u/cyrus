@@ -1,5 +1,6 @@
 import { connectControllerNative } from "@cyrus/connections/rtc/controller/native";
 import { connectSignaling } from "@cyrus/connections/rtc/session";
+import { RELEASE_VERSION } from "@cyrus/constants/version";
 import type { RtcDialer, SignalingDialer } from "@cyrus/providers/types";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { authClient } from "./auth";
@@ -14,6 +15,7 @@ export const dialSignaling: SignalingDialer = async () => {
 		host: env.EXPO_PUBLIC_SERVER_URL,
 		room: data.user.id,
 		role: "controller",
+		version: RELEASE_VERSION,
 		id: await getControllerId(),
 		name: await getControllerName(),
 		protocols: authClient.wsTicket.protocols,

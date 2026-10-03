@@ -1,6 +1,16 @@
 import { signalingContract } from "@cyrus/connections/contracts/signaling";
+import {
+	MIN_PEER_VERSION,
+	meetsMinimumVersion,
+} from "@cyrus/constants/version";
+import {
+	type ConnectionUpgradeRequiredError,
+	UPGRADE_REQUIRED_CODE,
+	upgradeRequiredError,
+} from "@cyrus/errors/connection";
 import type {
 	DeviceInfo,
+	DeviceRole,
 	DeviceState,
 	ServerEvent,
 } from "@cyrus/schemas/signaling";
@@ -11,6 +21,7 @@ import {
 	HibernationPlugin,
 } from "@orpc/server/hibernation";
 import { RPCHandler } from "@orpc/server/websocket";
+import { Result } from "better-result";
 import { log } from "evlog";
 
 export type SignalingWS = {
@@ -33,6 +44,16 @@ const os = implement(signalingContract).$context<SignalingContext>();
 
 // stashed per connection: the hibernation event-iterator id plus declared metadata
 type Attachment = { eventId: string } & DeviceState;
+
+/** Admit a peer only if its declared version meets the minimum for its role. */
+export function checkPeerVersion(
+	state: DeviceState,
+	minimums: Record<DeviceRole, string> = MIN_PEER_VERSION
+): Result<void, ConnectionUpgradeRequiredError> {
+	const minimum = minimums[state.role];
+	if (meetsMinimumVersion(state.version, minimum)) return Result.ok();
+	return Result.err(upgradeRequiredError(state.role, state.version, minimum));
+}
 
 function pushEvent(ws: SignalingWS, event: ServerEvent): void {
 	const att = ws.deserializeAttachment<Attachment | null>();
@@ -102,12 +123,27 @@ const router = {
 					return [];
 				}
 				return [
-					{ id: c.id, name: att.name, role: att.role } satisfies DeviceInfo,
+					{
+						id: c.id,
+						name: att.name,
+						role: att.role,
+						version: att.version,
+					} satisfies DeviceInfo,
 				];
 			})
 	),
 
 	onSignalingEvent: os.onSignalingEvent.handler(({ input, context }) => {
+		const version = checkPeerVersion(input);
+		if (version.isErr()) {
+			const { role, declared, minimum, message } = version.error;
+			throw new ORPCError(UPGRADE_REQUIRED_CODE, {
+				data: { declared, minimum, role },
+				message,
+				status: 426,
+			});
+		}
+
 		// names must be unique across the room; a same-id match is the device reconnecting
 		const nameTaken = [...context.server.getConnections()].some((c) => {
 			if (c.id === context.ws.id) {

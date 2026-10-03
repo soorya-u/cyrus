@@ -8,6 +8,7 @@ export const errorModules = {
 	connection: "connection",
 	fs: "fs",
 	shell: "shell",
+	upgrade: "upgrade",
 } as const;
 
 export type ErrorModule = (typeof errorModules)[keyof typeof errorModules];

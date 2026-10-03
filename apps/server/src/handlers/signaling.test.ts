@@ -54,6 +54,7 @@ describe("broadcastSignalingEvent", () => {
 					id: "worker-2",
 					name: "Worker 2",
 					role: "worker",
+					version: "0.1.0",
 				},
 				type: "peer-joined",
 			},
@@ -67,6 +68,7 @@ describe("broadcastSignalingEvent", () => {
 					id: "worker-2",
 					name: "Worker 2",
 					role: "worker",
+					version: "0.1.0",
 				},
 				type: "peer-joined",
 			})

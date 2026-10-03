@@ -2,11 +2,11 @@ import type { RepositoryError } from "@cyrus/errors/repository";
 import { databaseError } from "@cyrus/errors/repository";
 import type { DatabasePromise } from "@tursodatabase/database-common";
 import { Result } from "better-result";
-import { pushSchema } from "drizzle-kit/payload/sqlite";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/tursodatabase/database";
 import type { TursoDatabaseDatabase } from "drizzle-orm/tursodatabase/driver-core";
-import { commonModels as models } from "./models";
+import { migrate } from "drizzle-orm/tursodatabase/wasm-migrator";
+import { migrations } from "./migrations.generated";
 
 export type DrizzleDb = TursoDatabaseDatabase;
 
@@ -32,28 +32,20 @@ export class DatabaseConnection {
 
 	open(
 		connect: DatabaseConnect,
-		// NOTE: If there is any diff in models between worker and controller, this
-		// is where we control it via role.
-		role: "worker" | "controller"
-	): Promise<Result<DrizzleDb, RepositoryError>> {
-		return this.setup(connect, models, role);
-	}
-
-	async setup(
-		connect: DatabaseConnect,
-		schema: Record<string, unknown>,
+		// NOTE: If there is any diff in models between worker and controller, this is where we control it via role.
 		_role: "worker" | "controller"
 	): Promise<Result<DrizzleDb, RepositoryError>> {
-		return await Result.tryPromise({
+		return Result.tryPromise({
 			try: async () => {
-				const bootstrap = await connect();
-				await this.push(bootstrap, schema);
-				await bootstrap.close();
-
-				const client = await connect();
-				this.nativeClient = client;
-				this.drizzleDb = drizzle({ client });
-				await this.configure();
+				this.nativeClient = await connect();
+				try {
+					this.drizzleDb = drizzle({ client: this.nativeClient });
+					await migrate(this.drizzleDb, { migrations });
+					await this.configure();
+				} catch (error) {
+					await this.close();
+					throw error;
+				}
 				return this.drizzleDb;
 			},
 			catch: (error) =>
@@ -74,23 +66,6 @@ export class DatabaseConnection {
 	private async configure(): Promise<void> {
 		await this.db.run(sql`PRAGMA foreign_keys = ON`);
 		await this.db.run(sql`PRAGMA journal_mode = WAL`);
-	}
-
-	private async push(
-		client: DatabasePromise,
-		schema: Record<string, unknown>
-	): Promise<void> {
-		const result = await pushSchema(schema, {
-			query: async (query, params) => {
-				const stmt = await client.prepare(query);
-				return stmt.all(...(params ?? []));
-			},
-			run: (query) => client.exec(query),
-			batch: async (statements) => {
-				for (const statement of statements) await client.exec(statement);
-			},
-		});
-		await result.apply();
 	}
 }
 
